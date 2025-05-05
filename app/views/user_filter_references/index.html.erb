@@ -1,0 +1,35 @@
+<p id="notice"><%= notice %></p>
+
+<h1>User Filter References</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Gender</th>
+      <th>Distance range</th>
+      <th>Age from</th>
+      <th>Age till</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @user_filter_references.each do |user_filter_reference| %>
+      <tr>
+        <td><%= user_filter_reference.user_id %></td>
+        <td><%= user_filter_reference.gender %></td>
+        <td><%= user_filter_reference.distance_range %></td>
+        <td><%= user_filter_reference.age_from %></td>
+        <td><%= user_filter_reference.age_till %></td>
+        <td><%= link_to 'Show', user_filter_reference %></td>
+        <td><%= link_to 'Edit', edit_user_filter_reference_path(user_filter_reference) %></td>
+        <td><%= link_to 'Destroy', user_filter_reference, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New User Filter Reference', new_user_filter_reference_path %>

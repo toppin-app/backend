@@ -1,0 +1,14 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Interest:</strong>
+  <%= @user_interest.interest_id %>
+</p>
+
+<p>
+  <strong>User:</strong>
+  <%= @user_interest.user_id %>
+</p>
+
+<%= link_to 'Edit', edit_user_interest_path(@user_interest) %> |
+<%= link_to 'Back', user_interests_path %>

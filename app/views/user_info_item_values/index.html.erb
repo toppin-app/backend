@@ -1,0 +1,29 @@
+<p id="notice"><%= notice %></p>
+
+<h1>User Info Item Values</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Info item value</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @user_info_item_values.each do |user_info_item_value| %>
+      <tr>
+        <td><%= user_info_item_value.user_id %></td>
+        <td><%= user_info_item_value.info_item_value_id %></td>
+        <td><%= link_to 'Show', user_info_item_value %></td>
+        <td><%= link_to 'Edit', edit_user_info_item_value_path(user_info_item_value) %></td>
+        <td><%= link_to 'Destroy', user_info_item_value, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New User Info Item Value', new_user_info_item_value_path %>

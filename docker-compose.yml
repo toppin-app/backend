@@ -1,0 +1,9 @@
+version: "3"
+services:
+  rails:
+    build: .
+    command: bash -c "bundle install && bundle exec rails server -b '0.0.0.0' -p 3000"
+    volumes:
+      - "./:/var/www"
+    ports:
+      - "3000:3000"

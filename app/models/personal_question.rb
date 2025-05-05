@@ -1,0 +1,2 @@
+class PersonalQuestion < ApplicationRecord
+end

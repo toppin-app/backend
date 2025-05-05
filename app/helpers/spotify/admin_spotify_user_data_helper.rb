@@ -1,0 +1,2 @@
+module Spotify::AdminSpotifyUserDataHelper
+end

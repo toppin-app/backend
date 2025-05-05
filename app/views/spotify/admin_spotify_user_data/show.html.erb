@@ -1,0 +1,31 @@
+<style>
+  img {
+    width: 150px;
+    height: 150px;
+  }
+</style>
+
+<h1>Spotify User Datum</h1>
+
+<p>
+  <strong>Artist Name:</strong>
+  <%= @spotify_user_datum.artist_name %>
+</p>
+
+<p>
+  <strong>Image:</strong>
+  <%= image_tag(@spotify_user_datum.image, skip_pipeline: true ) if @spotify_user_datum.image.present? %>
+</p>
+
+<p>
+  <strong>Preview URL:</strong>
+  <%= @spotify_user_datum.preview_url %>
+</p>
+
+<p>
+  <strong>Track Name:</strong>
+  <%= @spotify_user_datum.track_name %>
+</p>
+
+<%= link_to 'Edit', edit_user_admin_spotify_user_datum_path(@user, @spotify_user_datum) %> |
+<%= link_to 'Back', user_admin_spotify_user_data_path(@user) %>

@@ -1,0 +1,29 @@
+<h1>Spotify User Datum Edit</h1>
+
+<%= form_with(model: [@user, @spotify_user_datum], url: user_admin_spotify_user_datum_path(@user, @spotify_user_datum), local: true) do |form| %>
+  <div>
+    <%= form.label :artist_name, "Artist Name:" %>
+    <%= form.text_field :artist_name %>
+  </div>
+
+  <div>
+    <%= form.label :image, "Image:" %>
+    <%= form.text_field :image %>
+  </div>
+
+  <div>
+    <%= form.label :preview_url, "Preview URL:" %>
+    <%= form.text_field :preview_url %>
+  </div>
+
+  <div>
+    <%= form.label :track_name, "Track Name:" %>
+    <%= form.text_field :track_name %>
+  </div>
+
+  <div>
+    <%= form.submit "Save" %>
+  </div>
+<% end %>
+
+<%= link_to 'Back', user_admin_spotify_user_data_path(@user) %>

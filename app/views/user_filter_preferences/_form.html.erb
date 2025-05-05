@@ -1,0 +1,42 @@
+<%= form_with(model: user_filter_preference, local: true) do |form| %>
+  <% if user_filter_preference.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(user_filter_preference.errors.count, "error") %> prohibited this user_filter_preference from being saved:</h2>
+
+      <ul>
+        <% user_filter_preference.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :user_id %>
+    <%= form.text_field :user_id %>
+  </div>
+
+  <div class="field">
+    <%= form.label :gender %>
+    <%= form.number_field :gender %>
+  </div>
+
+  <div class="field">
+    <%= form.label :distance_range %>
+    <%= form.number_field :distance_range %>
+  </div>
+
+  <div class="field">
+    <%= form.label :age_from %>
+    <%= form.number_field :age_from %>
+  </div>
+
+  <div class="field">
+    <%= form.label :age_till %>
+    <%= form.number_field :age_till %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

@@ -1,0 +1,34 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>User:</strong>
+  <%= @user_match_request.user_id %>
+</p>
+
+<p>
+  <strong>Target user:</strong>
+  <%= @user_match_request.target_user %>
+</p>
+
+<p>
+  <strong>Is match:</strong>
+  <%= @user_match_request.is_match %>
+</p>
+
+<p>
+  <strong>Is paid:</strong>
+  <%= @user_match_request.is_paid %>
+</p>
+
+<p>
+  <strong>Is rejected:</strong>
+  <%= @user_match_request.is_rejected %>
+</p>
+
+<p>
+  <strong>Affinity index:</strong>
+  <%= @user_match_request.affinity_index %>
+</p>
+
+<%= link_to 'Edit', edit_user_match_request_path(@user_match_request) %> |
+<%= link_to 'Back', user_match_requests_path %>

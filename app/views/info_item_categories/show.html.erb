@@ -1,0 +1,59 @@
+
+
+<div class="card card-body">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Valores</th>
+      <th colspan="2"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @info_item_category.info_item_values.each do |info_item_value| %>
+      <tr>
+        <td><%= info_item_value.value %></td>
+        <td><%= link_to 'Editar', edit_info_item_value_path(info_item_value) %></td>
+        <td><%= link_to 'Eliminar', info_item_value, method: :delete, data: { confirm: '¿Estás seguro?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+</div>
+
+<div class="card">
+  <div class="card-header"><b>Nuevo valor</b></div>
+  <div class="card-body">
+<%= form_with(model: @info_item_value, local: true) do |form| %>
+  <% if @info_item_value.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@info_item_value.errors.count, "error") %> prohibited this info_item_value from being saved:</h2>
+
+      <ul>
+        <% @info_item_value.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+
+  <div class="field">
+
+    <%= form.text_field :value, class: 'form-control', placeholder: 'Introduce nuevo valor' %>
+  </div>
+
+    <%= form.hidden_field :info_item_category_id, value: @info_item_category.id %>
+
+
+  <div class="actions">
+    <%= form.submit "Guardar", class: 'btn btn-sm btn-success' %>
+  </div>
+<% end %>
+</div>
+
+</div>
+
+
+<%= link_to 'Editar', edit_info_item_category_path(@info_item_category) %> |
+<%= link_to 'Atrás', info_item_categories_path %>

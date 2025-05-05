@@ -1,0 +1,47 @@
+<%= form_with(model: user_match_request, local: true) do |form| %>
+  <% if user_match_request.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(user_match_request.errors.count, "error") %> prohibited this user_match_request from being saved:</h2>
+
+      <ul>
+        <% user_match_request.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :user_id %>
+    <%= form.text_field :user_id %>
+  </div>
+
+  <div class="field">
+    <%= form.label :target_user %>
+    <%= form.number_field :target_user %>
+  </div>
+
+  <div class="field">
+    <%= form.label :is_match %>
+    <%= form.check_box :is_match %>
+  </div>
+
+  <div class="field">
+    <%= form.label :is_paid %>
+    <%= form.text_field :is_paid %>
+  </div>
+
+  <div class="field">
+    <%= form.label :is_rejected %>
+    <%= form.check_box :is_rejected %>
+  </div>
+
+  <div class="field">
+    <%= form.label :affinity_index %>
+    <%= form.number_field :affinity_index %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

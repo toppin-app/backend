@@ -1,0 +1,48 @@
+<br>
+
+<%= link_to 'Añadir anuncio', new_publi_path, class: 'btn btn-success btn-sm text-white', :"data-turbolinks" => false  %>
+
+<hr>
+
+<div class="card card-body">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Título</th>
+      <th>Inicio</th>
+      <th>Fin</th>
+      <th>Días de la semana</th>
+      <th>Hora inicio</th>
+      <th>Hora fin</th>
+      <th>Link</th>
+      <th>Cancelable</th>
+      <th>Cada X swipes</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @publis.each do |publi| %>
+      <tr>
+        <td><%= image_tag publi.image.thumb.url, style: 'height: 60px;' if publi.image? %>
+          
+          <%= "<i class='fa fa-video' style='font-size: 40px;'></i>".html_safe if publi.video? %>
+        </td>
+        <td><%= publi.title %></td>
+        <td><%= publi.start_date.strftime("%d-%m-%Y %H:%M") %></td>
+        <td><%= publi.end_date.strftime("%d-%m-%Y %H:%M") %></td>
+        <td><%= publi.weekdays %></td>
+        <td><%= publi.start_time.strftime("%H:%M") %></td>
+        <td><%= publi.end_time.strftime("%H:%M") %></td>
+        <td><%= publi.link %></td>
+        <td><%= true_false(publi.cancellable) %></td>
+        <td><%= publi.repeat_swipes %></td>
+        <td><%= link_to 'Ver', publi %></td>
+        <td><%= link_to 'Editar', edit_publi_path(publi), :"data-turbolinks" => false  %></td>
+        <td><%= link_to 'Eliminar', publi, method: :delete, data: { confirm: '¿Eliminar esta publi?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+</div>

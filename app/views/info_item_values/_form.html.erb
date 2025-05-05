@@ -1,0 +1,22 @@
+<%= form_with(model: info_item_value, local: true) do |form| %>
+  <% if info_item_value.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(info_item_value.errors.count, "error") %> prohibited this info_item_value from being saved:</h2>
+
+      <ul>
+        <% info_item_value.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label "Valor" %>
+    <%= form.text_field :value, class: 'form-control', required: true %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit "Guardar", class: 'btn btn-success btn-sm' %>
+  </div>
+<% end %>

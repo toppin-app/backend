@@ -1,0 +1,29 @@
+<div class="card card-body">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Usuario denunciante</th>
+      <th>Usuario denunciado</th>
+      <th>Razón</th>
+      <th>Texto</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @complaints.each do |complaint| %>
+      <tr>
+        <td><%= complaint.user_id %>
+        - <%= complaint.user.name %><br>
+        <%= complaint.user.email %>
+        </td>
+        <td><%= complaint.to_user_id %></td>
+        <td><%= complaint.reason %></td>
+        <td><%= complaint.text %></td>
+        <td><%= link_to 'Eliminar', complaint, method: :delete, data: { confirm: '¿Eliminar?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+</div>

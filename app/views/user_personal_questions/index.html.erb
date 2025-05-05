@@ -1,0 +1,31 @@
+<p id="notice"><%= notice %></p>
+
+<h1>User Personal Questions</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Personal question</th>
+      <th>Answer</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @user_personal_questions.each do |user_personal_question| %>
+      <tr>
+        <td><%= user_personal_question.user_id %></td>
+        <td><%= user_personal_question.personal_question_id %></td>
+        <td><%= user_personal_question.answer %></td>
+        <td><%= link_to 'Show', user_personal_question %></td>
+        <td><%= link_to 'Edit', edit_user_personal_question_path(user_personal_question) %></td>
+        <td><%= link_to 'Destroy', user_personal_question, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New User Personal Question', new_user_personal_question_path %>

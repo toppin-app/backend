@@ -1,0 +1,29 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>User:</strong>
+  <%= @user_filter_preference.user_id %>
+</p>
+
+<p>
+  <strong>Gender:</strong>
+  <%= @user_filter_preference.gender %>
+</p>
+
+<p>
+  <strong>Distance range:</strong>
+  <%= @user_filter_preference.distance_range %>
+</p>
+
+<p>
+  <strong>Age from:</strong>
+  <%= @user_filter_preference.age_from %>
+</p>
+
+<p>
+  <strong>Age till:</strong>
+  <%= @user_filter_preference.age_till %>
+</p>
+
+<%= link_to 'Edit', edit_user_filter_preference_path(@user_filter_preference) %> |
+<%= link_to 'Back', user_filter_preferences_path %>

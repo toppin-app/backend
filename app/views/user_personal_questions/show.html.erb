@@ -1,0 +1,19 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>User:</strong>
+  <%= @user_personal_question.user_id %>
+</p>
+
+<p>
+  <strong>Personal question:</strong>
+  <%= @user_personal_question.personal_question_id %>
+</p>
+
+<p>
+  <strong>Answer:</strong>
+  <%= @user_personal_question.answer %>
+</p>
+
+<%= link_to 'Edit', edit_user_personal_question_path(@user_personal_question) %> |
+<%= link_to 'Back', user_personal_questions_path %>

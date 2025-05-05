@@ -1,0 +1,37 @@
+<%= form_with(model: [@user, spotify_user_datum], url: spotify_user_datum.new_record? ? user_admin_spotify_user_data_path(@user) : user_admin_spotify_user_datum_path(@user, spotify_user_datum), local: true) do |form| %>
+  <% if spotify_user_datum.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(spotify_user_datum.errors.count, "error") %> prohibited this spotify_user_datum from being saved:</h2>
+
+      <ul>
+        <% spotify_user_datum.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :artist_name %>
+    <%= form.text_field :artist_name %>
+  </div>
+
+  <div class="field">
+    <%= form.label :image %>
+    <%= form.text_field :image %>
+  </div>
+
+  <div class="field">
+    <%= form.label :preview_url %>
+    <%= form.text_field :preview_url %>
+  </div>
+
+  <div class="field">
+    <%= form.label :track_name %>
+    <%= form.text_field :track_name %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

@@ -1,0 +1,15 @@
+defaults: &defaults
+
+  app_name: "Toppin APP"
+  default_meta_title: "Toppin Admin Panel"
+  copyright: "Innobing Global Consulting SL"
+
+
+development:
+  <<: *defaults
+
+test:
+  <<: *defaults
+
+production:
+  <<: *defaults

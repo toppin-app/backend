@@ -1,0 +1,37 @@
+<p id="notice"><%= notice %></p>
+
+<h1>User Match Requests</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Target user</th>
+      <th>Is match</th>
+      <th>Is paid</th>
+      <th>Is rejected</th>
+      <th>Affinity index</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @user_match_requests.each do |user_match_request| %>
+      <tr>
+        <td><%= user_match_request.user_id %></td>
+        <td><%= user_match_request.target_user %></td>
+        <td><%= user_match_request.is_match %></td>
+        <td><%= user_match_request.is_paid %></td>
+        <td><%= user_match_request.is_rejected %></td>
+        <td><%= user_match_request.affinity_index %></td>
+        <td><%= link_to 'Show', user_match_request %></td>
+        <td><%= link_to 'Edit', edit_user_match_request_path(user_match_request) %></td>
+        <td><%= link_to 'Destroy', user_match_request, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New User Match Request', new_user_match_request_path %>

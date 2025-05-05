@@ -1,0 +1,22 @@
+<%= form_with(model: personal_question, local: true) do |form| %>
+  <% if personal_question.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(personal_question.errors.count, "error") %> prohibited this personal_question from being saved:</h2>
+
+      <ul>
+        <% personal_question.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :name %>
+    <%= form.text_field :name %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

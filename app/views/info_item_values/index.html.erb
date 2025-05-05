@@ -1,0 +1,29 @@
+<p id="notice"><%= notice %></p>
+
+<h1>Info Item Values</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Value</th>
+      <th>Info item category</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @info_item_values.each do |info_item_value| %>
+      <tr>
+        <td><%= info_item_value.value %></td>
+        <td><%= info_item_value.info_item_category_id %></td>
+        <td><%= link_to 'Show', info_item_value %></td>
+        <td><%= link_to 'Edit', edit_info_item_value_path(info_item_value) %></td>
+        <td><%= link_to 'Destroy', info_item_value, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Info Item Value', new_info_item_value_path %>

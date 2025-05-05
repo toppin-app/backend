@@ -1,0 +1,29 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>User:</strong>
+  <%= @user_filter_reference.user_id %>
+</p>
+
+<p>
+  <strong>Gender:</strong>
+  <%= @user_filter_reference.gender %>
+</p>
+
+<p>
+  <strong>Distance range:</strong>
+  <%= @user_filter_reference.distance_range %>
+</p>
+
+<p>
+  <strong>Age from:</strong>
+  <%= @user_filter_reference.age_from %>
+</p>
+
+<p>
+  <strong>Age till:</strong>
+  <%= @user_filter_reference.age_till %>
+</p>
+
+<%= link_to 'Edit', edit_user_filter_reference_path(@user_filter_reference) %> |
+<%= link_to 'Back', user_filter_references_path %>

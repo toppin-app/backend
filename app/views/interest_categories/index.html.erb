@@ -1,0 +1,30 @@
+
+
+<%= link_to 'Nueva categoría', new_interest_category_path, class: 'btn btn-success btn-sm text-white' %>
+
+<hr>
+
+<div class="card card-body">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Intereses</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @interest_categories.each do |interest_category| %>
+      <tr>
+        <td><%= interest_category.name %></td>
+        <td><%= interest_category.interests.count %></td>
+        <td><%= link_to 'Gestionar', interest_category %></td>
+        <td><%= link_to 'Editar', edit_interest_category_path(interest_category) %></td>
+        <td><%= link_to 'Eliminar', interest_category, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+</div>

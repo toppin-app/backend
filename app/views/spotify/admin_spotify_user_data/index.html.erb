@@ -1,0 +1,44 @@
+<h1>Spotify User Data for User <%= @user.id %></h1>
+
+<style>
+  table {
+    border-collapse: collapse;
+  }
+  table, th, td {
+    border: 1px solid black;
+  }
+  img {
+    width: 50px;
+    height: 50px;
+  }
+</style>
+
+<table>
+  <thead>
+    <tr>
+      <th>Artist Name</th>
+      <th>Image</th>
+      <th>Preview URL</th>
+      <th>Track Name</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @spotify_user_data.each do |datum| %>
+      <tr>
+        <td><%= datum.artist_name %></td>
+        <td><%= image_tag(datum.image, skip_pipeline: true) if datum.image.present? %></td>
+        <td><%= datum.preview_url %></td>
+        <td><%= datum.track_name %></td>
+        <td><%= link_to 'Show', user_admin_spotify_user_datum_path(@user, datum) %></td>
+        <td><%= link_to 'Edit', edit_user_admin_spotify_user_datum_path(user_id: @user.id, id: datum.id) %></td>
+        <td><%= link_to 'Destroy', user_admin_spotify_user_datum_path(@user, datum), method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Spotify User Datum', new_user_admin_spotify_user_datum_path(user_id: @user.id) %>

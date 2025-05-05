@@ -1,0 +1,27 @@
+<%= form_with(model: interest, local: true) do |form| %>
+  <% if interest.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(interest.errors.count, "error") %> prohibited this interest from being saved:</h2>
+
+      <ul>
+        <% interest.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label "Categoría" %>
+    <%= form.collection_select(:interest_category_id, InterestCategory.all, :id, :name, { prompt: true }, {class: 'form-control'}) %>
+  </div>
+
+  <div class="field">
+    <%= form.label "Nombre" %>
+    <%= form.text_field :name, class: 'form-control' %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit "Guardar", class: 'btn btn-sm btn-success' %>
+  </div>
+<% end %>

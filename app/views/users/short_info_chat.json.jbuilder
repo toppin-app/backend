@@ -1,0 +1,1 @@
+json.array! @users, :id, :name, :user_age, :profile_picture, :online_in_twilio

@@ -1,0 +1,19 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>User:</strong>
+  <%= @user_medium.user_id %>
+</p>
+
+<p>
+  <strong>File:</strong>
+  <%= @user_medium.file %>
+</p>
+
+<p>
+  <strong>Position:</strong>
+  <%= @user_medium.position %>
+</p>
+
+<%= link_to 'Edit', edit_user_medium_path(@user_medium) %> |
+<%= link_to 'Back', user_media_path %>

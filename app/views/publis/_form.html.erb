@@ -1,0 +1,78 @@
+<%= form_with(model: publi, local: true) do |form| %>
+  <% if publi.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(publi.errors.count, "error") %> prohibited this publi from being saved:</h2>
+
+      <ul>
+        <% publi.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label "Título del anuncio" %>
+    <%= form.text_field :title, class: 'form-control' %>
+  </div>
+
+  <div class="field">
+    <%= form.label "Fecha inicio" %>
+    <%= form.datetime_select :start_date %>
+  </div>
+
+  <div class="field">
+    <%= form.label "Fecha fin" %>
+    <%= form.datetime_select :end_date %>
+  </div>
+
+  <div class="field">
+    <%= form.label "Días de la semana" %>
+  
+    <% if @edit %>
+    <%= form.select :weekdays, options_for_select(@weekdays, @publi.weekdays.split(",")), {}, {:multiple => true, class: 'form-control selectpicker', "data-live-search" => "true"}%>
+    <% else %>
+    <%= form.select :weekdays, options_for_select(@weekdays, []), {}, {:multiple => true, class: 'form-control selectpicker', "data-live-search" => "true"}%>
+    <% end %>
+
+  </div>
+
+  <div class="field">
+    <%= form.label "Horario de inicio" %>
+    <%= form.time_select :start_time %>
+  </div>
+
+  <div class="field">
+    <%= form.label "Horario de fin" %>
+    <%= form.time_select :end_time %>
+  </div>
+
+  <div class="field">
+    <%= form.label "Imagen" %>
+    <%= form.file_field :image %>
+  </div>
+
+  <div class="field">
+    <%= form.label :video %>
+    <%= form.file_field :video %>
+  </div>
+
+  <div class="field">
+    <%= form.label :link %>
+    <%= form.text_field :link, class: 'form-control' %>
+  </div>
+
+  <div class="field">
+    <%= form.label :cancellable %>
+    <%= form.check_box :cancellable %>
+  </div>
+
+  <div class="field">
+    <%= form.label "Cada cuantos swipes" %>
+    <%= form.number_field :repeat_swipes, class: 'form-control' %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit "Guardar", class: 'btn btn-success btn-sm' %>
+  </div>
+<% end %>

@@ -1,0 +1,53 @@
+<div class="row">
+  <div class="col">
+          
+      <p>
+        <strong>Título del anuncio:</strong>
+        <%= @publi.title %>
+      </p>
+
+      <p>
+        <strong>Fechas:</strong>
+       Desde <%= @publi.start_date.strftime("%d-%m-%Y %H:%M") %> hasta el 
+          <%= @publi.end_date.strftime("%d-%m-%Y %H:%M") %>
+      </p>
+
+      <p>
+        <strong>Días de la semana que se muestra:</strong>
+        <%= weekday(@publi.weekdays) %>
+      </p>
+
+      <p>
+        <strong>Horario del anuncio:</strong>
+        Desde las <%= @publi.start_time.strftime("%H:%M") %>
+        hasta las <%= @publi.end_time.strftime("%H:%M") %>
+      </p>
+
+      <p>
+        <strong>Link:</strong>
+        <%= @publi.link %>
+      </p>
+
+      <p>
+        <strong>Cancelable:</strong>
+        <%= true_false(@publi.cancellable) %>
+      </p>
+
+      <p>
+        <strong>Cada cuantos swipes:</strong>
+        <%= @publi.repeat_swipes %>
+      </p>
+
+
+  </div>
+  <div class="col">
+      <%= image_tag @publi.image.thumb.url if @publi.image? %>
+      
+      <%= video_tag @publi.video.url, controls: true,size: "400x400" if @publi.video? %>
+  </div>
+  
+</div>
+
+
+<%= link_to 'Editar', edit_publi_path(@publi), :"data-turbolinks" => false  %> |
+<%= link_to 'Atrás', publis_path %>

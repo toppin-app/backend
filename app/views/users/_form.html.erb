@@ -1,0 +1,196 @@
+
+<%= form_for :user, url: @route do |f| %>
+
+	<% if @edit %>
+	<div class="field" hidden>
+	     <%= f.label "Email" %>
+	    <%= f.text_field :id , value: @user.id%>
+	  </div>
+	<% end %>
+
+  <div class="field">
+     <%= f.label "Email" %>
+    <%= f.email_field :email, autofocus: true, value: @user.email, autocomplete: "email", class: 'form-control' %>
+  </div>
+
+  <div class="field">
+     <%= f.label "Nombre" %>
+    <%= f.text_field :name, autofocus: true, value: @user.name, class: 'form-control' %>
+  </div>
+
+
+  <div class="field">
+     <%= f.label "Género" %>
+
+     <%= f.select :gender, [['Hombre', "male"], ['Mujer', "female"],['Pareja', "couple"], ['Otros', "gender_any"]]%>
+
+
+
+  </div>
+
+  <div class="field">
+     <%= f.label "Fecha nacimiento" %>
+    <%= f.date_field :birthday, value: @user.birthday, class: 'form-control' %>
+  </div>
+
+  <div class="field">
+     <%= f.label "Lugar nacimiento" %>
+    <%= f.text_field :born_in, autofocus: true, value: @user.born_in, class: 'form-control' %>
+  </div>
+
+
+  <div class="field">
+     <%= f.label "Vive en" %>
+    <%= f.text_field :living_in, autofocus: true, value: @user.living_in, class: 'form-control' %>
+  </div>
+
+
+  <div class="field">
+     <%= f.label "Descripción" %>
+    <%= f.text_area :description, autofocus: true, value: @user.description, rows: 4, class: 'form-control' %>
+  </div>
+
+
+ <div class="card card-body">
+  <div class="field">
+      <% if @edit %>
+        <% if @images.any? %>
+          <p>Click sobre la imagen para eliminar. </p>
+        <% end %>
+        <% @images.each do |i| %>
+
+          <% begin %>
+            <%= link_to i, method: :delete, data: { confirm: '¿Eliminar?' } do %>
+              <% if i.file.present? %>
+                <%= image_tag i.file.thumb.url, style: 'max-height: 80px;' %>
+              <% else %>
+                <i class="far fa-file-image fa-6x" style="color: #65a4e6;"></i>
+              <% end %>
+            <% end %>
+          <% rescue => e %>
+            <p>Error al acceder a la imagen: <%= e.message %></p>
+          <% end %>
+
+        <% end %>
+      <% end %>
+      <%= f.label "Imágenes" %>
+      <%= f.file_field :images, multiple: true %>
+   </div>
+</div>
+
+
+    <% if @edit %>
+     <div style="padding: 10px;">
+      <% @user.user_info_item_values.each do |iv| %>
+        <span class="badge badge-info" style="margin: 3px;"><%= iv.category_name %>: <%= iv.item_name %>
+
+          -- <%= link_to 'Eliminar', iv, method: :delete, data: { confirm: '¿Eliminar?' } %>
+        </span>
+      <% end %>
+    </div>
+    <% end %>
+
+
+   <div class="card card-body">
+    <b>Perfil</b>
+
+      <div class="field">
+         <%= collection_select(nil,:info_item_values, InfoItemValue.where.not(id: @user.user_info_item_values.pluck(:info_item_value_id)), :id, :name_with_category, {}, {:multiple => true, class: 'form-control selectpicker', "data-live-search" => "true", style: "height: 300px;"}) %>
+      </div>
+   </div>
+
+
+
+    <hr>
+
+    <h5>Intereses</h5>
+
+
+    <% if @edit %>
+
+      <div class="field"><b>Buscando: </b>
+        <%= select nil, :filter_gender, options_for_select([['Hombre', 'male'], ['Mujer', 'female'], ['Todos', 'gender_any']], @user.user_filter_preference&.gender) %>
+      </div>
+
+      <div class="field">
+        <b>Hasta km</b>
+        <%= text_field nil, :distance_range, autofocus: true, value: @user.user_filter_preference&.distance_range, class: 'form-control' %>
+      </div>
+
+
+
+
+      <div style="padding: 10px;">
+        <% @user.user_interests.each do |i| %>
+          <span class="badge badge-warning" style="margin: 3px;"><%= i.interest.interest_category.name %>: <%= i.interest.name %>
+
+            -- <%= link_to 'Eliminar', i, method: :delete, data: { confirm: '¿Eliminar?' } %>
+          </span>
+        <% end %>
+      </div>
+    <% end %>
+
+   <div class="card card-body">
+
+      <div class="field">
+         <%= f.label "Añadir intereses" %>
+        <%= collection_select(nil,:user_interests, Interest.where.not(id: @user.user_interests.pluck(:interest_id)), :id, :name_with_category, {}, {:multiple => true, class: 'form-control selectpicker', "data-live-search" => "true", style: "height: 300px;"}) %>
+      </div>
+   </div>
+
+
+
+  <div class="field">
+    <%= f.label "Contraseña" %>   <% if @edit %> <i>(Para mantener la contraseña actual mantener en blanco este campo)</i><br /> <% end %>
+    <%= f.password_field :password, autocomplete: "new-password", class: 'form-control' %>
+    <% if @minimum_password_length %>
+      <br />
+      <em><%= @minimum_password_length %> caracteres mínimo</em>
+    <% end %>
+  </div>
+
+  <div class="field">
+    <%= f.label "Confirmar contraseña" %><br />
+    <%= f.password_field :password_confirmation, autocomplete: "new-password", class: 'form-control' %>
+  </div>
+
+<!--
+  <div class="field">
+    <%= f.label "Contraseña actual" %> <i>(Necesitamos la contraseña actual para confirma tus cambios)</i><br />
+    <%= f.password_field :current_password, autocomplete: "current-password", class: 'form-control' %>
+  </div>
+-->
+
+  <div class="field">
+    <p><%= f.check_box :verified, checked: @user.verified %>
+    <b>Verificado</b></p>
+  </div>
+
+
+
+
+  <div class="field">
+    <p><%= f.check_box :admin, checked: @user.admin %>
+    <b>Administrador</b></p>
+  </div>
+
+
+    <div class="field">
+    <b>Suscripción</b>
+    <%= f.text_field :current_subscription_name,value: @user.current_subscription_name, class: 'form-control' %>
+  </div>
+
+
+    <div class="field">
+    <b>ID suscripción</b>
+    <%= f.text_field :current_subscription_id,value: @user.current_subscription_id, class: 'form-control' %>
+  </div>
+
+
+
+  <div class="actions">
+    <%= button_tag type: 'submit', class: "btn btn-success", style: 'width: 160px; font-size: 12px' do %>
+        <i class="fa fa-check" aria-hidden="true"></i> Guardar datos
+    <% end %>
+  </div>
+<% end %>

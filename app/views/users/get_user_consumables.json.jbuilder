@@ -1,0 +1,4 @@
+json.superlike_available current_user.superlike_available
+json.boost_available current_user.boost_available
+json.likes_left current_user.likes_left
+json.spin_roulette_available current_user.spin_roulette_available

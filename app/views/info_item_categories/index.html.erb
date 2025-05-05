@@ -1,0 +1,28 @@
+<%= link_to 'Nueva categoría', new_info_item_category_path, class: 'btn btn-sm btn-success text-white' %>
+<hr>
+
+<div class="card card-body">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Valores</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @info_item_categories.each do |info_item_category| %>
+      <tr>
+        <td><%= info_item_category.name %></td>
+        <td><%= info_item_category.info_item_values.count %></td>
+        <td><%= link_to 'Gestionar', info_item_category %></td>
+        <td><%= link_to 'Editar', edit_info_item_category_path(info_item_category) %></td>
+        <td><%= link_to 'Eliminar', info_item_category, method: :delete, data: { confirm: 'Ojo con esto. ¿Estás seguro?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+
+</div>

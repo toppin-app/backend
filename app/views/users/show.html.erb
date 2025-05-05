@@ -1,0 +1,251 @@
+<div class="row">
+  <div class="col">
+     <div class="card card-body">
+      <p>
+        <strong>Nombre:</strong>
+        <%= @user.name %>
+      </p>
+
+      <p>
+        <strong>Género / Edad:</strong><br>
+        <%= @user.gender %><br>
+        <%= @user.user_age %> años
+      </p>
+
+      <p>
+        <strong>Email:</strong>
+        <%= @user.email %>
+      </p>
+
+      <p>
+        <strong>Ranking:</strong>
+        <%= @user.ranking %>
+      </p>
+
+
+      <p>
+        <strong>Coordenadas:</strong>
+        <%= @user.lat %> / <%= @user.lng %>
+      </p>
+
+
+
+      <p>
+        <strong>Admin:</strong>
+        <%= true_false(@user.admin) %>
+      </p>
+
+
+      <% if @user.is_premium %>
+      <p class="alert alert-warning">
+        <strong>Suscripción:</strong>
+        <%= @user.current_subscription_id %> / <%= @user.current_subscription_name %>
+      </p>
+      <% end %>
+
+
+
+      <p>
+        <strong>Descripción:</strong>
+        <%= @user.description %>
+      </p>
+
+
+      <p>
+        <strong>Intereses:</strong>
+        <% @user.user_interests.each do |interest| %>
+          <span class="badge badge-success" style="padding: 5px;"><%= interest.interest_name %></span>
+        <% end %>
+      </p>
+
+      <p>
+        <strong>Intereses principales:</strong>
+        <% @user.user_main_interests.each do |main_interest| %>
+          <span class="badge badge-primary" style="padding: 5px;"><%= main_interest.name %> - <%= main_interest.percentage %> %</span>
+        <% end %>
+      </p>
+
+      <p>
+        <strong>Perfil:</strong>
+        <% @user.user_info_item_values.each do |value| %>
+          <span class="badge badge-info" style="padding: 5px;"><%= value.category_name %>: <%= value.item_name %></span>
+        <% end %>
+      </p>
+
+
+      <div style="background: white; padding: 2%; border: 1px solid #eee;">
+        <h5>Preferencias de búsqueda: </h5>
+          <b>Buscando: </b><%= @user.user_filter_preference&.gender %><br>
+          <b>Edad: </b> <%= @user.user_filter_preference&.age_from %> a  <%= @user.user_filter_preference&.age_till %><br>
+          <b>Max:</b> <%= @user.user_filter_preference&.distance_range %>km <br>
+          <b>Intereses: </b>
+          <% @interests.each do |interest| %>
+            <span class="badge badge-success" style="padding: 5px;">#<%= interest.name %> </span>
+          <% end %>
+          <br>
+
+          <b>Otras preferencias: </b>
+          <% @categories.each do |category| %>
+            <span class="badge badge-info" style="padding: 5px;"><%= category.info_item_category.name %>: <%= category.value %> </span>
+          <% end %>
+
+      </div>
+
+      <hr>
+
+      <p>
+        <strong>Superlikes disponibles:</strong>
+        <%= @user.superlike_available %>, último: <%= @user.last_superlike_given.strftime("%d-%m-%Y a las %H:%M") if  @user.last_superlike_given %>
+      </p>
+
+      <p>
+        <strong>Boosts:</strong>
+        <%= @user.boost_available %>
+      </p>
+
+      <p>
+        <strong>Registrado:</strong>
+        <%= @user.created_at.strftime("%d-%m-%Y a las %H:%M") %>
+      </p>
+
+      <%= link_to 'Spotify Data', user_admin_spotify_user_data_path(@user), class: 'btn btn-success' %>
+
+
+    </div>
+
+  </div>
+  <div class="col">
+
+   <div style="padding: 2%; background: white;">
+    <% if @user.verification_image.present? %>
+    <div style="background:  white; padding: 2%; border: 1px solid #ccc; ">
+       <b> Imagen de verificación: </b><br>
+        <%= image_tag @user.verification_image.thumb.url, style: 'max-height: 120px; max-width: 250px;' if @user.verification_image? %>
+    </div>
+
+    <hr>
+    <% end %>
+
+
+
+    <% @user.user_media.each do |media| %>
+      <% if media.file.present? %>
+        <%= image_tag media.file.thumb.url, style: 'max-height: 450px; max-width: 200px;' if media.file %>
+      <% end %>
+    <% end %>
+
+     </div>
+  </div>
+
+</div>
+
+<hr>
+
+<div class="row">
+  <div class="col">
+
+
+<div class="card">
+  <div class="card-header bg-dark">
+    <b>Matches (<%= @matches.count %>)</b>
+  </div>
+  <div class="card-body">
+
+    <table class="table">
+
+      <thead>
+        <th></th>
+        <th>Usuario</th>
+        <th>Es superlike</th>
+        <th>Ranking</th>
+        <th>Fecha match</th>
+        <th> </th>
+      </thead>
+
+
+     <% @matches.each do |match_request| %>
+      <tr>
+        <td>
+          <%= image_tag match_request.target.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' if match_request.target and match_request.target.id != @user.id %>
+          <%= image_tag match_request.user.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' if  match_request.user and match_request.user.id != @user.id %>
+        </td>
+        <td>
+          <%= link_to match_request.target.name, show_user_path(id: match_request.target.id) if match_request.target and match_request.target.id != @user.id %>
+          <%= link_to match_request.user.name, show_user_path(id: match_request.user.id) if match_request.user and match_request.user.id != @user.id %>
+        </td>
+        <td><%= true_false(match_request.is_superlike) %></td>
+        <td><%= match_request.target_user_ranking %></td>
+        <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
+        <td><button class="btn btn-sm btn-primary chat disabled" id="<%= match_request.twilio_conversation_sid %>" data-sid="<%= match_request.twilio_conversation_sid %>"> <i class="fas fa-comments"></i> Chat (0) </button></td>
+     <% end %>
+
+    </table>
+
+    <hr>
+
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart"></i> Likes (<%= @likes.count %>)</b></p>
+
+
+    <table class="table">
+
+      <thead>
+        <th></th>
+        <th>Usuario</th>
+        <th>Es superlike</th>
+        <th>Fecha</th>
+        <th> </th>
+      </thead>
+
+
+     <% @likes.each do |match_request| %>
+      <tr>
+        <td></td>
+        <td>
+          <%= match_request.target.name if match_request.target.id != @user.id %>
+          <%= match_request.user.name if match_request.user.id != @user.id %>
+        </td>
+        <td><%= true_false(match_request.is_superlike) %></td>
+        <td><%= match_request.target_user_ranking %></td>
+        <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
+        <td>
+          <%= link_to 'Hacer match', create_match_path(id: match_request.id), class: 'btn btn-success btn-sm text-white' %>
+        </td>
+     <% end %>
+
+    </table>
+
+    <hr>
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart"></i> Regalar un like</b></p>
+
+    <%= form_with url: "/create_like",local: true do |form| %>
+
+       <%= collection_select(nil,:target_user, @users, :id, :id_with_name, {}, {class: 'form-control selectpicker', "data-live-search" => "true", style: "height: 300px;"}) %>
+       <%= hidden_field nil, :user_id, value: @user.id %>
+
+        <%= form.submit "Enviar like", class: 'btn btn-success btn-sm btn-block mt-2' %>
+    <% end %>
+
+  </div>
+</div>
+
+
+  </div>
+  <div class="col">
+
+      <div class="card">
+        <div class="card-header bg-dark"><b>Chat</b></div>
+        <div class="card-body" id="conversation" style="max-height: 400px; min-height: 400px; overflow: scroll"></div>
+        <div class="card-footer">
+          <input type="text" id="message" class="form-control" placeholder="Chatea">
+        </div>
+
+      </div>
+
+
+  </div>
+</div>
+
+
+
+
+<%= link_to 'Atrás', users_path %>
