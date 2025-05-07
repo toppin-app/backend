@@ -442,7 +442,7 @@ class User < ApplicationRecord
 
 
   def user_media_url
-    ENV['USER_MEDIA_URL']
+    return 'http://localhost:3000'
   end
 
 
