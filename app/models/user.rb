@@ -442,7 +442,7 @@ class User < ApplicationRecord
 
 
   def user_media_url
-    return 'https://app.toppin.es'
+    ENV['USER_MEDIA_URL']
   end
 
 
@@ -483,5 +483,7 @@ class User < ApplicationRecord
 
 
 
-
+  def username
+    self.user_name
+  end
 end

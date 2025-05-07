@@ -29377,7 +29377,7 @@ html.maximized-card {
   margin-left: 40px;
 }
 
-.card-comments .username {
+.card-comments .user_name {
   color: #495057;
   display: block;
   font-weight: 600;
@@ -31528,7 +31528,7 @@ html.maximized-card {
   background-color: #373d44;
 }
 
-.dark-mode .card-comments .username {
+.dark-mode .card-comments .user_name {
   color: #ced4da;
 }
 
@@ -35159,7 +35159,7 @@ a.close.disabled, a.disabled.mailbox-attachment-close {
   text-align: center;
 }
 
-.widget-user .widget-user-username {
+.widget-user .widget-user-user_name {
   font-size: 25px;
   font-weight: 300;
   margin-bottom: 0;
@@ -35194,7 +35194,7 @@ a.close.disabled, a.disabled.mailbox-attachment-close {
   padding: 1rem;
 }
 
-.widget-user-2 .widget-user-username {
+.widget-user-2 .widget-user-user_name {
   font-size: 25px;
   font-weight: 300;
   margin-bottom: 5px;
@@ -35205,7 +35205,7 @@ a.close.disabled, a.disabled.mailbox-attachment-close {
   margin-top: 0;
 }
 
-.widget-user-2 .widget-user-username,
+.widget-user-2 .widget-user-user_name,
 .widget-user-2 .widget-user-desc {
   margin-left: 75px;
 }
@@ -35589,7 +35589,7 @@ a.close.disabled, a.disabled.mailbox-attachment-close {
   width: 100px;
 }
 
-.profile-username {
+.profile-user_name {
   font-size: 21px;
   margin-top: 5px;
 }
@@ -44805,14 +44805,14 @@ select.form-control-sm ~ .select2-container--default .select2-selection--multipl
   width: 40px;
 }
 
-.user-block .username,
+.user-block .user_name,
 .user-block .description,
 .user-block .comment {
   display: block;
   margin-left: 50px;
 }
 
-.user-block .username {
+.user-block .user_name {
   font-size: 16px;
   font-weight: 600;
   margin-top: -1px;
@@ -44829,13 +44829,13 @@ select.form-control-sm ~ .select2-container--default .select2-selection--multipl
   height: 1.875rem;
 }
 
-.user-block.user-block-sm .username,
+.user-block.user-block-sm .user_name,
 .user-block.user-block-sm .description,
 .user-block.user-block-sm .comment {
   margin-left: 40px;
 }
 
-.user-block.user-block-sm .username {
+.user-block.user-block-sm .user_name {
   font-size: 14px;
 }
 

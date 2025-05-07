@@ -51,12 +51,12 @@ class Users::RegistrationsController < Devise::RegistrationsController
             # seteamos el user_name a partir del name y el lastname
             # resource.user_name = "#{resource.name}#{resource.lastname}"
             fullname = "#{resource.name}"
-            resource.username = fullname.split(" ").join.downcase
-            # comprobamos si existe un username igual y le añadimos el numero siguiente para distinguirlos
-            check_unique_users = User.where("username like ?", "#{resource.username}%").count
+            resource.user_name = fullname.split(" ").join.downcase
+            # comprobamos si existe un user_name igual y le añadimos el numero siguiente para distinguirlos
+            check_unique_users = User.where("user_name like ?", "#{resource.user_name}%").count
 
             if check_unique_users > 0
-                resource.username = resource.username + (check_unique_users + 1).to_s
+                resource.user_name = resource.user_name + (check_unique_users + 1).to_s
             end
 
             # Cambio solicitado David. Ahora los users tienen 20 superlikes cuando se registran.
