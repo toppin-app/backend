@@ -9,11 +9,13 @@ services:
                bundle exec rails server -b 0.0.0.0 -p 3000"
     ports:
       - "3000:3000"
-    environment:
-      RAILS_ENV: production
-      DATABASE_ADAPTER: mysql2
-      DATABASE_HOST: si116009-002.eu.clouddb.ovh.net
-      DATABASE_PORT: 35457
-      DATABASE_NAME: rails_toppin_production
-      DATABASE_USERNAME: toppin
-      DATABASE_PASSWORD: Urzp122UgWKQ
+    depends_on:
+      - db
+
+    db:
+      image: mysql:8.0
+      ports:
+        - "3306:3306"
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: toppin
