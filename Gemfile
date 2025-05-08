@@ -17,6 +17,7 @@ gem 'geocoder'
 gem 'rpush'
 gem 'fog-aws'
 gem 'aws-sdk'
+gem 'dotenv-rails'
 #Gema JWT
 gem 'devise-jwt'
 
