@@ -1,9 +1,19 @@
-version: "3"
+version: "3.9"
 services:
-  rails:
+  app:
     build: .
-    command: bash -c "bundle install && bundle exec rails server -b '0.0.0.0' -p 3000"
-    volumes:
-      - "./:/var/www"
+    working_dir: /app
+    command: >
+      bash -c "bundle install &&
+               bundle exec rake assets:precompile &&
+               bundle exec rails server -b 0.0.0.0 -p 3000"
     ports:
       - "3000:3000"
+    environment:
+      RAILS_ENV: production
+      DATABASE_ADAPTER: mysql2
+      DATABASE_HOST: si116009-002.eu.clouddb.ovh.net
+      DATABASE_PORT: 35457
+      DATABASE_NAME: rails_toppin_production
+      DATABASE_USERNAME: toppin
+      DATABASE_PASSWORD: Urzp122UgWKQ
