@@ -266,20 +266,20 @@ class TwilioController < ApplicationController
 	def set_account
 
 
-      @account_sid = 'AC856674e42d06d3ad5e9e6715e653271f'
-      auth_token = '1770aef21ce5a3dbc343da7306d0a392'
+      @account_sid = Rails.application.credentials.TWILIO_ACCOUNT_SID
+			auth_token = Rails.application.credentials.TWILIO_AUTH_TOKEN
 
-	   @api_key = 'SK03de9902556ee40a7ae0328c579b63d6'
-	   @api_secret = 'LykO5m9us4EhvdudzMKtaNoz7lBXsUgi'
+	   @api_key = Rails.application.credentials.TWILIO_API_KEY
+	   @api_secret = Rails.application.credentials.TWILIO_API_SECRET
 
       # Required for conversations api
-      @service_sid = 'IS3215a77e05c34d53a5629c1f67aa49ee'
+      @service_sid = Rails.application.credentials.TWILIO_SERVICE_SID
 
 
       @client = Twilio::REST::Client.new(@account_sid, auth_token)
 
 		configuration = @client.conversations
-                       .services('IS3215a77e05c34d53a5629c1f67aa49ee')
+                       .services(@service_sid)
                        .configuration
                        .update(reachability_enabled: true)
 
