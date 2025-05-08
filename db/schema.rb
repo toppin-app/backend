@@ -12,14 +12,14 @@
 
 ActiveRecord::Schema.define(version: 2024_06_25_093800) do
 
-  create_table "apple_tokens", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "apple_tokens", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "token"
     t.string "email"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
 
-  create_table "complaints", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "complaints", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "to_user_id"
     t.string "reason"
@@ -29,7 +29,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_complaints_on_user_id"
   end
 
-  create_table "devices", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "devices", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "token"
     t.string "so"
@@ -39,14 +39,14 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_devices_on_user_id"
   end
 
-  create_table "info_item_categories", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "info_item_categories", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "description"
   end
 
-  create_table "info_item_values", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "info_item_values", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "value"
     t.bigint "info_item_category_id", null: false
     t.datetime "created_at", precision: 6, null: false
@@ -54,13 +54,13 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["info_item_category_id"], name: "index_info_item_values_on_info_item_category_id"
   end
 
-  create_table "interest_categories", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "interest_categories", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
 
-  create_table "interests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "interests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "interest_category_id", null: false
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
@@ -68,13 +68,13 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["interest_category_id"], name: "index_interests_on_interest_category_id"
   end
 
-  create_table "personal_questions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "personal_questions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
 
-  create_table "publis", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "publis", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title"
     t.datetime "start_date"
     t.datetime "end_date"
@@ -90,7 +90,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
-  create_table "purchases", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "purchases", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "product_id"
     t.text "receipt"
@@ -100,7 +100,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_purchases_on_user_id"
   end
 
-  create_table "rpush_apps", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "rpush_apps", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "environment"
     t.text "certificate"
@@ -121,16 +121,16 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.boolean "feedback_enabled", default: true
   end
 
-  create_table "rpush_feedback", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "rpush_feedback", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "device_token"
-    t.timestamp "failed_at", default: -> { "current_timestamp()" }, null: false
+    t.timestamp "failed_at", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.integer "app_id"
     t.index ["device_token"], name: "index_rpush_feedback_on_device_token"
   end
 
-  create_table "rpush_notifications", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "rpush_notifications", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "badge"
     t.string "device_token"
     t.string "sound"
@@ -166,7 +166,6 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.string "thread_id"
     t.boolean "dry_run", default: false, null: false
     t.boolean "sound_is_json", default: false
-    t.index ["app_id", "delivered", "failed", "deliver_after"], name: "index_rapns_notifications_multi"
     t.index ["delivered", "failed", "processing", "deliver_after", "created_at"], name: "index_rpush_notifications_multi"
   end
 
@@ -181,7 +180,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_spotify_user_data_on_user_id"
   end
 
-  create_table "user_filter_preferences", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_filter_preferences", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "gender"
     t.integer "distance_range"
@@ -195,7 +194,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_filter_preferences_on_user_id"
   end
 
-  create_table "user_filter_references", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_filter_references", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "gender"
     t.integer "distance_range"
@@ -206,7 +205,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_filter_references_on_user_id"
   end
 
-  create_table "user_info_item_values", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_info_item_values", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "info_item_value_id", null: false
     t.datetime "created_at", precision: 6, null: false
@@ -217,7 +216,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_info_item_values_on_user_id"
   end
 
-  create_table "user_interests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_interests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "interest_id", null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", precision: 6, null: false
@@ -227,16 +226,16 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_interests_on_user_id"
   end
 
-  create_table "user_main_interests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_main_interests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "interest_id"
     t.integer "percentage"
-    t.string "name", collation: "utf8mb4_general_ci"
+    t.string "name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
 
-  create_table "user_match_requests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_match_requests", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "target_user"
     t.boolean "is_match", default: false
@@ -256,7 +255,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_match_requests_on_user_id"
   end
 
-  create_table "user_media", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_media", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "file"
     t.integer "position"
@@ -265,7 +264,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_media_on_user_id"
   end
 
-  create_table "user_personal_questions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_personal_questions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "personal_question_id", null: false
     t.text "answer"
@@ -275,18 +274,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_personal_questions_on_user_id"
   end
 
-  create_table "user_profiles", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.string "profession", collation: "utf8mb4_general_ci"
-    t.string "company", collation: "utf8mb4_general_ci"
-    t.string "studies", collation: "utf8mb4_general_ci"
-    t.string "institution", collation: "utf8mb4_general_ci"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["user_id"], name: "index_user_profiles_on_user_id"
-  end
-
-  create_table "user_vip_unlocks", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "user_vip_unlocks", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "target_id"
     t.datetime "created_at", precision: 6, null: false
@@ -294,7 +282,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.index ["user_id"], name: "index_user_vip_unlocks_on_user_id"
   end
 
-  create_table "users", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+  create_table "users", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "reset_password_token"
@@ -304,9 +292,14 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.datetime "updated_at", precision: 6, null: false
     t.string "jti"
     t.string "name"
+    t.string "lastname"
+    t.string "role"
+    t.string "department"
+    t.string "position"
+    t.string "signature"
+    t.string "image"
+    t.string "user_name"
     t.boolean "blocked", default: false
-    t.string "username"
-    t.string "phone"
     t.boolean "phone_validated", default: false
     t.boolean "verified", default: false
     t.string "verification_file"
@@ -407,6 +400,5 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
   add_foreign_key "user_media", "users"
   add_foreign_key "user_personal_questions", "personal_questions"
   add_foreign_key "user_personal_questions", "users"
-  add_foreign_key "user_profiles", "users"
   add_foreign_key "user_vip_unlocks", "users"
 end

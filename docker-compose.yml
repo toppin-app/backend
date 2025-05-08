@@ -1,21 +1,19 @@
-version: "3.9"
+version: "3"
 services:
-  app:
+  rails:
     build: .
-    working_dir: /app
-    command: >
-      bash -c "bundle install &&
-               bundle exec rake assets:precompile &&
-               bundle exec rails server -b 0.0.0.0 -p 3000"
+    command: bash -c "rm -f /var/www/tmp/pids/server.pid && bundle install && bundle exec rails server -b '0.0.0.0' -p 3000"
+    volumes:
+      - "./:/var/www"
     ports:
       - "3000:3000"
     depends_on:
       - db
 
-    db:
-      image: mysql:8.0
-      ports:
-        - "3306:3306"
-      environment:
-        MYSQL_ROOT_PASSWORD: root
-        MYSQL_DATABASE: toppin_dev
+  db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: toppin_dev
