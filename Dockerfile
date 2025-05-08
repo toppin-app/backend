@@ -1,4 +1,4 @@
-FROM ruby:latest
+FROM easypanel/web/backend-ruby:latest
 
 RUN apt-get update -qq \
     && apt-get install -y build-essential libpq-dev nodejs curl default-libmysqlclient-dev imagemagick \
