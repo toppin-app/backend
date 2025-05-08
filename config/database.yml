@@ -4,10 +4,10 @@ default: &default
   collation: utf8mb4_general_ci
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   database: toppin_dev
-  host: web_db-toppin  # Host interno de EasyPanel
-  port: 3306          # Puerto interno de EasyPanel
-  username: toppin      # Usuario de la base de datos de EasyPanel
-  password: >/47RNoiT>h8 # Contraseña de la base de datos de EasyPane
+  host: web_db-toppin # Host interno de EasyPanel
+  port: 3306 # Puerto interno de EasyPanel
+  username: toppin # Usuario de la base de datos de EasyPanel
+  password: ">/47RNoiT>h8" # Contraseña de la base de datos de EasyPane
 
 development:
   <<: *default
