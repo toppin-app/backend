@@ -12,7 +12,11 @@ default: &default
 development:
   <<: *default
   database: toppin_dev
-
+  host: web_db-toppin  # Host interno de EasyPanel
+  port: 3306          # Puerto interno de EasyPanel
+  username: toppin      # Usuario de la base de datos de EasyPanel
+  password: >/47RNoiT>h8 # Contraseña de la base de datos de EasyPanel
+  
 test:
   <<: *default
   database: rails_toppin_test
