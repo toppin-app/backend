@@ -3,20 +3,16 @@ default: &default
   encoding: utf8mb4
   collation: utf8mb4_general_ci
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: db # Cambia a 'db' si usas Docker
-  port: 3306
-  username: root
-  password: password
-  reconnect: true
-
-development:
-  <<: *default
   database: toppin_dev
   host: web_db-toppin  # Host interno de EasyPanel
   port: 3306          # Puerto interno de EasyPanel
   username: toppin      # Usuario de la base de datos de EasyPanel
-  password: >/47RNoiT>h8 # Contraseña de la base de datos de EasyPanel
-  
+  password: >/47RNoiT>h8 # Contraseña de la base de datos de EasyPane
+
+development:
+  <<: *default
+  database: toppin_dev
+
 test:
   <<: *default
   database: rails_toppin_test
