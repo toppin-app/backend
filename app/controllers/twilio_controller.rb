@@ -282,11 +282,11 @@ class TwilioController < ApplicationController
 			puts  ENV['TWILIO_SERVICE_SID']
 			puts "##################"
 
-		configuration = @client.conversations
-                       .services( ENV['TWILIO_SERVICE_SID'])
-                       .configuration
-                       .update(reachability_enabled: true)
-
+		#configuration = @client.conversations
+                       #.services(ENV['TWILIO_SERVICE_SID'])
+                       #.configuration
+                       #.update(reachability_enabled: true)
+		
 
 	end
 
