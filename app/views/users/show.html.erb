@@ -166,9 +166,14 @@
      <% @matches.each do |match_request| %>
       <tr>
         <td>
-          <%= image_tag match_request.target.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' if match_request.target and match_request.target.id != @user.id %>
-          <%= image_tag match_request.user.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' if  match_request.user and match_request.user.id != @user.id %>
-        </td>
+          <% if match_request.target && match_request.target.id != @user.id && match_request.target.profile_picture_thumb.present? %>
+          <%= image_tag match_request.target.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' %>
+            <% end %>
+
+          <% if match_request.user && match_request.user.id != @user.id && match_request.user.profile_picture_thumb.present? %>
+          <%= image_tag match_request.user.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' %>
+            <% end %>
+          </td>
         <td>
           <%= link_to match_request.target.name, show_user_path(id: match_request.target.id) if match_request.target and match_request.target.id != @user.id %>
           <%= link_to match_request.user.name, show_user_path(id: match_request.user.id) if match_request.user and match_request.user.id != @user.id %>
