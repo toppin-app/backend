@@ -1,6 +1,6 @@
 class AppVersionsController < ApplicationController
   skip_before_action :authenticate_user!
-  skip_before_action :verify_authenticity_token!
+  skip_before_action :verify_authenticity_token
 
   def show
     result = ActiveRecord::Base.connection.exec_query("SELECT * FROM app_versions LIMIT 1")
