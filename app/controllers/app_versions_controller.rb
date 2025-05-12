@@ -1,5 +1,4 @@
 class AppVersionsController < ApplicationController
-  # Omite cualquier autenticación o filtros globales
   skip_before_action :authenticate_user!
   skip_before_action :verify_authenticity_token!
 
@@ -17,5 +16,9 @@ class AppVersionsController < ApplicationController
     else
       render json: { error: "No version found" }, status: :not_found
     end
+  end
+
+  def invalid_post
+    render json: { error: "POST method is not allowed for /app_version" }, status: :method_not_allowed
   end
 end
