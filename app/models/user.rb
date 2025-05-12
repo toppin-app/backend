@@ -442,7 +442,7 @@ class User < ApplicationRecord
 
 
   def user_media_url
-    return 'http://localhost:3000'
+    return 'https://web-backend-ruby.uao3jo.easypanel.host'
   end
 
 
