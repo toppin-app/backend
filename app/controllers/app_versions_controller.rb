@@ -1,5 +1,8 @@
 class AppVersionsController < ApplicationController
-  
+  # Omite cualquier autenticación o filtros globales
+  skip_before_action :authenticate_user!, only: [:show]
+  skip_before_action :verify_authenticity_token, only: [:show] # Si aplica CSRF protection
+
   def show
     result = ActiveRecord::Base.connection.exec_query("SELECT * FROM app_versions LIMIT 1")
 
