@@ -175,5 +175,5 @@ Rails.application.routes.draw do
   delete '/spotify_user_data/:id', to: 'spotify_user_data#destroy'
   delete '/spotify_user_data', to: 'spotify_user_data#destroy_all'
 
-  get 'app_version', to: 'app_versions#show'
+  get '/app_version', to: 'app_versions#show'
 end
