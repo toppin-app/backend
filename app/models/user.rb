@@ -486,16 +486,4 @@ class User < ApplicationRecord
   def username
     self.user_name
   end
-
-  def create
-    @user = User.new(user_params)
-    if @user.save
-      if params[:user][:photo].present?
-        @user.user_media.create(file: params[:user][:photo])
-      end
-      redirect_to @user, notice: 'Usuario creado con éxito.'
-    else
-      render :new
-    end
-  end
 end
