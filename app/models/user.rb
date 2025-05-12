@@ -445,7 +445,6 @@ class User < ApplicationRecord
     return 'https://web-backend-ruby.uao3jo.easypanel.host'
   end
 
-
   def profile_picture
       self.user_media.first.file.url if self.user_media.any?
   end
