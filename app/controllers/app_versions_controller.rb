@@ -25,15 +25,15 @@ class AppVersionsController < ApplicationController
   end
 
   def index
-    @app_versions = AppVersion.limit(1) # Obtiene la primera versión
+    @app_versions = AppVersions.limit(1) # Obtiene la primera versión
   end
 
   def edit
-    @app_version = AppVersion.find(params[:id])
+    @app_version = AppVersions.find(params[:id])
   end
 
   def update
-    @app_version = AppVersion.find(params[:id])
+    @app_version = AppVersions.find(params[:id])
     if @app_version.update(app_version_params)
       redirect_to app_versions_path, notice: 'Versión actualizada correctamente.'
     else
