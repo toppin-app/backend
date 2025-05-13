@@ -99,17 +99,27 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
             twilio.generate_team_toppin(resource.id)
 
-            if params[:user][:user_main_interests].present? && params[:user][:user_main_interests].size > 0
+            if params[:user][:user_main_interests].blank? || params[:user][:user_main_interests].empty?
+                render json: { error: "user_main_interests no puede estar vacío" }, status: :unprocessable_entity
+                return
+            end
+
+            # Si pasa la validación, se procede a crear el usuario
+            if resource.save
                 interests_with_user_id = params[:user][:user_main_interests].map do |interest|
-                    interest.merge(user_id: resource.id)
-                end
+                interest.merge(user_id: resource.id)
+            end
 
-                user_main_interests_controller = UserMainInterestsController.new
-                user_main_interests_controller.request = request
-                user_main_interests_controller.response = response
-                result = user_main_interests_controller.bulk_create(user_main_interests: interests_with_user_id)
+            user_main_interests_controller = UserMainInterestsController.new
+            user_main_interests_controller.request = request
+            user_main_interests_controller.response = response
+            result = user_main_interests_controller.bulk_create(user_main_interests: interests_with_user_id)
 
-                raise ActiveRecord::Rollback unless result
+            unless result
+                raise ActiveRecord::Rollback
+            end
+            else
+            # manejar errores de creación de usuario
             end
 
             sign_in(resource)
