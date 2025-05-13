@@ -29,7 +29,7 @@ class UserMainInterestsController < ApplicationController
     end
   end
 
-  def bulk_create(user_main_interests: nil)
+def bulk_create(user_main_interests: nil)
   # 1. Tomamos los intereses desde el parámetro o desde el request
   interests = user_main_interests || params[:user_main_interests]
 
@@ -63,7 +63,6 @@ class UserMainInterestsController < ApplicationController
     render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
   end
 end
-
 
 
   # PATCH/PUT /user_main_interests/1 or /user_main_interests/1.json
