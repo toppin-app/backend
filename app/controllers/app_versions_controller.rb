@@ -25,7 +25,7 @@ class AppVersionsController < ApplicationController
   end
 
   def index
-    @app_versions = AppVersion.all
+    @app_versions = AppVersion.limit(1) # Obtiene la primera versión
   end
 
   def edit
