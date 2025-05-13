@@ -1,5 +1,6 @@
 class UserMainInterestsController < ApplicationController
-  before_action :authenticate_user!
+  skip_before_action :authenticate_user!
+  skip_before_action :verify_authenticity_token
   before_action :set_user_main_interest, only: %i[ show edit update destroy ]
 
   # GET /user_main_interests or /user_main_interests.json
