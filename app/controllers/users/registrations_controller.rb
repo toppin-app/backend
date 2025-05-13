@@ -99,7 +99,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
             twilio.generate_team_toppin(resource.id)
 
-            if params[:user][:user_main_interests]
+            if params[:user][:user_main_interests].present? && params[:user][:user_main_interests].size > 0
                 interests_with_user_id = params[:user][:user_main_interests].map do |interest|
                     interest.merge(user_id: resource.id)
                 end
