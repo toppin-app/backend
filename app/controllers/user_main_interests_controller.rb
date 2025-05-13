@@ -37,7 +37,7 @@ class UserMainInterestsController < ApplicationController
   # 2. Validamos que haya al menos 4 intereses seleccionados
   if interests.blank? || interests.size < 4
     # Si no hay al menos 4, devolvemos un error (esto es para APIs o controladores)
-    render json: { error: "Debes seleccionar al menos 4 intereses" }, status: :unprocessable_entity
+    render json: { error: "Debes seleccionar al menos 4 intereses" }, status: :bad_request
     return
   end
 
