@@ -1,41 +1,46 @@
 <div class="container mt-5">
   <h2 class="text-center mb-4">Versiones de la App</h2>
-  <div class="row">
-    <div class="col-md-3">
-      <div class="card text-white bg-primary mb-3">
-        <div class="card-header">Versión Android</div>
-        <div class="card-body">
-          <h5 class="card-title">Última versión</h5>
-          <p class="card-text"><%= @app_versions.first.android_last_version %></p>
+  <%= form_with model: @app_versions.first, url: app_version_path(@app_versions.first), method: :patch, local: true do |f| %>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="android_last_version">Versión Android</label>
+          <%= f.text_field :android_last_version, class: "form-control", id: "android_last_version" %>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="android_last_version_required">Versión Android Requerida</label>
+          <%= f.text_field :android_last_version_required, class: "form-control", id: "android_last_version_required" %>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="ios_last_version">Versión iOS</label>
+          <%= f.text_field :ios_last_version, class: "form-control", id: "ios_last_version" %>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="ios_last_version_required">Versión iOS Requerida</label>
+          <%= f.text_field :ios_last_version_required, class: "form-control", id: "ios_last_version_required" %>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="android_store_link">Enlace Android Store</label>
+          <%= f.text_field :android_store_link, class: "form-control", id: "android_store_link" %>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="ios_store_link">Enlace iOS Store</label>
+          <%= f.text_field :ios_store_link, class: "form-control", id: "ios_store_link" %>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-success mb-3">
-        <div class="card-header">Versión Android Requerida</div>
-        <div class="card-body">
-          <h5 class="card-title">Versión mínima</h5>
-          <p class="card-text"><%= @app_versions.first.android_last_version_required %></p>
-        </div>
-      </div>
+    <div class="text-center mt-4">
+      <%= f.submit "Guardar Cambios", class: "btn btn-primary" %>
     </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-info mb-3">
-        <div class="card-header">Versión iOS</div>
-        <div class="card-body">
-          <h5 class="card-title">Última versión</h5>
-          <p class="card-text"><%= @app_versions.first.ios_last_version %></p>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-warning mb-3">
-        <div class="card-header">Versión iOS Requerida</div>
-        <div class="card-body">
-          <h5 class="card-title">Versión mínima</h5>
-          <p class="card-text"><%= @app_versions.first.ios_last_version_required %></p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <% end %>
 </div>
