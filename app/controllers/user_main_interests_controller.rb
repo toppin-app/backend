@@ -29,19 +29,24 @@ class UserMainInterestsController < ApplicationController
     end
   end
 
-def bulk_create(user_main_interests: nil)
-  interests = user_main_interests || params[:user_main_interests]
+  # POST /user_main_interests/bulk_create.json
+ def bulk_create(user_main_interests: nil)
+    interests = user_main_interests || params[:user_main_interests]
+    return false unless interests
 
-  # Validación obligatoria: debe haber al menos 4 intereses
-  unless interests.is_a?(Array) && interests.size >= 4
-    render json: { error: "Debes enviar al menos 4 intereses" }, status: :bad_request
-    return
-  end
+    # Borra los datos existentes para el user_id
+    UserMainInterest.where(user_id: interests.first[:user_id]).destroy_all
 
-  user_id = interests.first[:user_id]
-  unless user_id
-    render json: { error: "Falta el user_id en los intereses" }, status: :unprocessable_entity
-    return
+    # Crea nuevos datos
+    @user_main_interests = interests.map do |interest|
+      UserMainInterest.create(interest.permit(:user_id, :interest_id, :percentage, :name))
+    end
+
+    if @user_main_interests.all?(&:persisted?)
+      true
+    else
+      false
+    end
   end
 
   # Eliminamos los intereses anteriores del usuario
