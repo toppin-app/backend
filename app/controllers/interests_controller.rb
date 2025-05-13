@@ -1,5 +1,5 @@
 class InterestsController < ApplicationController
-  skip_before_action :authenticate_user!, except: [:index]
+  skip_before_action :authenticate_user!, only: [:index]
   before_action :set_interest, only: %i[ show edit update destroy ]
 
   # GET /interests or /interests.json
