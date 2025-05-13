@@ -29,13 +29,12 @@ class UserMainInterestsController < ApplicationController
     end
   end
 
-def bulk_create(user_main_interests: nil)
+  def bulk_create(user_main_interests: nil)
   # 1. Tomamos los intereses desde el parámetro o desde el request
   interests = user_main_interests || params[:user_main_interests]
 
   # 2. Validamos que haya al menos 4 intereses seleccionados
-  if interests.blank? || interests.size < 4
-    # Si no hay al menos 4 intereses, devolvemos un error
+  if interests.nil? || interests.empty? || interests.size < 4
     render json: { error: "Debes seleccionar al menos 4 intereses" }, status: :bad_request
     return
   end
@@ -51,7 +50,7 @@ def bulk_create(user_main_interests: nil)
 
   # 5. Creamos los nuevos intereses uno por uno
   @user_main_interests = interests.map do |interest|
-    # Asegúrate de que interest sea un ActionController::Parameters o convierte con `to_h` si viene como Hash
+    # Asegúrate de que `interest` sea un ActionController::Parameters o convierte con `to_h` si viene como Hash
     permitted_interest = interest.respond_to?(:permit) ? interest.permit(:user_id, :interest_id, :percentage, :name) : ActionController::Parameters.new(interest).permit(:user_id, :interest_id, :percentage, :name)
     
     UserMainInterest.create(permitted_interest)
@@ -63,8 +62,6 @@ def bulk_create(user_main_interests: nil)
   else
     render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
   end
-end
-
 end
 
 
