@@ -30,39 +30,38 @@ class UserMainInterestsController < ApplicationController
   end
 
 def bulk_create(user_main_interests: nil)
-  # 1. Tomamos los intereses desde el parámetro o desde el request
   interests = user_main_interests || params[:user_main_interests]
 
-  # 2. Validamos que haya al menos 4 intereses seleccionados
-  if interests.nil? || interests.empty? || interests.size < 4
-    render json: { error: "Debes seleccionar al menos 4 intereses" }, status: :bad_request
+  # Validación obligatoria: debe haber al menos 4 intereses
+  unless interests.is_a?(Array) && interests.size >= 4
+    render json: { error: "Debes enviar al menos 4 intereses" }, status: :bad_request
     return
   end
 
-  # 3. Aseguramos que al menos el primer interés tenga user_id
-  unless interests.first[:user_id]
+  user_id = interests.first[:user_id]
+  unless user_id
     render json: { error: "Falta el user_id en los intereses" }, status: :unprocessable_entity
     return
   end
 
-  # 4. Eliminamos los intereses anteriores del usuario
-  UserMainInterest.where(user_id: interests.first[:user_id]).destroy_all
+  # Eliminamos los intereses anteriores del usuario
+  UserMainInterest.where(user_id: user_id).destroy_all
 
-  # 5. Creamos los nuevos intereses uno por uno
+  # Creamos los nuevos intereses
   @user_main_interests = interests.map do |interest|
-    # Asegúrate de que `interest` sea un ActionController::Parameters o convierte con `to_h` si viene como Hash
-    permitted_interest = interest.respond_to?(:permit) ? interest.permit(:user_id, :interest_id, :percentage, :name) : ActionController::Parameters.new(interest).permit(:user_id, :interest_id, :percentage, :name)
-    
-    UserMainInterest.create(permitted_interest)
+    ActionController::Parameters
+      .new(interest)
+      .permit(:user_id, :interest_id, :percentage, :name)
+      .then { |permitted| UserMainInterest.create(permitted) }
   end
 
-  # 6. Verificamos que todos se hayan guardado correctamente
   if @user_main_interests.all?(&:persisted?)
     render json: { message: "Intereses guardados correctamente" }, status: :ok
   else
     render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
   end
 end
+
 
 
   # PATCH/PUT /user_main_interests/1 or /user_main_interests/1.json
