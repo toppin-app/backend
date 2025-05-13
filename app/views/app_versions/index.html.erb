@@ -1,0 +1,41 @@
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Versiones de la App</h2>
+  <div class="row">
+    <div class="col-md-3">
+      <div class="card text-white bg-primary mb-3">
+        <div class="card-header">Versión Android</div>
+        <div class="card-body">
+          <h5 class="card-title">Última versión</h5>
+          <p class="card-text"><%= @app_versions.first.android_last_version %></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-success mb-3">
+        <div class="card-header">Versión Android Requerida</div>
+        <div class="card-body">
+          <h5 class="card-title">Versión mínima</h5>
+          <p class="card-text"><%= @app_versions.first.android_last_version_required %></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-info mb-3">
+        <div class="card-header">Versión iOS</div>
+        <div class="card-body">
+          <h5 class="card-title">Última versión</h5>
+          <p class="card-text"><%= @app_versions.first.ios_last_version %></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-warning mb-3">
+        <div class="card-header">Versión iOS Requerida</div>
+        <div class="card-body">
+          <h5 class="card-title">Versión mínima</h5>
+          <p class="card-text"><%= @app_versions.first.ios_last_version_required %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
