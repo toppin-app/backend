@@ -29,14 +29,13 @@ class UserMainInterestsController < ApplicationController
     end
   end
 
-  # POST /user_main_interests/bulk_create.json
-  def bulk_create(user_main_interests: nil)
+def bulk_create(user_main_interests: nil)
   # 1. Tomamos los intereses desde el parámetro o desde el request
   interests = user_main_interests || params[:user_main_interests]
 
   # 2. Validamos que haya al menos 4 intereses seleccionados
   if interests.blank? || interests.size < 4
-    # Si no hay al menos 4, devolvemos un error (esto es para APIs o controladores)
+    # Si no hay al menos 4 intereses, devolvemos un error
     render json: { error: "Debes seleccionar al menos 4 intereses" }, status: :bad_request
     return
   end
@@ -65,6 +64,9 @@ class UserMainInterestsController < ApplicationController
     render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
   end
 end
+
+end
+
 
 
   # PATCH/PUT /user_main_interests/1 or /user_main_interests/1.json
