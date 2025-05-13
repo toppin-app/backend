@@ -12,6 +12,15 @@
 
 ActiveRecord::Schema.define(version: 2024_06_25_093800) do
 
+  create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "android_last_version"
+    t.string "android_last_version_required"
+    t.string "ios_last_version"
+    t.string "ios_last_version_required"
+    t.string "android_store_link"
+    t.string "ios_store_link"
+  end
+
   create_table "apple_tokens", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "token"
     t.string "email"
