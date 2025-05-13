@@ -1616,6 +1616,9 @@ GEM
       warden-jwt_auth (~> 0.8)
     domain_name (0.6.20240107)
     dotenv (2.8.1)
+    dotenv-rails (2.8.1)
+      dotenv (= 2.8.1)
+      railties (>= 3.2)
     dry-auto_inject (1.0.1)
       dry-core (~> 1.0)
       zeitwerk (~> 2.6)
@@ -1631,7 +1634,6 @@ GEM
       faraday-net_http (>= 2.0, < 3.2)
     faraday-net_http (3.1.0)
       net-http
-    ffi (1.16.3)
     ffi (1.16.3-x64-mingw32)
     fog-aws (3.21.0)
       fog-core (~> 2.1)
@@ -1711,13 +1713,7 @@ GEM
       net-protocol
     netrc (0.11.0)
     nio4r (2.7.0)
-    nokogiri (1.16.2-aarch64-linux)
-      racc (~> 1.4)
-    nokogiri (1.16.2-arm64-darwin)
-      racc (~> 1.4)
     nokogiri (1.16.2-x64-mingw32)
-      racc (~> 1.4)
-    nokogiri (1.16.2-x86_64-linux)
       racc (~> 1.4)
     orm_adapter (0.5.0)
     pickup (0.0.11)
@@ -1773,11 +1769,6 @@ GEM
     responders (3.1.1)
       actionpack (>= 5.2)
       railties (>= 5.2)
-    rest-client (2.1.0)
-      http-accept (>= 1.7.0, < 2.0)
-      http-cookie (>= 1.0.2, < 2.0)
-      mime-types (>= 1.16, < 4.0)
-      netrc (~> 0.8)
     rest-client (2.1.0-x64-mingw32)
       ffi (~> 1.9)
       http-accept (>= 1.7.0, < 2.0)
@@ -1800,8 +1791,6 @@ GEM
     rubyzip (2.3.2)
     sass-rails (6.0.0)
       sassc-rails (~> 2.1, >= 2.1.1)
-    sassc (2.4.0)
-      ffi (~> 1.9)
     sassc (2.4.0-x64-mingw32)
       ffi (~> 1.9)
     sassc-rails (2.1.2)
@@ -1891,9 +1880,10 @@ DEPENDENCIES
   carrierwave-base64
   devise
   devise-jwt
-  dotenv
+  dotenv-rails
   fog-aws
   geocoder
+  image_processing (~> 1.2)
   jbuilder (~> 2.7)
   listen (~> 3.2)
   mailjet

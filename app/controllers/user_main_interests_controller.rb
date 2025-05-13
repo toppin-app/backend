@@ -30,7 +30,7 @@ class UserMainInterestsController < ApplicationController
   end
 
   # POST /user_main_interests/bulk_create.json
- def bulk_create(user_main_interests: nil)
+  def bulk_create(user_main_interests: nil)
     interests = user_main_interests || params[:user_main_interests]
     return false unless interests
 
@@ -43,31 +43,11 @@ class UserMainInterestsController < ApplicationController
     end
 
     if @user_main_interests.all?(&:persisted?)
-      true
+      render json: { message: "Intereses guardados correctamente" }, status: :ok
     else
-      false
+      render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
     end
   end
-
-  # Eliminamos los intereses anteriores del usuario
-  UserMainInterest.where(user_id: user_id).destroy_all
-
-  # Creamos los nuevos intereses
-  @user_main_interests = interests.map do |interest|
-    ActionController::Parameters
-      .new(interest)
-      .permit(:user_id, :interest_id, :percentage, :name)
-      .then { |permitted| UserMainInterest.create(permitted) }
-  end
-
-  if @user_main_interests.all?(&:persisted?)
-    render json: { message: "Intereses guardados correctamente" }, status: :ok
-  else
-    render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
-  end
-end
-
-
 
   # PATCH/PUT /user_main_interests/1 or /user_main_interests/1.json
   def update
@@ -91,19 +71,19 @@ end
   end
 
   private
-
   def bulk_user_main_interests_params
     params.require(:_json).map do |param|
       param.permit(:user_id, :interest_id, :percentage, :name)
     end
   end
-    # Use callbacks to share common setup or constraints between actions.
-    def set_user_main_interest
-      @user_main_interest = current_user.user_main_interests.find(params[:id])
-    end
 
-    # Only allow a list of trusted parameters through.
-    def user_main_interest_params
-      params.require(:user_main_interest).permit(:user_id, :interest_id, :percentage, :name)
-    end
+  # Use callbacks to share common setup or constraints between actions.
+  def set_user_main_interest
+    @user_main_interest = current_user.user_main_interests.find(params[:id])
+  end
+
+  # Only allow a list of trusted parameters through.
+  def user_main_interest_params
+    params.require(:user_main_interest).permit(:user_id, :interest_id, :percentage, :name)
+  end
 end
