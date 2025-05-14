@@ -50,7 +50,7 @@ class UsersController < ApplicationController
       @interests = Interest.where(id: (JSON.parse @user.user_filter_preference&.interests).values[0])
       @categories = InfoItemValue.where(id: (JSON.parse @user.user_filter_preference&.categories).values[0])
       
-      @gender_preference = UserFilterPreference.where(id:(JSON.parse @user.user_filter_preference&.gender_preference).values[0]). 
+      @gender_preference = UserFilterPreference.find_by(user_id: current_user.id)
     else
       @interests = []
       @categories = []
