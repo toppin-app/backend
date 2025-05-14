@@ -151,7 +151,7 @@ class UsersController < ApplicationController
         end
 
         if params[:filter_gender]
-          @user.user_filter_preference&.update(gender: params[:filter_gender])
+          @user.user_filter_preference&.update(gender_preference: params[:filter_gender])
         end
 
         if params[:user_interests]
