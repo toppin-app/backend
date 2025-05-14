@@ -60,6 +60,9 @@ class UsersController < ApplicationController
 
 
       @categories = InfoItemValue.where(id: cat)
+      
+      @gender_preference = @user.user_filter_preference.gender_preference
+
     else
       @interests = []
       @categories = []
