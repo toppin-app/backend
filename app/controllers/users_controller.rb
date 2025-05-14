@@ -34,14 +34,11 @@ class UsersController < ApplicationController
   # GET /users/1
   # GET /users/1.json
   def show
-
-
     if current_user.admin?
       @user = User.find(params[:id])
     else
       @user = current_user
     end
-
 
     @title = "Mostrando usuario"
     @matches = @user.matches
@@ -62,13 +59,14 @@ class UsersController < ApplicationController
       @categories = InfoItemValue.where(id: cat)
       
       @gender_preference = @user.user_filter_preference.gender_preference
-
     else
       @interests = []
       @categories = []
     end
 
     @user_main_interests = UserMainInterest.where(user_id: @user.id)
+
+    @user.gender_filter = "Tests"
 
     @users = User.visible.where.not(id: @user.id)
   end
