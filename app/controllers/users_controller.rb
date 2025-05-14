@@ -736,7 +736,7 @@ class UsersController < ApplicationController
 
     # Extraemos el género del usuario actual
     my_gender = current_user.gender
-    my_gender_preference = current_user.user_filter_preference.gender
+    my_gender_preference = current_user.user_filter_preference.gender_preference
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
      user_ids = UserFilterPreference.where(gender: [my_gender, "gender_any"]).pluck(:user_id)
