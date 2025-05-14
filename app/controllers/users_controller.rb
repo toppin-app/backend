@@ -47,26 +47,16 @@ class UsersController < ApplicationController
     generate_access_token(@user.id)
 
     if @user.user_filter_preference
-      int = JSON.parse @user.user_filter_preference&.interests
-      int = int.values[0]
-
-      @interests = Interest.where(id: int)
-
-      cat = JSON.parse @user.user_filter_preference&.categories
-      cat = cat.values[0]
-
-
-      @categories = InfoItemValue.where(id: cat)
+      @interests = Interest.where(id: (JSON.parse @user.user_filter_preference&.interests).values[0])
+      @categories = InfoItemValue.where(id: (JSON.parse @user.user_filter_preference&.categories).values[0])
       
-      @gender_preference = @user.user_filter_preference.gender_preference
+      @gender_preference = UserFilterPreference.where(id:(JSON.parse @user.user_filter_preference&.gender_preference).values[0]). 
     else
       @interests = []
       @categories = []
     end
 
     @user_main_interests = UserMainInterest.where(user_id: @user.id)
-
-    @user.gender_filter = "Tests"
 
     @users = User.visible.where.not(id: @user.id)
   end
