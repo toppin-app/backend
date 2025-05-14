@@ -191,7 +191,7 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
 
   create_table "user_filter_preferences", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
-    t.integer "gender"
+    t.integer "gender_preference"
     t.integer "distance_range"
     t.integer "age_from"
     t.integer "age_till"
