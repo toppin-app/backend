@@ -1,5 +1,10 @@
 class UserFilterPreference < ApplicationRecord
   belongs_to :user
 
-  enum gender: {female: 0, male: 1, gender_any: 2, couple: 3}
+  # Ya no uses enum, define una constante de opciones
+  GENDERS = %w[female male gender_any couple]
+
+  def gender_options
+    GENDERS
+  end
 end
