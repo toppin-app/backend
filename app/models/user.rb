@@ -17,6 +17,7 @@ class User < ApplicationRecord
   has_many :spotify_user_data, dependent: :destroy
   mount_base64_uploader :verification_image, ImageUploader
   # Model enums
+  enum gender: { female: 0, male: 1, gender_any: 2, couple: 3 }
   enum popularity: { low_popularity: 0, medium_popularity: 1, high_popularity: 2 }
   enum activity_level: { low_activity: 0, medium_activity: 1, high_activity: 2 }
 
@@ -452,20 +453,16 @@ class User < ApplicationRecord
       self.user_media.first.file.thumb.url if self.user_media.any?
   end
 
-  def gender_t
-  case gender
-  when "female"
-    "Mujer"
-  when "male"
-    "Hombre"
-  when "couple"
-    "Pareja"
-  when "gender_any"
-    "Cualquiera"
-  else
-    gender
-  end
-end
+   def gender_t
+      if gender == "female"
+        return "Mujer"
+      end
+      if gender == "male"
+        return "Hombre"
+      else
+        return gender
+      end
+    end
 
 
 

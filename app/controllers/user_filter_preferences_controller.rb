@@ -32,7 +32,6 @@ class UserFilterPreferencesController < ApplicationController
     UserFilterPreference.where(user_id: params[:user_id]).destroy_all
 
     @user_filter_preference = UserFilterPreference.new(user_filter_preference_params)
-    @user_filter_preference.gender.reject!(&:blank?) if @user_filter_preference.gender.present?
 
     @user_filter_preference.interests = params[:interests].to_json
     @user_filter_preference.categories = params[:categories].to_json
@@ -54,8 +53,6 @@ class UserFilterPreferencesController < ApplicationController
   def update
     respond_to do |format|
       if @user_filter_preference.update(user_filter_preference_params)
-        @user_filter_preference.gender.reject!(&:blank?) if @user_filter_preference.gender.present?
-        @user_filter_preference.save
         format.html { redirect_to @user_filter_preference, notice: "User filter preference was successfully updated." }
         format.json { render :show, status: :ok, location: @user_filter_preference }
       else
@@ -82,6 +79,6 @@ class UserFilterPreferencesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def user_filter_preference_params
-      params.require(:user_filter_preference).permit(:user_id, gender: [], :distance_range, :age_from, :age_till, :only_verified_users, :interests, :categories)
+      params.require(:user_filter_preference).permit(:user_id, :gender, :distance_range, :age_from, :age_till, :only_verified_users, :interests, :categories)
     end
 end

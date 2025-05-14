@@ -148,7 +148,7 @@ class UsersController < ApplicationController
         end
 
         if params[:filter_gender]
-          @user.user_filter_preference&.update(gender: params[:filter_gender].reject(&:blank?))
+          @user.user_filter_preference&.update(gender: params[:filter_gender])
         end
 
         if params[:user_interests]
@@ -501,10 +501,10 @@ class UsersController < ApplicationController
 
 
 
-    if filter_preference.gender.present?
-      users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').where(gender: filter_preference.gender + ["gender_any"])
+    if filter_preference.gender.present? and !filter_preference.gender_any?
+       users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').where(gender: filter_preference.gender)
     else
-      users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
+       users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
     end
 
     logger.info "USERS0"
@@ -749,7 +749,7 @@ class UsersController < ApplicationController
      else
       logger.info "GENDER PREFERENCE "+my_gender_preference
       # Si tiene preferencia de genero, busco solo usuarios de ese genero.
-      users = User.where(id: user_ids).where("gender @> ARRAY[?]::varchar[]", [my_gender_preference])
+      users = User.where(id: user_ids, gender: my_gender_preference)
      end
 
 
@@ -1091,13 +1091,6 @@ class UsersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def user_params
-      params.require(:user).permit(
-        :email, :name, :password, :password_confirmation, :user_name, :blocked,
-        :current_subscription_id, :show_publi, :current_subscription_name, :verified,
-        :verification_file, :push_token, :device_id, :device_platform, :description,
-        :high_visibility, :hidden_by_user, :is_connected, :last_connection, :last_match,
-        :is_new, :activity_level, :birthday, :born_in, :living_in, :locality, :country,
-        :lat, :lng, :occupation, :studies, :popularity, gender: [], user_media: [:id, :file, :position]
-      )
+      params.require(:user).permit(:email, :name, :password, :password_confirmation, :user_name, :blocked, :current_subscription_id, :show_publi, :current_subscription_name, :verified, :verification_file, :push_token, :device_id, :device_platform, :description, :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection, :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in, :locality, :country, :lat, :lng, :occupation, :studies, :popularity, user_media:[:id, :file, :position])
     end
 end
