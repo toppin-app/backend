@@ -471,9 +471,8 @@ class UsersController < ApplicationController
 
     
     current_user_id = current_user.id
-    filter_preference = UserFilterPreference.find_by(user_id: current_user_id)
+    filter_preference = UserFilterPreferences.find_by(user_id: current_user_id)
 
-    puts filter_preference.inspect
 
 
     # Calculamos rango de fechas de nacimiento posibles para el filtro edad.
@@ -489,7 +488,7 @@ class UsersController < ApplicationController
     my_gender = current_user.gender
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-     user_ids = UserFilterPreference.where(gender_preference: [my_gender, "gender_any"]).pluck(:user_id)
+     user_ids = UserFilterPreferences.where(gender_preference: [my_gender, "gender_any"]).pluck(:user_id)
      users = User.where(id: user_ids)
     ##
 
