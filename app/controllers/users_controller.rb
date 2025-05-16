@@ -471,6 +471,11 @@ class UsersController < ApplicationController
 
     
     current_user_id = current_user.id
+
+    unless current_user_id
+      render json: { status: 400, message: "No user found" }, status: 400
+      return
+    end
     filter_preference = UserFilterPreference.find_by(user_id: current_user_id)
     
     unless filter_preference
