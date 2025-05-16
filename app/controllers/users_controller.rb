@@ -469,8 +469,12 @@ class UsersController < ApplicationController
         return
     end
 
+    
     current_user_id = current_user.id
     filter_preference = UserFilterPreference.find_by(user_id: current_user_id)
+
+    puts filter_preference.inspect
+
 
     # Calculamos rango de fechas de nacimiento posibles para el filtro edad.
     start_date = Date.today-filter_preference.age_till.years
