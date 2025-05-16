@@ -489,7 +489,7 @@ class UsersController < ApplicationController
     my_gender = current_user.gender
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-     user_ids = UserFilterPreference.where(gender.preference: [my_gender, "gender_any"]).pluck(:user_id)
+     user_ids = UserFilterPreference.where(gender_preference: [my_gender, "gender_any"]).pluck(:user_id)
      users = User.where(id: user_ids)
     ##
 
@@ -734,7 +734,7 @@ class UsersController < ApplicationController
     my_gender_preference = current_user.user_filter_preference.gender_preference
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-     user_ids = UserFilterPreference.where(gender.preference: [my_gender, "gender_any"]).pluck(:user_id)
+     user_ids = UserFilterPreference.where(gender_preference: [my_gender, "gender_any"]).pluck(:user_id)
 
 
      # Filtro por lo que busca mi usuario. Si le da igual, saco todos los users (filtrados arriba)
