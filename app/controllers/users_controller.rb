@@ -477,8 +477,8 @@ class UsersController < ApplicationController
 
 
     # Calculamos rango de fechas de nacimiento posibles para el filtro edad.
-    start_date = Date.today-filter_preference.age_till.years
-    end_date = Date.today-filter_preference.age_from.years
+    start_date = Date.today - (filter_preference&.age_till || 0).years
+    end_date = Date.today-  (filter_preference&.age_till || 0).years
 
     # Comprobamos filtro género. Si el valor es 2, son todos los géneros.
     # Freeze lat lng to be able to see some shit everywhere
