@@ -511,18 +511,21 @@ class UsersController < ApplicationController
     puts("------------------")
     puts("------------------ 1 ")
     puts(users)
+    puts(current_user.lat)
+    puts(current_user.lng)
+    puts(filter_preference.distance_range)
     puts("##################")
     puts("##################")
     puts("##################")
     ##
 
 
-    users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').to_a
+    users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
 
     puts("------------------")
     puts("------------------")
     puts("------------------ 2 ")
-    puts(users)
+    puts(users.to_a)
     puts("##################")
     puts("##################")
     puts("##################")
