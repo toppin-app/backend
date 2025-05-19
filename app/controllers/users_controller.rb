@@ -517,7 +517,7 @@ class UsersController < ApplicationController
     ##
 
 
-    users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
+    users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').to_a
 
     puts("------------------")
     puts("------------------")
