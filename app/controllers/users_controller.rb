@@ -499,7 +499,13 @@ class UsersController < ApplicationController
     ).pluck(:user_id)
 
     users = User.where(id: user_ids)
-
+    puts("------------------")
+    puts("------------------")
+    puts("------------------ 1 ")
+    puts(users)
+    puts("##################")
+    puts("##################")
+    puts("##################")
     ##
 
     if filter_preference.gender_preferences.present? and !filter_preference.gender_any?
@@ -507,7 +513,13 @@ class UsersController < ApplicationController
     else
        users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
     end
-
+    puts("------------------")
+    puts("------------------")
+    puts("------------------ 2 ")
+    puts(users)
+    puts("##################")
+    puts("##################")
+    puts("##################")
     
 
 
@@ -531,7 +543,7 @@ class UsersController < ApplicationController
     users = users.where.not(id: rejected_users)
     puts("------------------")
     puts("------------------")
-    puts("------------------")
+    puts("------------------ 3 ")
     puts(users)
     puts(start_date)
     puts(end_date)
@@ -546,7 +558,7 @@ class UsersController < ApplicationController
 
     puts("------------------")
     puts("------------------")
-    puts("------------------")
+    puts("------------------ 4 ")
     puts(users)
     puts("##################")
     puts("##################")
