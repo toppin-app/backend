@@ -40,13 +40,6 @@ class Users::RegistrationsController < Devise::RegistrationsController
             # Set default params
             resource.is_connected = true # Set user online
 
-            resource.high_visibility = true # Allow high visibility
-            #resource.high_visibility_expire = Date.today.next_day(7).strftime("%F") # Set high visibility to expire in 1 week
-
-            # Le daremos boost al usuario durante sus primeras 3 horas.
-            resource.high_visibility_expire = DateTime.now+3.hours
-
-
 
             # seteamos el user_name a partir del name y el lastname
             # resource.user_name = "#{resource.name}#{resource.lastname}"
