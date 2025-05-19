@@ -473,6 +473,14 @@ class UsersController < ApplicationController
     current_user_id = current_user.id
     filter_preference = UserFilterPreference.find_by(user_id: current_user_id)
 
+    
+    puts("------------------")
+    puts("------------------")
+    puts("------------------ 0 ")
+    puts(filter_preference)
+    puts("##################")
+    puts("##################")
+    puts("##################")
 
 
     # Calculamos rango de fechas de nacimiento posibles para el filtro edad.
@@ -508,7 +516,7 @@ class UsersController < ApplicationController
     puts("##################")
     ##
 
-    if filter_preference.gender_preferences.present? and !filter_preference.gender_any?
+    if filter_preference&.gender_preferences.present? and filter_preference&.gender_preferences&.include?("gender_any")
        users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').where(gender: filter_preference.gender)
     else
        users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
