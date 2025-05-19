@@ -50,7 +50,7 @@ class UsersController < ApplicationController
       @interests = Interest.where(id: (JSON.parse @user.user_filter_preference&.interests).values[0])
       @categories = InfoItemValue.where(id: (JSON.parse @user.user_filter_preference&.categories).values[0])
       
-      @gender_preference = UserFilterPreference.find_by(user_id: current_user.id)
+      @gender_preferences = UserFilterPreference.find_by(user_id: current_user.id)
     else
       @interests = []
       @categories = []
@@ -139,7 +139,7 @@ class UsersController < ApplicationController
         end
 
         if params[:filter_gender]
-          @user.user_filter_preference&.update(gender_preference: params[:filter_gender])
+          @user.user_filter_preference&.update(gender_preferences: params[:filter_gender])
         end
 
         if params[:user_interests]
@@ -471,23 +471,13 @@ class UsersController < ApplicationController
 
     
     current_user_id = current_user.id
-
-    unless current_user_id
-      render json: { status: 400, message: "No user found" }, status: 400
-      return
-    end
     filter_preference = UserFilterPreference.find_by(user_id: current_user_id)
-    
-    unless filter_preference
-      render json: { status: 400, message: "No filter preferences found for user" }, status: 400
-      return
-    end
 
 
 
     # Calculamos rango de fechas de nacimiento posibles para el filtro edad.
     start_date = Date.today - (filter_preference&.age_till || 0).years
-    end_date = Date.today-  (filter_preference&.age_till || 0).years
+    end_date = Date.today -  (filter_preference&.age_from || 0).years
 
     # Comprobamos filtro género. Si el valor es 2, son todos los géneros.
     # Freeze lat lng to be able to see some shit everywhere
@@ -498,18 +488,28 @@ class UsersController < ApplicationController
     my_gender = current_user.gender
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-     user_ids = UserFilterPreference.where(gender_preference: [my_gender, "gender_any"]).pluck(:user_id)
-     users = User.where(id: user_ids)
+    user_ids = UserFilterPreference.where(
+      "((gender_preferences = ? OR gender_preferences LIKE ? OR gender_preferences LIKE ? OR gender_preferences LIKE ?) OR gender_preferences LIKE ?) AND user_id != ?",
+      my_gender,
+      "#{my_gender},%",
+      "%,#{my_gender}",
+      "%,#{my_gender},%",
+      "gender_any",
+      current_user_id
+    ).pluck(:user_id)
+
+    users = User.where(id: user_ids)
+
     ##
 
-
-
-
-    if filter_preference.gender_preference.present? and !filter_preference.gender_any?
+    if filter_preference.gender_preferences.present? and !filter_preference.gender_any?
        users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').where(gender: filter_preference.gender)
     else
        users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
     end
+
+    
+
 
     logger.info "USERS0"
    # logger.info users.inspect
@@ -529,14 +529,28 @@ class UsersController < ApplicationController
     logger.info "REJECTED::"+rejected_users.inspect
 
     users = users.where.not(id: rejected_users)
-
-
+    puts("------------------")
+    puts("------------------")
+    puts("------------------")
+    puts(users)
+    puts(start_date)
+    puts(end_date)
+    puts("##################")
+    puts("##################")
+    puts("##################")
 
     # Edad
     if filter_preference.age_from.present? and filter_preference.age_till.present?
        users = users.born_between(start_date, end_date)
     end
 
+    puts("------------------")
+    puts("------------------")
+    puts("------------------")
+    puts(users)
+    puts("##################")
+    puts("##################")
+    puts("##################")
 
     # Filtro usuarios verificados
     if filter_preference.only_verified_users
@@ -740,10 +754,10 @@ class UsersController < ApplicationController
 
     # Extraemos el género del usuario actual
     my_gender = current_user.gender
-    my_gender_preference = current_user.user_filter_preference.gender_preference
+    my_gender_preference = current_user.user_filter_preference.gender_preferences
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-     user_ids = UserFilterPreference.where(gender_preference: [my_gender, "gender_any"]).pluck(:user_id)
+     user_ids = UserFilterPreference.where(gender_preferences: [my_gender, "gender_any"]).pluck(:user_id)
 
 
      # Filtro por lo que busca mi usuario. Si le da igual, saco todos los users (filtrados arriba)

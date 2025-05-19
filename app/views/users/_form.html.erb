@@ -109,7 +109,7 @@
     <% if @edit %>
 
       <div class="field"><b>Buscando: </b>
-        <%= select nil, :filter_gender, options_for_select([['Hombre', 'male'], ['Mujer', 'female'], ['Todos', 'gender_any']], @user.user_filter_preference&.gender_preference) %>
+        <%= select nil, :filter_gender, options_for_select([['Hombre', 'male'], ['Mujer', 'female'], ['Todos', 'gender_any']], @user.user_filter_preference&.gender_preferences) %>
       </div>
 
       <div class="field">

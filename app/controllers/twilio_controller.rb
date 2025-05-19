@@ -137,53 +137,53 @@ class TwilioController < ApplicationController
 	# Crea una conversación entre dos usuarios y los añade a los dos.
 	def create_conversation(user_id1, user_id2)
 
-		set_account
+		# set_account
 
-		unique_name = user_id1.to_s+'@'+user_id2.to_s
+		# unique_name = user_id1.to_s+'@'+user_id2.to_s
 
-		begin # La conversacion existe.
+		# begin # La conversacion existe.
 
-		   conversation = @client.conversations
-                      .conversations(unique_name)
-                      .fetch
+		#    conversation = @client.conversations
+    #                   .conversations(unique_name)
+    #                   .fetch
 
-		rescue # Conversacion no encontrada, creamos. 
+		# rescue # Conversacion no encontrada, creamos. 
 
-		 conversation = @client.conversations
-		  .conversations
-		  .create(
-		     unique_name: unique_name
-		   )
-
-
-		end
-
-		begin
-		# Agregamos los dos usuarios a la conversación
-		@client.conversations
-                     .conversations(conversation.sid)
-                     .participants
-                     .create(
-                        identity: user_id1,
-                      )
-      rescue
-      	logger.info "Error adding participant 1 "+user_id1.inspect
-      end
+		#  conversation = @client.conversations
+		#   .conversations
+		#   .create(
+		#      unique_name: unique_name
+		#    )
 
 
-      begin               
-		@client.conversations
-                     .conversations(conversation.sid)
-                     .participants
-                     .create(
-                        identity: user_id2,
-                      )
-      rescue
-      	logger.info "Error adding participant 2 "+user_id2.inspect
-      end
+		# end
+
+		# begin
+		# # Agregamos los dos usuarios a la conversación
+		# @client.conversations
+    #                  .conversations(conversation.sid)
+    #                  .participants
+    #                  .create(
+    #                     identity: user_id1,
+    #                   )
+    #   rescue
+    #   	logger.info "Error adding participant 1 "+user_id1.inspect
+    #   end
 
 
-		return conversation.sid
+    #   begin               
+		# @client.conversations
+    #                  .conversations(conversation.sid)
+    #                  .participants
+    #                  .create(
+    #                     identity: user_id2,
+    #                   )
+    #   rescue
+    #   	logger.info "Error adding participant 2 "+user_id2.inspect
+    #   end
+
+
+		# return conversation.sid
 
 	end
 
@@ -203,14 +203,14 @@ class TwilioController < ApplicationController
 
 	# Añade un mensaje a una conversación. Se usa en el momento del match para mandar un primer mensajito.
 	def send_message_to_conversation(sid, user_id, message)
-		set_account
+		# set_account
 
-		message = @client.conversations
-                 .conversations(sid)
-                 .messages
-                 .create(author: user_id, body: message)
+		# message = @client.conversations
+    #              .conversations(sid)
+    #              .messages
+    #              .create(author: user_id, body: message)
 
-        return message
+    #     return message
 
 	end
 

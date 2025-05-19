@@ -79,7 +79,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
                     media.destroy
                 end
 
-            resource.user_filter_preference.update(gender_preference: params[:user][:gender_filter])
+            resource.user_filter_preference.update(gender_preferences: params[:user][:gender_filter])
 
 =begin
             # Save gender filter preference data
