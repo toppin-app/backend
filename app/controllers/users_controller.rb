@@ -517,7 +517,7 @@ class UsersController < ApplicationController
     ##
 
     if filter_preference&.gender_preferences.present? and filter_preference&.gender_preferences&.include?("gender_any")
-       users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').where(gender: filter_preference.gender)
+       users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id').where(gender: filter_preference.gender_preferences)
     else
        users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
     end
