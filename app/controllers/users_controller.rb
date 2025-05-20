@@ -478,6 +478,7 @@ class UsersController < ApplicationController
     puts("------------------")
     puts("------------------ 0 ")
     puts(filter_preference)
+    puts(current_user_id)
     puts("##################")
     puts("##################")
     puts("##################")
@@ -496,21 +497,38 @@ class UsersController < ApplicationController
     my_gender = current_user.gender
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-    user_ids = UserFilterPreference.where(
-      "((gender_preferences = ? OR gender_preferences LIKE ? OR gender_preferences LIKE ? OR gender_preferences LIKE ?) OR gender_preferences LIKE ?) AND user_id != ?",
-      my_gender,
-      "#{my_gender},%",
-      "%,#{my_gender}",
-      "%,#{my_gender},%",
-      "gender_any",
-      current_user_id
-    ).pluck(:user_id)
+    sql = <<-SQL
+      SELECT user_id
+      FROM user_filter_preferences
+      WHERE
+        (
+          gender_preferences = '#{my_gender}' OR
+          gender_preferences LIKE '#{my_gender},%' OR
+          gender_preferences LIKE '%,#{my_gender}' OR
+          gender_preferences LIKE '%,#{my_gender},%' OR
+          gender_preferences LIKE '%gender_any%'
+        )
+        AND user_id != #{current_user_id}
+    SQL
 
-    users = User.where(id: user_ids)
+    puts("------------------")
+    puts("------------------")
+    puts("------------------ 0.5 ")
+    puts(sql)
+    puts("##################")
+    puts("##################")
+    puts("##################")
+
+    user_ids = ActiveRecord::Base.connection.exec_query(sql)
+
+    users = User.where(id: user_ids.map { |u| u["user_id"] })
     puts("------------------")
     puts("------------------")
     puts("------------------ 1 ")
     puts(users)
+    puts("------------------ 1.1 ")
+    puts(user_ids)
+    puts("------------------ 1.2 ")
     puts(current_user.lat)
     puts(current_user.lng)
     puts(filter_preference.distance_range)
@@ -519,8 +537,8 @@ class UsersController < ApplicationController
     puts("##################")
     ##
 
-
-    # users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
+    limit_users_per_swipe = 20
+    users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
 
     puts("------------------")
     puts("------------------")
@@ -663,11 +681,6 @@ class UsersController < ApplicationController
 
     end
 
-
-
-
-
-
     #if incoming_likes.any?
      # logger.info "FIRE INCOMING"
       #user_ids.prepend incoming_likes.first
@@ -678,9 +691,6 @@ class UsersController < ApplicationController
     logger.info "IDS 3 "+current_user.id.to_s
     logger.info user_ids.inspect
 
-
-
-
     # Match Request ya lanzados. Descartamos users que ya hemos dado like o dislike
     discarded_users = UserMatchRequest.where(user_id: current_user.id).pluck(:target_user)
 
@@ -690,9 +700,6 @@ class UsersController < ApplicationController
     if !@users.any? or @users.count < 30
       @users = User.includes(:user_info_item_values, :user_interests, :user_media).where(id: user_ids).where.not(id: current_user_id).sort_by {|m| user_ids.index(m.id)}
     end
-
-
-
 
 =begin
 
