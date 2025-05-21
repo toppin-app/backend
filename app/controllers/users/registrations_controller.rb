@@ -71,8 +71,14 @@ class Users::RegistrationsController < Devise::RegistrationsController
                 if !result
                     media.destroy
                 end
+                allowed_genders = ["male", "female", "gender_any"]
+                selected_gender = params[:user][:gender_filter]
 
-            resource.user_filter_preference.update(gender_preferences: params[:user][:gender_filter])
+                if allowed_genders.include?(selected_gender)
+                resource.user_filter_preference.update(gender_preferences: selected_gender)
+                else
+                render json: { success: false, error: "Género no válido seleccionado." }, status: :unprocessable_entity
+                end
 
 =begin
             # Save gender filter preference data
