@@ -77,7 +77,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
                 if allowed_genders.include?(selected_gender)
                 resource.user_filter_preference.update(gender_preferences: selected_gender)
                 else
-                render json: { success: false, error: "Género no válido seleccionado." }, status: :unprocessable_entity
+                render json: { error: "Género no válido seleccionado." }, status: :unprocessable_entity
                 end
 
 =begin
