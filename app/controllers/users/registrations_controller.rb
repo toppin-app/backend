@@ -72,40 +72,30 @@ class Users::RegistrationsController < Devise::RegistrationsController
                     media.destroy
                 end
                 allowed_genders = ["male", "female", "gender_any"]
-                selected_genders = params[:user][:gender_filter] # Esto ahora será un array o una cadena
+                selected_genders = params[:user][:gender_filter]
 
-                # Aseguramos que selected_genders sea un array para poder iterar sobre él
-                # Si el usuario envía una sola cadena ("male"), la convertimos a ["male"]
-                # Si envía "gender_any", lo tratamos como un caso especial.
-                if selected_genders.is_a?(String) && selected_genders == "gender_any"
-                # Si solo se envía "gender_any", lo manejamos por separado
-                resource.user_filter_preference.update(gender_preferences: "gender_any")
-                return
-                elsif selected_genders.is_a?(String)
-                # Si es una cadena, la convertimos en un array (ej. "male" -> ["male"])
-                # O si es "male,female", también la convertiríamos en ["male", "female"]
-                selected_genders = selected_genders.split(',')
-                elsif !selected_genders.is_a?(Array)
-                # Si no es un array ni una cadena (ej. nil o otro tipo), es inválido
-                render json: { error: "Formato de género no válido." }, status: :unprocessable_entity
+                # Normalizamos el input a un array
+                selected_genders =
+                if selected_genders.is_a?(String)
+                    selected_genders.split(',') # convierte "male,female" o "gender_any" a ["male", "female"] o ["gender_any"]
+                elsif selected_genders.is_a?(Array)
+                    selected_genders
+                else
+                    render json: { error: "Formato de género no válido." }, status: :unprocessable_entity
                     raise ActiveRecord::Rollback
+                    return
+                end
+
+                # Validamos que todos los géneros seleccionados sean válidos
+                unless selected_genders.all? { |gender| allowed_genders.include?(gender) }
+                render json: { error: "Uno o más géneros seleccionados no son válidos." }, status: :unprocessable_entity
+                raise ActiveRecord::Rollback
                 return
                 end
 
-                # Verificamos que cada género en el array sea permitido
-                all_valid = selected_genders.all? { |gender| allowed_genders.include?(gender) }
-
-                if all_valid
-                # Si todos son válidos, los guardamos (quizás como un array en la base de datos o como una cadena unida)
-                # Aquí asumimos que gender_preferences puede almacenar un array o una cadena unida
-                resource.user_filter_preference.update(gender_preferences: selected_genders.join(',')) # Guarda como "male,female"
-                # O si tu columna puede almacenar arrays, puedes guardar directamente:
-                # resource.user_filter_preference.update(gender_preferences: selected_genders)
-                else
-                render json: { error: "Uno o más géneros seleccionados no son válidos." }, status: :unprocessable_entity
-                    raise ActiveRecord::Rollback
-                return
-end
+                # Guardamos los géneros como una cadena separada por comas
+                resource.user_filter_preference.update(gender_preferences: selected_genders.join(','))
+                end
 
 =begin
             # Save gender filter preference data
