@@ -88,6 +88,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
                 elsif !selected_genders.is_a?(Array)
                 # Si no es un array ni una cadena (ej. nil o otro tipo), es inválido
                 render json: { error: "Formato de género no válido." }, status: :unprocessable_entity
+                    raise ActiveRecord::Rollback
                 return
                 end
 
@@ -102,6 +103,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
                 # resource.user_filter_preference.update(gender_preferences: selected_genders)
                 else
                 render json: { error: "Uno o más géneros seleccionados no son válidos." }, status: :unprocessable_entity
+                    raise ActiveRecord::Rollback
                 return
 end
 
