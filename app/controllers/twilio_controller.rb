@@ -279,7 +279,7 @@ class TwilioController < ApplicationController
       @client = Twilio::REST::Client.new(@account_sid, auth_token)
 
 		configuration = @client.conversations
-                       .services([ENV['TWILIO_SERVICE_SID']])
+                       .services(ENV['TWILIO_SERVICE_SID'])
                        .configuration
                        .update(reachability_enabled: true)
 		
