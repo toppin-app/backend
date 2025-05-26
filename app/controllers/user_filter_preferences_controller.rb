@@ -15,6 +15,12 @@ class UserFilterPreferencesController < ApplicationController
 
   # GET /user_filter_preferences/1 or /user_filter_preferences/1.json
   def show
+    respond_to do |format|
+      format.html
+      format.json do
+        render json: @user_filter_preference.as_json(methods: :gender_preferences_array)
+      end
+    end
   end
 
   # GET /user_filter_preferences/new
@@ -28,20 +34,20 @@ class UserFilterPreferencesController < ApplicationController
 
   # POST /user_filter_preferences or /user_filter_preferences.json
   def create
-
     UserFilterPreference.where(user_id: params[:user_id]).destroy_all
 
-    @user_filter_preference = UserFilterPreference.new(user_filter_preference_params)
+    if params[:gender_preferences].is_a?(Array)
+      params[:user_filter_preference][:gender_preferences] = params[:gender_preferences].join(',')
+    end
 
+    @user_filter_preference = UserFilterPreference.new(user_filter_preference_params)
     @user_filter_preference.interests = params[:interests].to_json
     @user_filter_preference.categories = params[:categories].to_json
 
-
     respond_to do |format|
       if @user_filter_preference.save
-
         format.html { redirect_to @user_filter_preference, notice: "User filter preference was successfully created." }
-        format.json { render :show, status: :created, location: @user_filter_preference }
+        format.json { render json: @user_filter_preference.as_json(methods: :gender_preferences_array), status: :created, location: @user_filter_preference }
       else
         format.html { render :new, status: :unprocessable_entity }
         format.json { render json: @user_filter_preference.errors, status: :unprocessable_entity }
@@ -51,10 +57,14 @@ class UserFilterPreferencesController < ApplicationController
 
   # PATCH/PUT /user_filter_preferences/1 or /user_filter_preferences/1.json
   def update
+    if params[:gender_preferences].is_a?(Array)
+      params[:user_filter_preference][:gender_preferences] = params[:gender_preferences].join(',')
+    end
+
     respond_to do |format|
       if @user_filter_preference.update(user_filter_preference_params)
         format.html { redirect_to @user_filter_preference, notice: "User filter preference was successfully updated." }
-        format.json { render :show, status: :ok, location: @user_filter_preference }
+        format.json { render json: @user_filter_preference.as_json(methods: :gender_preferences_array), status: :ok, location: @user_filter_preference }
       else
         format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @user_filter_preference.errors, status: :unprocessable_entity }
