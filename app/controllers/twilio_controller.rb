@@ -253,7 +253,7 @@ class TwilioController < ApplicationController
 
 		send_message_to_conversation(conversation_sid, 606, message)
 
-		redirect_to show_user_path(id: umr.target_user), notice: 'Match generado con éxito.'
+		#redirect_to show_user_path(id: umr.target_user), notice: 'Match generado con éxito.'
 
 
 	end
