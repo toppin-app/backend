@@ -553,21 +553,28 @@ class UsersController < ApplicationController
     logger.info "USERS0"
    # logger.info users.inspect
 
-    rejected = UserMatchRequest.rejected(current_user_id)
-    rejected_users = rejected.pluck(:user_id) + rejected.pluck(:target_user)
+    # IDs de usuarios a los que el current_user ha dado LIKE o DISLIKE.
+    # Estas son interacciones que el current_user ha INICIADO.
+    my_sent_interactions = UserMatchRequest.where(user_id: current_user_id).pluck(:target_user)
 
+    # IDs de usuarios que han interactuado con el current_user (LIKE o DISLIKE)
+    # y cuya interacción el current_user YA HA PROCESADO (es decir, ya se hizo match o ya se rechazó).
+    my_received_processed_interactions = UserMatchRequest.where(target_user: current_user_id)
+                                                         .where("is_match = ? OR is_rejected = ?", true, true)
+                                                         .pluck(:user_id)
 
+    # Combinamos todas las IDs de usuarios que no deberían volver a aparecer.
+    # Esto incluye a los que yo descarté/gusteé y a los que me gustaron/descartaron
+    # y ya procesé la interacción.
+    users_to_exclude = (my_sent_interactions + my_received_processed_interactions).uniq
 
-    matches = current_user.matches
-    matched_users = matches.pluck(:user_id) +  matches.pluck(:target_user)
+    # MUY IMPORTANTE: Asegúrate de que el propio usuario (current_user) no se incluya en los resultados.
+    users_to_exclude << current_user_id
 
-    rejected_users = rejected_users + matched_users
-    rejected_users = rejected_users.uniq
+    logger.info "USUARIOS A EXCLUIR: " + users_to_exclude.inspect
 
-
-    logger.info "REJECTED::"+rejected_users.inspect
-
-    users = users.where.not(id: rejected_users)
+    # Aplicamos el filtro para excluir a todos estos usuarios de la lista.
+    users = users.where.not(id: users_to_exclude)
     puts("------------------")
     puts("------------------")
     puts("------------------ 3 ")
