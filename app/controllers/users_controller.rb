@@ -1146,3 +1146,4 @@ class UsersController < ApplicationController
         user_media: [:id, :file, :position]
       )
     end
+    end
