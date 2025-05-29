@@ -1135,6 +1135,7 @@ class UsersController < ApplicationController
     end
 
     # Only allow a list of trusted parameters through.def user_params
+    def user_params
       params.permit(
         :id, :email, :name, :password, :password_confirmation, :user_name, :blocked,
         :current_subscription_id, :show_publi, :current_subscription_name, :verified,
