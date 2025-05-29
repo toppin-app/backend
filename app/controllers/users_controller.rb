@@ -102,9 +102,9 @@ class UsersController < ApplicationController
   # PATCH/PUT /users/1.json
   def update
 
-    if params[:user]&.[](:password).blank?
-      params[:user]&.delete(:password)
-      params[:user]&.delete(:password_confirmation)
+    if params[:user][:password].blank?
+      params.delete(:password)
+      params.delete(:password_confirmation)
     end
 
     if params[:id]
@@ -1134,8 +1134,14 @@ class UsersController < ApplicationController
       @user = User.find(params[:id])
     end
 
-    # Only allow a list of trusted parameters through.
-    def user_params
-      params.require(:user).permit(:email, :name, :password, :password_confirmation, :user_name, :blocked, :current_subscription_id, :show_publi, :current_subscription_name, :verified, :verification_file, :push_token, :device_id, :device_platform, :description, :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection, :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in, :locality, :country, :lat, :lng, :occupation, :studies, :popularity, user_media:[:id, :file, :position])
+    # Only allow a list of trusted parameters through.def user_params
+      params.permit(
+        :id, :email, :name, :password, :password_confirmation, :user_name, :blocked,
+        :current_subscription_id, :show_publi, :current_subscription_name, :verified,
+        :verification_file, :push_token, :device_id, :device_platform, :description,
+        :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
+        :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
+        :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
+        user_media: [:id, :file, :position]
+      )
     end
-end
