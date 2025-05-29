@@ -102,11 +102,10 @@ class UsersController < ApplicationController
   # PATCH/PUT /users/1.json
   def update
 
-    if params[:user][:password].blank?
-      params[:user].delete :password
-      params[:user].delete :password_confirmation
+    if params[:user]&.[](:password).blank?
+      params[:user]&.delete(:password)
+      params[:user]&.delete(:password_confirmation)
     end
-
 
     if params[:id]
       @user = User.find(params[:id])
