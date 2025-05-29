@@ -16,9 +16,6 @@
       <div class="card text-white bg-success mb-3">
         <div class="card-header">Versión Android</div>
         <div class="card-body">
-          <p class="card-text">Última versión: <strong><%= @app_versions.first.android_last_version %></strong></p>
-          <p class="card-text">Versión mínima requerida: <strong><%= @app_versions.first.android_last_version_required %></strong></p>
-          <p class="card-text">Enlace Android Store: <strong><%= @app_versions.first.android_store_link %></strong></p>
           <%= form_with model: @app_versions.first, url: app_version_path(@app_versions.first), method: :patch, local: true do |f| %>
             <div class="form-group">
               <label for="android_last_version">Editar Última versión Android</label>
@@ -42,9 +39,6 @@
       <div class="card text-white bg-secondary mb-3">
         <div class="card-header">Versión iOS</div>
         <div class="card-body">
-          <p class="card-text">Última versión: <strong><%= @app_versions.first.ios_last_version %></strong></p>
-          <p class="card-text">Versión mínima requerida: <strong><%= @app_versions.first.ios_last_version_required %></strong></p>
-          <p class="card-text">Enlace iOS Store: <strong><%= @app_versions.first.ios_store_link %></strong></p>
           <%= form_with model: @app_versions.first, url: app_version_path(@app_versions.first), method: :patch, local: true do |f| %>
             <div class="form-group">
               <label for="ios_last_version">Editar Última versión iOS</label>
