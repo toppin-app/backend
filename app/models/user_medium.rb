@@ -11,15 +11,6 @@ class UserMedium < ApplicationRecord
     self.position = self.user.user_media.count
   end
 
-  validate :max_user_media_limit, on: :create
-
-  private
-
-  def max_user_media_limit
-    if user.user_media.count >= 9
-      errors.add(:base, "No puedes tener más de 9 fotos en tu perfil")
-    end
-  end
 
   def update_user
       self.user.update(updated_at: DateTime.now)
