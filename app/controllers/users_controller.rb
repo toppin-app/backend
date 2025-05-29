@@ -120,7 +120,7 @@ class UsersController < ApplicationController
       if @user.update(user_params)
 
         if params[:images].to_s.blank?
-            params[:user][:images].each do |image|
+            params[:images].each do |image|
               photo = UserMedium.create(file: image, user_id: @user.id)
               photo.save
             end
