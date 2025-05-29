@@ -30,7 +30,7 @@ class UserMainInterestsController < ApplicationController
   end
 
   # POST /user_main_interests/bulk_create.json
-  def bulk_create(user_main_interests: nil)
+  def bulk_create
     interests = user_main_interests || params[:user_main_interests]
     return false unless interests
 
