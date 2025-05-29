@@ -103,7 +103,7 @@ class UsersController < ApplicationController
   def update
 
     if params[:password].to_s.blank?
-      # Si no se ha introducido password, lo eliminamos de los parámetros
+      
       params.delete(:password)
       params.delete(:password_confirmation)
     end
@@ -119,8 +119,8 @@ class UsersController < ApplicationController
 
       if @user.update(user_params)
 
-        if params[:images]
-            params[:images].each do |image|
+        if params[:user][:images]
+            params[:user][:images].each do |image|
               photo = UserMedium.create(file: image, user_id: @user.id)
               photo.save
             end
@@ -473,15 +473,6 @@ class UsersController < ApplicationController
     current_user_id = current_user.id
     filter_preference = UserFilterPreference.find_by(user_id: current_user_id)
 
-    
-    puts("------------------")
-    puts("------------------")
-    puts("------------------ 0 ")
-    puts(filter_preference)
-    puts(current_user_id)
-    puts("##################")
-    puts("##################")
-    puts("##################")
 
 
     # Calculamos rango de fechas de nacimiento posibles para el filtro edad.
@@ -511,43 +502,13 @@ class UsersController < ApplicationController
         AND user_id != #{current_user_id}
     SQL
 
-    puts("------------------")
-    puts("------------------")
-    puts("------------------ 0.5 ")
-    puts(sql)
-    puts("##################")
-    puts("##################")
-    puts("##################")
-
     user_ids = ActiveRecord::Base.connection.exec_query(sql)
 
     users = User.where(id: user_ids.map { |u| u["user_id"] })
-    puts("------------------")
-    puts("------------------")
-    puts("------------------ 1 ")
-    puts(users)
-    puts("------------------ 1.1 ")
-    puts(user_ids)
-    puts("------------------ 1.2 ")
-    puts(current_user.lat)
-    puts(current_user.lng)
-    puts(filter_preference.distance_range)
-    puts("##################")
-    puts("##################")
-    puts("##################")
-    ##
+
 
     limit_users_per_swipe = 20
     users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
-
-    puts("------------------")
-    puts("------------------")
-    puts("------------------ 2 ")
-    puts(users.to_a)
-    puts("##################")
-    puts("##################")
-    puts("##################")
-    
 
 
     logger.info "USERS0"
@@ -575,28 +536,14 @@ class UsersController < ApplicationController
 
     # Aplicamos el filtro para excluir a todos estos usuarios de la lista.
     users = users.where.not(id: users_to_exclude)
-    puts("------------------")
-    puts("------------------")
-    puts("------------------ 3 ")
-    puts(users)
-    puts(start_date)
-    puts(end_date)
-    puts("##################")
-    puts("##################")
-    puts("##################")
+
 
     # Edad
     if filter_preference.age_from.present? and filter_preference.age_till.present?
        users = users.born_between(start_date, end_date)
     end
 
-    puts("------------------")
-    puts("------------------")
-    puts("------------------ 4 ")
-    puts(users)
-    puts("##################")
-    puts("##################")
-    puts("##################")
+
 
     # Filtro usuarios verificados
     if filter_preference.only_verified_users
