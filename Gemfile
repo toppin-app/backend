@@ -18,6 +18,8 @@ gem 'rpush'
 gem 'fog-aws'
 gem 'aws-sdk'
 gem 'dotenv-rails'
+gem 'googleauth' # Para autenticación con Firebase
+gem 'httparty'   # Para hacer peticiones HTTP
 #Gema JWT
 gem 'devise-jwt'
 

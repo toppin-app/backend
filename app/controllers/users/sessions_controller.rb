@@ -32,6 +32,21 @@ class Users::SessionsController < Devise::SessionsController
      set_flash_message!(:notice, :signed_in)
      sign_in(@user)
 
+      if @user.device_token.present?  # Asegúrate que el usuario tenga un device_token válido
+      begin
+        firebase_service = FirebasePushService.new
+        firebase_service.send_notification(
+          token: @user.device_token,
+          title: "¡Hola #{@user.name}!",
+          body: "Has iniciado sesión correctamente."
+        )
+      rescue => e
+        Rails.logger.error "Error enviando notificación FCM: #{e.message}"
+      end
+    else
+      Rails.logger.info "Usuario #{@user.id} no tiene device_token, no se envía notificación."
+    end
+
      if @user.twilio_sid.blank?
         twilio = TwilioController.new
         twilio.generate_user_in_twilio(@user.id)
