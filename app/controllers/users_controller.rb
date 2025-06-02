@@ -506,6 +506,10 @@ class UsersController < ApplicationController
 
     users = User.where(id: user_ids.map { |u| u["user_id"] })
 
+        # Filtro por el género que yo busco
+    if filter_preference.gender_preferences.present? && filter_preference.gender_preferences != "gender_any"
+      users = users.where(gender: filter_preference.gender_preferences.split(","))
+    end
 
     limit_users_per_swipe = 20
     users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
