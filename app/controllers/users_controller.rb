@@ -119,11 +119,11 @@ class UsersController < ApplicationController
 
       if @user.update(user_params)
 
-        if params[:user][:images]
-            params[:user][:images].each do |image|
-              photo = UserMedium.create(file: image, user_id: @user.id)
-              photo.save
-            end
+        if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array) && params[:user][:images].any?
+          params[:user][:images].each do |image|
+            photo = UserMedium.create(file: image, user_id: @user.id)
+            photo.save
+          end
         end
 
         if params[:info_item_values]
