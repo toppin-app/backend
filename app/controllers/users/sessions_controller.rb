@@ -39,8 +39,8 @@ class Users::SessionsController < Devise::SessionsController
               token: device.token,
               title: "¡Hola #{@user.name || 'usuario'}!",
               body: "Bienvenido de nuevo a Toppin 👋",
-              sound: "Sms.mp3",
               data: { login: "true" }
+              sound: "Sms.mp3",
             )
           end
         end
