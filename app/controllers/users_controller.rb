@@ -211,7 +211,14 @@ class UsersController < ApplicationController
 
 
     Thread.new do
-      Device.sendIndividualPush(umr.target_user,"¡Wow! Tienes nuevos admiradores :-)","Has recibido nuevos me gusta", "like", nil, "push_likes")
+      #Device.sendIndividualPush(umr.target_user,"¡Wow! Tienes nuevos admiradores :-)","Has recibido nuevos me gusta", "like", nil, "push_likes")
+      FirebasePushService.new.send_notification(
+        token: umr.target_user.device_token,
+        title: "¡Wow! Tienes nuevos admiradores :-)",
+        body: "Has recibido nuevos me gusta",
+        data: {},
+        sound: "match"
+      )
     end
 
     redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
