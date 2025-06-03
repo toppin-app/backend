@@ -17,7 +17,12 @@ gem 'geocoder'
 gem 'rpush'
 gem 'fog-aws'
 gem 'aws-sdk'
-gem 'dotenv-rails'  # Para hacer peticiones HTTP
+gem 'dotenv-rails'
+gem 'googleauth', '~> 1.10.0'
+gem 'google-cloud-env', '< 2.3.0'
+gem 'signet', '< 0.20.0'
+gem 'multi_xml', '< 0.6.0'
+gem 'httparty'   # Para hacer peticiones HTTP
 #Gema JWT
 gem 'devise-jwt'
 

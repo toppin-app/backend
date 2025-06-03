@@ -20,39 +20,43 @@ class Users::SessionsController < Devise::SessionsController
 
 
   # POST /resource/sign_in
-  def create
+    def create
+      @user = User.find_by(email: params[:user][:email])
 
-  # raise auth_options.inspect
-#   self.resource = warden.authenticate!(auth_options)
+      if @user && !@user.blocked && @user.valid_password?(params[:user][:password])
+        set_flash_message!(:notice, :signed_in)
+        sign_in(@user)
 
-    @user = User.find_by(email: params[:user][:email])
+        if @user.twilio_sid.blank?
+          twilio = TwilioController.new
+          twilio.generate_user_in_twilio(@user.id)
+        end
 
+        # ✅ Enviar push a todos los dispositivos guardados (con FirebasePushService)
+        devices = Device.where(user_id: @user.id)
+        devices.each do |device|
+          if device.token.present?
+            FirebasePushService.new.send_notification(
+              token: device.token,
+              title: "¡Hola #{@user.name || 'usuario'}!",
+              body: "Bienvenido de nuevo a Toppin 👋",
+              data: { login: "true" }
+            )
+          end
+        end
 
-    if @user and !@user.blocked and @user.valid_password?(params[:user][:password])
-     set_flash_message!(:notice, :signed_in)
-     sign_in(@user)
+        respond_to do |format|
+          format.html { redirect_to root_path }
+          format.json { render 'users/show' }
+        end
 
-     if @user.twilio_sid.blank?
-        twilio = TwilioController.new
-        twilio.generate_user_in_twilio(@user.id)
-     end
-
-
-      respond_to do |format|
-        format.html  { redirect_to root_path }
-        # format.json  { render json: user.as_json }
-        format.json  { render 'users/show' }
-      end
-     
-
-    else
+      else
         render json: {
-            error: "No such user; check the submitted email address",
-            status: 400
-          }, status: 400
-    end
-
-  end
+          error: "No such user; check the submitted email address",
+          status: 400
+        }, status: 400
+      end
+end
 
 
     private
