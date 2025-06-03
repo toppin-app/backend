@@ -7,7 +7,7 @@ class FirebasePushService
   def initialize
     scope = ['https://www.googleapis.com/auth/firebase.messaging']
     authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
-      json_key_io: File.open(Rails.root.join('config/firebase/toppin-firebase-adminsdk.json')),
+      json_key_io: File.open(Rails.root.join('config/toppin-firebase-adminsdk.json')),
       scope: scope
     )
     authorizer.fetch_access_token!
