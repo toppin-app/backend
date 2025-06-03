@@ -40,7 +40,7 @@ class Users::SessionsController < Devise::SessionsController
               title: "¡Hola #{@user.name || 'usuario'}!",
               body: "Bienvenido de nuevo a Toppin 👋",
               data: { login: "true" },
-              sound: "Match.mp3"
+              sound: "match"
             )
           end
         end
