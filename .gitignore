@@ -28,7 +28,7 @@
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
-/config/toppin-firebase.adminsdk.json
+**/toppin-firebase.adminsdk.json
 
 # /public/packs
 /public/packs-test
