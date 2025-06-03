@@ -209,14 +209,14 @@ class UsersController < ApplicationController
        umr = UserMatchRequest.create(user_id: params[:user_id], target_user: params[:target_user], is_like: true, is_rejected: false, is_superlike: false)
     end
 
-
-    Thread.new do
-      #Device.sendIndividualPush(umr.target_user,"¡Wow! Tienes nuevos admiradores :-)","Has recibido nuevos me gusta", "like", nil, "push_likes")
+  puts "UMR::"+umr.inspect
+  # ENVÍA EL PUSH EN EL HILO PRINCIPAL
+    if umr.target_user.device_token.present?
       FirebasePushService.new.send_notification(
         token: umr.target_user.device_token,
         title: "¡Wow! Tienes nuevos admiradores :-)",
         body: "Has recibido nuevos me gusta",
-        data: {},
+        data: { action: "like", user_id: umr.user_id.to_s },
         sound: "match"
       )
     end
