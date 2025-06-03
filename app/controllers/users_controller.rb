@@ -211,17 +211,17 @@ class UsersController < ApplicationController
 
     target_user = User.find(umr.target_user)
     devices = Device.where(user_id: target_user.id)
-    devices.each do |device|
-      if device.token.present?
-        FirebasePushService.new.send_notification(
-          token: device.token,
-          title: "¡Wow! Tienes nuevos admiradores :-)",
-          body: "Has recibido nuevos me gusta",
-          data: { action: "like", user_id: umr.user_id.to_s },
-          sound: "match"
-        )
-      end
-    end
+    # devices.each do |device|
+    #   if device.token.present?
+    #     FirebasePushService.new.send_notification(
+    #       token: device.token,
+    #       title: "¡Wow! Tienes nuevos admiradores :-)",
+    #       body: "Has recibido nuevos me gusta",
+    #       data: { action: "like", user_id: umr.user_id.to_s },
+    #       sound: "match"
+    #     )
+    #   end
+    # end
 
     redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
   end
