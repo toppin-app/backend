@@ -14,18 +14,18 @@ class FirebasePushService
     @access_token = authorizer.access_token
   end
 
-    def send_notification(token:, title:, body:, data: {}, sound:)
-      payload = {
-        message: {
-          token: token,
-          notification: {
-            title: title,
-            body: body,
-            sound: sound
-          },
-          data: data
-        }
+  def send_notification(token:, title:, body:, data: {}, sound: "default")
+    payload = {
+      message: {
+        token: token,
+        notification: {
+          title: title,
+          body: body,
+          sound: sound
+        },
+        data: data
       }
+    }
 
     headers = {
       "Authorization" => "Bearer #{@access_token}",
