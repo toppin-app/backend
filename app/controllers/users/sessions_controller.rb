@@ -32,7 +32,6 @@ class Users::SessionsController < Devise::SessionsController
           twilio.generate_user_in_twilio(@user.id)
         end
 
-        # ✅ Enviar push a todos los dispositivos guardados (con FirebasePushService)
         devices = Device.where(user_id: @user.id)
         devices.each do |device|
           if device.token.present?
@@ -40,6 +39,7 @@ class Users::SessionsController < Devise::SessionsController
               token: device.token,
               title: "¡Hola #{@user.name || 'usuario'}!",
               body: "Bienvenido de nuevo a Toppin 👋",
+              sound: "Sms.mp3",
               data: { login: "true" }
             )
           end
