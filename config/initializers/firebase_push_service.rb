@@ -20,7 +20,7 @@ class FirebasePushService
         token: token,
         notification: {
           title: title,
-          body: body
+          body: body,
           sound: sound
         },
         data: data
