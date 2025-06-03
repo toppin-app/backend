@@ -73,7 +73,7 @@ class UserMatchRequestsController < ApplicationController
 
               # Mandamos la push al usuario del match.
               if target_user.push_match?
-                 Device.sendIndividualPush(umr.user_id,"Nuevo match"," Tienes un nuevo match en Toppin", "match", nil, "push_match")
+                 #Device.sendIndividualPush(umr.user_id,"Nuevo match"," Tienes un nuevo match en Toppin", "match", nil, "push_match")
               end
 
           end
@@ -121,9 +121,20 @@ class UserMatchRequestsController < ApplicationController
             current_user.update(likes_left: current_user.likes_left-1, last_like_given: DateTime.now)
           end
 
+          
           if umr.is_like and !umr.is_superlike
-            Thread.new do
-              Device.sendIndividualPush(umr.target_user,"¡Wow! Tienes nuevos admiradores :-)","Has recibido nuevos me gusta", "like", nil, "push_likes")
+            target_user = User.find(umr.target_user)
+            devices = Device.where(user_id: target_user.id)
+            devices.each do |device|
+              if device.token.present?
+                FirebasePushService.new.send_notification(
+                  token: device.token,
+                  title: "¡Wow! Tienes nuevos admiradores :-)",
+                  body: "Has recibido nuevos me gusta",
+                  data: { action: "like", user_id: umr.user_id.to_s },
+                  sound: "push_likes"
+                )
+              end
             end
           end
 
