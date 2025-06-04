@@ -852,6 +852,9 @@ class UsersController < ApplicationController
               "bear" => 14,
               "battery" => 16
       }
+         end
+       end
+
 
       available = current_user.spin_roulette_available-1
       current_user.update(last_roulette_played: DateTime.now, spin_roulette_available: available)
@@ -1092,7 +1095,7 @@ class UsersController < ApplicationController
       @user = User.find(params[:id])
     end
 
-    # Only allow a list of trusted parameters through.def user_params
+    # Only allow a list of trusted parameters
     def user_params
       params.permit(
         :id, :email, :name, :password, :password_confirmation, :user_name, :blocked,
@@ -1105,3 +1108,5 @@ class UsersController < ApplicationController
       )
     end
     end
+    end
+  
