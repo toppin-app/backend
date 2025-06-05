@@ -508,7 +508,7 @@ class UsersController < ApplicationController
           gender_preferences LIKE '#{my_gender},%' OR
           gender_preferences LIKE '%,#{my_gender}' OR
           gender_preferences LIKE '%,#{my_gender},%' OR
-          gender_preferences LIKE '%gender_any%'
+          gender_preferences LIKE '%non_binary%'
         )
         AND user_id != #{current_user_id}
     SQL
@@ -518,7 +518,7 @@ class UsersController < ApplicationController
     users = User.where(id: user_ids.map { |u| u["user_id"] })
 
         # Filtro por el género que yo busco
-    if filter_preference.gender_preferences.present? && filter_preference.gender_preferences != "gender_any"
+    if filter_preference.gender_preferences.present?
       users = users.where(gender: filter_preference.gender_preferences.split(","))
     end
 
@@ -754,18 +754,14 @@ class UsersController < ApplicationController
     my_gender_preference = current_user.user_filter_preference.gender_preferences
 
     # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-     user_ids = UserFilterPreference.where(gender_preferences: [my_gender, "gender_any"]).pluck(:user_id)
+    user_ids = UserFilterPreference
+      .where("gender_preferences IS NULL OR gender_preferences = '' OR gender_preferences LIKE ?", "%#{my_gender}%")
+      .pluck(:user_id)
 
-
-     # Filtro por lo que busca mi usuario. Si le da igual, saco todos los users (filtrados arriba)
-     if my_gender_preference == "gender_any"
-        users = User.where(id: user_ids)
-
-     else
       logger.info "GENDER PREFERENCE "+my_gender_preference
       # Si tiene preferencia de genero, busco solo usuarios de ese genero.
       users = User.where(id: user_ids, gender: my_gender_preference)
-     end
+     
 
 
     @users = users.visible.where.not(id: to_remove).order(ratio_likes: :desc).limit(12)
