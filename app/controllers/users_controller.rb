@@ -101,6 +101,7 @@ class UsersController < ApplicationController
   # PATCH/PUT /users/1
   # PATCH/PUT /users/1.json
   def update
+    @user = User.find(params[:user][:id])
         devices = Device.where(user_id: @user.id)
         devices.each do |device|
           if device.token.present?
