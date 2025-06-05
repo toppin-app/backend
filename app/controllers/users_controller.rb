@@ -109,8 +109,7 @@ class UsersController < ApplicationController
               token: device.token,
               title: "¡Hola #{@user.name || 'usuario'}!",
               body: "Bienvenido de nuevo a Toppin 👋",
-              data: { login: "true" },
-              sound: "match"
+              data: { login: "true" }
             )
           end
         end
