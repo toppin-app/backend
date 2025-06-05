@@ -152,6 +152,8 @@ class UserMatchRequestsController < ApplicationController
           # Si es un superlike, lo usamos y notificamos.
           if umr.is_superlike
              current_user.use_superlike
+              target_user = User.find(umr.target_user)
+              devices = Device.where(user_id: target_user.id)
               if target_user.push_likes?
                  Device.sendIndividualPush(umr.target_user,"Nuevo super sweet"," Alguien te ha dado un super sweet en Toppin :-)", "superlike", nil, "push_likes")
               end
