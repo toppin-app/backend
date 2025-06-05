@@ -228,8 +228,7 @@ class UsersController < ApplicationController
            token: device.token,
            title: "¡Wow! Tienes nuevos admiradores :-)",
            body: "Has recibido nuevos me gusta",
-           data: { action: "like", user_id: umr.user_id.to_s },
-           sound: "match"
+           data: { action: "like", user_id: umr.user_id.to_s }
          )
        end
      end
