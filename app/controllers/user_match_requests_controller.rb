@@ -155,7 +155,17 @@ class UserMatchRequestsController < ApplicationController
               target_user = User.find(umr.target_user)
               devices = Device.where(user_id: target_user.id)
               if target_user.push_likes?
-                 Device.sendIndividualPush(umr.target_user,"Nuevo super sweet"," Alguien te ha dado un super sweet en Toppin :-)", "superlike", nil, "push_likes")
+                 #Device.sendIndividualPush(umr.target_user,"Nuevo super sweet"," Alguien te ha dado un super sweet en Toppin :-)", "superlike", nil, "push_likes")
+              devices.each do |device|
+              if device.token.present?
+                FirebasePushService.new.send_notification(
+                  token: device.token,
+                  title: "¡Wow! Nuevo super sweet!",
+                  body: "Alguien te ha dado un super sweet en Toppin :-)",
+                  data: { action: "like", user_id: umr.user_id.to_s }
+                )
+              end
+            end
               end
           end
 
