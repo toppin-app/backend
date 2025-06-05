@@ -17,7 +17,7 @@ class User < ApplicationRecord
   has_many :spotify_user_data, dependent: :destroy
   mount_base64_uploader :verification_image, ImageUploader
   # Model enums
-  enum gender: { female: 0, male: 1, gender_any: 2, couple: 3 }
+  enum gender: { female: 0, male: 1, non_binary: 2, couple: 3 }
   enum popularity: { low_popularity: 0, medium_popularity: 1, high_popularity: 2 }
   enum activity_level: { low_activity: 0, medium_activity: 1, high_activity: 2 }
 
