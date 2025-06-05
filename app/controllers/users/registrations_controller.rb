@@ -71,10 +71,10 @@ class Users::RegistrationsController < Devise::RegistrationsController
                 if !result
                     media.destroy
                 end
-                allowed_genders = ["male", "female", "gender_any", "couple"]
+                allowed_genders = ["male", "female", "non_binary", "couple"]
                 selected_genders = params[:user][:gender_filter] # Esto ahora será un array o una cadena
 
-                    allowed_genders = ["male", "female", "gender_any","couple"]
+                    allowed_genders = ["male", "female", "non_binary","couple"]
                     selected_genders = params[:user][:gender_filter]
 
                     # Aseguramos que selected_genders sea un array para poder iterar sobre él
