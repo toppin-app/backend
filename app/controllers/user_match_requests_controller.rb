@@ -72,18 +72,17 @@ class UserMatchRequestsController < ApplicationController
               current_user.recalculate_ranking
 
               # Mandamos la push al usuario del match.
-              if target_user.push_match?
-                target_user = User.find(umr.target_user)
-                devices = Device.where(user_id: target_user.id)
-
+              match_user = User.find(umr.user_id)
+              if match_user.push_match?
+                devices = Device.where(user_id: match_user.id)
                 devices.each do |device|
                   if device.token.present?
                     FirebasePushService.new.send_notification(
                       token: device.token,
                       title: "Nuevo match",
                       body: "Tienes un nuevo match en Toppin",
-                      data: { action: "like", user_id: umr.user_id.to_s }
-                    )
+                      body: "Tienes un nuevo sweet match en Toppin",
+                      data: { action: "like", user_id: umr.target_user.to_s }
                   end
                 end
               end
