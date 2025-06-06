@@ -81,7 +81,8 @@ class UserMatchRequestsController < ApplicationController
                       token: device.token,
                       title: "Nuevo match",
                       body: "Tienes un nuevo sweet match en Toppin",
-                      data: { action: "like", user_id: umr.target_user.to_s }
+                      data: { action: "like", user_id: umr.target_user.to_s },
+                      sound: "match"
                     )
                   end
                 end
