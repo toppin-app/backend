@@ -341,7 +341,14 @@ class UsersController < ApplicationController
 
     users.each do |user|
       user.update(high_visibility: false)
-      Device.sendIndividualPush(user.id,"Tu power sweet ha finalizado", "", "boost_ended")
+      FirebasePushService.new.send_notification(
+        token: user.device.token,
+        title: "Tu power sweet ha caducado",
+        body: "Tu power sweet ha caducado, ya no estás en la parte superior de la lista de usuarios.",
+        data: { action: "boost_expired" }
+      )
+      
+      # Device.sendIndividualPush(user.id, "Tu power sweet ha caducado", "Ya no estás en la parte superior de la lista de usuarios.", nil, nil, "boost_expired")
     end
 
     render json: "OK".to_json
