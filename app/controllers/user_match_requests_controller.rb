@@ -80,9 +80,9 @@ class UserMatchRequestsController < ApplicationController
                     FirebasePushService.new.send_notification(
                       token: device.token,
                       title: "Nuevo match",
-                      body: "Tienes un nuevo match en Toppin",
                       body: "Tienes un nuevo sweet match en Toppin",
                       data: { action: "like", user_id: umr.target_user.to_s }
+                    )
                   end
                 end
               end
