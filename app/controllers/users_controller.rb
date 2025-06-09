@@ -569,6 +569,15 @@ class UsersController < ApplicationController
     # Aplicamos el filtro para excluir a todos estos usuarios de la lista.
     users = users.where.not(id: users_to_exclude)
 
+    # IDs de usuarios bloqueados por el usuario actual (complaints)
+    blocked_user_ids = Complaint.where(user_id: current_user_id).pluck(:to_user_id)
+    users_to_exclude += blocked_user_ids
+    users_to_exclude = users_to_exclude.uniq
+
+    logger.info "USUARIOS A EXCLUIR: " + users_to_exclude.inspect
+
+    # Aplicamos el filtro para excluir a todos estos usuarios de la lista.
+    users = users.where.not(id: users_to_exclude)
 
     # Edad
     if filter_preference.age_from.present? and filter_preference.age_till.present?
