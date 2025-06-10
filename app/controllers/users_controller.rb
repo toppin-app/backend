@@ -151,8 +151,9 @@ class UsersController < ApplicationController
             @user.user_filter_preference&.update(distance_range: params[:distance_range])
         end
 
-        if params[:gender_preferences]
-          @user.user_filter_preference&.update(gender_preferences: params[:gender_preferences])
+        if params[:gender_preferences].is_a?(Array)
+          joined_preferences = params[:gender_preferences].join(',')
+          @user.user_filter_preference&.update(gender_preferences: joined_preferences)
         end
 
         if params[:user_interests]
