@@ -164,8 +164,12 @@ class UsersController < ApplicationController
         end
 
         if params[:user_main_interests]
-          user_main_interests_controller = UserMainInterestsController.new
-          user_main_interests_controller.bulk_create(user_main_interests: params[:user_main_interests])
+          params[:user_main_interests].each do |umi|
+            umi = umi.with_indifferent_access
+            umi_record = UserMainInterest.find_or_initialize_by(user_id: @user.id, interest_id: umi[:interest_id])
+            umi_record.percentage = umi[:percentage]
+            umi_record.save
+          end
         end
 
         format.html { redirect_to show_user_path(id: @user.id), notice: 'User was successfully updated.' }
