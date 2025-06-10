@@ -152,8 +152,7 @@ class UsersController < ApplicationController
         end
 
         if params[:gender_preferences].is_a?(Array)
-          joined_preferences = params[:gender_preferences].join(',')
-          @user.user_filter_preference&.update(gender_preferences: joined_preferences)
+            params[:user_filter_preference][:gender_preferences] = params[:gender_preferences].join(',')
         end
 
         if params[:user_interests]
