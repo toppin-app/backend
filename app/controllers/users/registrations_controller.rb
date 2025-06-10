@@ -19,7 +19,8 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
             if params[:user][:social]
                 resource.social = params[:user][:social]
-                resource.password = Digest::SHA1.hexdigest([Time.now, rand].join) # Random password
+                resource.password = SecureRandom.urlsafe_base64(32)
+                resource.save # Contraseña aleatoria segura
             end
 
 
