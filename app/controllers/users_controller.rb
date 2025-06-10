@@ -101,18 +101,7 @@ class UsersController < ApplicationController
   # PATCH/PUT /users/1
   # PATCH/PUT /users/1.json
   def update
-    @user = User.find(params[:user][:id])
-        devices = Device.where(user_id: @user.id)
-        devices.each do |device|
-          if device.token.present?
-            FirebasePushService.new.send_notification(
-              token: device.token,
-              title: "¡Hola #{@user.name || 'usuario'}!",
-              body: "Bienvenido de nuevo a Toppin 👋",
-              data: { login: "true" }
-            )
-          end
-        end
+    
     if params[:password].to_s.blank?
       
       params.delete(:password)
