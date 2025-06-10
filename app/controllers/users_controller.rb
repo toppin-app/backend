@@ -1131,8 +1131,7 @@ class UsersController < ApplicationController
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
-        languages: [], gender_preferences: [],
-        user_info_item_values_attributes: [:id, :info_item_value_id, :_destroy]
+        languages: []
       )
     end
     end
