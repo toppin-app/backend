@@ -165,7 +165,6 @@ class UsersController < ApplicationController
 
         if params[:user_main_interests]
           params[:user_main_interests].each do |umi|
-            umi = umi.with_indifferent_access
             umi_record = UserMainInterest.find_or_initialize_by(user_id: @user.id, interest_id: umi[:interest_id])
             umi_record.percentage = umi[:percentage]
             umi_record.save
@@ -1130,7 +1129,8 @@ class UsersController < ApplicationController
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
-        languages: [],
+        languages: [], gender_preferences: [],
+        user_info_item_values_attributes: [:id, :info_item_value_id, :_destroy]
       )
     end
     end
