@@ -20,7 +20,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
             if params[:user][:social]
                 resource.social = params[:user][:social]
                 resource.password = SecureRandom.urlsafe_base64(32)
-                resource.save # Contraseña aleatoria segura
+                resource.save
             end
 
 
