@@ -27,7 +27,7 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :trackable,
          :recoverable, :rememberable, :validatable, :jwt_authenticatable, jwt_revocation_strategy: self
 
-
+  validate :password_complexity
   # Scope para filtrar por fecha de nacimiento.
   scope :born_between, -> (start_date, end_date)  { where("birthday BETWEEN ? AND ?", start_date, end_date ) }
   scope :active, -> { where(blocked: false) }
@@ -38,6 +38,16 @@ class User < ApplicationRecord
   after_create :create_filters
   before_destroy :destroy_match_requests
 
+
+
+  def password_complexity
+      return if password.blank?
+
+      regex = /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-=\[\]{};':"\\|,.<>\/?]).{8,}\z/
+      unless password.match(regex)
+        errors.add :password, "debe tener al menos 8 caracteres, una minúscula, una mayúscula, un número y un carácter especial."
+      end
+  end
 
   def id_with_name
     "#{id} # #{name}"
