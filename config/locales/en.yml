@@ -30,6 +30,25 @@
 # available at https://guides.rubyonrails.org/i18n.html.
 
 en:
-  hello: "Hello world"
-  date:
-    day_names: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+  notifications:
+    match:
+      title: "New match"
+      body: "You have a new sweet match!"
+    message:
+      title: "New message"
+      body: "You've received a new message"
+    like:
+      title: "New like"
+      body: "Someone liked you"
+    super_like:
+      title: "New super sweet"
+      body: "Someone gift you a super sweet"
+    super_like_match 
+      title: "New sweet match"
+      body: "Your super sweet now is a match!"   ###APUNTE DE TRADUCCIÓN
+    welcome_back:
+      title: "Hi %{name}!"
+      body: "Welcome back to Toppin 👋"
+    boost_expired:
+      title: "Your power sweet has expired"
+      body: "Your power sweet has expired, but you can reactivate it anytime"

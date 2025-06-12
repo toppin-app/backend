@@ -16,7 +16,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
             resource.device_id = params[:user][:device_id]
             resource.lat = params[:user][:lat]
             resource.lng = params[:user][:lng]
-
+            resource.language = params[:user][:language] || "ES" #TODO cambiar por el idioma del dispositivo
             if params[:user][:social]
                 resource.social = params[:user][:social]
                 resource.password = SecureRandom.urlsafe_base64(32)

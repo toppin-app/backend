@@ -75,12 +75,13 @@ class UserMatchRequestsController < ApplicationController
               match_user = User.find(umr.user_id)
               if match_user.push_match?
                 devices = Device.where(user_id: match_user.id)
+                notification = NotificationLocalizer.for(user: umr.user, type: :match)
                 devices.each do |device|
                   if device.token.present?
                     FirebasePushService.new.send_notification(
                       token: device.token,
-                      title: "Nuevo match",
-                      body: "Tienes un nuevo sweet match en Toppin",
+                      title: notification[:title],
+                      body: notification[:body],
                       data: { action: "like", user_id: umr.target_user.to_s },
                       sound: "match"
                     )
@@ -137,12 +138,13 @@ class UserMatchRequestsController < ApplicationController
           if umr.is_like and !umr.is_superlike
             target_user = User.find(umr.target_user)
             devices = Device.where(user_id: target_user.id)
+            notification = NotificationLocalizer.for(user: umr.user, type: :like)
             devices.each do |device|
               if device.token.present?
                 FirebasePushService.new.send_notification(
                   token: device.token,
-                  title: "¡Wow! Tienes nuevos admiradores :-)",
-                  body: "Has recibido nuevos me gusta",
+                  title: notification[:title],
+                  body: notification[:body],
                   data: { action: "like", user_id: umr.user_id.to_s }
                 )
               end
@@ -154,14 +156,15 @@ class UserMatchRequestsController < ApplicationController
              current_user.use_superlike
               target_user = User.find(umr.target_user)
               devices = Device.where(user_id: target_user.id)
+              notification = NotificationLocalizer.for(user: umr.user, type: :superlike)
               if target_user.push_likes?
                  #Device.sendIndividualPush(umr.target_user,"Nuevo super sweet"," Alguien te ha dado un super sweet en Toppin :-)", "superlike", nil, "push_likes")
               devices.each do |device|
               if device.token.present?
                 FirebasePushService.new.send_notification(
                   token: device.token,
-                  title: "¡Wow! Nuevo super sweet!",
-                  body: "Alguien te ha dado un super sweet en Toppin :-)",
+                  title: notification[:title],
+                  body: notification[:body],
                   data: { action: "like", user_id: umr.user_id.to_s }
                 )
               end

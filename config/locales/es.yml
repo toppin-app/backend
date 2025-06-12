@@ -1,0 +1,23 @@
+es:
+  notifications:
+    match:
+      title: "Nuevo match"
+      body: "Tienes un nuevo sweet match!"
+    message:
+      title: "Nuevo mensaje"
+      body: "Has recibido un nuevo mensaje"
+    like:
+      title: "Nuevo like"
+      body: "A alguien le has gustado!"
+    super_like:
+      title: "Nuevo super sweet"
+      body: "Alguien te ha dado un super sweet"
+    super_like_match:
+      title: "Nuevo match"
+      body: "Tu super sweet ha sido un match"
+    welcome_back:
+      title: "¡Hola %{name}!"
+      body: "Bienvenido de nuevo a Toppin 👋"
+    boost_expired:
+      title: "Tu power sweet ha caducado"
+      body: "Tu power sweet ha caducado, pero puedes volver a activarlo en cualquier momento"

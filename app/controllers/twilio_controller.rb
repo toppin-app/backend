@@ -64,8 +64,19 @@ class TwilioController < ApplicationController
 
 
 		 Thread.new do
-	         #  Device.sendIndividualPush(receiver.id, sender.name+" te ha enviado un mensaje nuevo","Te está eperando en Toppin", nil, nil)
-			 Device.sendIndividualPush(receiver.id, nil,"Has recibido un mensaje nuevo de "+sender.name, nil, nil, "push_chat")    
+				notification = NotificationLocalizer.for(user: sender, type: :message)
+				devices = Device.where(user_id: receiver.id)
+
+				devices.each do |device|
+					next unless device.token.present?
+
+					FirebasePushService.new.send_notification(
+						token: device.token,
+						title: notification[:title],
+						body: notification[:body],
+						data: { action: "chat", user_id: sender.id.to_s }
+					)
+				end
 		  end
 
 	      
