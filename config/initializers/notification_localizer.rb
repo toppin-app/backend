@@ -1,10 +1,12 @@
 class NotificationLocalizer
   def self.for(user:, type:, params: {})
+    Rails.logger.info "NotificationLocalizer: user.language=#{user.language.inspect}"
     locale = case user.language
-             when 0, '0', :es, 'es', 'ES' then :es
-             when 1, '1', :en, 'en', 'EN' then :en
+             when 'es', :es, 'ES' then :es
+             when 'en', :en, 'EN' then :en
              else I18n.default_locale
              end
+    Rails.logger.info "NotificationLocalizer: locale=#{locale}"
 
     I18n.with_locale(locale) do
       {
