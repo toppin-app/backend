@@ -4,6 +4,7 @@ class UsersController < ApplicationController
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation]
 
+
   CRON_TOKEN = "8b645d9b-2679-4a9d-a295-faa88e9dca8c".freeze
 
 
@@ -141,9 +142,10 @@ class UsersController < ApplicationController
         end
 
         if params[:gender_preferences]
-              user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
-              value = params[:gender_preferences].is_a?(Array) ? params[:gender_preferences].join(",") : params[:gender_preferences]
-              user_filter_pref.update(gender_preferences: value)
+          user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
+          # Aquí puedes guardar el array como string, igual que en el otro controlador
+          value = params[:gender_preferences].is_a?(Array) ? params[:gender_preferences].join(",") : params[:gender_preferences]
+          user_filter_pref.update(gender_preferences: value)
         end
 
         if params[:user_interests]
@@ -1120,7 +1122,7 @@ class UsersController < ApplicationController
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
-        languages: []
+        language: []
       )
     end
     end
