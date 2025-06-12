@@ -43,9 +43,9 @@ en:
     super_like:
       title: "New super sweet"
       body: "Someone gift you a super sweet"
-    super_like_match 
+    super_like_match:
       title: "New sweet match"
-      body: "Your super sweet now is a match!"   ###APUNTE DE TRADUCCIÓN
+      body: "Your super sweet now is a match!" ###APUNTE DE TRADUCCIÓN
     welcome_back:
       title: "Hi %{name}!"
       body: "Welcome back to Toppin 👋"
