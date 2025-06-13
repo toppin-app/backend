@@ -15,14 +15,16 @@ class FirebasePushService
   end
 
   def send_notification(token:, title:, body:, data: {}, sound: "default", image: nil)
+    notification_payload = {
+      title: title,
+      body: body
+    }
+    notification_payload[:image] = image if image.present?
+
     payload = {
       message: {
         token: token,
-        notification: {
-          title: title,
-          body: body,
-          image: image
-        },
+        notification: notification_payload, # <- Esto es clave para iOS
         data: data.transform_keys(&:to_s),
         android: {
           notification: {
@@ -30,9 +32,17 @@ class FirebasePushService
           }
         },
         apns: {
+          headers: {
+            "apns-priority": "10"
+          },
           payload: {
             aps: {
-              sound: sound
+              alert: {
+                title: title,
+                body: body
+              },
+              sound: sound,
+              content_available: true
             }
           }
         }
