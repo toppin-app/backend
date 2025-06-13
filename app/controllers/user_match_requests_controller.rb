@@ -165,6 +165,7 @@ class UserMatchRequestsController < ApplicationController
                   token: device.token,
                   title: notification[:title],
                   body: notification[:body],
+                  image: notification[:image]
                   data: { action: "like", user_id: umr.user_id.to_s }
                 )
               end

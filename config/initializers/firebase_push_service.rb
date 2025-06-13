@@ -21,17 +21,20 @@ class FirebasePushService
             notification: {
               title: title,
               body: body
+              image: image
             },
             data: data.transform_keys(&:to_s), # Asegúrate de que las claves sean strings
             android: {
               notification: {
                 sound: sound
+                image: image
               }
             },
             apns: {
               payload: {
                 aps: {
                   sound: sound
+                  image: image  
                 }
               }
             }
