@@ -15,31 +15,34 @@ class FirebasePushService
   end
 
   def send_notification(token:, title:, body:, data: {}, sound: "default", image: nil)
-        payload = {
-          message: {
-            token: token,
-            notification: {
-              title: title,
-              body: body,
-              image: image
-            },
-            data: data.transform_keys(&:to_s), # Asegúrate de que las claves sean strings
-            android: {
-              notification: {
-                sound: sound,
-                image: image
-              }
-            },
-            apns: {
-              payload: {
-                aps: {
-                  sound: sound,
-                  image: image  
-                }
-              }
+    payload = {
+      message: {
+        token: token,
+        notification: {
+          title: title,
+          body: body
+        },
+        data: data.transform_keys(&:to_s),
+        android: {
+          notification: {
+            sound: sound
+          }
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: sound
             }
           }
         }
+      }
+    }
+
+    if image.present?
+      payload[:message][:notification][:image] = image
+      payload[:message][:android][:notification][:image] = image
+      # No agregar image en aps
+    end
 
     headers = {
       "Authorization" => "Bearer #{@access_token}",
