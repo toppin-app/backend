@@ -157,7 +157,7 @@ class UserMatchRequestsController < ApplicationController
              current_user.use_superlike
               target_user = User.find(umr.target_user)
               devices = Device.where(user_id: target_user.id)
-              notification = NotificationLocalizer.for(user: umr.user, type: :super_like)
+              notification = NotificationLocalizer.for(user: target.user, type: :super_like)
               if target_user.push_likes?
                  #Device.sendIndividualPush(umr.target_user,"Nuevo super sweet"," Alguien te ha dado un super sweet en Toppin :-)", "superlike", nil, "push_likes")
               devices.each do |device|
