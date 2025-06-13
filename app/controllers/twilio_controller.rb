@@ -63,21 +63,8 @@ class TwilioController < ApplicationController
 
 
 
-		 Thread.new do
-				notification = NotificationLocalizer.for(user: sender, type: :message)
-				devices = Device.where(user_id: receiver.id)
-
-				devices.each do |device|
-					next unless device.token.present?
-
-					FirebasePushService.new.send_notification(
-						token: device.token,
-						title: notification[:title],
-						body: notification[:body],
-						data: { action: "chat", user_id: sender.id.to_s }
-					)
-				end
-		  end
+		SendChatNotificationJob.perform_later(receiver.id, sender.id)
+		logger.info "Notification sent to user: "+receiver.id.to_s
 
 	      
 
