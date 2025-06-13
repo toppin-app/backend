@@ -43,6 +43,8 @@ en:
     super_like:
       title: "New super sweet"
       body: "Someone gift you a super sweet"
+      image: "https://i.imgur.com/bHlB732.jpeg"
+
     super_like_match:
       title: "New sweet match"
       body: "Your super sweet now is a match!" ###APUNTE DE TRADUCCIÓN
