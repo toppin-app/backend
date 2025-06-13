@@ -21,6 +21,7 @@ class FirebasePushService
         notification: {
           title: title,
           body: body
+          image: "https://i.imgur.com/bHlB732.jpeg"
         },
         data: data.transform_keys(&:to_s),
         android: {
@@ -37,11 +38,6 @@ class FirebasePushService
         }
       }
     }
-
-    if image.present?
-      payload[:message][:notification][:image] = image
-      # No agregar image en aps
-    end
 
     headers = {
       "Authorization" => "Bearer #{@access_token}",
