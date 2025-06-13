@@ -159,6 +159,7 @@ class UserMatchRequestsController < ApplicationController
               devices = Device.where(user_id: target_user.id)
               notification = NotificationLocalizer.for(user: target.user, type: :super_like)
               if target_user.push_likes?
+                 #Device.sendIndividualPush(umr.target_user,"Nuevo super sweet"," Alguien te ha dado un super sweet en Toppin :-)", "superlike", nil, "push_likes")
               devices.each do |device|
               if device.token.present?
                 FirebasePushService.new.send_notification(
@@ -168,7 +169,6 @@ class UserMatchRequestsController < ApplicationController
                   image: notification[:image],
                   data: { action: "like", user_id: umr.user_id.to_s }
                 )
-              end
               end
             end
               end
