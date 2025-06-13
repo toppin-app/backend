@@ -12,6 +12,7 @@ class NotificationLocalizer
       {
         title: I18n.t("notifications.#{type}.title", **params),
         body: I18n.t("notifications.#{type}.body", **params)
+        image: I18n.t("notifications.#{type}.image", **params)
       }
     end
   end

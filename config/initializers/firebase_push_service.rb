@@ -21,7 +21,7 @@ class FirebasePushService
         notification: {
           title: title,
           body: body,
-          image: "https://i.imgur.com/bHlB732.jpeg"
+          image: image
         },
         data: data.transform_keys(&:to_s),
         android: {
