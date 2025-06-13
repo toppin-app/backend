@@ -145,6 +145,7 @@ class UserMatchRequestsController < ApplicationController
                   token: device.token,
                   title: notification[:title],
                   body: notification[:body],
+                  image: notification[:image],
                   data: { action: "like", user_id: umr.user_id.to_s }
                 )
               end
@@ -219,7 +220,7 @@ class UserMatchRequestsController < ApplicationController
           else
             render json: "OK1".as_json
           end
-          current_user.update(next_sugar_play: 100)
+          current_user.update(next_sugar_play: 120)
           logger.info result.inspect
         else
           current_user.update(next_sugar_play: current_user.next_sugar_play-1)
