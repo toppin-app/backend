@@ -9,10 +9,13 @@ class NotificationLocalizer
     Rails.logger.info "NotificationLocalizer: locale=#{locale}"
 
     I18n.with_locale(locale) do
+      # ¡AÑADE ESTA LÍNEA AQUÍ PARA DEFINIR 'image_url'!
+      image_url = I18n.t("notifications.#{type}.image", default: nil) # <--- Esta es la línea que falta
+
       {
         title: I18n.t("notifications.#{type}.title", **params),
         body: I18n.t("notifications.#{type}.body", **params),
-        image: image_url
+        image: image_url # Ahora 'image_url' ya está definida cuando se usa aquí
       }
     end
   end
