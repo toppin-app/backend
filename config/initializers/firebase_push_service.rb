@@ -20,7 +20,7 @@ class FirebasePushService
         token: token,
         notification: {
           title: title,
-          body: body
+          body: body,
           image: "https://i.imgur.com/bHlB732.jpeg"
         },
         data: data.transform_keys(&:to_s),
