@@ -40,7 +40,6 @@ class FirebasePushService
 
     if image.present?
       payload[:message][:notification][:image] = image
-      payload[:message][:android][:notification][:image] = image
       # No agregar image en aps
     end
 
