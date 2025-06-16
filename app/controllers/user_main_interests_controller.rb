@@ -58,14 +58,16 @@ def bulk_update
   end
 
   incoming_interest_ids = incoming_interests.map { |i| i[:interest_id].to_i }
-  existing_interests = current_user.user_main_interests.index_by(&:interest_id)
 
   # 1. Elimina los intereses actuales que no están en la nueva lista
   current_user.user_main_interests.where.not(interest_id: incoming_interest_ids).destroy_all
 
+  # 2. Recarga los intereses existentes después de eliminar
+  existing_interests = current_user.user_main_interests.index_by(&:interest_id)
+
   updated_or_created = []
 
-  # 2. Actualiza o crea los intereses recibidos
+  # 3. Actualiza o crea los intereses recibidos
   incoming_interests.each do |interest_params|
     permitted = interest_params.permit(:user_id, :interest_id, :percentage, :name)
     interest_id = permitted[:interest_id].to_i
