@@ -32,17 +32,38 @@ class UserMainInterestsController < ApplicationController
   # POST /user_main_interests/bulk_create.json
   def bulk_create(user_main_interests: nil)
     interests = user_main_interests || params[:user_main_interests]
-    return false unless interests
+    return render json: { error: "No se enviaron intereses" }, status: :unprocessable_entity unless interests
 
-    # Borra los datos existentes para el user_id
-    UserMainInterest.where(user_id: interests.first[:user_id]).destroy_all
+    user_id = interests.first[:user_id]
+    current_count = UserMainInterest.where(user_id: user_id).count
 
-    # Crea nuevos datos
-    @user_main_interests = interests.map do |interest|
-      UserMainInterest.create(interest.permit(:user_id, :interest_id, :percentage, :name))
+    # Si intenta guardar más de 4 intereses, error
+    if interests.size > 4
+      return render json: { error: "Solo puedes guardar hasta 4 intereses" }, status: :unprocessable_entity
     end
 
-    if @user_main_interests.all?(&:persisted?)
+    # Si ya existen intereses, solo permite hasta 4 en total
+    if interests.size > 4
+      return render json: { error: "Solo puedes guardar hasta 4 intereses" }, status: :unprocessable_entity
+    end
+
+    results = []
+    interests.each do |interest_params|
+      permitted = interest_params.permit(:user_id, :interest_id, :percentage, :name)
+      umi = UserMainInterest.find_by(user_id: permitted[:user_id], interest_id: permitted[:interest_id])
+      if umi
+        umi.update(permitted)
+        results << umi
+      else
+        if UserMainInterest.where(user_id: permitted[:user_id]).count < 4
+          results << UserMainInterest.create(permitted)
+        else
+          return render json: { error: "Solo puedes guardar hasta 4 intereses" }, status: :unprocessable_entity
+        end
+      end
+    end
+
+    if results.all?(&:persisted?)
       render json: { message: "Intereses guardados correctamente" }, status: :ok
     else
       render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
