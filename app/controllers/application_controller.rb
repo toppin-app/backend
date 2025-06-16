@@ -4,12 +4,7 @@ class ApplicationController < ActionController::Base
      respond_to :json, :html
      before_action :set_titles, :save_last_connection
      before_action :authenticate_user!
-     before_action :skip_session_for_json
 
-     
-      def skip_session_for_json
-         request.session_options[:skip] = true if request.format.json?
-      end
      def set_titles
     #  logger.info request.authorization.inspect
         @meta_title = APP_CONFIG["default_meta_title"]
