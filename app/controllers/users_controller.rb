@@ -157,7 +157,17 @@ class UsersController < ApplicationController
         end
 
         if params[:user_main_interests]
-          params[:user_main_interests].each do |umi|
+          incoming = params[:user_main_interests]
+          if !incoming.is_a?(Array) || incoming.size != 4
+            return render json: { error: "Debes enviar exactamente 4 intereses" }, status: :unprocessable_entity
+          end
+
+          incoming_ids = incoming.map { |i| i[:interest_id].to_i }
+          # Elimina los intereses viejos que no estén en la nueva lista
+          @user.user_main_interests.where.not(interest_id: incoming_ids).destroy_all
+
+          # Actualiza o crea los nuevos
+          incoming.each do |umi|
             umi_record = UserMainInterest.find_or_initialize_by(user_id: @user.id, interest_id: umi[:interest_id])
             umi_record.percentage = umi[:percentage]
             umi_record.save
