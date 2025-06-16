@@ -32,43 +32,60 @@ class UserMainInterestsController < ApplicationController
   # POST /user_main_interests/bulk_create.json
   def bulk_create(user_main_interests: nil)
     interests = user_main_interests || params[:user_main_interests]
-    return render json: { error: "No se enviaron intereses" }, status: :unprocessable_entity unless interests
+    return false unless interests
 
-    user_id = interests.first[:user_id]
-    current_count = UserMainInterest.where(user_id: user_id).count
+    # Borra los datos existentes para el user_id
+    UserMainInterest.where(user_id: interests.first[:user_id]).destroy_all
 
-    # Si intenta guardar más de 4 intereses, error
-    if interests.size > 4
-      return render json: { error: "Solo puedes guardar hasta 4 intereses" }, status: :unprocessable_entity
+    # Crea nuevos datos
+    @user_main_interests = interests.map do |interest|
+      UserMainInterest.create(interest.permit(:user_id, :interest_id, :percentage, :name))
     end
 
-    # Si ya existen intereses, solo permite hasta 4 en total
-    if interests.size > 4
-      return render json: { error: "Solo puedes guardar hasta 4 intereses" }, status: :unprocessable_entity
-    end
-
-    results = []
-    interests.each do |interest_params|
-      permitted = interest_params.permit(:user_id, :interest_id, :percentage, :name)
-      umi = UserMainInterest.find_by(user_id: permitted[:user_id], interest_id: permitted[:interest_id])
-      if umi
-        umi.update(permitted)
-        results << umi
-      else
-        if UserMainInterest.where(user_id: permitted[:user_id]).count < 4
-          results << UserMainInterest.create(permitted)
-        else
-          return render json: { error: "Solo puedes guardar hasta 4 intereses" }, status: :unprocessable_entity
-        end
-      end
-    end
-
-    if results.all?(&:persisted?)
+    if @user_main_interests.all?(&:persisted?)
       render json: { message: "Intereses guardados correctamente" }, status: :ok
     else
       render json: { error: "Error al guardar uno o más intereses" }, status: :unprocessable_entity
     end
   end
+  # PATCH /user_main_interests/bulk_update.json
+# PATCH /user_main_interests/bulk_update.json
+def bulk_update
+  incoming_interests = params.require(:user_main_interests)
+  
+  if !incoming_interests.is_a?(Array) || incoming_interests.size != 4
+    return render json: { error: "Debes enviar exactamente 4 intereses" }, status: :unprocessable_entity
+  end
+
+  existing_interests = current_user.user_main_interests.index_by(&:interest_id)
+  updated_or_created = []
+  incoming_interest_ids = []
+
+  incoming_interests.each do |interest_params|
+    permitted = interest_params.permit(:interest_id, :percentage, :name)
+    interest_id = permitted[:interest_id].to_i
+    incoming_interest_ids << interest_id
+
+    if existing = existing_interests[interest_id]
+      # Solo actualiza si cambia algo
+      if existing.percentage != permitted[:percentage].to_f || existing.name != permitted[:name]
+        existing.update(permitted)
+      end
+      updated_or_created << existing
+    else
+      # Crea nuevo si no existe
+      new_interest = current_user.user_main_interests.create(permitted)
+      updated_or_created << new_interest
+    end
+  end
+
+  # Elimina los que ya no están en la nueva lista
+  to_delete_ids = existing_interests.keys - incoming_interest_ids
+  current_user.user_main_interests.where(interest_id: to_delete_ids).destroy_all if to_delete_ids.any?
+
+  render json: { message: "Intereses actualizados correctamente", data: updated_or_created }, status: :ok
+end
+
 
   # PATCH/PUT /user_main_interests/1 or /user_main_interests/1.json
   def update
