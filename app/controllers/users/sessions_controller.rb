@@ -33,17 +33,7 @@ class Users::SessionsController < Devise::SessionsController
         end
 
         devices = Device.where(user_id: @user.id)
-        devices.each do |device|
-          if device.token.present?
-            FirebasePushService.new.send_notification(
-              token: device.token,
-              title: "¡Hola #{@user.name || 'usuario'}!",
-              body: "Bienvenido de nuevo a Toppin 👋",
-              data: { login: "true" },
-              sound: "match"
-            )
-          end
-        end
+
 
 
         respond_to do |format|
