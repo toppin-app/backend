@@ -52,19 +52,19 @@ class UserMainInterestsController < ApplicationController
 # PATCH /user_main_interests/bulk_update.json
 def bulk_update
   incoming_interests = params.require(:user_main_interests)
-  
+
   if !incoming_interests.is_a?(Array) || incoming_interests.size != 4
     return render json: { error: "Debes enviar exactamente 4 intereses" }, status: :unprocessable_entity
   end
 
   existing_interests = current_user.user_main_interests.index_by(&:interest_id)
   updated_or_created = []
-  incoming_interest_ids = []
+  incoming_interest_ids = incoming_interests.map { |i| i[:interest_id].to_i }
 
+  # Actualiza o crea los intereses enviados
   incoming_interests.each do |interest_params|
     permitted = interest_params.permit(:user_id, :interest_id, :percentage, :name)
     interest_id = permitted[:interest_id].to_i
-    incoming_interest_ids << interest_id
 
     if existing = existing_interests[interest_id]
       # Solo actualiza si cambia algo
@@ -73,19 +73,20 @@ def bulk_update
       end
       updated_or_created << existing
     else
-      # Crea nuevo si no existe
+      # Si no existe, elimina uno viejo (el primero que no esté en la nueva lista)
+      if current_user.user_main_interests.count >= 4
+        to_delete = current_user.user_main_interests.where.not(interest_id: incoming_interest_ids).first
+        to_delete.destroy if to_delete
+      end
       new_interest = current_user.user_main_interests.create(permitted)
       updated_or_created << new_interest
     end
   end
 
-  # Elimina los que ya no están en la nueva lista
-  to_delete_ids = existing_interests.keys - incoming_interest_ids
-  current_user.user_main_interests.where(interest_id: to_delete_ids).destroy_all if to_delete_ids.any?
-
-  # Validar que el usuario solo tenga 4 intereses
+  # Asegura que solo haya 4 intereses
   if current_user.user_main_interests.count > 4
-    return render json: { error: "Solo puedes tener 4 intereses principales" }, status: :unprocessable_entity
+    extras = current_user.user_main_interests.where.not(interest_id: incoming_interest_ids)
+    extras.destroy_all
   end
 
   render json: { message: "Intereses actualizados correctamente", data: updated_or_created }, status: :ok
