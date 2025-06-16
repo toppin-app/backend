@@ -57,11 +57,15 @@ def bulk_update
     return render json: { error: "Debes enviar exactamente 4 intereses" }, status: :unprocessable_entity
   end
 
-  existing_interests = current_user.user_main_interests.index_by(&:interest_id)
-  updated_or_created = []
   incoming_interest_ids = incoming_interests.map { |i| i[:interest_id].to_i }
+  existing_interests = current_user.user_main_interests.index_by(&:interest_id)
 
-  # Actualiza o crea los intereses enviados
+  # Elimina los intereses actuales que no están en la nueva lista
+  to_delete = current_user.user_main_interests.where.not(interest_id: incoming_interest_ids)
+  to_delete.destroy_all if to_delete.any?
+
+  updated_or_created = []
+
   incoming_interests.each do |interest_params|
     permitted = interest_params.permit(:user_id, :interest_id, :percentage, :name)
     interest_id = permitted[:interest_id].to_i
@@ -73,20 +77,10 @@ def bulk_update
       end
       updated_or_created << existing
     else
-      # Si no existe, elimina uno viejo (el primero que no esté en la nueva lista)
-      if current_user.user_main_interests.count >= 4
-        to_delete = current_user.user_main_interests.where.not(interest_id: incoming_interest_ids).first
-        to_delete.destroy if to_delete
-      end
+      # Crea el nuevo interés si no existe
       new_interest = current_user.user_main_interests.create(permitted)
       updated_or_created << new_interest
     end
-  end
-
-  # Asegura que solo haya 4 intereses
-  if current_user.user_main_interests.count > 4
-    extras = current_user.user_main_interests.where.not(interest_id: incoming_interest_ids)
-    extras.destroy_all
   end
 
   render json: { message: "Intereses actualizados correctamente", data: updated_or_created }, status: :ok
