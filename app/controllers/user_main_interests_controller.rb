@@ -62,7 +62,7 @@ def bulk_update
   incoming_interest_ids = []
 
   incoming_interests.each do |interest_params|
-    permitted = interest_params.permit(:interest_id, :percentage, :name)
+    permitted = interest_params.permit(:user_id, :interest_id, :percentage, :name)
     interest_id = permitted[:interest_id].to_i
     incoming_interest_ids << interest_id
 
@@ -82,6 +82,11 @@ def bulk_update
   # Elimina los que ya no están en la nueva lista
   to_delete_ids = existing_interests.keys - incoming_interest_ids
   current_user.user_main_interests.where(interest_id: to_delete_ids).destroy_all if to_delete_ids.any?
+
+  # Validar que el usuario solo tenga 4 intereses
+  if current_user.user_main_interests.count > 4
+    return render json: { error: "Solo puedes tener 4 intereses principales" }, status: :unprocessable_entity
+  end
 
   render json: { message: "Intereses actualizados correctamente", data: updated_or_created }, status: :ok
 end
