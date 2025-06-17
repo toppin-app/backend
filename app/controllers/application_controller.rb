@@ -7,6 +7,8 @@ class ApplicationController < ActionController::Base
 
      def set_titles
     #  logger.info request.authorization.inspect
+        Rails.logger.info "Cookies recibidas: #{request.cookies.inspect}"
+         Rails.logger.info "Headers: #{request.headers['Cookie']}"
         @meta_title = APP_CONFIG["default_meta_title"]
      end
 
