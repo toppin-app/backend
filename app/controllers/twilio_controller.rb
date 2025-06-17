@@ -1,6 +1,6 @@
 class TwilioController < ApplicationController
 
-	skip_before_action :authenticate_user!, :only => [:twilio_webhook]
+	skip_before_action :authenticate_user!, :only => [:twilio_webhook, :generate_access_token]
 	before_action :set_account
 
 
