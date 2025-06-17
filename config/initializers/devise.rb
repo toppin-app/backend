@@ -313,7 +313,7 @@ Devise.setup do |config|
     jwt.secret = Rails.application.credentials.DEVISE_JWT_SECRET_KEY
     
     jwt.dispatch_requests = [
-      ['POST', %r{^users/sign_in'$}],
+      ['POST', %r{^users/sign_in$}],
       ["POST", %r{^/users/sign_in$}],
       ["POST", %r{^/signup.json$}],
       ["POST", %r{^/users/sign_in.json$}],
@@ -326,4 +326,5 @@ Devise.setup do |config|
     ]
     jwt.expiration_time = 3650.day.to_i
  end
+ config.navigational_formats = []
 end
