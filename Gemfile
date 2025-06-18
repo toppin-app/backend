@@ -25,6 +25,7 @@ gem 'multi_xml', '< 0.6.0'
 gem 'httparty'   # Para hacer peticiones HTTP
 #Gema JWT
 gem 'devise-jwt'
+gem 'agora_dynamic_key'
 
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
