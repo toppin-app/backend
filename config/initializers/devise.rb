@@ -321,9 +321,6 @@ Devise.setup do |config|
       ['POST', %r{^/login.json$}],
       ['POST', %r{^/social_login_check.json$}],
     ]
-    jwt.revocation_requests = [
-      ['DELETE', %r{^logout$}]
-    ]
     jwt.expiration_time = 3650.day.to_i
  end
 end
