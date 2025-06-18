@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   resources :interest_categories
   resources :user_media
   resources :app_versions, only: [:index, :edit, :update]
+  resources :video_calls
 
   # Spotify para los administradores
   resources :users, except: [:index, :show, :new, :edit, :create, :update, :destroy] do
@@ -178,4 +179,12 @@ Rails.application.routes.draw do
 
   get '/app_version', to: 'app_versions#show'
   post '/app_version', to: 'app_versions#show'
+
+    # Rutas para videollamadas
+  post '/video_calls', to: 'video_calls#create'                  # Iniciar llamada
+  post '/video_calls/accept', to: 'video_calls#accept'          # Aceptar llamada
+  post '/video_calls/reject', to: 'video_calls#reject'          # Rechazar llamada
+  post '/video_calls/cancel', to: 'video_calls#cancel'          # Cancelar llamada
+  post '/video_calls/end_call', to: 'video_calls#end_call'      # Finalizar llamada
+  get  '/video_calls/active', to: 'video_calls#active'          # Verificar si el usuario está en una llamada activa
 end
