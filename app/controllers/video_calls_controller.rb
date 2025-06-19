@@ -1,5 +1,4 @@
 class VideoCallsController < ApplicationController
-  skip_before_action :verify_authenticity_token
   before_action :authenticate_user!
   # 1. Crear una nueva llamada (iniciar llamada)
   def create
