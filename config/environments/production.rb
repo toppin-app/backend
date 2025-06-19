@@ -44,6 +44,8 @@ Rails.application.configure do
   config.action_cable.allowed_request_origins = [
     'https://web-backend-ruby.uao3jo.easypanel.host'
   ]
+  config.action_cable.adapter = :async
+
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   # config.force_ssl = true
