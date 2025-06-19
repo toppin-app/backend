@@ -45,7 +45,7 @@ Rails.application.configure do
   /https?:\/\/web-backend-ruby\.uao3jo\.easypanel\.host/,
   /http:\/\/134\.122\.60\.29:3000/
 ]
-
+  config.action_cable.disable_request_forgery_protection = true
 
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
