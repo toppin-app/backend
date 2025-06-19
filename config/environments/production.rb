@@ -45,7 +45,6 @@ Rails.application.configure do
     'https://web-backend-ruby.uao3jo.easypanel.host',
     'http://web-backend-ruby.uao3jo.easypanel.host'
   ]
-  config.action_cable.adapter = :async
 
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
