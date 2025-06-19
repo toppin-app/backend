@@ -68,6 +68,15 @@ Rails.application.configure do
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 
+    config.active_storage.service = :local
+
+  # Mount Action Cable outside main process or domain.
+  config.action_cable.mount_path = '/cable'
+  config.action_cable.url = 'wss://web-backend-ruby.uao3jo.easypanel.host/cable'
+  config.action_cable.allowed_request_origins = [ /.+/ ]
+
+  config.action_cable.disable_request_forgery_protection = true
+
   # Raises error for missing translations.
   # config.action_view.raise_on_missing_translations = true
 
