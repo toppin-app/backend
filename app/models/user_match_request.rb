@@ -38,7 +38,11 @@ class UserMatchRequest < ApplicationRecord
 
 
   end
-
+  # Comprueba si existe un match confirmado entre dos usuarios
+  def self.match_confirmed_between?(user1, user2)
+  where(user_id: user1.id, target_user: user2.id, is_match: 1).exists? &&
+  where(user_id: user2.id, target_user: user1.id, is_match: 1).exists?
+end
   
 
 end

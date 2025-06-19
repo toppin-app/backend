@@ -5,7 +5,7 @@ class VideoCallsController < ApplicationController
   def create
     other_user = User.find(params[:receiver_id])
 
-    unless Match.exists_between?(current_user, other_user)
+    unless UserMatchRequest.match_confirmed_between?(current_user, other_user)
       return render json: { error: "No match" }, status: :forbidden
     end
 
