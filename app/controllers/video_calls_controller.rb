@@ -1,9 +1,9 @@
 class VideoCallsController < ApplicationController
+  skip_before_action :verify_authenticity_token
   before_action :authenticate_user!
-
   # 1. Crear una nueva llamada (iniciar llamada)
   def create
-    other_user = User.find(params[:user_id])
+    other_user = User.find(params[:receiver_id])
 
     unless Match.exists_between?(current_user, other_user)
       return render json: { error: "No match" }, status: :forbidden
