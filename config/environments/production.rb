@@ -41,10 +41,8 @@ Rails.application.configure do
   # Mount Action Cable outside main process or domain.
   config.action_cable.mount_path = '/cable'
   config.action_cable.url = 'wss://web-backend-ruby.uao3jo.easypanel.host/cable'
-  config.action_cable.allowed_request_origins = [
-    'https://web-backend-ruby.uao3jo.easypanel.host',
-    'http://134.122.60.29:3000'
-  ]
+  config.action_cable.allowed_request_origins = [ /.+/ ]
+
   config.action_cable.disable_request_forgery_protection = true
 
 
