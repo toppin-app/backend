@@ -1,6 +1,25 @@
 class VideoCallsController < ApplicationController
   before_action :authenticate_user!
 
+
+    def generate_token(channel:, uid:)
+      app_id = ENV.fetch("AGORA_APP_ID")
+      app_cert = ENV.fetch("AGORA_APP_CERTIFICATE")
+      expiration_seconds = 60
+      current_timestamp = Time.now.to_i
+      expire_timestamp = current_timestamp + expiration_seconds
+
+      AgoraDynamicKey::RtcTokenBuilder.build_token_with_uid(
+        app_id,
+        app_cert,
+        channel,
+        uid,
+        AgoraDynamicKey::RtcTokenBuilder::Role::PUBLISHER,
+        expire_timestamp
+      )
+    end
+
+
   # 1. Solicitar llamada: solo se envía notificación al receptor
   def create
     receiver = User.find(params[:receiver_id])
@@ -31,37 +50,39 @@ class VideoCallsController < ApplicationController
   end
 
   # 2. Aceptar llamada (sin necesidad de pasar caller_id desde el frontend)
-  def accept
+    def accept
     # Buscar la llamada temporal que se envió previamente
-    temp_call = Rails.cache.read("temp_call:*").values.find do |v|
-      v[:receiver_id] == current_user.id
-    end
+    temp_call = Rails.cache.read_multi(*Rails.cache.instance_variable_get(:@data).keys)
+                          .select { |k, v| k.start_with?("temp_call:") }
+                          .find { |_, v| v[:receiver_id] == current_user.id }
 
     return render json: { error: "No call found" }, status: :not_found unless temp_call
 
-    caller_id = Rails.cache.read("temp_call:*").key(temp_call).split(":").last.to_i
+    caller_id = temp_call[0].split(":").last.to_i
     caller = User.find_by(id: caller_id)
 
     unless caller && UserMatchRequest.match_confirmed_between?(caller, current_user)
       return render json: { error: "Invalid call" }, status: :forbidden
     end
 
-    # Crear la llamada ahora que ha sido aceptada
+    # Crear la llamada en la base de datos
     call = VideoCall.create!(
       user_1: caller,
       user_2: current_user,
-      agora_channel_name: temp_call[:channel_name],
+      agora_channel_name: temp_call[1][:channel_name],
       status: :active,
       started_at: Time.current
     )
 
     Rails.cache.delete("temp_call:#{caller.id}")
 
-    token = Agora::TokenGenerator.generate(
+    # ✅ Generar el token directamente aquí
+    token = generate_token(
       channel: call.agora_channel_name,
       uid: current_user.id
     )
 
+    # Notificar al otro usuario
     ActionCable.server.broadcast("call_#{caller.id}", {
       type: "call_accepted",
       receiver_id: current_user.id,
