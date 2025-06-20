@@ -39,13 +39,13 @@ class UserMatchRequest < ApplicationRecord
 
   end
   # Comprueba si existe un match confirmado entre dos usuarios
-def self.match_confirmed_between?(user_a, user_b)
-  where(
-    is_match: true,
-    user_id: [user_a, user_b],
-    target_user: [user_a, user_b]
-  ).exists?
-end
+    def self.match_confirmed_between?(user_a, user_b)
+      where(
+        is_match: true,
+        user_id: [user_a, user_b],
+        target_user: [user_a, user_b]
+      ).exists?
+    end
   
 
 end

@@ -1,6 +1,7 @@
 class CallChannel < ApplicationCable::Channel
   def subscribed
-    stream_from "call_#{current_user.id}"
+    reject unless current_user
+    stream_for current_user
   end
 
   def unsubscribed

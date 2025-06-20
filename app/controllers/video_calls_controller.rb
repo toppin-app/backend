@@ -1,5 +1,5 @@
 class VideoCallsController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  #skip_before_action :verify_authenticity_token
   before_action :authenticate_user!
 
 
@@ -20,39 +20,40 @@ class VideoCallsController < ApplicationController
       )
     end
 
-    def publish_socket_event(data)
-    $redis.publish("calls", data.to_json)
-    end
-
 
   # 1. Solicitar llamada: solo se envía notificación al receptor
   def create
     receiver = User.find(params[:receiver_id])
-
+    
     unless UserMatchRequest.match_confirmed_between?(current_user, receiver)
       return render json: { error: "No match" }, status: :forbidden
     end
 
-    if user_in_active_call?(receiver.id)
-      return render json: { error: "User is already in a call" }, status: :bad_request
-    end
+     #if user_in_active_call?(receiver.id)
+    #   return render json: { error: "User is already in a call" }, status: :bad_request
+     #end
 
-    channel_name = generate_channel_name(current_user.id, receiver.id)
+    channel_name = get_channel_name(current_user.id, receiver.id)
 
     # Guardamos temporalmente esta llamada para validación futura
-    Rails.cache.write("temp_call:#{current_user.id}", {
-      receiver_id: receiver.id,
-      channel_name: channel_name
-    }, expires_in: 2.minutes)
 
-        publish_socket_event({
-      type: "incoming_call",
-      receiver_id: receiver.id,
-      caller_id: current_user.id,
-      channel_name: channel_name
+  #       publish_socket_event({
+  #     type: "incoming_call",
+  #     receiver_id: receiver.id,
+   #    caller_id: current_user.id,
+   #    channel_name: channel_name
+   #  })
+
+    CallChannel.broadcast_to(receiver, {
+      message: {
+        type: "incoming_call",
+        receiver_id: receiver.id,
+        caller_id: current_user.id,
+        channel_name: channel_name
+      }
     })
-
-    render json: { success: true, message: "Call request sent", channel_name: channel_name }
+          
+    render json: { success: true }
   end
 
   # 2. Aceptar llamada (sin necesidad de pasar caller_id desde el frontend)
@@ -170,8 +171,8 @@ class VideoCallsController < ApplicationController
 
   private
 
-  def generate_channel_name(user1_id, user2_id)
-    "#{user1_id}-#{user2_id}-#{SecureRandom.hex(4)}"
+  def get_channel_name(caller_id, receiver_id)
+    "#{caller_id}-#{receiver_id}"
   end
 
   def user_in_active_call?(user_id)
