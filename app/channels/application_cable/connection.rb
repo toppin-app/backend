@@ -13,6 +13,7 @@ module ApplicationCable
 
       if token.present?
         begin
+          puts Rails.application.credentials.devise.inspect
           # Ajusta aquí la clave según cómo tengas configurado devise-jwt o tu JWT
           jwt = token.start_with?('Bearer ') ? token.split(' ', 2).last : token
           secret_key = Rails.application.credentials.devise[:jwt_secret_key]
