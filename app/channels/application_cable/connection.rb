@@ -10,7 +10,7 @@ module ApplicationCable
 
     def find_verified_user
       token = request.params[:token]
-
+        Rails.logger.info("🔐 Recibido token: #{token.inspect}")
       if token.present?
         begin
           jwt = token.start_with?('Bearer ') ? token.split(' ', 2).last : token
