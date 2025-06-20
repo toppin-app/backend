@@ -15,7 +15,7 @@ module ApplicationCable
         begin
           # Ajusta aquí la clave según cómo tengas configurado devise-jwt o tu JWT
           jwt = token.start_with?('Bearer ') ? token.split(' ', 2).last : token
-          secret_key = Rails.application.credentials.devise[:devise :jwt_secret_key]
+          secret_key = Rails.application.credentials.devise[:devise, :jwt_secret_key]
           decoded_token = JWT.decode(token, secret_key, true, algorithm: 'HS256')
           user_id = decoded_token[0]['sub'] # asumiendo que el user_id está en 'sub'
           return User.find(user_id)
