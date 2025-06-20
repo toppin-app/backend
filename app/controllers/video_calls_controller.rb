@@ -20,6 +20,10 @@ class VideoCallsController < ApplicationController
       )
     end
 
+      def publish_socket_event(data)
+    $redis.publish("calls", data.to_json)
+  end
+
 
   # 1. Solicitar llamada: solo se envía notificación al receptor
   def create
@@ -41,8 +45,9 @@ class VideoCallsController < ApplicationController
       channel_name: channel_name
     }, expires_in: 2.minutes)
 
-    ActionCable.server.broadcast("call_#{receiver.id}", {
+        publish_socket_event({
       type: "incoming_call",
+      receiver_id: receiver.id,
       caller_id: current_user.id,
       channel_name: channel_name
     })
