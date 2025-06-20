@@ -15,6 +15,8 @@ module ApplicationCable
         begin
           jwt = token.start_with?('Bearer ') ? token.split(' ', 2).last : token
           secret_key = ENV['DEVISE_JWT_SECRET_KEY']
+          Rails.logger.info("🔑 JWT secret key: #{secret_key.present? ? 'PRESENTE' : 'FALTA'}")
+          secret_key ||= Rails.application.credentials.dig(:jwt, :secret_key)
           unless secret_key
             Rails.logger.error("JWT secret key not found in credentials")
             reject_unauthorized_connection
