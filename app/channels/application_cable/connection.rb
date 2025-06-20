@@ -14,7 +14,7 @@ module ApplicationCable
       if token.present?
         begin
           jwt = token.start_with?('Bearer ') ? token.split(' ', 2).last : token
-          secret_key = Rails.application.credentials.dig(:devise, :jwt_secret_key)
+          secret_key = ENV['DEVISE_JWT_SECRET_KEY']
           unless secret_key
             Rails.logger.error("JWT secret key not found in credentials")
             reject_unauthorized_connection
