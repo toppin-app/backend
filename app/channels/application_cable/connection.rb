@@ -13,19 +13,20 @@ module ApplicationCable
 
       if token.present?
         begin
-          # Ajusta aquí la clave según cómo tengas configurado devise-jwt o tu JWT
           jwt = token.start_with?('Bearer ') ? token.split(' ', 2).last : token
-          secret_key = Rails.application.credentials.devise[:devise, :jwt_secret_key]
-          decoded_token = JWT.decode(token, secret_key, true, algorithm: 'HS256')
-          user_id = decoded_token[0]['sub'] # asumiendo que el user_id está en 'sub'
+          secret_key = Rails.application.credentials.dig(:devise, :jwt_secret_key)
+          unless secret_key
+            Rails.logger.error("JWT secret key not found in credentials")
+            reject_unauthorized_connection
+          end
+          decoded_token = JWT.decode(jwt, secret_key, true, algorithm: 'HS256')
+          user_id = decoded_token[0]['sub']
           return User.find(user_id)
-          rescue JWT::DecodeError, ActiveRecord::RecordNotFound
-          # Token inválido o usuario no encontrado
+        rescue JWT::DecodeError, ActiveRecord::RecordNotFound
           reject_unauthorized_connection
         end
       end
 
-      # Si no autenticó por ninguno, rechazamos
       reject_unauthorized_connection
     end
   end
