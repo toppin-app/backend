@@ -20,9 +20,9 @@ class VideoCallsController < ApplicationController
       )
     end
 
-      def publish_socket_event(data)
+    def publish_socket_event(data)
     $redis.publish("calls", data.to_json)
-  end
+    end
 
 
   # 1. Solicitar llamada: solo se envía notificación al receptor
