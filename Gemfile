@@ -26,6 +26,7 @@ gem 'httparty'   # Para hacer peticiones HTTP
 #Gema JWT
 gem 'devise-jwt'
 gem 'agora_dynamic_key'
+gem 'redis'
 
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
