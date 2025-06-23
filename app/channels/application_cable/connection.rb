@@ -1,6 +1,5 @@
 module ApplicationCable
   class Connection < ActionCable::Connection::Base
-    skip_before_action :verify_authenticity_token
     identified_by :current_user
 
     def connect
