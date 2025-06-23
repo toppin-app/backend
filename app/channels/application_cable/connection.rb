@@ -1,5 +1,6 @@
 module ApplicationCable
   class Connection < ActionCable::Connection::Base
+    skip before_action :authenticate_user!
     identified_by :current_user
 
     def connect
