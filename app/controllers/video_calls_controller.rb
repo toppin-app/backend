@@ -1,3 +1,4 @@
+require 'agora/rtc_token_builder'
 
 class VideoCallsController < ApplicationController
   skip_before_action :verify_authenticity_token
