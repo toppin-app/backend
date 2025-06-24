@@ -186,5 +186,6 @@ Rails.application.routes.draw do
   post '/video_calls/reject', to: 'video_calls#reject'          # Rechazar llamada
   post '/video_calls/cancel', to: 'video_calls#cancel'          # Cancelar llamada
   post '/video_calls/end_call', to: 'video_calls#end_call'      # Finalizar llamada
-  get  '/video_calls/active', to: 'video_calls#active'          # Verificar si el usuario está en una llamada activa
+  get  '/video_calls/active', to: 'video_calls#active'       # Ver si el usuario está en una llamada activa
+  post '/video_calls/generate_token', to: 'video_calls#generate_token'  # Obtener token de llamada
 end

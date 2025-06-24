@@ -5,7 +5,7 @@ class VideoCallsController < ApplicationController
   before_action :authenticate_user!
 
 
-    def generate_token(channel:, uid:)
+    def build_agora_token(channel:, uid:)
       app_id = ENV.fetch("AGORA_APP_ID")
       app_cert = ENV.fetch("AGORA_APP_CERTIFICATE")
       expiration_seconds = 60
@@ -70,13 +70,6 @@ class VideoCallsController < ApplicationController
 
   channel_name = get_channel_name(caller.id, current_user.id)
 
-  # Generar el token para el receptor
-  token = generate_token(
-    channel: channel_name,
-    uid: current_user.id
-  )
-
-  # Notificar al llamador
   CallChannel.broadcast_to(caller, {
     message: {
       type: "call_accepted",
@@ -85,10 +78,7 @@ class VideoCallsController < ApplicationController
     }
   })
 
-  render json: {
-    token: token,
-    channel_name: channel_name
-  }
+  head :ok
 end
 
   # 3. Rechazar llamada antes de que se cree en DB
@@ -157,7 +147,40 @@ end
     end
   end
 
+  # 7. Obtener credenciales RTC
+  def generate_token
+    caller_id = params[:caller_id]
+    receiver_id = params[:receiver_id]
+
+    return render json: { error: "No caller_id" }, status: :bad_request unless caller_id
+    return render json: { error: "No receiver_id" }, status: :bad_request unless receiver_id
+
+    caller = User.find_by(id: caller_id)
+    receiver = User.find_by(id: receiver_id)
+
+    return render json: { error: "Caller not found" }, status: :not_found unless caller
+    return render json: { error: "Receiver not found" }, status: :not_found unless receiver
+
+    unless UserMatchRequest.match_confirmed_between?(caller, receiver)
+      return render json: { error: "Invalid call" }, status: :forbidden
+    end
+
+    channel_name = get_channel_name(caller.id, receiver.id)
+
+    token = build_agora_token(
+      channel: channel_name,
+      uid: current_user.id
+    )
+
+    render json: {
+      token: token,
+      channel_name: channel_name
+    }
+  end
+
   private
+
+  
 
   def get_channel_name(caller_id, receiver_id)
     "#{caller_id}-#{receiver_id}"
