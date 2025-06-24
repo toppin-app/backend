@@ -31,9 +31,6 @@ class VideoCallsController < ApplicationController
 
     channel_name = get_channel_name(current_user.id, receiver.id)
 
-    # Guarda la llamada temporal y la referencia para el receptor
-    Rails.cache.write("temp_call:#{current_user.id}", { receiver_id: receiver.id, channel_name: channel_name })
-    Rails.cache.write("pending_call_for:#{receiver.id}", current_user.id)
 
     CallChannel.broadcast_to(receiver, {
       message: {
@@ -48,70 +45,67 @@ class VideoCallsController < ApplicationController
 
   # 2. Aceptar llamada (sin necesidad de pasar caller_id desde el frontend)
     def accept
-    # Buscar la llamada temporal que se envió previamente
-    temp_call = Rails.cache.read_multi(*Rails.cache.instance_variable_get(:@data).keys)
-                          .select { |k, v| k.start_with?("temp_call:") }
-                          .find { |_, v| v[:receiver_id] == current_user.id }
+  # Buscar el caller_id de la llamada pendiente para el usuario actual
+  caller_id = Rails.cache.read("pending_call_for:#{current_user.id}")
+  return render json: { error: "No call found" }, status: :not_found unless caller_id
 
-    return render json: { error: "No call found" }, status: :not_found unless temp_call
+  temp_call = Rails.cache.read("temp_call:#{caller_id}")
+  return render json: { error: "No call found" }, status: :not_found unless temp_call
 
-    caller_id = temp_call[0].split(":").last.to_i
-    caller = User.find_by(id: caller_id)
+  caller = User.find_by(id: caller_id)
 
-    unless caller && UserMatchRequest.match_confirmed_between?(caller, current_user)
-      return render json: { error: "Invalid call" }, status: :forbidden
-    end
-
-    # Crear la llamada en la base de datos
-    call = VideoCall.create!(
-      user_1: caller,
-      user_2: current_user,
-      agora_channel_name: temp_call[1][:channel_name],
-      status: :active,
-      started_at: Time.current
-    )
-
-    Rails.cache.delete("temp_call:#{caller.id}")
-
-    # ✅ Generar el token directamente aquí
-    token = generate_token(
-      channel: call.agora_channel_name,
-      uid: current_user.id
-    )
-
-    # Notificar al otro usuario
-    CallChannel.server.broadcast("call_#{caller.id}", {
-      type: "call_accepted",
-      receiver_id: current_user.id,
-      channel_name: call.agora_channel_name
-    })
-
-    render json: {
-      token: token,
-      uid: current_user.id,
-      channel_name: call.agora_channel_name
-    }
+  unless caller && UserMatchRequest.match_confirmed_between?(caller, current_user)
+    return render json: { error: "Invalid call" }, status: :forbidden
   end
+
+  # Crear la llamada en la base de datos
+  call = VideoCall.create!(
+    user_1: caller,
+    user_2: current_user,
+    agora_channel_name: temp_call[:channel_name],
+    status: :active,
+    started_at: Time.current
+  )
+
+  # Limpiar las claves temporales
+  Rails.cache.delete("temp_call:#{caller_id}")
+  Rails.cache.delete("pending_call_for:#{current_user.id}")
+
+  # ✅ Generar el token directamente aquí
+  token = generate_token(
+    channel: call.agora_channel_name,
+    uid: current_user.id
+  )
+
+  # Notificar al otro usuario
+  CallChannel.broadcast_to(caller, {
+    type: "call_accepted",
+    receiver_id: current_user.id,
+    channel_name: call.agora_channel_name
+  })
+
+  render json: {
+    token: token,
+    uid: current_user.id,
+    channel_name: call.agora_channel_name
+  }
+end
 
   # 3. Rechazar llamada antes de que se cree en DB
   def reject
-    caller_id = Rails.cache.read("pending_call_for:#{current_user.id}")
-    return head :ok unless caller_id
+  caller_id = params[:caller_id]
+  return head :ok unless caller_id
 
-    temp_call = Rails.cache.read("temp_call:#{caller_id}")
-    Rails.cache.delete("pending_call_for:#{current_user.id}")
-    Rails.cache.delete("temp_call:#{caller_id}")
+  caller = User.find_by(id: caller_id)
+  return head :ok unless caller
 
-    if temp_call
-      CallChannel.broadcast_to(User.find_by(id: caller_id), {
-        type: "call_rejected",
-        receiver_id: current_user.id,
-        channel_name: temp_call[:channel_name]
-      })
-    end
+  CallChannel.broadcast_to(caller, {
+    type: "call_rejected",
+    receiver_id: current_user.id
+  })
 
-    head :ok
-  end
+  head :ok
+end
 
   # 4. Cancelar llamada antes de que se acepte
   def cancel
