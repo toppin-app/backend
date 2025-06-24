@@ -24,9 +24,18 @@ class VideoCallsController < ApplicationController
   # 1. Solicitar llamada: solo se envía notificación al receptor
   def create
     receiver = User.find(params[:receiver_id])
-    
+
     unless UserMatchRequest.match_confirmed_between?(current_user, receiver)
       return render json: { error: "No match" }, status: :forbidden
+    end
+
+    # Verifica si el receiver está conectado a ActionCable
+    is_connected = ActionCable.server.connections.any? do |conn|
+      conn.respond_to?(:current_user) && conn.current_user&.id == receiver.id
+    end
+
+    unless is_connected
+      return render json: { error: "Receiver not connected" }, status: :bad_request
     end
 
     channel_name = get_channel_name(current_user.id, receiver.id)
@@ -79,9 +88,11 @@ class VideoCallsController < ApplicationController
 
   # Notificar al otro usuario
   CallChannel.broadcast_to(caller, {
+    message: {
     type: "call_accepted",
     receiver_id: current_user.id,
     channel_name: call.agora_channel_name
+    }
   })
 
   render json: {
