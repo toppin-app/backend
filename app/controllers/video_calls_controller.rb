@@ -54,44 +54,39 @@ class VideoCallsController < ApplicationController
 
   # 2. Aceptar llamada (sin necesidad de pasar caller_id desde el frontend)
     def accept
-  # Buscar el caller_id de la llamada pendiente para el usuario actual
-  caller_id = Rails.cache.read("pending_call_for:#{current_user.id}")
-  return render json: { error: "No call found" }, status: :not_found unless caller_id
-
-  temp_call = Rails.cache.read("temp_call:#{caller_id}")
-  return render json: { error: "No call found" }, status: :not_found unless temp_call
+  caller_id = params[:caller_id]
+  return render json: { error: "No caller_id" }, status: :bad_request unless caller_id
 
   caller = User.find_by(id: caller_id)
+  return render json: { error: "Caller not found" }, status: :not_found unless caller
 
-  unless caller && UserMatchRequest.match_confirmed_between?(caller, current_user)
+  unless UserMatchRequest.match_confirmed_between?(caller, current_user)
     return render json: { error: "Invalid call" }, status: :forbidden
   end
+
+  channel_name = get_channel_name(caller.id, current_user.id)
 
   # Crear la llamada en la base de datos
   call = VideoCall.create!(
     user_1: caller,
     user_2: current_user,
-    agora_channel_name: temp_call[:channel_name],
+    agora_channel_name: channel_name,
     status: :active,
     started_at: Time.current
   )
 
-  # Limpiar las claves temporales
-  Rails.cache.delete("temp_call:#{caller_id}")
-  Rails.cache.delete("pending_call_for:#{current_user.id}")
-
-  # ✅ Generar el token directamente aquí
+  # Generar el token para el receptor
   token = generate_token(
     channel: call.agora_channel_name,
     uid: current_user.id
   )
 
-  # Notificar al otro usuario
+  # Notificar al llamador
   CallChannel.broadcast_to(caller, {
     message: {
-    type: "call_accepted",
-    receiver_id: current_user.id,
-    channel_name: call.agora_channel_name
+      type: "call_accepted",
+      receiver_id: current_user.id,
+      channel_name: call.agora_channel_name
     }
   })
 
