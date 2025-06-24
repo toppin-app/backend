@@ -123,9 +123,11 @@ end
   # 4. Cancelar llamada antes de que se acepte
   def cancel
     receiver_id = params[:receiver_id]
+    Rails.logger.info("Cancel request: receiver_id=#{receiver_id}, current_user=#{current_user.id}")
     return head :ok unless receiver_id
 
     receiver = User.find_by(id: receiver_id)
+    Rails.logger.info("Cancel: found receiver? #{receiver.present?}")
     return head :ok unless receiver
 
     CallChannel.broadcast_to(receiver, {
@@ -134,6 +136,7 @@ end
         caller_id: current_user.id
       }
     })
+    Rails.logger.info("Cancel: broadcast sent to receiver #{receiver.id}")
 
     head :ok
   end
