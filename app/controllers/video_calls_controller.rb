@@ -47,9 +47,7 @@ class VideoCallsController < ApplicationController
     CallChannel.broadcast_to(receiver, {
       message: {
         type: "incoming_call",
-        receiver_id: receiver.id,
         caller_id: current_user.id,
-        channel_name: channel_name
       }
     })
           
@@ -90,7 +88,7 @@ class VideoCallsController < ApplicationController
     )
 
     # Notificar al otro usuario
-    ActionCable.server.broadcast("call_#{caller.id}", {
+    CallChannel.server.broadcast("call_#{caller.id}", {
       type: "call_accepted",
       receiver_id: current_user.id,
       channel_name: call.agora_channel_name
@@ -105,16 +103,18 @@ class VideoCallsController < ApplicationController
 
   # 3. Rechazar llamada antes de que se cree en DB
   def reject
-    temp_call = Rails.cache.read("temp_call:*").values.find do |v|
-      v[:receiver_id] == current_user.id
-    end
+    # Buscar todas las claves temporales de llamadas
+    keys = Rails.cache.instance_variable_get(:@data).keys.select { |k| k.to_s.start_with?("temp_call:") }
+    temp_call_pair = keys.map { |k| [k, Rails.cache.read(k)] }
+                         .find { |_, v| v && v[:receiver_id] == current_user.id }
 
-    return head :ok unless temp_call
+    return head :ok unless temp_call_pair
 
-    caller_id = Rails.cache.read("temp_call:*").key(temp_call).split(":").last.to_i
-    Rails.cache.delete("temp_call:#{caller_id}")
+    caller_key, temp_call = temp_call_pair
+    caller_id = caller_key.split(":").last.to_i
+    Rails.cache.delete(caller_key)
 
-    ActionCable.server.broadcast("call_#{caller_id}", {
+    CallChannel.broadcast_to(User.find_by(id: caller_id), {
       type: "call_rejected",
       receiver_id: current_user.id,
       channel_name: temp_call[:channel_name]
