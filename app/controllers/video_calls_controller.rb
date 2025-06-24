@@ -1,4 +1,4 @@
-require 'dynamic_key'
+require 'dynamic_key2'
 
 class VideoCallsController < ApplicationController
   skip_before_action :verify_authenticity_token
