@@ -87,7 +87,6 @@ class VideoCallsController < ApplicationController
 
   render json: {
     token: token,
-    uid: current_user.id,
     channel_name: channel_name
   }
 end
