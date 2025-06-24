@@ -1,4 +1,4 @@
-require 'dynamic_key2'
+require 'dynamic_key'
 
 class VideoCallsController < ApplicationController
   skip_before_action :verify_authenticity_token
@@ -12,9 +12,9 @@ class VideoCallsController < ApplicationController
       current_timestamp = Time.now.to_i
       expire_timestamp = current_timestamp + expiration_seconds
 
-      return AgoraDynamicKey2::RtcTokenBuilder.build_token_with_uid(
+      return AgoraDynamicKey::RtcTokenBuilder.build_token_with_uid(
         app_id, app_cert, channel, uid,
-        AgoraDynamicKey2::RtcTokenBuilder::ROLE_PUBLISHER, expiration_seconds, expiration_seconds
+        AgoraDynamicKey::RtcTokenBuilder::ROLE_PUBLISHER, expiration_seconds, expiration_seconds
       )
     end
 
