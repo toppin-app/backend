@@ -100,8 +100,10 @@ end
   return head :ok unless caller
 
   CallChannel.broadcast_to(caller, {
+    message: {
     type: "call_rejected",
     receiver_id: current_user.id
+    }
   })
 
   head :ok
