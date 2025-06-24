@@ -12,10 +12,16 @@ class VideoCallsController < ApplicationController
       current_timestamp = Time.now.to_i
       expire_timestamp = current_timestamp + expiration_seconds
 
-      return AgoraDynamicKey::RtcTokenBuilder.build_token_with_uid(
-        app_id, app_cert, channel, uid,
-        AgoraDynamicKey::RtcTokenBuilder::ROLE_PUBLISHER, expiration_seconds, expiration_seconds
-      )
+      params = {
+        app_id: app_id,
+        app_certificate: app_cert,
+        channel_name: channel,
+        uid: uid,
+        role: AgoraDynamicKey::RTCTokenBuilder::Role::PUBLISHER,
+        privilege_expired_ts: expire_timestamp
+      }
+
+      return AgoraDynamicKey::RTCTokenBuilder.build_token_with_uid params
     end
 
 
