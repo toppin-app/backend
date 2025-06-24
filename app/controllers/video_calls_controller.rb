@@ -122,18 +122,17 @@ end
 
   # 4. Cancelar llamada antes de que se acepte
   def cancel
-    temp_call = Rails.cache.read("temp_call:#{current_user.id}")
+    receiver_id = params[:receiver_id]
+    return head :ok unless receiver_id
 
-    return head :ok unless temp_call
+    receiver = User.find_by(id: receiver_id)
+    return head :ok unless receiver
 
-    receiver_id = temp_call[:receiver_id]
-    channel_name = temp_call[:channel_name]
-    Rails.cache.delete("temp_call:#{current_user.id}")
-
-    ActionCable.server.broadcast("call_#{receiver_id}", {
-      type: "call_cancelled",
-      caller_id: current_user.id,
-      channel_name: channel_name
+    CallChannel.broadcast_to(receiver, {
+      message: {
+        type: "call_cancelled",
+        caller_id: current_user.id
+      }
     })
 
     head :ok
