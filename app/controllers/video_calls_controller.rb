@@ -29,28 +29,20 @@ class VideoCallsController < ApplicationController
       return render json: { error: "No match" }, status: :forbidden
     end
 
-     #if user_in_active_call?(receiver.id)
-    #   return render json: { error: "User is already in a call" }, status: :bad_request
-     #end
-
     channel_name = get_channel_name(current_user.id, receiver.id)
 
-    # Guardamos temporalmente esta llamada para validación futura
-
-  #       publish_socket_event({
-  #     type: "incoming_call",
-  #     receiver_id: receiver.id,
-   #    caller_id: current_user.id,
-   #    channel_name: channel_name
-   #  })
+    # Guarda la llamada temporal y la referencia para el receptor
+    Rails.cache.write("temp_call:#{current_user.id}", { receiver_id: receiver.id, channel_name: channel_name })
+    Rails.cache.write("pending_call_for:#{receiver.id}", current_user.id)
 
     CallChannel.broadcast_to(receiver, {
       message: {
         type: "incoming_call",
         caller_id: current_user.id,
+        channel_name: channel_name
       }
     })
-          
+        
     render json: { success: true }
   end
 
@@ -103,22 +95,20 @@ class VideoCallsController < ApplicationController
 
   # 3. Rechazar llamada antes de que se cree en DB
   def reject
-    # Buscar todas las claves temporales de llamadas
-    keys = Rails.cache.instance_variable_get(:@data).keys.select { |k| k.to_s.start_with?("temp_call:") }
-    temp_call_pair = keys.map { |k| [k, Rails.cache.read(k)] }
-                         .find { |_, v| v && v[:receiver_id] == current_user.id }
+    caller_id = Rails.cache.read("pending_call_for:#{current_user.id}")
+    return head :ok unless caller_id
 
-    return head :ok unless temp_call_pair
+    temp_call = Rails.cache.read("temp_call:#{caller_id}")
+    Rails.cache.delete("pending_call_for:#{current_user.id}")
+    Rails.cache.delete("temp_call:#{caller_id}")
 
-    caller_key, temp_call = temp_call_pair
-    caller_id = caller_key.split(":").last.to_i
-    Rails.cache.delete(caller_key)
-
-    CallChannel.broadcast_to(User.find_by(id: caller_id), {
-      type: "call_rejected",
-      receiver_id: current_user.id,
-      channel_name: temp_call[:channel_name]
-    })
+    if temp_call
+      CallChannel.broadcast_to(User.find_by(id: caller_id), {
+        type: "call_rejected",
+        receiver_id: current_user.id,
+        channel_name: temp_call[:channel_name]
+      })
+    end
 
     head :ok
   end
