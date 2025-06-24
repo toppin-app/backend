@@ -67,13 +67,13 @@ class VideoCallsController < ApplicationController
   channel_name = get_channel_name(caller.id, current_user.id)
 
   # Crear la llamada en la base de datos
-  call = VideoCall.create!(
-    user_1: caller,
-    user_2: current_user,
-    agora_channel_name: channel_name,
-    status: :active,
-    started_at: Time.current
-  )
+  #call = VideoCall.create!(
+    #user_1: caller,
+    #user_2: current_user,
+   # agora_channel_name: channel_name,
+   # status: :active,
+   # started_at: Time.current
+  #)
 
   # Generar el token para el receptor
   token = generate_token(
