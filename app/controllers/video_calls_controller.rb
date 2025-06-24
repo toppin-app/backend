@@ -8,7 +8,7 @@ class VideoCallsController < ApplicationController
     def build_agora_token(channel:, uid:)
       app_id = ENV.fetch("AGORA_APP_ID")
       app_cert = ENV.fetch("AGORA_APP_CERTIFICATE")
-      expiration_seconds = 60
+      expiration_seconds = 180 # 3 minutos de expiración
       current_timestamp = Time.now.to_i
       expire_timestamp = current_timestamp + expiration_seconds
 
@@ -165,11 +165,14 @@ end
       return render json: { error: "Invalid call" }, status: :forbidden
     end
 
+    expiration_seconds = 180 # 3 minutos de expiración
+
     channel_name = get_channel_name(caller.id, receiver.id)
 
     token = build_agora_token(
       channel: channel_name,
-      uid: current_user.id
+      uid: current_user.id,
+      expiration_seconds: expiration_seconds
     )
 
     render json: {
