@@ -44,6 +44,17 @@ class VideoCallsController < ApplicationController
 
     channel_name = get_channel_name(current_user.id, receiver.id)
 
+    # Lógica de tiempo solo si ambos NO son premium/supreme
+    unless current_user.premium_or_supreme? || receiver.premium_or_supreme?
+      allowance = VideoCallAllowance.for_pair(current_user, receiver)
+      seconds_left = allowance.seconds_left
+
+      if seconds_left <= 0
+        return render json: { error: "No time left for this match" }, status: :forbidden
+      end
+    else
+      seconds_left = nil # Ilimitado
+    end
 
     CallChannel.broadcast_to(receiver, {
       message: {
@@ -126,6 +137,11 @@ end
     call.update!(status: :ended, ended_at: Time.current)
     call.calculate_duration! if call.respond_to?(:calculate_duration!)
 
+    unless call.user_1.premium_or_supreme? || call.user_2.premium_or_supreme?
+      duration = (call.ended_at - call.started_at).to_i
+      allowance = VideoCallAllowance.for_pair(call.user_1, call.user_2)
+      allowance.add_seconds!(duration)
+    end
     head :ok
   end
 

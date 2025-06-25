@@ -323,7 +323,9 @@ class User < ApplicationRecord
      end
   end
 
-
+  def premium_or_supreme?
+    subscription&.in?(%w[premium supreme])
+  end
 
   # Nos devuelve la puntuación que le damos por la cantidad y calidad de los likes que tiene el usuario
   # (Personas a las que le gusta el usuario.)
