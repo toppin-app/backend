@@ -5,12 +5,12 @@ class VideoCallsController < ApplicationController
   before_action :authenticate_user!
 
 
-    def build_agora_token(channel:, uid:)
+    def build_agora_token(channel:, uid:, expiration_seconds: 180)
       app_id = ENV.fetch("AGORA_APP_ID")
       app_cert = ENV.fetch("AGORA_APP_CERTIFICATE")
       expiration_seconds = 180 # 3 minutos de expiración
       current_timestamp = Time.now.to_i
-      expire_timestamp = expiration_seconds
+      expire_timestamp = expiration_seconds + current_timestamp
 
       params = {
         app_id: app_id,
