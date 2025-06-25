@@ -10,7 +10,7 @@ class VideoCallsController < ApplicationController
       app_cert = ENV.fetch("AGORA_APP_CERTIFICATE")
       expiration_seconds = 180 # 3 minutos de expiración
       current_timestamp = Time.now.to_i
-      expire_timestamp = current_timestamp + expiration_seconds
+      expire_timestamp = expiration_seconds
 
       params = {
         app_id: app_id,
@@ -165,7 +165,7 @@ end
       return render json: { error: "Invalid call" }, status: :forbidden
     end
 
-    expiration_seconds = 180 # 3 minutos de expiración
+    expiration_seconds = 180 
 
     channel_name = get_channel_name(caller.id, receiver.id)
 
