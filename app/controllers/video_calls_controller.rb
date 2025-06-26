@@ -1,31 +1,25 @@
 require 'dynamic_key'
-
 class VideoCallsController < ApplicationController
   skip_before_action :verify_authenticity_token
   before_action :authenticate_user!
 
+  def build_agora_token(channel:, uid:, expiration_seconds: 180)
+    app_id = ENV.fetch("AGORA_APP_ID")
+    app_cert = ENV.fetch("AGORA_APP_CERTIFICATE")
+    current_timestamp = Time.now.to_i
+    expire_timestamp = expiration_seconds + current_timestamp
 
-    def build_agora_token(channel:, uid:, expiration_seconds: 180)
-      app_id = ENV.fetch("AGORA_APP_ID")
-      app_cert = ENV.fetch("AGORA_APP_CERTIFICATE")
-      expiration_seconds = 180 # 3 minutos de expiración
-      current_timestamp = Time.now.to_i
-      expire_timestamp = expiration_seconds + current_timestamp
+    AgoraDynamicKey::RTCTokenBuilder.build_token_with_uid(
+      app_id: app_id,
+      app_certificate: app_cert,
+      channel_name: channel,
+      uid: uid,
+      role: AgoraDynamicKey::RTCTokenBuilder::Role::PUBLISHER,
+      privilege_expired_ts: expire_timestamp
+    )
+  end
 
-      params = {
-        app_id: app_id,
-        app_certificate: app_cert,
-        channel_name: channel,
-        uid: uid,
-        role: AgoraDynamicKey::RTCTokenBuilder::Role::PUBLISHER,
-        privilege_expired_ts: expire_timestamp
-      }
-
-      return AgoraDynamicKey::RTCTokenBuilder.build_token_with_uid params
-    end
-
-
-  # 1. Solicitar llamada: solo se envía notificación al receptor
+  # 1. Solicitar llamada
   def create
     receiver = User.find(params[:receiver_id])
 
@@ -33,7 +27,15 @@ class VideoCallsController < ApplicationController
       return render json: { error: "No match" }, status: :forbidden
     end
 
-    # Verifica si el receiver está conectado a ActionCable
+    total_seconds = VideoCall.duration(current_user, receiver).to_i
+    max_seconds = 180
+
+    unless current_user.premium_or_supreme? || receiver.premium_or_supreme?
+      if total_seconds >= max_seconds
+        return render json: { error: "Tiempo de videollamada agotado" }, status: :forbidden
+      end
+    end
+
     is_connected = ActionCable.server.connections.any? do |conn|
       conn.respond_to?(:current_user) && conn.current_user&.id == receiver.id
     end
@@ -44,18 +46,13 @@ class VideoCallsController < ApplicationController
 
     channel_name = get_channel_name(current_user.id, receiver.id)
 
-    # Lógica de tiempo solo si ambos NO son premium/supreme
-    unless current_user.premium_or_supreme? || receiver.premium_or_supreme?
-      allowance = VideoCallAllowance.for_pair(current_user, receiver)
-      seconds_left = allowance.seconds_left
-
-      if seconds_left <= 0
-        return render json: { error: "No time left for this match" }, status: :forbidden
-      end
-    else
-      seconds_left = nil # Ilimitado
-    end
-
+    # Crea el registro de la llamada si no existe
+    video_call = VideoCall.between(current_user, receiver).find_or_initialize_by(agora_channel_name: channel_name, status: :pending)
+    video_call.user_1 = current_user
+    video_call.user_2 = receiver
+    video_call.status = :pending
+    video_call.save!
+    # Notifica al receptor de la llamada entrante
     CallChannel.broadcast_to(receiver, {
       message: {
         type: "incoming_call",
@@ -63,62 +60,65 @@ class VideoCallsController < ApplicationController
         channel_name: channel_name
       }
     })
-        
+
     render json: { success: true }
   end
 
-  # 2. Aceptar llamada (sin necesidad de pasar caller_id desde el frontend)
-    def accept
-  caller_id = params[:caller_id]
-  return render json: { error: "No caller_id" }, status: :bad_request unless caller_id
+  # 2. Aceptar llamada
+  def accept
+    caller = User.find_by(id: params[:caller_id])
+    return render json: { error: "Caller not found" }, status: :not_found unless caller
 
-  caller = User.find_by(id: caller_id)
-  return render json: { error: "Caller not found" }, status: :not_found unless caller
+    unless UserMatchRequest.match_confirmed_between?(caller, current_user)
+      return render json: { error: "Invalid call" }, status: :forbidden
+    end
 
-  unless UserMatchRequest.match_confirmed_between?(caller, current_user)
-    return render json: { error: "Invalid call" }, status: :forbidden
+    channel_name = get_channel_name(caller.id, current_user.id)
+
+    # Actualiza el estado de la llamada a 'active'
+    video_call = VideoCall.between(caller, current_user)
+                          .where(agora_channel_name: channel_name, status: :pending)
+                          .order(created_at: :desc)
+                          .first
+    if video_call
+      video_call.update!(status: :active, started_at: Time.current)
+    end
+    # Notifica al llamador que la llamada ha sido aceptada
+
+    CallChannel.broadcast_to(caller, {
+      message: {
+        type: "call_accepted",
+        receiver_id: current_user.id,
+        channel_name: channel_name
+      }
+    })
+
+    head :ok
   end
 
-  channel_name = get_channel_name(caller.id, current_user.id)
-
-  CallChannel.broadcast_to(caller, {
-    message: {
-      type: "call_accepted",
-      receiver_id: current_user.id,
-      channel_name: channel_name
-    }
-  })
-
-  head :ok
-end
-
-  # 3. Rechazar llamada antes de que se cree en DB
+  # 3. Rechazar llamada
   def reject
-  caller_id = params[:caller_id]
-  return head :ok unless caller_id
+    caller = User.find_by(id: params[:caller_id])
+    return head :ok unless caller
 
-  caller = User.find_by(id: caller_id)
-  return head :ok unless caller
+    channel_name = get_channel_name(caller.id, current_user.id)
 
-  CallChannel.broadcast_to(caller, {
-    message: {
-    type: "call_rejected",
-    receiver_id: current_user.id
-    }
-  })
+    CallChannel.broadcast_to(caller, {
+      message: {
+        type: "call_rejected",
+        receiver_id: current_user.id
+      }
+    })
 
-  head :ok
-end
+    head :ok
+  end
 
-  # 4. Cancelar llamada antes de que se acepte
+  # 4. Cancelar llamada
   def cancel
-    receiver_id = params[:receiver_id]
-    Rails.logger.info("Cancel request: receiver_id=#{receiver_id}, current_user=#{current_user.id}")
-    return head :ok unless receiver_id
-
-    receiver = User.find_by(id: receiver_id)
-    Rails.logger.info("Cancel: found receiver? #{receiver.present?}")
+    receiver = User.find_by(id: params[:receiver_id])
     return head :ok unless receiver
+
+    channel_name = get_channel_name(current_user.id, receiver.id)
 
     CallChannel.broadcast_to(receiver, {
       message: {
@@ -126,7 +126,6 @@ end
         caller_id: current_user.id
       }
     })
-    Rails.logger.info("Cancel: broadcast sent to receiver #{receiver.id}")
 
     head :ok
   end
@@ -135,79 +134,67 @@ end
   def end_call
     call = VideoCall.find_by!(agora_channel_name: params[:channel_name])
     call.update!(status: :ended, ended_at: Time.current)
+
     call.calculate_duration! if call.respond_to?(:calculate_duration!)
 
-    unless call.user_1.premium_or_supreme? || call.user_2.premium_or_supreme?
-      duration = (call.ended_at - call.started_at).to_i
-      allowance = VideoCallAllowance.for_pair(call.user_1, call.user_2)
-      allowance.add_seconds!(duration)
-    end
+
     head :ok
   end
 
   # 6. Ver si el usuario está en una llamada activa
   def active
-    call = VideoCall.where(status: :active)
-                    .where("user_1_id = ? OR user_2_id = ?", current_user.id, current_user.id)
-                    .order(created_at: :desc)
-                    .first
-
-    if call
-      render json: {
-        active: true,
-        channel_name: call.agora_channel_name,
-        other_user_id: (call.user_1_id == current_user.id ? call.user_2_id : call.user_1_id)
-      }
-    else
-      render json: { active: false }
-    end
+    render json: { active: false }
   end
 
-  # 7. Obtener credenciales RTC
+  # 7. Obtener token RTC
   def generate_token
-    caller_id = params[:caller_id]
-    receiver_id = params[:receiver_id]
+    caller = User.find_by(id: params[:caller_id])
+    receiver = User.find_by(id: params[:receiver_id])
 
-    return render json: { error: "No caller_id" }, status: :bad_request unless caller_id
-    return render json: { error: "No receiver_id" }, status: :bad_request unless receiver_id
-
-    caller = User.find_by(id: caller_id)
-    receiver = User.find_by(id: receiver_id)
-
-    return render json: { error: "Caller not found" }, status: :not_found unless caller
-    return render json: { error: "Receiver not found" }, status: :not_found unless receiver
-
-    unless UserMatchRequest.match_confirmed_between?(caller, receiver)
-      return render json: { error: "Invalid call" }, status: :forbidden
-    end
-
-    expiration_seconds = 180 
+    return render json: { error: "User not found" }, status: :bad_request unless caller && receiver
 
     channel_name = get_channel_name(caller.id, receiver.id)
+    unless UserMatchRequest.match_confirmed_between?(caller, receiver)
+      return render json: { error: "No match" }, status: :forbidden
+    end
+    # Si alguno es premium/supreme, tiempo "infinito" (10 años)
+    if caller.premium_or_supreme? || receiver.premium_or_supreme?
+      time_left = 315360000 # 10 años en segundos
+    else
+      max_seconds = 180
+      used_seconds = VideoCall.duration(caller, receiver).to_i
+      time_left = [max_seconds - used_seconds, 0].max
+    end
 
-    token = build_agora_token(
+     token = build_agora_token(
       channel: channel_name,
       uid: current_user.id,
-      expiration_seconds: expiration_seconds
+      expiration_seconds: time_left
     )
 
     render json: {
       token: token,
-      channel_name: channel_name
+      channel_name: channel_name,
+      time_left: time_left,
+      started_at: nil
+    }
+  end
+
+  # GET /video_calls/match_status?user_id=OTRO_USER_ID
+  def match_status
+    render json: {
+      ever_connected: false,
+      last_channel_name: nil,
+      last_started_at: nil,
+      last_ended_at: nil,
+      time_left: nil
     }
   end
 
   private
 
-  
-
   def get_channel_name(caller_id, receiver_id)
-    "#{caller_id}-#{receiver_id}"
-  end
-
-  def user_in_active_call?(user_id)
-    VideoCall.where(status: :active)
-             .where("user_1_id = ? OR user_2_id = ?", user_id, user_id)
-             .exists?
+    ids = [caller_id, receiver_id].sort
+    "#{ids[0]}-#{ids[1]}"
   end
 end
