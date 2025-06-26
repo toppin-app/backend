@@ -50,6 +50,7 @@ class VideoCallsController < ApplicationController
     video_call = VideoCall.between(current_user, receiver).find_or_initialize_by(agora_channel_name: channel_name, status: :pending)
     video_call.user_1 = current_user
     video_call.user_2 = receiver
+    video_call.started_at = Time.current
     video_call.status = :pending
     video_call.save!
     # Notifica al receptor de la llamada entrante
@@ -134,11 +135,16 @@ class VideoCallsController < ApplicationController
 
   # 5. Finalizar llamada
   def end_call
-    call = VideoCall.find_by!(agora_channel_name: params[:channel_name])
-    call.update!(status: :ended, ended_at: Time.current)
-    call.calculate_duration! if call.respond_to?(:calculate_duration!)
-    call.update!(duration: (call.ended_at - call.started_at).to_i)
-    
+    Rails.logger.info "Entrando en end_call con params: #{params.inspect}"
+    call = VideoCall.find_by(agora_channel_name: params[:channel_name])
+    if call
+      ended_at = Time.current
+      duration = call.started_at ? (ended_at - call.started_at).to_i : 0
+      Rails.logger.info "Actualizando llamada #{call.id} con ended_at=#{ended_at} y duration=#{duration}"
+      call.update!(status: :ended, ended_at: ended_at, duration: duration)
+    else
+      Rails.logger.warn "No se encontró la llamada con channel_name=#{params[:channel_name]}"
+    end
     head :ok
   end
 
