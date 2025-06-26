@@ -81,7 +81,9 @@ class VideoCallsController < ApplicationController
                           .order(created_at: :desc)
                           .first
     if video_call
-      video_call.update!(status: :active, started_at: Time.current)
+      attrs = { status: :active }
+      attrs[:started_at] = Time.current unless video_call.started_at
+      video_call.update!(attrs)
     end
     # Notifica al llamador que la llamada ha sido aceptada
 
@@ -134,10 +136,9 @@ class VideoCallsController < ApplicationController
   def end_call
     call = VideoCall.find_by!(agora_channel_name: params[:channel_name])
     call.update!(status: :ended, ended_at: Time.current)
-
     call.calculate_duration! if call.respond_to?(:calculate_duration!)
-
-
+    call.update!(duration: (call.ended_at - call.started_at).to_i)
+    
     head :ok
   end
 
