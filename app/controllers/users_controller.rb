@@ -863,13 +863,13 @@ class UsersController < ApplicationController
       else
         if current_user.incoming_likes.count > 0 # Si tiene algún me gusta, usamos el pond normal.
           pond = {
-            "donut"  => 90,
-            "heart" => 5,
-            "muffin"  => 85,
-            "card" => 5,
-            "star" => 5,
-            "bear" => 85,
-            "battery" => 10
+            "donut"  => 30,
+            "heart" => 2,
+            "muffin"  => 30,
+            "card" => 2,
+            "star" => 2,
+            "bear" => 30,
+            "battery" => 4
           }
         else  #No tiene ningún me gusta, así que le daremos un boost
           pond = {
