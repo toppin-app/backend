@@ -151,7 +151,8 @@ class VideoCallsController < ApplicationController
     end
     # Si alguno es premium/supreme, tiempo "infinito" (10 años)
     if caller.premium_or_supreme? || receiver.premium_or_supreme?
-      time_left = 315360000 # 10 años en segundos
+      time_left = 86.400 # 24 horas en segundos
+    # Si no, calculamos el tiempo restante de la llamada
     else
       max_seconds = 180
       used_seconds = VideoCall.duration(caller, receiver).to_i
@@ -177,23 +178,22 @@ class VideoCallsController < ApplicationController
     other_user = User.find_by(id: params[:user_id])
     return render json: { error: "User not found" }, status: :not_found unless other_user
 
-    calls = VideoCall.between(current_user, other_user).order(created_at: :desc)
+    calls = VideoCall.between(current_user, other_user)
+                     .where.not(status: [:pending, :rejected, :cancelled])
+                     .order(started_at: :desc)
     last_call = calls.first
 
-    ever_connected = calls.exists?
-    last_channel_name = last_call&.agora_channel_name
-    last_started_at = last_call&.started_at
-    last_ended_at = last_call&.ended_at
+    last_video_call_date = last_call&.started_at
 
     max_seconds = 180
     used_seconds = VideoCall.duration(current_user, other_user).to_i
     time_left = [max_seconds - used_seconds, 0].max
 
+    has_unlimited_time = current_user.premium_or_supreme? || other_user.premium_or_supreme?
+
     render json: {
-      ever_connected: ever_connected,
-      last_channel_name: last_channel_name,
-      last_started_at: last_started_at,
-      last_ended_at: last_ended_at,
+      has_unlimited_time: has_unlimited_time,
+      last_video_call_date: last_video_call_date,
       time_left: time_left
     }
   end
