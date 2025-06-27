@@ -185,11 +185,15 @@ class VideoCallsController < ApplicationController
 
     last_video_call_date = last_call&.started_at
 
-    max_seconds = 180
-    used_seconds = VideoCall.duration(current_user, other_user).to_i
-    time_left = [max_seconds - used_seconds, 0].max
-
-    has_unlimited_time = current_user.premium_or_supreme? || other_user.premium_or_supreme?
+    if current_user.premium_or_supreme? || other_user.premium_or_supreme?
+      time_left = 86_400 # 24 horas en segundos
+      has_unlimited_time = true
+    else
+      max_seconds = 180
+      used_seconds = VideoCall.duration(current_user, other_user).to_i
+      time_left = [max_seconds - used_seconds, 0].max
+      has_unlimited_time = false
+    end
 
     render json: {
       has_unlimited_time: has_unlimited_time,
