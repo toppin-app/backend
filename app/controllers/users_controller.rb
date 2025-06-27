@@ -849,40 +849,40 @@ class UsersController < ApplicationController
            return
       end
 
-       # Si es tu primera tirada, 100% star, que significa que te toca un superlike.
-       if current_user.last_roulette_played.nil?
-         pond = {
-           "donut"  => 0,
-           "heart" => 0,
-           "muffin"  => 0,
-           "card" => 0,
-           "star" => 100,
-           "bear" => 0,
-           "battery" => 0
-         }
-       else
-         if current_user.incoming_likes.count > 0 # Si tiene algún me gusta, usamos el pond normal.
-             pond = {
-               "donut"  => 90,
-               "heart" => 5,
-               "muffin"  => 85,
-               "card" => 5,
-               "star" => 5,
-               "bear" => 85,
-               "battery" => 10
-             }
-         else  #No tiene ningún me gusta, así que le daremos un boost
-      pond = {
-          "donut"  => 14,
-              "heart" => 14,
-              "muffin"  => 14,
-              "card" => 14,
-              "star" => 14,
-              "bear" => 14,
-              "battery" => 16
-      }
-         end
-       end
+      # Si es tu primera tirada, 100% star, que significa que te toca un superlike.
+      if current_user.last_roulette_played.nil?
+        pond = {
+          "donut"  => 0,
+          "heart" => 0,
+          "muffin"  => 0,
+          "card" => 0,
+          "star" => 100,
+          "bear" => 0,
+          "battery" => 0
+        }  
+      else
+        if current_user.incoming_likes.count > 0 # Si tiene algún me gusta, usamos el pond normal.
+          pond = {
+            "donut"  => 90,
+            "heart" => 5,
+            "muffin"  => 85,
+            "card" => 5,
+            "star" => 5,
+            "bear" => 85,
+            "battery" => 10
+          }
+        else  #No tiene ningún me gusta, así que le daremos un boost
+          pond = {
+            "donut"  => 0,
+            "heart" => 25,
+            "muffin"  => 0,
+            "card" => 25,
+            "star" => 25,
+            "bear" => 0,
+            "battery" => 25
+          }
+        end
+      end
 
 
       available = current_user.spin_roulette_available-1
