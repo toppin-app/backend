@@ -25,7 +25,6 @@ Rails.application.routes.draw do
   resources :interest_categories
   resources :user_media
   resources :app_versions, only: [:index, :edit, :update]
-  resources :video_calls
 
   # Spotify para los administradores
   resources :users, except: [:index, :show, :new, :edit, :create, :update, :destroy] do
