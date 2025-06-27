@@ -188,5 +188,5 @@ Rails.application.routes.draw do
   post '/video_calls/end_call', to: 'video_calls#end_call'      # Finalizar llamada
   get  '/video_calls/active', to: 'video_calls#active'       # Ver si el usuario está en una llamada activa
   post '/video_calls/generate_token', to: 'video_calls#generate_token'  # Obtener token de llamada
-  post '/video_calls/match_status', to: 'video_calls#match_status'  # Ver estado de la llamada entre dos usuarios
+  get '/video_calls/match_status', to: 'video_calls#match_status'  # Ver estado de la llamada entre dos usuarios
 end
