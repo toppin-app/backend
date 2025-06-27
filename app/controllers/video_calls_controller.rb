@@ -133,21 +133,6 @@ class VideoCallsController < ApplicationController
     head :ok
   end
 
-  # 5. Finalizar llamada
-  def end_call
-    Rails.logger.info "Entrando en end_call con params: #{params.inspect}"
-    call = VideoCall.find_by(agora_channel_name: params[:channel_name])
-    if call
-      ended_at = Time.current
-      duration = call.started_at ? (ended_at - call.started_at).to_i : 0
-      Rails.logger.info "Actualizando llamada #{call.id} con ended_at=#{ended_at} y duration=#{duration}"
-      call.update!(status: :ended, ended_at: ended_at, duration: duration)
-    else
-      Rails.logger.warn "No se encontró la llamada con channel_name=#{params[:channel_name]}"
-    end
-    head :ok
-  end
-
   # 6. Ver si el usuario está en una llamada activa
   def active
     render json: { active: false }
@@ -189,12 +174,27 @@ class VideoCallsController < ApplicationController
 
   # GET /video_calls/match_status?user_id=OTRO_USER_ID
   def match_status
+    other_user = User.find_by(id: params[:user_id])
+    return render json: { error: "User not found" }, status: :not_found unless other_user
+
+    calls = VideoCall.between(current_user, other_user).order(created_at: :desc)
+    last_call = calls.first
+
+    ever_connected = calls.exists?
+    last_channel_name = last_call&.agora_channel_name
+    last_started_at = last_call&.started_at
+    last_ended_at = last_call&.ended_at
+
+    max_seconds = 180
+    used_seconds = VideoCall.duration(current_user, other_user).to_i
+    time_left = [max_seconds - used_seconds, 0].max
+
     render json: {
-      ever_connected: false,
-      last_channel_name: nil,
-      last_started_at: nil,
-      last_ended_at: nil,
-      time_left: nil
+      ever_connected: ever_connected,
+      last_channel_name: last_channel_name,
+      last_started_at: last_started_at,
+      last_ended_at: last_ended_at,
+      time_left: time_left
     }
   end
 
