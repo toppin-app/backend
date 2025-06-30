@@ -198,7 +198,7 @@ class VideoCallsController < ApplicationController
     render json: {
       has_unlimited_time: has_unlimited_time,
       last_video_call_date: last_video_call_date,
-      time_left: 0
+      time_left: time_left
     }
   end
 
