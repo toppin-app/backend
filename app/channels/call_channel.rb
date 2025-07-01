@@ -33,7 +33,7 @@ class CallChannel < ApplicationCable::Channel
       redis.setex("#{REDIS_KEY_PREFIX}:#{channel_name}:#{user_id}", TIMEOUT_SECONDS, Time.now.to_i)
 
       # Si la llamada sigue activa y status es false, la finalizamos
-      if status == false
+      if status == false || status == "false" || status == 0
         end_call_and_notify(call, channel_name, "status_report")
         return
       end
