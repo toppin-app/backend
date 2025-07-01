@@ -26,7 +26,7 @@ class CallChannel < ApplicationCable::Channel
                    .first
 
     unless call
-      Rails.logger.warn("[CallChannel] No active/pending call found for user_id=", user_id)
+      Rails.logger.warn("[CallChannel] No active/pending call found for user_id=#{user_id}")
       Rails.logger.warn("[CallChannel] Data recibido: #{data.inspect}")
       return
     end
@@ -39,6 +39,7 @@ class CallChannel < ApplicationCable::Channel
 
     # Si la llamada sigue activa y status es false, la finalizamos
     if status == false || status == "false" || status == 0
+      Rails.logger.info("ASFAFSAFASFASFASFASFASFASFASFASFASFASFASFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFSAFSAFASFAFSASFASF")
       Rails.logger.info("ASFAFSAFASFASFASFASFASFASFASFASFASFASFASFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFSAFSAFASFAFSASFASF")
       Rails.logger.info("ASFAFSAFASFASFASFASFASFASFASFASFASFASFASFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFSAFSAFASFAFSASFASF")
       Rails.logger.info("ASFAFSAFASFASFASFASFASFASFASFASFASFASFASFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFAFSAFSAFASFAFSASFASF")
