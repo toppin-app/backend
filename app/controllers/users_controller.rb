@@ -332,15 +332,16 @@ class UsersController < ApplicationController
     User.where(superlike_available: 0, current_subscription_name: nil).where("last_superlike_given <= ?", DateTime.now-7.days).update_all(superlike_available:1)
     User.where(superlike_available: 0).where.not(current_subscription_name: nil).where("last_superlike_given <= ?", DateTime.now-7.days).update_all(superlike_available:5)
 
-    # Revisamos los usuarios que llevan más de 10 minutos sin actividad para quitarles el online (is_connected)
-      User.where(last_connection: false).update(is_connected: false)
-      User.where(last_connection: DateTime.now-100.years..DateTime.now-10.minutes).update(is_connected: false)
-    # fin de revisión de online
-
     render json: "OK".to_json
   end
-
-
+ 
+  # Método para validar a los usuarios online cada 30 segundos  
+  def cron_check_online_users
+    # Revisamos los usuarios que llevan más de 10 minutos sin actividad para quitarles el online (is_connected)
+    User.where(last_connection: false).update(is_connected: false)
+    User.where(last_connection: DateTime.now-100.years..DateTime.now-30.seconds).update(is_connected: false)
+    # fin de revisión de online
+  end
 
   # Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.
   def cron_check_outdated_boosts
