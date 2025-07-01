@@ -23,17 +23,20 @@ class CallChannel < ApplicationCable::Channel
                      .first
 
       unless call
-        # No hay llamada activa o pendiente para este usuario
+        Rails.logger.warn("[CallChannel] No active/pending call found for user_id=", user_id)
+        Rails.logger.warn("[CallChannel] Data recibido: #{data.inspect}")
         return
       end
 
       channel_name = call.agora_channel_name
+      Rails.logger.info("[CallChannel] Procesando ping para call_id=#{call.id}, channel_name=#{channel_name}, user_id=#{user_id}, status=#{status}")
 
       # Guarda el último ping de este usuario en Redis
       redis.setex("#{REDIS_KEY_PREFIX}:#{channel_name}:#{user_id}", TIMEOUT_SECONDS, Time.now.to_i)
 
       # Si la llamada sigue activa y status es false, la finalizamos
       if status == false || status == "false" || status == 0
+        Rails.logger.info("[CallChannel] Finalizando llamada por status_report para call_id=#{call.id}, user_id=#{user_id}")
         end_call_and_notify(call, channel_name, "status_report")
         return
       end
@@ -41,7 +44,9 @@ class CallChannel < ApplicationCable::Channel
       # Comprobar si el otro usuario lleva más de TIMEOUT_SECONDS sin enviar ping
       other_user_id = [call.user_1_id, call.user_2_id].find { |id| id != user_id }
       last_ping = redis.get("#{REDIS_KEY_PREFIX}:#{channel_name}:#{other_user_id}")
+      Rails.logger.info("[CallChannel] last_ping del otro usuario (user_id=#{other_user_id}): #{last_ping}")
       if last_ping.nil? || Time.now.to_i - last_ping.to_i > TIMEOUT_SECONDS
+        Rails.logger.info("[CallChannel] Finalizando llamada por timeout para call_id=#{call.id}, user_id=#{user_id}")
         end_call_and_notify(call, channel_name, "timeout")
       end
 
