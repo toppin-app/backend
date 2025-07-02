@@ -112,6 +112,7 @@ Rails.application.routes.draw do
   get '/get_user/:id', to: 'users#get_user'
   get '/create_match', to: 'users#create_match', as: :create_match
   post '/create_like', to: 'users#create_like'
+  get 'users/:id/matches_status', to: 'users#matches_status'
 
   post '/reject_match', to: "user_match_requests#reject_match" # Deshacer un match
 
