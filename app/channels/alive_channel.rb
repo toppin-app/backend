@@ -3,8 +3,6 @@ class AliveChannel < ApplicationCable::Channel
     stream_for current_user
     redis.sadd("online_users", current_user.id)
     Rails.logger.info("[AliveChannel] Usuario conectado: #{current_user.id}")
-    # Broadcast the updated list of online users  
-    alive_channel # Llama al método para enviar la lista
   end
 
   def unsubscribed
