@@ -41,6 +41,8 @@ Rails.application.routes.draw do
     post '/login', to: 'users/sessions#create' # Para obtener el token de inicio de sesión
   end
 
+  # CRONS – deben ir antes del wildcard :id
+  get '/users/cron_check_outdated_boosts', to: 'users#cron_check_outdated_boosts'
 
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user
