@@ -343,26 +343,30 @@ class UsersController < ApplicationController
   end
 
   # Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.
-  def cron_check_outdated_boosts
-    unless params[:token] == CRON_TOKEN
-      render plain: "Unauthorized", status: :unauthorized and return
-    end    
+def cron_check_outdated_boosts
+  unless params[:token] == CRON_TOKEN
+    render plain: "Unauthorized", status: :unauthorized and return
+  end    
+
   users = User.where(high_visibility: true).where("high_visibility_expire <= ?", DateTime.now)
 
-    users.each do |user|
-      user.update(high_visibility: false)
+  users.each do |user|
+    user.update(high_visibility: false)
+
+    # Usamos el primer dispositivo si existe
+    if user.devices.any?
       FirebasePushService.new.send_notification(
-        token: user.device.token,
+        token: user.devices.first.token,
         title: "Tu power sweet ha caducado",
         body: "Tu power sweet ha caducado, ya no estás en la parte superior de la lista de usuarios.",
         data: { action: "boost_expired" }
       )
-      
-      # Device.sendIndividualPush(user.id, "Tu power sweet ha caducado", "Ya no estás en la parte superior de la lista de usuarios.", nil, nil, "boost_expired")
     end
-
-    render json: "OK".to_json
   end
+
+  render json: "OK".to_json
+end
+
 
 
   # Método cron para que te devuelva los likes cada 12h.
