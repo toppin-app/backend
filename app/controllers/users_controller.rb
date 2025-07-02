@@ -1119,6 +1119,23 @@ class UsersController < ApplicationController
     render json: "OK".to_json
   end
 
+  # GET /users/:id/matches_status
+  def matches_status
+    user = User.find(params[:id])
+    # Suponiendo que tienes un método user.matches que devuelve los usuarios con los que tiene match
+    matches = user.matches
+    # Usuarios online en Redis
+    online_ids = redis.smembers("online_users").map(&:to_i)
+    result = matches.map do |match|
+      {
+        id: match.id,
+        name: match.name,
+        online: online_ids.include?(match.id)
+      }
+    end
+    render json: { matches: result }
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_user
