@@ -5,7 +5,7 @@ class UsersController < ApplicationController
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation]
 
 
-  CRON_TOKEN = "8b645d9b-2679-4a9d-a295-faa88e9dca8c".freeze
+  CRON_TOKEN = "8b645d9b-2679-4a9d-a295-faa88e9dca8c"
 
 
   def reset_password_sent
@@ -337,7 +337,6 @@ class UsersController < ApplicationController
  
   # Método para validar a los usuarios online cada 30 segundos  
   def cron_check_online_users
-    # Revisamos los usuarios que llevan más de 10 minutos sin actividad para quitarles el online (is_connected)
     User.where(last_connection: false).update(is_connected: false)
     User.where(last_connection: DateTime.now-100.years..DateTime.now-30.seconds).update(is_connected: false)
     # fin de revisión de online
@@ -345,8 +344,10 @@ class UsersController < ApplicationController
 
   # Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.
   def cron_check_outdated_boosts
-    head :unauthorized and return if CRON_TOKEN != params["token"]
-    users = User.where(high_visibility: true).where("high_visibility_expire <= ?", DateTime.now)
+    unless params[:token] == CRON_TOKEN
+      render plain: "Unauthorized", status: :unauthorized and return
+    end    
+  users = User.where(high_visibility: true).where("high_visibility_expire <= ?", DateTime.now)
 
     users.each do |user|
       user.update(high_visibility: false)
