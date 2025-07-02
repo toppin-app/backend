@@ -1,9 +1,9 @@
 class AliveChannel < ApplicationCable::Channel
   def subscribed
-    stream_for current_user
+    stream_from "alive_channel"
     redis.sadd("online_users", current_user.id)
     Rails.logger.info("[AliveChannel] Usuario conectado: #{current_user.id}")
-    alive_channel # Notifica a todos los usuarios
+    alive_channel
   end
 
   def unsubscribed
