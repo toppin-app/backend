@@ -1154,5 +1154,8 @@ class UsersController < ApplicationController
         language: []
       )
     end
+    def redis
+      @redis ||= Redis.new(url: ENV["REDIS_URL"])
     end
-  
+    end
+
