@@ -14,18 +14,26 @@ class AliveChannel < ApplicationCable::Channel
 
   # Método para enviar la lista de usuarios conectados a todos los clientes
   def alive_channel
-    Rails.logger.info("[AliveChannel] Enviando lista de usuarios conectados")
-    # Obtenemos los IDs de los usuarios conectados desde Redis
+    Rails.logger.info("[AliveChannel] Enviando lista de matches conectados")
     user_ids = redis.smembers("online_users").map(&:to_i)
-    users = User.where(id: user_ids).map do |user|
-      {
-        id: user.id,
-        name: user.name, # o el campo que quieras mostrar
-        online: true # Todos los usuarios en esta lista están conectado
-        
-      }
+
+    User.find_each do |user|
+      # Obtener matches del usuario (bidireccional)
+      match_requests = UserMatchRequest.where("(user_id = :id OR target_user = :id) AND is_match = true", id: user.id)
+      match_user_ids = match_requests.map { |mr| mr.user_id == user.id ? mr.target_user : mr.user_id }
+      matches = User.where(id: match_user_ids)
+
+      matches_data = matches.map do |match|
+        {
+          id: match.id,
+          name: match.name,
+          online: user_ids.include?(match.id)
+        }
+      end
+
+      # Notificar solo al usuario actual su lista de matches y su estado online
+      AliveChannel.broadcast_to(user, { type: "online_matches", matches: matches_data })
     end
-    ActionCable.server.broadcast("alive_channel", { type: "online_users", users: users })
   end
 
   private
