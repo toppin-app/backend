@@ -345,6 +345,7 @@ class UsersController < ApplicationController
 
   # Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.
   def cron_check_outdated_boosts
+    head :unauthorized and return if CRON_TOKEN != params["token"]
     users = User.where(high_visibility: true).where("high_visibility_expire <= ?", DateTime.now)
 
     users.each do |user|
