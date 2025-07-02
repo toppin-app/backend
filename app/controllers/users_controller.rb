@@ -1122,9 +1122,10 @@ class UsersController < ApplicationController
   # GET /users/:id/matches_status
   def matches_status
     user = User.find(params[:id])
-    # Suponiendo que tienes un método user.matches que devuelve los usuarios con los que tiene match
-    matches = user.matches
-    # Usuarios online en Redis
+    # Suponiendo que los matches son bidireccionales y quieres ambos lados:
+    match_requests = UserMatchRequest.where("(user_id = :id OR target_user = :id) AND is_match = true", id: user.id)
+    match_user_ids = match_requests.map { |mr| mr.user_id == user.id ? mr.target_user : mr.user_id }
+    matches = User.where(id: match_user_ids)
     online_ids = redis.smembers("online_users").map(&:to_i)
     result = matches.map do |match|
       {
