@@ -17,23 +17,24 @@ class AliveChannel < ApplicationCable::Channel
     Rails.logger.info("[AliveChannel] Enviando lista de matches conectados")
     user_ids = redis.smembers("online_users").map(&:to_i)
 
+    all_matches = []
+
     User.find_each do |user|
-      # Obtener matches del usuario (bidireccional)
       match_requests = UserMatchRequest.where("(user_id = :id OR target_user = :id) AND is_match = true", id: user.id)
       match_user_ids = match_requests.map { |mr| mr.user_id == user.id ? mr.target_user : mr.user_id }
       matches = User.where(id: match_user_ids)
 
-      matches_data = matches.map do |match|
-        {
-          id: match.id,
-          name: match.name,
+      matches.each do |match|
+        all_matches << {
+          user_id: user.id,
+          match_id: match.id,
+          match_name: match.name,
           online: user_ids.include?(match.id)
         }
       end
-
-      # Notificar solo al usuario actual su lista de matches y su estado online
-      AliveChannel.broadcast_to(user, { type: "online_matches", matches: matches_data })
     end
+
+    ActionCable.server.broadcast("alive_channel", { type: "all_matches_status", matches: all_matches })
   end
 
   private
