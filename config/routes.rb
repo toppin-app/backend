@@ -139,6 +139,7 @@ Rails.application.routes.draw do
 
 
   # CRONS
+  get '/users/cron_check_outdated_boosts', to: 'users#cron_check_outdated_boosts'
   get '/cron_check_outdated_boosts', to: 'users#cron_check_outdated_boosts'
   get '/cron_regenerate_superlike', to: 'users#cron_regenerate_superlike'
   get '/cron_regenerate_likes', to: 'users#cron_regenerate_likes'
