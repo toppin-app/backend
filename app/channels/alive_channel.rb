@@ -21,7 +21,8 @@ class AliveChannel < ApplicationCable::Channel
       {
         id: user.id,
         name: user.name, # o el campo que quieras mostrar
-        status: "online"
+        online: true # Todos los usuarios en esta lista están conectado
+        
       }
     end
     ActionCable.server.broadcast("alive_channel", { type: "online_users", users: users })
