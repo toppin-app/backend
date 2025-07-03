@@ -340,6 +340,9 @@ class UsersController < ApplicationController
  
   # Método para validar a los usuarios online cada 30 segundos  
   def cron_check_online_users
+      unless params[:token] == CRON_TOKEN
+    render plain: "Unauthorized", status: :unauthorized and return
+      end    
     User.where(last_connection: false).update(is_connected: false)
     User.where(last_connection: DateTime.now-100.years..DateTime.now-30.seconds).update(is_connected: false)
     # fin de revisión de online

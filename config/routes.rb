@@ -45,6 +45,7 @@ Rails.application.routes.draw do
   get '/users/cron_check_outdated_boosts', to: 'users#cron_check_outdated_boosts'
   get 'users/cron_regenerate_likes', to: 'users#cron_regenerate_likes'
   get 'users/cron_regenerate_superlike', to: 'users#cron_regenerate_superlike'
+  get '/users/cron_check_online_users', to: 'users#cron_check_online_users'
 
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user
