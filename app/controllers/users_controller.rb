@@ -2,7 +2,7 @@ class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
   before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
-  skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users] :cron_check_outdated_boosts]
+  skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users]
 
 
   CRON_TOKEN = "8b645d9b-2679-4a9d-a295-faa88e9dca8c"
