@@ -576,13 +576,19 @@ end
     # IDs de usuarios que han interactuado con el current_user (LIKE o DISLIKE)
     # y cuya interacción el current_user YA HA PROCESADO (es decir, ya se hizo match o ya se rechazó).
     my_received_processed_interactions = UserMatchRequest.where(target_user: current_user_id)
-                                                         .where("is_match = ? OR is_rejected = ?", true, true)
-                                                         .pluck(:user_id)
+                                                       .where("is_match = ? OR is_rejected = ?", true, true)
+                                                       .pluck(:user_id)
+
+    # NUEVO: IDs de usuarios que yo he rechazado
+    my_rejected = UserMatchRequest.where(user_id: current_user_id, is_rejected: true).pluck(:target_user)
+
+    # NUEVO: IDs de usuarios que me han rechazado
+    rejected_me = UserMatchRequest.where(target_user: current_user_id, is_rejected: true).pluck(:user_id)
 
     # Combinamos todas las IDs de usuarios que no deberían volver a aparecer.
     # Esto incluye a los que yo descarté/gusteé y a los que me gustaron/descartaron
     # y ya procesé la interacción.
-    users_to_exclude = (my_sent_interactions + my_received_processed_interactions).uniq
+    users_to_exclude = (my_sent_interactions + my_received_processed_interactions + my_rejected + rejected_me).uniq
 
     # MUY IMPORTANTE: Asegúrate de que el propio usuario (current_user) no se incluya en los resultados.
     users_to_exclude << current_user_id
