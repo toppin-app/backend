@@ -371,6 +371,9 @@ end
 
   # Método cron para que te devuelva los likes cada 12h.
   def cron_regenerate_likes
+    unless params[:token] == CRON_TOKEN
+      render plain: "Unauthorized", status: :unauthorized and return
+    end
     users = User.where("last_like_given <= ?", DateTime.now-12.hours)
 
     users.each do |user|
