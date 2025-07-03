@@ -27,15 +27,14 @@ class UserMatchRequest < ApplicationRecord
 
   # Busca un match_request entre dos usuarios.
   def self.match_between(user1, user2)
+    # Prioriza solicitud del user1 al user2
+    exact = where(user_id: user1, target_user: user2).order(created_at: :desc).first
+    return exact if exact.present?
 
-     result = UserMatchRequest.where("(user_id = ? AND target_user = ?) or (user_id = ? and target_user = ?)", user1, user2, user2, user1)
-    
-     if result.any?
-      return result.last
-     else
-      return nil
-    end
-
+    # Si no hay, busca la inversa
+    inverse = where(user_id: user2, target_user: user1).order(created_at: :desc).first
+    return inverse
+  end
 
   end
   # Comprueba si existe un match confirmado entre dos usuarios

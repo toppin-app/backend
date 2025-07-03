@@ -230,27 +230,22 @@ class UserMatchRequestsController < ApplicationController
 
 
 
-  # Método para deshacer un match.
   def reject_match
-    
-    umr = UserMatchRequest.match_between(current_user.id, params[:user_id])
+    umr = UserMatchRequest.find_by(user_id: current_user.id, target_user: params[:user_id])
+
     if umr
-      umr.update(is_rejected: true) # Pasamos el match_request a rejected.
-      
-      # Nos cepillamos la conversación en twilio.
-      twilio = TwilioController.new
+      umr.update(is_rejected: true)
+
+      # Eliminamos la conversación en Twilio si existe
       if umr.twilio_conversation_sid.present?
-         twilio.destroy_conversation(umr.twilio_conversation_sid)
+        TwilioController.new.destroy_conversation(umr.twilio_conversation_sid)
       end
-      
-      render json: { status: 200, error: "OK"}, status: 200
+
+      render json: { status: 200, error: "OK" }, status: 200
     else
-      render json: { status: 405, error: "Error rejecting match"}, status: 405
+      render json: { status: 405, error: "Error rejecting match" }, status: 405
     end
-    
-
   end
-
 
   # API endpoint para enviar un mensaje de chat a un match. (Se usa nada mas hacer el match para mandar el primer mensaje).
   def send_first_message_to_match
