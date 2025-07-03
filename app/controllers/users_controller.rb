@@ -329,6 +329,9 @@ class UsersController < ApplicationController
 
   # Regenera los superlikes de los usuarios (1 cada 24h)
   def cron_regenerate_superlike
+    unless params[:token] == CRON_TOKEN
+      render plain: "Unauthorized", status: :unauthorized and return
+    end 
     User.where(superlike_available: 0, current_subscription_name: nil).where("last_superlike_given <= ?", DateTime.now-7.days).update_all(superlike_available:1)
     User.where(superlike_available: 0).where.not(current_subscription_name: nil).where("last_superlike_given <= ?", DateTime.now-7.days).update_all(superlike_available:5)
 

@@ -44,7 +44,7 @@ Rails.application.routes.draw do
   # CRONS – deben ir antes del wildcard :id
   get '/users/cron_check_outdated_boosts', to: 'users#cron_check_outdated_boosts'
   get 'users/cron_regenerate_likes', to: 'users#cron_regenerate_likes'
-
+  get 'users/cron_regenerate_superlike', to: 'users#cron_regenerate_superlikes'
 
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user
@@ -145,7 +145,7 @@ Rails.application.routes.draw do
   # CRONS
   get '/users/cron_check_outdated_boosts', to: 'users#cron_check_outdated_boosts'
   get '/cron_check_outdated_boosts', to: 'users#cron_check_outdated_boosts'
-  get '/cron_regenerate_superlike', to: 'users#cron_regenerate_superlike'
+  get 'users/cron_regenerate_superlike', to: 'users#cron_regenerate_superlike'
   get 'users/cron_regenerate_likes', to: 'users#cron_regenerate_likes'
   get '/cron_recalculate_popularity', to: "users#cron_recalculate_popularity"
   post '/cron_randomize_bundled_users_geolocation', to: 'users#cron_randomize_bundled_users_geolocation'
