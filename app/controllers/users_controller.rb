@@ -348,7 +348,7 @@ class UsersController < ApplicationController
     # fin de revisión de online
   end
 
-  # Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.
+# Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.
 def cron_check_outdated_boosts
   unless params[:token] == CRON_TOKEN
     render plain: "Unauthorized", status: :unauthorized and return
@@ -359,10 +359,10 @@ def cron_check_outdated_boosts
   users.each do |user|
     user.update(high_visibility: false)
 
-    # Usamos el primer dispositivo si existe
-    if user.devices.any?
+    user.devices.each do |device|
+      next if device.token.blank?
       FirebasePushService.new.send_notification(
-        token: user.devices.first.token,
+        token: device.token,
         title: "Tu power sweet ha caducado",
         body: "Tu power sweet ha caducado, ya no estás en la parte superior de la lista de usuarios.",
         data: { action: "boost_expired" }
