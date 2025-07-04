@@ -383,10 +383,18 @@ end
     users = User.where("last_like_given <= ?", DateTime.now-12.hours)
 
     users.each do |user|
-        if user.likes_left == 0
-           Device.sendIndividualPush(user.id,"¡Ya puedes empezar a toppitear de nuevo!", "", "likes_regenerated")
+      if user.likes_left == 0
+        user.devices.each do |device|
+          next if device.token.blank?
+          FirebasePushService.new.send_notification(
+            token: device.token,
+            title: "¡Ya puedes empezar a toppitear de nuevo!",
+            body: "",
+            data: { action: "likes_regenerated" }
+          )
         end
-       user.update(likes_left: 55)
+      end
+      user.update(likes_left: 55)
     end
 
 
