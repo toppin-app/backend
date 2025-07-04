@@ -380,7 +380,7 @@ end
     unless params[:token] == CRON_TOKEN
       render plain: "Unauthorized", status: :unauthorized and return
     end
-    users = User.where("last_like_given <= ?", DateTime.now-30.seconds).where(likes_left: 0)
+    users = User.where("last_like_given <= ?", DateTime.now-12.hours).where(likes_left: 0)
 
     users.each do |user|
         if user.likes_left == 0
