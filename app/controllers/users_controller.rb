@@ -678,6 +678,8 @@ end
     # Añadimos los likes al principio, para ello los extraemos
     incoming_likes = current_user.incoming_likes.pluck(:user_id)
 
+    # Filtra los incoming_likes para que no estén en users_to_exclude
+    incoming_likes = incoming_likes.reject { |il| users_to_exclude.include?(il) }
 
     if incoming_likes.count > 1
         # mezclamos y eliminamos uno para el sugar play
@@ -687,7 +689,7 @@ end
     end
 
 
-    user_ids = users_with_boost+users_without_boost
+    user_ids = users_with_boost + users_without_boost
 
 
     logger.info "USER IDS 4::"+user_ids.inspect
