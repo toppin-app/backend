@@ -33,7 +33,7 @@ class AliveChannel < ApplicationCable::Channel
       # Si quieres que también salga el propio usuario en la lista, añade aquí:
       # matches_data << { id: user.id, name: user.name, online: user_ids.include?(user.id) }
 
-      AliveChannel.broadcast_to(user, { type: "online_matches", matches: matches_data })
+      AliveChannel.broadcast_to(user, { type: "online_users", users: matches_data })
     end
   end
 
