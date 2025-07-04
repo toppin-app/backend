@@ -345,7 +345,7 @@ class UsersController < ApplicationController
       end    
     User.where(last_connection: false).update(is_connected: false)
     User.where(last_connection: DateTime.now-100.years..DateTime.now-30.seconds).update(is_connected: false)
-    # fin de revisión de online
+    render json: { status: "OK" }
   end
 
 # Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.
