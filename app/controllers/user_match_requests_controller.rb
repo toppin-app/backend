@@ -100,9 +100,9 @@ class UserMatchRequestsController < ApplicationController
 
           # Si el usuario actual está dando dislike
           if params[:is_like] == false
-            umr_like = UserMatchRequest.find_by(user_id: params[:target_user], target_user: current_user.id, is_like: true)
+            umr_like = UserMatchRequest.find_by(user_id: params[:target_user], target_user: current_user.id)
             if umr_like
-              umr_like.update(is_rejected: true)
+              umr_like.update(is_rejected: true, is_like: false)
             end
           end
           # Si está dando un like y no es premium ni mujer, se lo descontamos.
