@@ -184,28 +184,22 @@ class UserMatchRequestsController < ApplicationController
 
 
   def reject_match
+    # El usuario que rechaza es current_user, el rechazado es params[:user_id] o params[:target_user_id]
     target_user_id = params[:user_id] || params[:target_user_id]
-    umr = UserMatchRequest.find_or_initialize_by(user_id: current_user.id, target_user: params[:user_id])
 
-    # Si no existe, lo creamos como rechazado.
-    umr.is_rejected = true
-    umr.is_like = false
-    umr.is_match = false
-    umr.save!
+    # Buscamos el registro donde el target_user es el current_user y el user_id es el que le dio like
+    umr = UserMatchRequest.find_or_initialize_by(user_id: target_user_id, target_user: current_user.id)
 
-    if umr
+    if umr.persisted? || umr.is_like
       umr.update(is_rejected: true)
-
       # Eliminamos la conversación en Twilio si existe
       if umr.twilio_conversation_sid.present?
         TwilioController.new.destroy_conversation(umr.twilio_conversation_sid)
       end
-
       render json: { status: 200, error: "OK" }, status: 200
     else
       render json: { status: 405, error: "Error rejecting match" }, status: 405
     end
-    render json: { status: 200 }
   end
 
   # API endpoint para enviar un mensaje de chat a un match. (Se usa nada mas hacer el match para mandar el primer mensaje).
