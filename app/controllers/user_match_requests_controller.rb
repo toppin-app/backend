@@ -184,8 +184,14 @@ class UserMatchRequestsController < ApplicationController
 
 
   def reject_match
-    umr = UserMatchRequest.find_by(user_id: current_user.id, target_user: params[:user_id])
     target_user_id = params[:user_id] || params[:target_user_id]
+    umr = UserMatchRequest.find_or_initialize_by(user_id: current_user.id, target_user: params[:user_id])
+
+    # Si no existe, lo creamos como rechazado.
+    umr.is_rejected = true
+    umr.is_like = false
+    umr.is_match = false
+    umr.save!
 
     if umr
       umr.update(is_rejected: true)
