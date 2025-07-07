@@ -184,13 +184,11 @@ class UserMatchRequestsController < ApplicationController
 
 
   def reject_match
-    # El usuario que rechaza es current_user, el rechazado es params[:user_id] o params[:target_user_id]
     target_user_id = params[:user_id] || params[:target_user_id]
 
-    # Buscamos el registro donde el target_user es el current_user y el user_id es el que le dio like
-    umr = UserMatchRequest.find_or_initialize_by(user_id: target_user_id, target_user: current_user.id)
+    umr = UserMatchRequest.find_by(user_id: target_user_id, target_user: current_user.id)
 
-    if umr.persisted? || umr.is_like
+    if umr
       umr.update(is_rejected: true)
       # Eliminamos la conversación en Twilio si existe
       if umr.twilio_conversation_sid.present?
@@ -198,7 +196,18 @@ class UserMatchRequestsController < ApplicationController
       end
       render json: { status: 200, error: "OK" }, status: 200
     else
-      render json: { status: 405, error: "Error rejecting match" }, status: 405
+      # Si no existe, lo creamos como rechazado
+      umr = UserMatchRequest.create(
+        user_id: target_user_id,
+        target_user: current_user.id,
+        is_like: false,
+        is_rejected: true
+      )
+      if umr.persisted?
+        render json: { status: 200, error: "OK" }, status: 200
+      else
+        render json: { status: 405, error: "Error rejecting match" }, status: 405
+      end
     end
   end
 
