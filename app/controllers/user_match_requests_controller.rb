@@ -97,6 +97,14 @@ class UserMatchRequestsController < ApplicationController
           end
           logger.info "umr is now"
           logger.info umr.inspect
+
+          # Si el usuario actual está dando dislike
+          if params[:is_like] == false
+            umr_like = UserMatchRequest.find_by(user_id: params[:target_user], target_user: current_user.id, is_like: true)
+            if umr_like
+              umr_like.update(is_rejected: true)
+            end
+          end
           # Si está dando un like y no es premium ni mujer, se lo descontamos.
           if umr.is_like and !current_user.is_premium and !umr.is_superlike and !umr.user.female?
             current_user.update(likes_left: current_user.likes_left-1, last_like_given: DateTime.now)
