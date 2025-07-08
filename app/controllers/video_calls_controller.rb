@@ -58,6 +58,7 @@ class VideoCallsController < ApplicationController
       message: {
         type: "incoming_call",
         caller_id: current_user.id,
+        caller_name: current_user.name,
         channel_name: channel_name
       }
     })
