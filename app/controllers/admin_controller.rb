@@ -24,18 +24,24 @@ class AdminController < ApplicationController
       ENV['TWILIO_AUTH_TOKEN']
     )
 
-    messages = client.conversations
-                     .conversations(conversation_sid)
-                     .messages
-                     .list(limit: 100)
+    begin
+      messages = client.conversations
+                       .conversations(conversation_sid)
+                       .messages
+                       .list(limit: 100)
 
-    render json: messages.map { |msg|
-      {
-        sid: msg.sid,
-        author: msg.author,
-        body: msg.body,
-        date_created: msg.date_created
+      render json: messages.map { |msg|
+        # Intenta buscar el usuario por identity (si lo usas así en Twilio)
+        user = User.find_by(id: msg.author) || User.find_by(user_name: msg.author)
+        {
+          sid: msg.sid,
+          author: user&.name || msg.author, # Muestra el nombre si lo encuentra, si no, el author original
+          body: msg.body,
+          date_created: msg.date_created
+        }
       }
-    }
+    rescue Twilio::REST::RestError => e
+      render json: { error: "No se pudo cargar la conversación. Puede que no exista o haya sido eliminada." }, status: :not_found
+    end
   end
 end

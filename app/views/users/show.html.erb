@@ -238,15 +238,25 @@
   </div>
   <div class="col">
 
-      <div class="card">
-        <div class="card-header bg-dark"><b>Chat</b></div>
-        <div id="chat-title" style="padding: 8px; font-weight: bold;"></div>
-        <div class="card-body" id="conversation" style="max-height: 400px; min-height: 400px; overflow: scroll"></div>
-        <div class="card-footer">
-          <input type="text" id="message" class="form-control" placeholder="Chatea">
-        </div>
+    <div class="card">
+      <div class="card-header bg-dark"><b>Chat</b></div>
 
+      <!-- Título del chat -->
+      <div id="chat-title" style="padding: 8px; font-weight: bold;"></div>
+
+      <!-- Botón de actualización de conversación -->
+      <div style="margin: 0 8px 10px 8px;">
+        <button id="refresh-chat" class="btn btn-success btn-sm">Actualizar conversación</button>
       </div>
+
+      <!-- Cuerpo del chat -->
+      <div class="card-body" id="conversation" style="max-height: 400px; min-height: 400px; overflow: scroll"></div>
+
+      <!-- Input de mensaje -->
+      <div class="card-footer">
+        <input type="text" id="message" class="form-control" placeholder="Chatea">
+      </div>
+    </div>
 
 
   </div>
@@ -255,10 +265,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  let currentSid = null;
+
+  // Inicializa los botones de chat
   document.querySelectorAll('.btn.chat').forEach(function(btn) {
     btn.classList.remove('disabled');
     btn.addEventListener('click', function() {
-      // Busca el nombre del usuario en la misma fila del botón
+      // Obtener nombre de usuario
       const row = btn.closest('tr');
       let userName = '';
       if (row) {
@@ -269,24 +282,41 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       document.getElementById('chat-title').textContent = userName ? `Conversación con: ${userName}` : '';
 
-      const sid = btn.getAttribute('data-sid');
-      fetch(`/admin/conversation_messages/${sid}`)
-        .then(response => response.json())
-        .then(messages => {
-          let html = '';
-          if (messages.length === 0) {
-            html = '<p class="text-muted">No hay mensajes en esta conversación.</p>';
-          } else {
-            messages.forEach(msg => {
-              html += `<div style="margin-bottom:8px;">
-                <b>${msg.author}:</b> ${msg.body}
-                <br><small class="text-muted">${msg.date_created}</small>
-              </div>`;
-            });
-          }
-          document.getElementById('conversation').innerHTML = html;
-        });
+      // Obtener SID
+      currentSid = btn.getAttribute('data-sid');
+      cargarMensajes(currentSid);
     });
+  });
+
+  // Función para cargar mensajes
+  function cargarMensajes(sid) {
+    if (!sid) return;
+
+    fetch(`/admin/conversation_messages/${sid}`)
+      .then(response => response.json())
+      .then(messages => {
+        let html = '';
+        if (messages.length === 0) {
+          html = '<p class="text-muted">No hay mensajes en esta conversación.</p>';
+        } else {
+          messages.forEach(msg => {
+            html += `<div style="margin-bottom:8px;">
+              <b>${msg.author}:</b> ${msg.body}
+              <br><small class="text-muted">${msg.date_created}</small>
+            </div>`;
+          });
+        }
+        document.getElementById('conversation').innerHTML = html;
+      });
+  }
+
+  // Evento para el botón de "Actualizar conversación"
+  document.getElementById('refresh-chat')?.addEventListener('click', function() {
+    if (currentSid) {
+      cargarMensajes(currentSid);
+    } else {
+      alert('Primero selecciona una conversación.');
+    }
   });
 });
 </script>
