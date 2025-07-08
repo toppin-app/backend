@@ -44,4 +44,21 @@ class AdminController < ApplicationController
       render json: { error: "No se pudo cargar la conversación. Puede que no exista o haya sido eliminada." }, status: :not_found
     end
   end
+
+  private
+
+  def set_match_message_counts
+    @match_message_counts = {}
+    @matches.each do |match|
+      if match.twilio_conversation_sid.present?
+        begin
+          client = Twilio::REST::Client.new(ENV['TWILIO_ACCOUNT_SID'], ENV['TWILIO_AUTH_TOKEN'])
+          count = client.conversations.conversations(match.twilio_conversation_sid).messages.list.count
+          @match_message_counts[match.twilio_conversation_sid] = count
+        rescue
+          @match_message_counts[match.twilio_conversation_sid] = 0
+        end
+      end
+    end
+  end
 end

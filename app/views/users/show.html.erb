@@ -181,7 +181,12 @@
         <td><%= true_false(match_request.is_superlike) %></td>
         <td><%= match_request.target_user_ranking %></td>
         <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
-        <td><button class="btn btn-sm btn-primary chat disabled" id="<%= match_request.twilio_conversation_sid %>" data-sid="<%= match_request.twilio_conversation_sid %>"> <i class="fas fa-comments"></i> Chat (0) </button></td>
+        <td><button class="btn btn-sm btn-primary chat disabled"
+        id="<%= match_request.twilio_conversation_sid %>"
+        data-sid="<%= match_request.twilio_conversation_sid %>">
+  <i class="fas fa-comments"></i>
+  Chat (<%= @match_message_counts[match_request.twilio_conversation_sid] || 0 %>)
+</button></td>
      <% end %>
 
 
