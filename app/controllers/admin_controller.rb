@@ -15,4 +15,27 @@ class AdminController < ApplicationController
 
   end
 
+  def conversation_messages
+    check_admin
+    conversation_sid = params[:conversation_sid]
+
+    client = Twilio::REST::Client.new(
+      ENV['TWILIO_ACCOUNT_SID'],
+      ENV['TWILIO_AUTH_TOKEN']
+    )
+
+    messages = client.conversations
+                     .conversations(conversation_sid)
+                     .messages
+                     .list(limit: 100)
+
+    render json: messages.map { |msg|
+      {
+        sid: msg.sid,
+        author: msg.author,
+        body: msg.body,
+        date_created: msg.date_created
+      }
+    }
+  end
 end

@@ -129,7 +129,7 @@ Rails.application.routes.draw do
 
   get '/dc', to: 'twilio#destroy_conversations'
   post '/twilio_webhook', to: 'twilio#twilio_webhook'
-
+  get 'admin/conversation_messages/:conversation_sid', to: 'admin#conversation_messages'
 
   # Primer mensaje a un match. Params: id, message (El id del user_match_request)
   post '/send_first_message_to_match', to: "user_match_requests#send_first_message_to_match"

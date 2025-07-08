@@ -251,6 +251,42 @@
 </div>
 
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.btn.chat').forEach(function(btn) {
+    btn.classList.remove('disabled');
+    btn.addEventListener('click', function() {
+      // Busca el nombre del usuario en la misma fila del botón
+      const row = btn.closest('tr');
+      let userName = '';
+      if (row) {
+        const userCell = row.querySelector('td:nth-child(2)');
+        if (userCell) {
+          userName = userCell.textContent.trim();
+        }
+      }
+      document.getElementById('chat-title').textContent = userName ? `Conversación con: ${userName}` : '';
 
+      const sid = btn.getAttribute('data-sid');
+      fetch(`/admin/conversation_messages/${sid}`)
+        .then(response => response.json())
+        .then(messages => {
+          let html = '';
+          if (messages.length === 0) {
+            html = '<p class="text-muted">No hay mensajes en esta conversación.</p>';
+          } else {
+            messages.forEach(msg => {
+              html += `<div style="margin-bottom:8px;">
+                <b>${msg.author}:</b> ${msg.body}
+                <br><small class="text-muted">${msg.date_created}</small>
+              </div>`;
+            });
+          }
+          document.getElementById('conversation').innerHTML = html;
+        });
+    });
+  });
+});
+</script>
 
 <%= link_to 'Atrás', users_path %>
