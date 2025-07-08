@@ -46,13 +46,13 @@ class CallChannel < ApplicationCable::Channel
     end
 
     # Comprobar si el otro usuario lleva más de TIMEOUT_SECONDS sin enviar ping
-    # other_user_id = [call.user_1_id, call.user_2_id].find { |id| id != user_id }
-    # last_ping = redis.get("#{REDIS_KEY_PREFIX}:#{channel_name}:#{other_user_id}")
-    # Rails.logger.info("[CallChannel] last_ping del otro usuario (user_id=#{other_user_id}): #{last_ping}")
-    # if last_ping.nil? || Time.now.to_i - last_ping.to_i > TIMEOUT_SECONDS
-    #   Rails.logger.info("[CallChannel] Finalizando llamada por timeout para call_id=#{call.id}, user_id=#{user_id}")
-    #   end_call_and_notify(call, channel_name, "timeout")
-    # end
+     other_user_id = [call.user_1_id, call.user_2_id].find { |id| id != user_id }
+     last_ping = redis.get("#{REDIS_KEY_PREFIX}:#{channel_name}:#{other_user_id}")
+     Rails.logger.info("[CallChannel] last_ping del otro usuario (user_id=#{other_user_id}): #{last_ping}")
+     if last_ping.nil? || Time.now.to_i - last_ping.to_i > TIMEOUT_SECONDS
+       Rails.logger.info("[CallChannel] Finalizando llamada por timeout para call_id=#{call.id}, user_id=#{user_id}")
+       end_call_and_notify(call, channel_name, "timeout")
+     end
 
     return
   end
