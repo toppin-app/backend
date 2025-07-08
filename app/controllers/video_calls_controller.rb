@@ -152,7 +152,7 @@ class VideoCallsController < ApplicationController
     end
     # Si alguno es premium/supreme, tiempo "infinito" (10 años)
     if caller.premium_or_supreme? || receiver.premium_or_supreme?
-      time_left = 86.400 # 24 horas en segundos
+      time_left = 864000 # 24 horas en segundos
     # Si no, calculamos el tiempo restante de la llamada
     else
       max_seconds = 180
@@ -187,7 +187,7 @@ class VideoCallsController < ApplicationController
     last_video_call_date = last_call&.started_at
 
     if current_user.premium_or_supreme? || other_user.premium_or_supreme?
-      time_left = 86.400 # 24 horas en segundos
+      time_left = 864000 # 24 horas en segundos
       has_unlimited_time = true
     else
       max_seconds = 180
