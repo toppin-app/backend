@@ -184,6 +184,7 @@
         <td><button class="btn btn-sm btn-primary chat disabled" id="<%= match_request.twilio_conversation_sid %>" data-sid="<%= match_request.twilio_conversation_sid %>"> <i class="fas fa-comments"></i> Chat (0) </button></td>
      <% end %>
 
+
     </table>
 
     <hr>
@@ -239,6 +240,7 @@
 
       <div class="card">
         <div class="card-header bg-dark"><b>Chat</b></div>
+        <div id="chat-title" style="padding: 8px; font-weight: bold;"></div>
         <div class="card-body" id="conversation" style="max-height: 400px; min-height: 400px; overflow: scroll"></div>
         <div class="card-footer">
           <input type="text" id="message" class="form-control" placeholder="Chatea">
