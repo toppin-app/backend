@@ -187,7 +187,7 @@ class VideoCallsController < ApplicationController
     last_video_call_date = last_call&.started_at
 
     if current_user.premium_or_supreme? || other_user.premium_or_supreme?
-      time_left = 86_400 # 24 horas en segundos
+      time_left = 86.400 # 24 horas en segundos
       has_unlimited_time = true
     else
       max_seconds = 180
