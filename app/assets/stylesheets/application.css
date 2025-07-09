@@ -71,4 +71,13 @@
     opacity: 0;
   }
 }
-    
+
+.chatUser1 {
+    background-color: azure;
+    border-radius: 10px 10px 0 10px;
+}
+
+.chatUser2 {
+    background-color: lightblue;
+    border-radius: 10px 0 10px 10px;
+}

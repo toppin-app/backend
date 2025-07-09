@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
           html = '<p class="text-muted">No hay mensajes en esta conversación.</p>';
         } else {
           messages.forEach(msg => {
-            html += `<div style="margin-bottom:8px;">
+            html += `<div class="chatUser1" style="margin-bottom:8px;">
               <b>${msg.author}:</b> ${msg.body}
               <br><small class="text-muted">${msg.date_created}</small>
             </div>`;
