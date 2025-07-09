@@ -38,7 +38,7 @@ class AdminController < ApplicationController
           author: user&.name || msg.author, # Muestra el nombre si lo encuentra, si no, el author original
           body: msg.body,
           date_created: msg.date_created,
-          is_author: user&.id == current_user.id # Verifica si el mensaje es del usuario actual
+          is_author: msg.author.to_s == current_user.user_name.to_s # <-- CAMBIO AQUÍ
         }
       }
     rescue Twilio::REST::RestError => e
