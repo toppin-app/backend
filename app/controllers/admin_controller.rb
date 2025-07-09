@@ -31,14 +31,13 @@ class AdminController < ApplicationController
                        .list(limit: 100)
 
       render json: messages.map { |msg|
-        # Intenta buscar el usuario por identity (si lo usas así en Twilio)
         user = User.find_by(id: msg.author) || User.find_by(user_name: msg.author)
         {
           sid: msg.sid,
-          author: user&.name || msg.author, # Muestra el nombre si lo encuentra, si no, el author original
+          author: user&.name || msg.author,
+          author_id: user&.id || msg.author, # <-- Añade el id real del autor
           body: msg.body,
-          date_created: msg.date_created,
-          is_author: msg.author.to_s == current_user.user_name.to_s # <-- CAMBIO AQUÍ
+          date_created: msg.date_created
         }
       }
     rescue Twilio::REST::RestError => e

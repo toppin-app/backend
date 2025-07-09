@@ -271,6 +271,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   let currentSid = null;
+  const fichaUserId = <%= @user.id %>; // <-- El id del usuario de la ficha
 
   // Inicializa los botones de chat
   document.querySelectorAll('.btn.chat').forEach(function(btn) {
@@ -305,9 +306,10 @@ document.addEventListener('DOMContentLoaded', function() {
           html = '<p class="text-muted">No hay mensajes en esta conversación.</p>';
         } else {
           messages.forEach(msg => {
+            const isFichaUser = parseInt(msg.author_id) === fichaUserId;
             html += `
-              <div class="${msg.is_author ? "chatContainerAuthor" : "" }">
-                <div class="${msg.is_author ? "chatUser1" : "chatUser2" }" style="margin-bottom:8px;">
+              <div class="${isFichaUser ? "chatContainerAuthor" : "" }">
+                <div class="${isFichaUser ? "chatUser1" : "chatUser2" }" style="margin-bottom:8px;">
                   <b>${msg.author}:</b> ${msg.body}
                   <br><small class="text-muted">${msg.date_created}</small>
                 </div>
