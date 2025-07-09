@@ -72,12 +72,23 @@
   }
 }
 
+.chatContainerAuthor {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .chatUser1 {
-    background-color: azure;
-    border-radius: 10px 10px 0 10px;
+  background-color: #c4e3e3;
+  border-radius: 15px 15px 0 15px;
+  padding: 7px 10px;
+  width: 250px;
+  max-width: 100%;
 }
 
 .chatUser2 {
-    background-color: lightblue;
-    border-radius: 10px 0 10px 10px;
+  background-color: #ebbaeb;
+  border-radius: 15px 15px 15px 0;
+  padding: 7px 10px;
+  width: 250px;
+  max-width: 100%;
 }
