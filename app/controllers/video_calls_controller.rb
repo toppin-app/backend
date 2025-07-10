@@ -94,16 +94,14 @@ class VideoCallsController < ApplicationController
         type: "call_accepted",
         receiver_id: current_user.id,
         channel_name: channel_name,
-        started_at: video_call&.started_at # Agregado started_at aquí
+        started_at: video_call&.started_at
       }
     })
 
-    head :ok
-    
-    return render json: {
+    render json: {
       success: true,
       caller_id: caller.id,
-      started_at: video_call&.started_at # Incluye started_at en la respuesta
+      started_at: video_call&.started_at
     }
   end
 
