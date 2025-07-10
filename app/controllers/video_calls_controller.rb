@@ -50,7 +50,6 @@ class VideoCallsController < ApplicationController
     video_call = VideoCall.between(current_user, receiver).find_or_initialize_by(agora_channel_name: channel_name, status: :pending)
     video_call.user_1 = current_user
     video_call.user_2 = receiver
-    video_call.started_at = Time.current
     video_call.status = :pending
     video_call.save!
     # Notifica al receptor de la llamada entrante
