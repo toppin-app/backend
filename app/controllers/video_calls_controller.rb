@@ -93,7 +93,8 @@ class VideoCallsController < ApplicationController
       message: {
         type: "call_accepted",
         receiver_id: current_user.id,
-        channel_name: channel_name
+        channel_name: channel_name,
+        started_at: video_call.started_at
       }
     })
 
