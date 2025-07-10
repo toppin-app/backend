@@ -94,7 +94,7 @@ class VideoCallsController < ApplicationController
         type: "call_accepted",
         receiver_id: current_user.id,
         channel_name: channel_name,
-        started_at: video_call.started_at
+        started_at: video_call&.started_at # Agregado started_at aquí
       }
     })
 
