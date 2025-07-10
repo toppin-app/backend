@@ -99,6 +99,12 @@ class VideoCallsController < ApplicationController
     })
 
     head :ok
+    
+    return render json: {
+      success: true,
+      caller_id: caller.id,
+      started_at: video_call&.started_at # Incluye started_at en la respuesta
+    }
   end
 
   # 3. Rechazar llamada
