@@ -941,12 +941,12 @@ render json: {
   if spin_count >= 7
     if current_user.incoming_likes.count > 0
     pond = {
-      "donut"  => 2,
+      "donut"  => 0,
       "heart" => 23,
-      "muffin"  => 2,
+      "muffin"  => 0,
       "card" => 23,
       "star" => 15,
-      "bear" => 15,
+      "bear" => 0,
       "battery" => 15
     }
     else 
