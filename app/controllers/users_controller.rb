@@ -75,7 +75,15 @@ class UsersController < ApplicationController
 
   def get_user
      @user = User.find(params[:id])
-     render 'show'
+    render json: @user.as_json(
+    methods: [:user_age, :user_media_url],
+    include: [
+      :user_media,
+      :user_interests,
+      :user_info_item_values,
+      :user_main_interests # <-- añade esto
+    ]
+  )
   end
 
 
