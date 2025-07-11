@@ -742,7 +742,19 @@ end
                .where.not(id: current_user_id)
                .sort_by {|m| user_ids.index(m.id)}
     end
-
+    
+render json: {
+  users: @users.as_json(
+    methods: [:user_age, :user_media_url],
+    include: [
+      :user_media,
+      :user_interests,
+      :user_info_item_values,
+      :user_main_interests # <-- aquí lo añades
+    ]
+  )
+}
+    
 =begin
 
     @users = User.where(id: user_ids).where.not(id: current_user_id)
