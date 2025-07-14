@@ -931,14 +931,14 @@ render json: {
     else
       if current_user.incoming_likes.count > 0
         pond = {
-          "donut"  => 10,
-          "heart" => 15,
-          "muffin"  =>15 ,
-          "card" => 15,
-          "star" => 15,
-          "bear" => 15,
-          "battery" => 15
-        }
+        "donut": 5,
+        "muffin": 5,
+        "bear": 5,
+        "heart": 22,
+        "card": 21,
+        "star": 21,
+        "battery": 21
+      }
       else
         pond = {
           "donut"  => 0,
