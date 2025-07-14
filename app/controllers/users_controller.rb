@@ -675,7 +675,9 @@ end
     end
 
 
-    if filter_preference.interests.present?
+  if filter_preference.interests.present?
+    interests = JSON.parse(filter_preference.interests)["interests"] rescue []
+    if interests.any?
       if user_with_interests.any?
         user_with_interests = user_with_interests.uniq
         user_ids = user_with_interests
@@ -683,6 +685,7 @@ end
         user_ids = []
       end
     end
+end
 
 
     logger.info "IDS 2"
