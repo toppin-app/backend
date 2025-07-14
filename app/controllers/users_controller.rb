@@ -675,9 +675,13 @@ end
     end
 
 
-    if user_with_interests.any?
-       user_with_interests = user_with_interests.uniq
-       user_ids = user_with_interests
+    if filter_preference.interests.present?
+      if user_with_interests.any?
+        user_with_interests = user_with_interests.uniq
+        user_ids = user_with_interests
+      else
+        user_ids = []
+      end
     end
 
 
