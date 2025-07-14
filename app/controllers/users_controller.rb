@@ -678,11 +678,20 @@ end
   if filter_preference.interests.present?
     interests = JSON.parse(filter_preference.interests)["interests"] rescue []
     if interests.any?
-      if user_with_interests.any?
-        user_with_interests = user_with_interests.uniq
+      # 1. Buscar primero en user_main_interests
+      main_interest_ids = UserMainInterest.where(interest_id: interests, user_id: user_ids).pluck(:user_id)
+      if main_interest_ids.any?
+        user_with_interests = main_interest_ids.uniq
         user_ids = user_with_interests
       else
-        user_ids = []
+        # 2. Si no hay ninguno, buscar en user_interests
+        secondary_interest_ids = UserInterest.where(interest_id: interests, user_id: user_ids).pluck(:user_id)
+        if secondary_interest_ids.any?
+          user_with_interests = secondary_interest_ids.uniq
+          user_ids = user_with_interests
+        else
+          user_ids = []
+        end
       end
     end
 end
