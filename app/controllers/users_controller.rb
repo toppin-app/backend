@@ -892,107 +892,81 @@ render json: {
 
   # Método para la tirada de ruleta.
   def spin_roulette
-  if current_user.spin_roulette_available == 0
-    render json: { status: 405, message: "No te quedan tiradas"}, status: 405
-    return
-  end
+    if current_user.spin_roulette_available == 0
+      render json: { status: 405, message: "No te quedan tiradas" }, status: 405
+      return
+    end
 
-  # Número de tirada (contando la actual)
-  spin_count = current_user.spin_number || 0
-  spin_count += 1
+    # Número de tirada (contando la actual)
+    spin_count = current_user.spin_number || 0
+    spin_count += 1
 
-  # Define el pond normal según tu lógica
-  if current_user.last_roulette_played.nil?
-    pond = {
-      "donut"  => 0,
-      "heart" => 0,
-      "muffin"  => 0,
-      "card" => 0,
-      "star" => 100,
-      "bear" => 0,
-      "battery" => 0
-    }
-  else
-    # Puedes descomentar esto si lo necesitas en el futuro
-    # if current_user.incoming_likes.count > 0
-    #   pond = {
-    #     "donut"  => 30,
-    #     "heart" => 2,
-    #     "muffin"  => 30,
-    #     "card" => 2,
-    #     "star" => 2,
-    #     "bear" => 30,
-    #     "battery" => 4
-    #   }
-    # else
-    pond = {
-      "donut"  => 0,
-      "heart" => 25,
-      "muffin"  => 0,
-      "card" => 25,
-      "star" => 25,
-      "bear" => 0,
-      "battery" => 25
-    }
-    # end
-  end
-
-  # A partir de la 7ª tirada, solo pueden salir donut o muffin (pero con sus probabilidades originales)
-  if spin_count >= 7
-    if current_user.incoming_likes.count > 0
-    pond = {
-      "donut"  => 0,
-      "heart" => 23,
-      "muffin"  => 0,
-      "card" => 23,
-      "star" => 15,
-      "bear" => 0,
-      "battery" => 15
-    }
-    else 
+    # Define el pond normal según tu lógica
+    if current_user.last_roulette_played.nil?
       pond = {
-      "donut"  => 0,
-      "heart" => 25,
-      "muffin"  => 0,
-      "card" => 25,
-      "star" => 25,
-      "bear" => 0,
-      "battery" => 25
-    }
+        "donut"  => 0,
+        "heart" => 0,
+        "muffin"  => 0,
+        "card" => 0,
+        "star" => 100,
+        "bear" => 0,
+        "battery" => 0
+      }
+    else
+      if current_user.incoming_likes.count > 0
+        pond = {
+          "donut"  => 10,
+          "heart" => 15,
+          "muffin"  =>15 ,
+          "card" => 15,
+          "star" => 15,
+          "bear" => 15,
+          "battery" => 15
+        }
+      else
+        pond = {
+          "donut"  => 0,
+          "heart" => 25,
+          "muffin"  => 0,
+          "card" => 25,
+          "star" => 25,
+          "bear" => 0,
+          "battery" => 25
+        }
+      end
+    end
+
+    available = current_user.spin_roulette_available - 1
+    current_user.update(
+      last_roulette_played: DateTime.now,
+      spin_roulette_available: available,
+      spin_number: spin_count
+    )
+
+    pickup = Pickup.new(pond)
+    result = pickup.pick(1)
+
+    # Guarda la tirada en el historial si quieres mantener el historial
+    # RoulettePlay.create!(
+    #   user_id: current_user.id,
+    #   spin_number: spin_count,
+    #   result: result
+    # )
+
+    if result == "star"
+      current_user.increase_consumable("superlikes", 1)
+    end
+
+    if result == "battery"
+      current_user.increase_consumable("boosters", 1)
+    end
+
+    if result == "heart"
+      current_user.increase_consumable("likes", 10)
+    end
+
+    render json: result.to_json
   end
-  end
-
-  available = current_user.spin_roulette_available - 1
-  current_user.update(
-    last_roulette_played: DateTime.now,
-    spin_roulette_available: available,
-    spin_number: spin_count
-  )
-
-  pickup = Pickup.new(pond)
-  result = pickup.pick(1)
-
-  # Guarda la tirada en el historial si quieres mantener el historial
-  # RoulettePlay.create!(
-  #   user_id: current_user.id,
-  #   spin_number: spin_count,
-  #   result: result
-  # )
-
-  if result == "star"
-    current_user.increase_consumable("superlikes",1)
-  end
-
-  if result == "battery"
-    current_user.increase_consumable("boosters",1)
-  end
-
-  if result == "heart"
-    current_user.increase_consumable("likes",10)
-  end
-
-  render json: result.to_json
-end
 
 
   def validate_image
