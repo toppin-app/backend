@@ -652,7 +652,7 @@ end
         interests = interests["interests"] # Ñapa del front
 
         if interests.any?
-          UserInterest.where(interest_id: interests, user_id: user_ids).pluck(:user_id).each do |id|
+          UserMainInterest.where(interest_id: interests, user_id: user_ids).pluck(:user_id).each do |id|
             user_with_interests << id
           end
         end
