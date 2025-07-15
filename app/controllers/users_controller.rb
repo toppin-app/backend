@@ -230,20 +230,33 @@ class UsersController < ApplicationController
   # Hacer manualmente like entre dos users (desde el admin)
   def create_like
     umr = UserMatchRequest.find_by(user_id: params[:user_id], target_user: params[:target_user])
-    if !umr
-       umr = UserMatchRequest.create(user_id: params[:user_id], target_user: params[:target_user], is_like: true, is_rejected: false, is_superlike: false)
+      
+      unless umr
+        umr = UserMatchRequest.create(
+          user_id: params[:user_id],
+          target_user: params[:target_user],
+          is_like: true,
+          is_rejected: false,
+          is_superlike: false
+        )
     end
 
     target_user = User.find(umr.target_user)
     devices = Device.where(user_id: target_user.id)
-    notification = NotificationLocalizer.for(user: target_user, type: :like)
+      notification = NotificationLocalizer.for(user: umr.user, type: :like)
+
      devices.each do |device|
        if device.token.present?
         FirebasePushService.new.send_notification(
            token: device.token,
            title: notification[:title],
            body: notification[:body],
-           data: { action: "like", user_id: umr.user_id.to_s }
+            data: {
+              action: "like",
+              user_id: umr.user_id.to_s
+            },
+            sound: "sms",                # <- para que suene (debe estar en la app)
+            category: "default_like"     # <- opcional, si usas acciones en iOS/Notifee
          )
        end
      end

@@ -13,39 +13,41 @@ class FirebasePushService
     authorizer.fetch_access_token!
     @access_token = authorizer.access_token
   end
-
-  def send_notification(token:, title:, body:, data: {}, sound: "default")
+  
+  def send_notification(token:, title:, body:, data: {}, sound: "default", category: nil)
     payload = {
       message: {
         token: token,
+        data: data.transform_keys(&:to_s), # Custom data
         notification: {
           title: title,
           body: body
         },
-        data: data.transform_keys(&:to_s), # Los datos personalizados son Strings en las claves
         android: {
           notification: {
-            sound: sound
+            sound: sound,
+            channel_id: "sms-channel" # Asegúrate de que esta channelId esté registrada en tu app Android
           }
         },
         apns: {
-          # Este es el payload de APNS correcto, donde 'aps' y los datos personalizados van dentro de 'payload'
           payload: {
             aps: {
               alert: {
                 title: title,
                 body: body
               },
-              sound: sound
+              sound: sound,
+              category: category || "default" # Notifee lo puede usar para mostrar acciones personalizadas
             }
-            # Si necesitas datos personalizados también en el payload de APNS (además de en el 'data' global de FCM),
-            # los agregarías aquí, por ejemplo:
-            # "custom_action": data[:action],
-            # "custom_user_id": data[:user_id]
+          },
+          headers: {
+            "apns-priority": "10", # Alta prioridad, importante para background
+            "apns-push-type": "alert" # Necesario en iOS 13+ para notificaciones visibles
           }
         }
       }
     }
+
     headers = {
       "Authorization" => "Bearer #{@access_token}",
       "Content-Type" => "application/json"
@@ -53,12 +55,13 @@ class FirebasePushService
 
     response = HTTParty.post(FCM_ENDPOINT, headers: headers, body: payload.to_json)
 
-    # Mejorar el log para errores
     if response.code != 200
-      Rails.logger.error "FCM Error (iOS): Code=#{response.code}, Body=#{response.body}, Payload=#{payload.to_json}"
+      Rails.logger.error "❌ FCM Error: Code=#{response.code}, Body=#{response.body}, Payload=#{payload.to_json}"
     else
-      Rails.logger.info "FCM Success (iOS): Code=#{response.code}, Body=#{response.body}"
+      Rails.logger.info "✅ FCM Success: Code=#{response.code}, Body=#{response.body}"
     end
+
     response
   end
+
 end
