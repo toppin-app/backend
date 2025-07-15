@@ -228,8 +228,8 @@ class UsersController < ApplicationController
 
 
   # Hacer manualmente like entre dos users (desde el admin)
-  def create_like
-    umr = UserMatchRequest.find_by(user_id: params[:user_id], target_user: params[:target_user])
+    def create_like
+      umr = UserMatchRequest.find_by(user_id: params[:user_id], target_user: params[:target_user])
       
       unless umr
         umr = UserMatchRequest.create(
@@ -239,35 +239,35 @@ class UsersController < ApplicationController
           is_rejected: false,
           is_superlike: false
         )
-    end
+      end
 
-    target_user = User.find(umr.target_user)
-    devices = Device.where(user_id: target_user.id)
+      target_user = User.find(umr.target_user)
+      devices = Device.where(user_id: target_user.id)
       notification = NotificationLocalizer.for(user: umr.user, type: :like)
 
-     devices.each do |device|
-       if device.token.present?
-        FirebasePushService.new.send_notification(
-           token: device.token,
-           title: notification[:title],
-           body: notification[:body],
+      devices.each do |device|
+        if device.token.present?
+          FirebasePushService.new.send_notification(
+            token: device.token,
+            title: notification[:title],
+            body: notification[:body],
             data: {
               action: "like",
               user_id: umr.user_id.to_s
             },
             sound: "sms",                # <- para que suene (debe estar en la app)
             category: "default_like"     # <- opcional, si usas acciones en iOS/Notifee
-         )
+          )
           
           if response&.error_code == "UNREGISTERED"
             device.update(token: nil) # Elimina el token inválido
             Rails.logger.warn("Token inválido eliminado para device #{device.id}")
           end
-       end
-     end
+        end
+      end
 
-    redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
-  end
+      redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
+    end
 
 
 
