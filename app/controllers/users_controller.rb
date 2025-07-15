@@ -255,14 +255,10 @@ class UsersController < ApplicationController
               action: "like",
               user_id: umr.user_id.to_s
             },
-            sound: "sms",                # <- para que suene (debe estar en la app)
-            category: "default_like"     # <- opcional, si usas acciones en iOS/Notifee
-          )
+            sound: "sms.mp3", 
+            channel_id: "sms-channel"              # <- para que suene (debe estar en la app)
+            )
           
-          if response&.error_code == "UNREGISTERED"
-            device.update(token: nil) # Elimina el token inválido
-            Rails.logger.warn("Token inválido eliminado para device #{device.id}")
-          end
         end
       end
 
