@@ -121,7 +121,7 @@ class UserMatchRequestsController < ApplicationController
                   title: notification[:title],
                   body: notification[:body],
                   data: { action: "like", user_id: umr.user_id.to_s },
-                  sound: "sms"
+                  sound: "sms.mp3",
                   channel_id: "sms-channel"
                 )
               end
