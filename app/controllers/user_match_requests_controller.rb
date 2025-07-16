@@ -113,7 +113,7 @@ class UserMatchRequestsController < ApplicationController
           if umr.is_like and !umr.is_superlike
             target_user = User.find(umr.target_user)
             devices = Device.where(user_id: target_user.id)
-            notification = NotificationLocalizer.for(user: target_user.user, type: :like)
+            notification = NotificationLocalizer.for(user: target_user, type: :like)
             devices.each do |device|
               if device.token.present?
                 FirebasePushService.new.send_notification(
