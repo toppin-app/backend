@@ -228,28 +228,42 @@ class UsersController < ApplicationController
 
 
   # Hacer manualmente like entre dos users (desde el admin)
-  def create_like
-    umr = UserMatchRequest.find_by(user_id: params[:user_id], target_user: params[:target_user])
-    if !umr
-       umr = UserMatchRequest.create(user_id: params[:user_id], target_user: params[:target_user], is_like: true, is_rejected: false, is_superlike: false)
+    def create_like
+      umr = UserMatchRequest.find_by(user_id: params[:user_id], target_user: params[:target_user])
+      
+      unless umr
+        umr = UserMatchRequest.create(
+          user_id: params[:user_id],
+          target_user: params[:target_user],
+          is_like: true,
+          is_rejected: false,
+          is_superlike: false
+        )
+      end
+
+      target_user = User.find(umr.target_user)
+      devices = Device.where(user_id: target_user.id)
+      notification = NotificationLocalizer.for(user: target_user, type: :like)
+
+      devices.each do |device|
+        if device.token.present?
+          FirebasePushService.new.send_notification(
+            token: device.token,
+            title: notification[:title],
+            body: notification[:body],
+            data: {
+              action: "like",
+              user_id: umr.user_id.to_s
+            },
+            sound: "sms.mp3", 
+            channel_id: "sms-channel"              # <- para que suene (debe estar en la app)
+            )
+          
+        end
+      end
+
+      redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
     end
-
-    target_user = User.find(umr.target_user)
-    devices = Device.where(user_id: target_user.id)
-    notification = NotificationLocalizer.for(user: target_user, type: :like)
-     devices.each do |device|
-       if device.token.present?
-        FirebasePushService.new.send_notification(
-           token: device.token,
-           title: notification[:title],
-           body: notification[:body],
-           data: { action: "like", user_id: umr.user_id.to_s }
-         )
-       end
-     end
-
-    redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
-  end
 
 
 

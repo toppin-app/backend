@@ -11,8 +11,6 @@ class FirebasePushService
     authorizer.fetch_access_token!
     @access_token = authorizer.access_token
   end
-
-  def send_notification(token:, title:, body:, data: {}, sound: "default", category: nil)
   def send_notification(token:, title:, body:, data: {}, sound: "default", category: nil, channel_id:)
     payload = {
       message: {
@@ -46,16 +44,20 @@ class FirebasePushService
         }
       }
     }
+
     headers = {
       "Authorization" => "Bearer #{@access_token}",
       "Content-Type" => "application/json"
     }
     response = HTTParty.post(FCM_ENDPOINT, headers: headers, body: payload.to_json)
+    # Manejo de errores
     if response.code != 200
       Rails.logger.error "❌ FCM Error: Code=#{response.code}, Body=#{response.body}, Payload=#{payload.to_json}"
     else
       Rails.logger.info "✅ FCM Success: Code=#{response.code}, Body=#{response.body}"
     end
+
     response
   end
+
 end
