@@ -120,8 +120,8 @@ class UserMatchRequestsController < ApplicationController
                   token: device.token,
                   title: notification[:title],
                   body: notification[:body],
-                  data: { action: "like", user_id: umr.user_id.to_s },
-                  sound: "sms.mp3",
+                  data: { action: "match", user_id: umr.user_id.to_s },
+                  #sound: "match.mp3",
                   channel_id: "sms-channel"
                 )
               end
