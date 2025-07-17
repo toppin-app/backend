@@ -235,7 +235,9 @@ class UsersController < ApplicationController
             title: notification[:title],
             body: notification[:body],
             data: { action: "match", user_id: umr.user_id.to_s },
-            sound: "match.mp3"
+            sound: "match.mp3",
+            channel_id: "sms-channel",
+            category: "match" # Asegúrate de que esta category esté registrada en tu app iOS
           )
         end
       end
