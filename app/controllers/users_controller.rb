@@ -223,6 +223,26 @@ class UsersController < ApplicationController
     twilio = TwilioController.new
     conversation_sid = twilio.create_conversation(umr.user_id, umr.target_user)
     umr.update(twilio_conversation_sid: conversation_sid)
+
+    # Notificación push al usuario que recibe el match
+    target_user = User.find(umr.target_user)
+    if target_user.push_match?
+      devices = Device.where(user_id: target_user.id)
+      notification = NotificationLocalizer.for(user: target_user, type: :match)
+      devices.each do |device|
+        if device.token.present?
+          FirebasePushService.new.send_notification(
+            token: device.token,
+            title: notification[:title],
+            body: notification[:body],
+            data: { action: "match", user_id: umr.user_id.to_s },
+            sound: "match.mp3",
+            category: "default_match"
+          )
+        end
+      end
+    end
+
     redirect_to show_user_path(id: umr.target_user), notice: 'Match generado con éxito.'
   end
 
