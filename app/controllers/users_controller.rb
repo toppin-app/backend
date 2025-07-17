@@ -235,13 +235,11 @@ class UsersController < ApplicationController
             token: device.token,
             title: notification[:title],
             body: notification[:body],
-            data: { action: "match", user_id: umr.user_id.to_s },
-            sound: "match.mp3",
-            category: "default_match"
+            #data: { action: "match", user_id: umr.user_id.to_s },
+            sound: "match.mp3"
           )
         end
       end
-    end
 
     redirect_to show_user_path(id: umr.target_user), notice: 'Match generado con éxito.'
   end
