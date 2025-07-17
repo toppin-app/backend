@@ -40,34 +40,32 @@ class UserMatchRequestsController < ApplicationController
          end
          umr.save # Guardamos el match.
          # Como tenemos match, creamos conversación
-         # Abrimos thread para que se monte la conversación en twilio.
-         Thread.new do
-              twilio = TwilioController.new
-              conversation_sid = twilio.create_conversation(current_user.id, params[:target_user])
-              # Si es un sugar sweet, mandamos el primer mensaje a la conversación
-              if umr.is_sugar_sweet
-                 twilio.send_message_to_conversation(conversation_sid, current_user.id, params[:message])
-              end
-              umr.update(twilio_conversation_sid: conversation_sid)
-              current_user.recalculate_ranking
-              # Mandamos la push al usuario del match.
-              match_user = User.find(umr.user_id)
-              if match_user.push_match?
-                devices = Device.where(user_id: match_user.id)
-                notification = NotificationLocalizer.for(user: umr.user, type: :match)
-                devices.each do |device|
-                  if device.token.present?
-                    FirebasePushService.new.send_notification(
-                      token: device.token,
-                      title: notification[:title],
-                      body: notification[:body],
-                      data: { action: "like", user_id: umr.target_user.to_s },
-                      sound: "match"
-                    )
-                  end
-                end
-              end
-          end
+         twilio = TwilioController.new
+         conversation_sid = twilio.create_conversation(current_user.id, params[:target_user])
+         if umr.is_sugar_sweet
+           twilio.send_message_to_conversation(conversation_sid, current_user.id, params[:message])
+         end
+         umr.update(twilio_conversation_sid: conversation_sid)
+         current_user.recalculate_ranking
+         # Mandamos la push al usuario del match.
+         match_user = User.find(umr.user_id)
+         if match_user.push_match?
+           devices = Device.where(user_id: match_user.id)
+           notification = NotificationLocalizer.for(user: match_user, type: :match)
+           devices.each do |device|
+             if device.token.present?
+               FirebasePushService.new.send_notification(
+                 token: device.token,
+                 title: notification[:title],
+                 body: notification[:body],
+                 data: { action: "match", user_id: umr.target_user.to_s },
+                 sound: "match.mp3",
+                 category: "default_match"
+               )
+             end
+           end
+         end
+      
         
       ## SI no se cumplen las anteriores, vamos a ir viendo.
       # Es decir, el current user no tiene un swipe previo del usuario al que le está dando swipe
