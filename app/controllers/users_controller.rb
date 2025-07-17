@@ -1280,7 +1280,7 @@ render json: {
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
         :profile_completed, :instagram, :phone_validated, :superlike_available,
-        :user_age, :spoty1, :spoty2, :spoty3, :spoty4, :spoty5, :spoty6,
+        :spoty1, :spoty2, :spoty3, :spoty4, :spoty5, :spoty6,
         :spoty_title1, :spoty_title2, :spoty_title3, :spoty_title4, :spoty_title5, :spoty_title6,
         :push_sound, :push_vibration, :push_general, :push_likes, :push_chat, :push_match,
         :last_like_given, :has_likes, :location_city, :location_country, :ratio_likes,
