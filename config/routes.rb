@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   resources :interest_categories
   resources :user_media
   resources :app_versions, only: [:index, :edit, :update]
+  resources :user_watchlists, only: [:create, :show]
 
   # Spotify para los administradores
   resources :users, except: [:index, :show, :new, :edit, :create, :update, :destroy] do
@@ -121,6 +122,9 @@ Rails.application.routes.draw do
 
   post '/reject_match', to: "user_match_requests#reject_match" # Deshacer un match
 
+  post 'users/send_phone_verification', to: 'users#send_phone_verification'
+  post 'users/verify_phone_code', to: 'users#verify_phone_code'
+  
   # Boosts y superlikes
 
   # Usar un boost
@@ -195,4 +199,10 @@ Rails.application.routes.draw do
   get  '/video_calls/active', to: 'video_calls#active'       # Ver si el usuario está en una llamada activa
   post '/video_calls/generate_token', to: 'video_calls#generate_token'  # Obtener token de llamada
   get '/video_calls/match_status', to: 'video_calls#match_status'  # Ver estado de la llamada entre dos usuarios
+
+
+  # Rutas para TMDB
+  get '/tmdb/popular', to: 'tmdb#popular'
+  get '/tmdb/discover', to: 'tmdb#discover'
+  get '/tmdb/search', to: 'tmdb#search' # Buscar series o películas por nombre
 end

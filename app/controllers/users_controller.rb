@@ -245,6 +245,27 @@ class UsersController < ApplicationController
     redirect_to show_user_path(id: umr.target_user), notice: 'Match generado con éxito.'
   end
 
+  def send_phone_verification
+  code = rand(100000..999999).to_s
+  current_user.update(
+    phone: params[:phone],
+    phone_verification_code: code,
+    phone_verification_sent_at: Time.now
+  )
+  TwilioService.send_sms(params[:phone], "Tu código de verificación es: #{code}")
+  render json: { status: 200, message: "Código enviado" }
+end
+
+def verify_phone_code
+  if current_user.phone_verification_code == params[:code] &&
+     current_user.phone_verification_sent_at > 10.minutes.ago
+    current_user.update(phone_validated: true, phone_verification_code: nil)
+    render json: { status: 200, message: "Teléfono validado" }
+  else
+    render json: { status: 400, message: "Código incorrecto o expirado" }
+  end
+end
+
 
   # Hacer manualmente like entre dos users (desde el admin)
     def create_like
