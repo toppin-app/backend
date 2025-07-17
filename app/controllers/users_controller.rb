@@ -226,7 +226,6 @@ class UsersController < ApplicationController
 
     # Notificación push al usuario que recibe el match
     target_user = User.find(umr.target_user)
-    if target_user.push_match?
       devices = Device.where(user_id: target_user.id)
       notification = NotificationLocalizer.for(user: target_user, type: :match)
       devices.each do |device|
