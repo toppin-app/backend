@@ -225,7 +225,7 @@ class UsersController < ApplicationController
     umr.update(twilio_conversation_sid: conversation_sid)
 
     # Notificación push al usuario que recibe el match
-    target_user = User.find(umr.target_user)
+    target_user = User.find(umr.user_id)
       devices = Device.where(user_id: target_user.id)
       notification = NotificationLocalizer.for(user: target_user, type: :match)
       devices.each do |device|
@@ -234,7 +234,7 @@ class UsersController < ApplicationController
             token: device.token,
             title: notification[:title],
             body: notification[:body],
-            #data: { action: "match", user_id: umr.user_id.to_s },
+            data: { action: "match", user_id: umr.user_id.to_s },
             sound: "match.mp3"
           )
         end
