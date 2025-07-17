@@ -1279,13 +1279,7 @@ render json: {
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
-        :profile_completed, :instagram, :phone_validated, :superlike_available,
-        :spoty1, :spoty2, :spoty3, :spoty4, :spoty5, :spoty6,
-        :spoty_title1, :spoty_title2, :spoty_title3, :spoty_title4, :spoty_title5, :spoty_title6,
-        :push_sound, :push_vibration, :push_general, :push_likes, :push_chat, :push_match,
-        :last_like_given, :has_likes, :location_city, :location_country, :ratio_likes,
-        # Si quieres permitir arrays:
-         user_interests: [], user_info_item_values: [], received_sugar_sweets: [], gender_preferences: []
+        language: []
       )
     end
     def redis
