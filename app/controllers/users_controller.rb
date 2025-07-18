@@ -60,6 +60,21 @@ class UsersController < ApplicationController
     @user_main_interests = UserMainInterest.where(user_id: @user.id)
 
     @users = User.visible.where.not(id: @user.id)
+
+    respond_to do |format|
+      format.html # renderiza la vista normal
+      format.json do
+        render json: @user.as_json(
+          methods: [:user_age, :user_media_url],
+          include: [
+            :user_media,
+            :user_interests,
+            :user_info_item_values,
+            :user_main_interests
+          ]
+        )
+      end
+    end
   end
 
 
