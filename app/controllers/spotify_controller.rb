@@ -13,6 +13,7 @@ class SpotifyController < ApplicationController
       { 'Authorization' => "Basic #{auth}", 'Content-Type' => 'application/x-www-form-urlencoded' }
     )
 
+    Rails.logger.info response.body
     render json: JSON.parse(response.body)
   end
 end
