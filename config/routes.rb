@@ -201,8 +201,6 @@ Rails.application.routes.draw do
   get '/video_calls/match_status', to: 'video_calls#match_status'  # Ver estado de la llamada entre dos usuarios
 
 
-  # Rutas para TMDB
-  get '/tmdb/popular', to: 'tmdb#popular'
-  get '/tmdb/discover', to: 'tmdb#discover'
-  get '/tmdb/search', to: 'tmdb#search' # Buscar series o películas por nombre
+  # Rutas para token spoti
+  get '/spotify/token', to: 'spotify#token'
 end
