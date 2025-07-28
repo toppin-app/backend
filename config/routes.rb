@@ -186,6 +186,9 @@ Rails.application.routes.draw do
   patch '/spotify_user_data/:id', to: 'spotify_user_data#update'
   delete '/spotify_user_data/:id', to: 'spotify_user_data#destroy'
   delete '/spotify_user_data', to: 'spotify_user_data#destroy_all'
+  delete 'spotify_user_data/artist/:artist_id', to: 'spotify_user_data#destroy_by_artist'
+
+
 
   get '/app_version', to: 'app_versions#show'
   post '/app_version', to: 'app_versions#show'

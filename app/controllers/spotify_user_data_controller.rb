@@ -1,6 +1,6 @@
 class SpotifyUserDataController < ApplicationController
   before_action :authenticate_user!
-  skip_before_action :verify_authenticity_token
+  #skip_before_action :verify_authenticity_token
   before_action :set_spotify_user_datum, only: [:show, :update, :destroy]
 
 
@@ -69,11 +69,18 @@ class SpotifyUserDataController < ApplicationController
     head :no_content
   end
 
+  # DELETE /spotify_user_data/artist/:artist_id.json
+  def destroy_by_artist
+    artist_id = params[:artist_id]
+    current_user.spotify_user_data.where(artist_id: artist_id).destroy_all
+    head :no_content
+  end
+
   private
 
   def bulk_spotify_user_datum_params
     params.require(:_json).map do |param|
-      param.permit(:artist_name, :image, :preview_url, :track_name, :track_id)
+      param.permit(:artist_name, :image, :preview_url, :track_name, :track_id, :artist_id)
     end
   end
 
@@ -82,6 +89,6 @@ class SpotifyUserDataController < ApplicationController
   end
 
   def spotify_user_datum_params
-    params.require(:spotify_user_datum).permit(:artist_name, :image, :preview_url, :track_name, :track_id)
+    params.require(:spotify_user_datum).permit(:artist_name, :image, :preview_url, :track_name, :track_id, :artist_id)
   end
 end
