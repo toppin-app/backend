@@ -186,13 +186,13 @@ Rails.application.routes.draw do
   patch '/spotify_user_data/:id', to: 'spotify_user_data#update'
   delete '/spotify_user_data/:id', to: 'spotify_user_data#destroy'
   delete '/spotify_user_data', to: 'spotify_user_data#destroy_all'
-  delete 'spotify_user_data/artist/:artist_id', to: 'spotify_user_data#destroy_by_artist'
 
 
 
   get '/app_version', to: 'app_versions#show'
   post '/app_version', to: 'app_versions#show'
 
+  get '/tmdb/token', to: 'tmdb#token'
     # Rutas para videollamadas
   post '/video_calls', to: 'video_calls#create'                  # Iniciar llamada
   post '/video_calls/accept', to: 'video_calls#accept'          # Aceptar llamada
