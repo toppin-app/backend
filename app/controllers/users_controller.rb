@@ -916,49 +916,17 @@ render json: {
 
   # High popularity profiles (vip toppins)
   def get_vip_toppins
+  week_start = Date.today.beginning_of_week
+  vip_users = VipToppin.where(week_start: week_start).includes(:user).map(&:user)
 
-    #current_user = User.find(177)
-    to_remove = []
-
-    to_remove = to_remove + current_user.sent_likes.pluck(:target_user)
-
-    to_remove = to_remove + UserMatchRequest.where(target_user: current_user.id, is_match: true).pluck(:user_id)
-
-    # TEAM TOPPIN FIX
-    to_remove << 606 # Añadimos el team toppin al array de id's a eliminar
-
-    # Extraemos el género del usuario actual
-    my_gender = current_user.gender
-    my_gender_preference = current_user.user_filter_preference.gender_preferences
-
-    # Buscamos ids de usuario que estén buscando el género de nuestro usuario
-    user_ids = UserFilterPreference
-      .where("gender_preferences IS NULL OR gender_preferences = '' OR gender_preferences LIKE ?", "%#{my_gender}%")
-      .pluck(:user_id)
-
-      logger.info "GENDER PREFERENCE "+my_gender_preference
-      # Si tiene preferencia de genero, busco solo usuarios de ese genero.
-      users = User.where(id: user_ids, gender: my_gender_preference)
-     
-
-
-    @users = users.visible.where.not(id: to_remove).order(ratio_likes: :desc).limit(12)
-
-
-    unlocked = current_user.user_vip_unlocks.pluck(:target_id)
-
-      @users.each do |user|
-
-          if unlocked.include? user.id
-            user.unlocked = true
-          else
-            user.unlocked = false
-          end
-
-      end
-
-      render 'index'
+  unlocked = current_user.user_vip_unlocks.pluck(:target_id)
+  vip_users.each do |user|
+    user.unlocked = unlocked.include?(user.id)
   end
+
+  @users = vip_users
+  render 'index'
+end
 
 
 
@@ -1278,6 +1246,28 @@ render json: {
     end
     render json: { matches: result }
   end
+
+  def cron_update_vip_toppins
+  unless params[:token] == CRON_TOKEN
+    render plain: "Unauthorized", status: :unauthorized and return
+  end
+
+  week_start = Date.today.beginning_of_week
+  VipToppin.where(week_start: week_start).delete_all
+
+  top_users = User
+    .joins("INNER JOIN user_match_requests ON users.id = user_match_requests.user_id OR users.id = user_match_requests.target_user")
+    .where("user_match_requests.is_match = true AND user_match_requests.match_date >= ?", week_start)
+    .group("users.id")
+    .order("COUNT(user_match_requests.id) DESC")
+    .limit(12)
+
+  top_users.each do |user|
+    VipToppin.create(user: user, week_start: week_start)
+  end
+
+  render plain: "VIP Toppins actualizados para la semana que empieza en #{week_start}"
+end
 
   private
     # Use callbacks to share common setup or constraints between actions.

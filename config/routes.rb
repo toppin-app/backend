@@ -155,7 +155,7 @@ Rails.application.routes.draw do
   get '/cron_recalculate_popularity', to: "users#cron_recalculate_popularity"
   post '/cron_randomize_bundled_users_geolocation', to: 'users#cron_randomize_bundled_users_geolocation'
   get '/cron_check_online_users', to: 'users#cron_check_online_users'
-
+  post '/cron_update_vip_toppins', to: 'users#cron_update_vip_toppins'
   # Registrar dispositivo para notificaciones push.
   # user_id, token, so, device_uid
   post '/register_device' => 'users#register_device'
