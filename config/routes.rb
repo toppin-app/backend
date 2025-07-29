@@ -206,4 +206,15 @@ Rails.application.routes.draw do
 
   # Rutas para token spoti
   get '/spotify/token', to: 'spotify#token'
+
+  # Rutas TMDB User Data
+  get    '/tmdb_user_data',              to: 'tmdb_user_data#index'
+  get    '/tmdb_user_data/:id',          to: 'tmdb_user_data#show'
+  get    '/tmdb_user_data/user/:user_id',to: 'tmdb_user_data#user_data'
+  post   '/tmdb_user_data',              to: 'tmdb_user_data#create'
+  post   '/tmdb_user_data/bulk_create',  to: 'tmdb_user_data#bulk_create'
+  put    '/tmdb_user_data/:id',          to: 'tmdb_user_data#update'
+  patch  '/tmdb_user_data/:id',          to: 'tmdb_user_data#update'
+  delete '/tmdb_user_data/:id',          to: 'tmdb_user_data#destroy'
+  delete '/tmdb_user_data',              to: 'tmdb_user_data#destroy_all'
 end
