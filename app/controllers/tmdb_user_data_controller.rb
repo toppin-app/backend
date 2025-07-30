@@ -63,7 +63,7 @@ class TmdbUserDataController < ApplicationController
     current_user.tmdb_user_data.destroy_all
     head :no_content
   end
-
+  
   private
 
   def bulk_tmdb_user_datum_params
@@ -77,6 +77,6 @@ class TmdbUserDataController < ApplicationController
   end
 
   def tmdb_user_datum_params
-    params.require(:tmdb_user_datum).permit(:title, :poster_path, :overview, :tmdb_id, :media_type)
+    params.require(:tmdb_user_datum).permit(:title, :poster_path, :tmdb_id, :media_type)
   end
 end
