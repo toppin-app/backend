@@ -70,7 +70,8 @@ class UsersController < ApplicationController
             :user_media,
             :user_interests,
             :user_info_item_values,
-            :user_main_interests
+            :user_main_interests,
+            :tmdb_user_data # <-- Añade esto para incluir los datos de TMDB
           ]
         )
       end
@@ -843,7 +844,8 @@ render json: {
       :user_media,
       :user_interests,
       :user_info_item_values,
-      :user_main_interests # <-- aquí lo añades
+      :user_main_interests,
+      :tmdb_user_data # <-- Añade esto para incluir los datos de TMDB
     ]
   )
 }
