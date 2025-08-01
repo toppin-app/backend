@@ -68,7 +68,7 @@ class TmdbUserDataController < ApplicationController
 
   def bulk_tmdb_user_datum_params
     params.require(:_json).map do |param|
-      param.permit(:title, :poster_path, :overview, :tmdb_id, :media_type)
+      param.permit(:title, :poster_path, :overview, :tmdb_id, :media_type, :release_date)
     end
   end
 
@@ -77,6 +77,6 @@ class TmdbUserDataController < ApplicationController
   end
 
   def tmdb_user_datum_params
-    params.require(:tmdb_user_datum).permit(:title, :poster_path, :tmdb_id, :media_type)
+    params.require(:tmdb_user_datum).permit(:title, :poster_path, :tmdb_id, :media_type, :release_date)
   end
 end
