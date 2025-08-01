@@ -15,6 +15,7 @@ class User < ApplicationRecord
   has_many :purchases, dependent: :destroy
   has_many :user_vip_unlocks, dependent: :destroy
   has_many :spotify_user_data, dependent: :destroy
+  has_many :tmdb_user_data, class_name: 'TmdbUserDatum', foreign_key: :user_id, dependent: :destroy
   mount_base64_uploader :verification_image, ImageUploader
   # Model enums
   enum gender: { female: 0, male: 1, non_binary: 2, couple: 3 }
