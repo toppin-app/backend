@@ -87,7 +87,8 @@ class UsersController < ApplicationController
       :user_media,
       :user_interests,
       :user_info_item_values,
-      :user_main_interests # <-- añade esto
+      :user_main_interests,
+      :tmdb_user_data # <-- añade esto
     ]
   )
   end
