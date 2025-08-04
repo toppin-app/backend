@@ -71,8 +71,7 @@ class UsersController < ApplicationController
             :user_interests,
             :user_info_item_values,
             :user_main_interests,
-            :tmdb_user_data,
-            :tmdb_series_user_data # <-- Añade esto para incluir los datos de TMDB
+            :tmdb_user_data# <-- Añade esto para incluir los datos de TMDB
           ]
         )
       end
