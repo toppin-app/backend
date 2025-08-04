@@ -77,6 +77,6 @@ class TmdbUserSeriesDataController < ApplicationController
   end
 
   def tmdb_user_series_datum_params
-    params.require(:tmdb_user_series_datum).permit(:title, :poster_path,:tmdb_id, :release_date)
+    params.require(:tmdb_user_series_datum).permit(:title, :poster_path, :tmdb_id, :release_date)
   end
 end
