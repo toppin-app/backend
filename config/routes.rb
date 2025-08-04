@@ -217,4 +217,19 @@ Rails.application.routes.draw do
   patch  '/tmdb_user_data/:id',          to: 'tmdb_user_data#update'
   delete '/tmdb_user_data/:id',          to: 'tmdb_user_data#destroy'
   delete '/tmdb_user_data',              to: 'tmdb_user_data#destroy_all'
+
+  # Rutas TMDB User Series Data
+  get    '/tmdb_user_series_data',              to: 'tmdb_series_user_data#index'
+  get    '/tmdb_user_series_data/:id',          to: 'tmdb_series_user_data#show'
+  get    '/tmdb_user_series_data/user/:user_id',to: 'tmdb_series_user_data#user_data'
+  post   '/tmdb_user_series_data',              to: 'tmdb_series_user_data#create'
+  post   '/tmdb_user_series_data/bulk_create',  to: 'tmdb_series_user_data#bulk_create'
+  put    '/tmdb_user_series_data/:id',          to: 'tmdb_series_user_data#update'
+  patch  '/tmdb_user_series_data/:id',          to: 'tmdb_series_user_data#update'
+  delete '/tmdb_user_series_data/:id',          to: 'tmdb_series_user_data#destroy'
+  delete '/tmdb_user_series_data',              to: 'tmdb_series_user_data#destroy_all'
+
+  #Rutas rate limit tester
+  #get '/rate_limit_tester/spotify', to: 'rate_limit_tester#spotify'
+  #get '/rate_limit_tester/tmdb', to: 'rate_limit_tester#tmdb'
 end
