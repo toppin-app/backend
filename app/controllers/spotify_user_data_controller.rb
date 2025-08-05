@@ -79,9 +79,7 @@ class SpotifyUserDataController < ApplicationController
   private
 
   def bulk_spotify_user_datum_params
-    params.require(:_json).map do |param|
-      param.permit(:artist_name, :image, :preview_url, :track_name, :track_id, :artist_id)
-    end
+    params[:_json].present? ? params[:_json].map { |param| param.permit(:artist_name, :image, :preview_url, :track_name, :track_id, :artist_id) } : []
   end
 
   def set_spotify_user_datum
