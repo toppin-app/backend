@@ -1090,7 +1090,7 @@ end
   end
 
 
-  def detect_nudity
+  def detect_nudity(image_file)
 
     credentials = Aws::Credentials.new(
          ENV['AWS_ACCESS_KEY_ID'],
