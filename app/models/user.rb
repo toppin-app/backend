@@ -153,12 +153,12 @@ class User < ApplicationRecord
   def detect_nudity
 
       credentials = Aws::Credentials.new(
-         "AKIARM4ZEEKGJIZ2HKUZ",
-         "6PH1iXAB6NuD9710p3nsX0cdJxFVsUkBOYBe8HUE",
+        ENV['AWS_ACCESS_KEY_ID'],
+        ENV['AWS_SECRET_ACCESS_KEY']
       )
 
       client = Aws::Rekognition::Client.new(
-        region: "eu-west-1",
+        region: ENV['AWS_REGION'],
         credentials: credentials,
       )
 
