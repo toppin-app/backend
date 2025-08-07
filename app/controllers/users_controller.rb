@@ -150,6 +150,9 @@ class UsersController < ApplicationController
       if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
         params[:user][:images].each do |image|
           if image.is_a?(ActionDispatch::Http::UploadedFile)
+            if detect_nudity(image)
+              return render json: { status: 400, message: "La imagen contiene desnudos y no puede subirse." }, status: 400  
+            end
             UserMedium.create!(file: image, user_id: @user.id)
           end
           # Si es un hash, lo ignoramos (puede ser para reordenar o actualizar posición)
@@ -1090,17 +1093,17 @@ end
   def detect_nudity
 
     credentials = Aws::Credentials.new(
-       "AKIARM4ZEEKGJIZ2HKUZ",
-       "6PH1iXAB6NuD9710p3nsX0cdJxFVsUkBOYBe8HUE",
+         ENV['AWS_ACCESS_KEY_ID'],
+         ENV['AWS_SECRET_ACCESS_KEY']
     )
 
       client = Aws::Rekognition::Client.new(
-        region: "eu-west-1",
+        region: ENV['AWS_REGION'],
         credentials: credentials,
       )
 
-        resp = client.detect_moderation_labels({
-          image: { bytes: User.find(69).user_media.last.file.read },
+      resp = client.detect_moderation_labels({
+          image: { bytes: image_file.read },
           min_confidence: 1.0
         })
 
