@@ -1091,7 +1091,8 @@ end
 
 
   def detect_nudity(image_file)
-
+    image_file.rewind # Asegúrate de que el archivo esté en la posición correcta
+    # Usa las credenciales de AWS desde las variables de entorno
     credentials = Aws::Credentials.new(
          ENV['AWS_ACCESS_KEY_ID'],
          ENV['AWS_SECRET_ACCESS_KEY']
