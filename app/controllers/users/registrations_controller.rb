@@ -61,11 +61,18 @@ class Users::RegistrationsController < Devise::RegistrationsController
             if resource.persisted?
 
                 # Save profile image
-                media = UserMedium.create!(
+                if params[:user][:file].present?
+                  unless resource.detect_nudity(params[:user][:file])
+                    render json: { status: 400, message: "La imagen contiene desnudos y no puede subirse." }, status: :bad_request
+                    raise ActiveRecord::Rollback
+                  end
+
+                  media = UserMedium.create!(
                     user_id: resource.id,
                     file: params[:user][:file],
                     position: 0
-                )
+                  )
+                end
 
                 result = User.find(resource.id).detect_nudity
 
