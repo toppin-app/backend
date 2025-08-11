@@ -1091,8 +1091,13 @@ end
 
 
 def detect_nudity(image_file)
-  file = image_file.tempfile # Asegúrate de usar el Tempfile real
+  # Obtener el Tempfile real
+  file = image_file.tempfile
   file.rewind
+
+  # Debug para verificar que tenemos datos
+  Rails.logger.info "Image path: #{file.path}"
+  Rails.logger.info "Image size: #{file.size} bytes"
 
   credentials = Aws::Credentials.new(
     ENV['AWS_ACCESS_KEY_ID'],
