@@ -1090,47 +1090,36 @@ end
   end
 
 
-  def detect_nudity(image_file)
-    image_file.rewind # Asegúrate de que el archivo esté en la posición correcta
-    # Usa las credenciales de AWS desde las variables de entorno
-    credentials = Aws::Credentials.new(
-         ENV['AWS_ACCESS_KEY_ID'],
-         ENV['AWS_SECRET_ACCESS_KEY']
-    )
+def detect_nudity(image_file)
+  file = image_file.tempfile # Asegúrate de usar el Tempfile real
+  file.rewind
 
-      client = Aws::Rekognition::Client.new(
-        region: ENV['AWS_REGION'],
-        credentials: credentials,
-      )
+  credentials = Aws::Credentials.new(
+    ENV['AWS_ACCESS_KEY_ID'],
+    ENV['AWS_SECRET_ACCESS_KEY']
+  )
 
-      resp = client.detect_moderation_labels({
-          image: { bytes: image_file.read },
-          min_confidence: 1.0
-        })
+  client = Aws::Rekognition::Client.new(
+    region: ENV['AWS_REGION'],
+    credentials: credentials
+  )
 
-        #  image: { # required
-            #s3_object: {
-            #  bucket: "toppin",
-            #  name: "141838-topless.jpg",
-           #   version: "S3ObjectVersion",
-         #   },
-          #},
-      #  render json: resp.moderation_labels
+  resp = client.detect_moderation_labels({
+    image: { bytes: file.read },
+    min_confidence: 1.0
+  })
 
-       # return
-
-        nude = resp.moderation_labels.select { |favor| favor.name == "Explicit Nudity" and favor.confidence > 50 }
-
-      if !nude.any?
-        render json: { status: 200, message: "OK"}, status: 200
-      else
-        render json: { status: 400, nudity: nude, message: "KO"}, status: 400
-      end
-
-       # raise resp.moderation_labels.inspect
-
-
+  nude = resp.moderation_labels.select do |label|
+    label.name == "Explicit Nudity" && label.confidence > 50
   end
+
+  if nude.empty?
+    render json: { status: 200, message: "OK" }, status: :ok
+  else
+    render json: { status: 400, nudity: nude, message: "KO" }, status: :bad_request
+  end
+end
+
 
 
   # Enviamos algunos datos al chat para un array de users
