@@ -1098,6 +1098,16 @@ def detect_nudity(image_file)
   # Debug para verificar que tenemos datos
   Rails.logger.info "Image path: #{file.path}"
   Rails.logger.info "Image size: #{file.size} bytes"
+  Rails.logger.info "Detected MIME: #{Marcel::MimeType.for(file)}"
+
+  # Reconvertir a JPEG seguro
+  safe_image = MiniMagick::Image.open(file.path)
+  safe_image.format("jpg") do |c|
+    c.quality "90"  # Opcional, para evitar perder mucha calidad
+    c.strip          # Elimina metadatos EXIF
+  end
+
+  bytes = File.open(safe_image.path, 'rb') { |f| f.read }
 
   credentials = Aws::Credentials.new(
     ENV['AWS_ACCESS_KEY_ID'],
@@ -1110,7 +1120,7 @@ def detect_nudity(image_file)
   )
 
   resp = client.detect_moderation_labels({
-    image: { bytes: file.read },
+    image: { bytes: bytes },
     min_confidence: 1.0
   })
 
