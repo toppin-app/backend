@@ -128,90 +128,88 @@ class UsersController < ApplicationController
 
   # PATCH/PUT /users/1
   # PATCH/PUT /users/1.json
-  def update
-    
-    if params[:password].to_s.blank?
-      
-      params.delete(:password)
-      params.delete(:password_confirmation)
-    end
+def update
+  if params[:password].to_s.blank?
+    params.delete(:password)
+    params.delete(:password_confirmation)
+  end
 
-    if params[:id]
-      @user = User.find(params[:id])
-    else
-     @user = User.find(params[:user][:id])
-    end
-
-
-    respond_to do |format|
-
-      if @user.update(user_params)
-
-      if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
-        params[:user][:images].each do |image|
-          if image.is_a?(ActionDispatch::Http::UploadedFile)
-            if detect_nudity(image)
-              return render json: { status: 400, message: "La imagen contiene desnudos y no puede subirse." }, status: 400  
-            end
-            UserMedium.create!(file: image, user_id: @user.id)
-          end
-          # Si es un hash, lo ignoramos (puede ser para reordenar o actualizar posición)
-        end
-      end
-
-        if params[:info_item_values]
-          params[:info_item_values].each do |iv|
-              if !iv.blank?
-                @user.user_info_item_values.create(info_item_value_id: iv)
-              end
-          end
-        end
-
-        if params[:distance_range]
-            @user.user_filter_preference&.update(distance_range: params[:distance_range])
-        end
-
-        if params[:gender_preferences]
-          user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
-          # Aquí puedes guardar el array como string, igual que en el otro controlador
-          value = params[:gender_preferences].is_a?(Array) ? params[:gender_preferences].join(",") : params[:gender_preferences]
-          user_filter_pref.update(gender_preferences: value)
-        end
-
-        if params[:user_interests]
-          params[:user_interests].each do |iv|
-              if !iv.blank?
-                @user.user_interests.create(interest_id: iv)
-              end
-          end
-        end
-
-        if params[:user_main_interests]
-          incoming = params[:user_main_interests]
-          if !incoming.is_a?(Array) || incoming.size != 4
-            return render json: { error: "Debes enviar exactamente 4 intereses" }, status: :unprocessable_entity
+  @user = if params[:id]
+            User.find(params[:id])
+          else
+            User.find(params[:user][:id])
           end
 
-          incoming_ids = incoming.map { |i| i[:interest_id].to_i }
-          # Elimina los intereses viejos que no estén en la nueva lista
-          @user.user_main_interests.where.not(interest_id: incoming_ids).destroy_all
-
-          # Actualiza o crea los nuevos
-          incoming.each do |umi|
-            umi_record = UserMainInterest.find_or_initialize_by(user_id: @user.id, interest_id: umi[:interest_id])
-            umi_record.percentage = umi[:percentage]
-            umi_record.save
-          end
-        end
-
-        format.html { redirect_to show_user_path(id: @user.id), notice: 'User was successfully updated.' }
-        format.json { render 'show'}
-      else
-        format.html { render :edit }
-        format.json { render json: @user.errors, status: :unprocessable_entity }
+  # 1️⃣ Validar desnudez antes de actualizar
+  if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
+    params[:user][:images].each do |image|
+      if image.is_a?(ActionDispatch::Http::UploadedFile) && detect_nudity(image)
+        render json: { status: 400, message: "La imagen contiene desnudos y no puede subirse." }, status: :bad_request and return
       end
     end
   end
+
+  respond_to do |format|
+    if @user.update(user_params)
+
+      # 2️⃣ Subir imágenes solo si no hay desnudez
+      if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
+        params[:user][:images].each do |image|
+          if image.is_a?(ActionDispatch::Http::UploadedFile)
+            UserMedium.create!(file: image, user_id: @user.id)
+          end
+        end
+      end
+
+      if params[:info_item_values]
+        params[:info_item_values].each do |iv|
+          next if iv.blank?
+          @user.user_info_item_values.create(info_item_value_id: iv)
+        end
+      end
+
+      if params[:distance_range]
+        @user.user_filter_preference&.update(distance_range: params[:distance_range])
+      end
+
+      if params[:gender_preferences]
+        user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
+        value = params[:gender_preferences].is_a?(Array) ? params[:gender_preferences].join(",") : params[:gender_preferences]
+        user_filter_pref.update(gender_preferences: value)
+      end
+
+      if params[:user_interests]
+        params[:user_interests].each do |iv|
+          next if iv.blank?
+          @user.user_interests.create(interest_id: iv)
+        end
+      end
+
+      if params[:user_main_interests]
+        incoming = params[:user_main_interests]
+        if !incoming.is_a?(Array) || incoming.size != 4
+          render json: { error: "Debes enviar exactamente 4 intereses" }, status: :unprocessable_entity and return
+        end
+
+        incoming_ids = incoming.map { |i| i[:interest_id].to_i }
+        @user.user_main_interests.where.not(interest_id: incoming_ids).destroy_all
+
+        incoming.each do |umi|
+          umi_record = UserMainInterest.find_or_initialize_by(user_id: @user.id, interest_id: umi[:interest_id])
+          umi_record.percentage = umi[:percentage]
+          umi_record.save
+        end
+      end
+
+      format.html { redirect_to show_user_path(id: @user.id), notice: 'User was successfully updated.' }
+      format.json { render 'show' }
+    else
+      format.html { render :edit }
+      format.json { render json: @user.errors, status: :unprocessable_entity }
+    end
+  end
+end
+
 
   # DELETE /users/1
   # DELETE /users/1.json
@@ -1089,53 +1087,46 @@ end
 
   end
 
+  def detect_nudity(image_file)
+    file = image_file.tempfile
+    file.rewind
 
-def detect_nudity(image_file)
-  # Obtener el Tempfile real
-  file = image_file.tempfile
-  file.rewind
+    # Logs para depuración
+    Rails.logger.info "Image path: #{file.path}"
+    Rails.logger.info "Image size: #{file.size} bytes"
+    Rails.logger.info "Detected MIME: #{Marcel::MimeType.for(file)}"
 
-  # Debug para verificar que tenemos datos
-  Rails.logger.info "Image path: #{file.path}"
-  Rails.logger.info "Image size: #{file.size} bytes"
-  Rails.logger.info "Detected MIME: #{Marcel::MimeType.for(file)}"
+    # Reconvertir a JPEG seguro para evitar problemas de formato
+    safe_image = MiniMagick::Image.open(file.path)
+    safe_image.format("jpg") do |c|
+      c.quality "90" # Compresión moderada
+      c.strip        # Elimina metadatos
+    end
 
-  # Reconvertir a JPEG seguro
-  safe_image = MiniMagick::Image.open(file.path)
-  safe_image.format("jpg") do |c|
-    c.quality "90"  # Opcional, para evitar perder mucha calidad
-    c.strip          # Elimina metadatos EXIF
+    bytes = File.open(safe_image.path, 'rb') { |f| f.read }
+
+    credentials = Aws::Credentials.new(
+      ENV['AWS_ACCESS_KEY_ID'],
+      ENV['AWS_SECRET_ACCESS_KEY']
+    )
+
+    client = Aws::Rekognition::Client.new(
+      region: ENV['AWS_REGION'],
+      credentials: credentials
+    )
+
+    resp = client.detect_moderation_labels({
+      image: { bytes: bytes },
+      min_confidence: 1.0
+    })
+
+    nude = resp.moderation_labels.select do |label|
+      label.name == "Explicit Nudity" && label.confidence > 50
+    end
+
+    # true si hay desnudez, false si está limpia
+    nude.any?
   end
-
-  bytes = File.open(safe_image.path, 'rb') { |f| f.read }
-
-  credentials = Aws::Credentials.new(
-    ENV['AWS_ACCESS_KEY_ID'],
-    ENV['AWS_SECRET_ACCESS_KEY']
-  )
-
-  client = Aws::Rekognition::Client.new(
-    region: ENV['AWS_REGION'],
-    credentials: credentials
-  )
-
-  resp = client.detect_moderation_labels({
-    image: { bytes: bytes },
-    min_confidence: 1.0
-  })
-
-  nude = resp.moderation_labels.select do |label|
-    label.name == "Explicit Nudity" && label.confidence > 50
-  end
-
-  if nude.empty?
-    render json: { status: 200, message: "OK" }, status: :ok
-  else
-    render json: { status: 400, nudity: nude, message: "KO" }, status: :bad_request
-  end
-end
-
-
 
   # Enviamos algunos datos al chat para un array de users
   def short_info_chat
