@@ -21,11 +21,12 @@ class Users::SessionsController < Devise::SessionsController
 
   # POST /resource/sign_in
     def create
-      @user = User.find_by(email: params[:user][:email])
+      user_params = params.require(:user).permit(:email, :password)
+      @user = User.find_by(email: user_params[:email])
 
-      Rails.logger.info "Login params: #{params[:user].inspect}"
+      Rails.logger.info "Login params: #{user_params.inspect}"
 
-      if @user && !@user.blocked && @user.valid_password?(params[:user][:password])
+      if @user && !@user.blocked && @user.valid_password?(user_params[:password])
         set_flash_message!(:notice, :signed_in)
         sign_in(@user)
 
