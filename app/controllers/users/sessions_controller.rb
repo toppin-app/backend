@@ -37,20 +37,17 @@ class Users::SessionsController < Devise::SessionsController
 
         devices = Device.where(user_id: @user.id)
 
-
-
         respond_to do |format|
           format.html { redirect_to root_path }
-          format.json { render 'users/show' }
+          format.json { render 'users/show', status: :ok }
         end
-
       else
-        render json: {
-          error: "No such user; check the submitted email address",
-          status: 400
-        }, status: 400
+        respond_to do |format|
+          format.html { redirect_to new_user_session_path, alert: "Email o contraseña incorrectos." }
+          format.json { render json: { error: "No such user; check the submitted email address", status: 400 }, status: 400 }
+        end
       end
-end
+  end
 
 
     private
