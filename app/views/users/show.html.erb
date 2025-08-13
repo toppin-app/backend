@@ -26,14 +26,16 @@
       <p>
         <strong>Coordenadas:</strong>
         <%= @user.lat %> / <%= @user.lng %>
-        <iframe
-          width="400" 
-          height="250" 
-          style="border:0;margin-top:15px"
-          loading="lazy"
-          allowfullscreen
-          src="https://www.google.com/maps?q=<%= @user.lat %>,<%= @user.lng %>&hl=es&z=15&output=embed">
-        </iframe>
+        <div>
+          <iframe
+            width="400" 
+            height="250" 
+            style="border:0"
+            loading="lazy"
+            allowfullscreen
+            src="https://www.google.com/maps?q=<%= @user.lat %>,<%= @user.lng %>&hl=es&z=15&output=embed">
+          </iframe>
+        </div>
       </p>
 
 
