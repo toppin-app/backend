@@ -26,6 +26,14 @@
       <p>
         <strong>Coordenadas:</strong>
         <%= @user.lat %> / <%= @user.lng %>
+        <iframe
+          width="600"
+          height="450"
+          style="border:0"
+          loading="lazy"
+          allowfullscreen
+          src="https://www.google.com/maps?q=<%= @user.lat %>,<%= @user.lng %>&hl=es&z=15&output=embed">
+        </iframe>
       </p>
 
 
