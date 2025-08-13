@@ -150,33 +150,59 @@ class User < ApplicationRecord
 
 
   # Implementación de rekognition para detectar contenido inapropiado en las fotos.
-  def detect_nudity
+  def detect_nudity(image_file)
+    file = image_file.tempfile
+    file.rewind
 
-      credentials = Aws::Credentials.new(
-        ENV['AWS_ACCESS_KEY_ID'],
-        ENV['AWS_SECRET_ACCESS_KEY']
-      )
+    # Reconvertir a JPEG seguro para evitar problemas de formato
+    safe_image = MiniMagick::Image.open(file.path)
+    safe_image.format("jpg") do |c|
+      c.quality "90"
+      c.strip
+    end
 
-      client = Aws::Rekognition::Client.new(
-        region: ENV['AWS_REGION'],
-        credentials: credentials,
-      )
+    bytes = File.open(safe_image.path, 'rb') { |f| f.read }
 
-      resp = client.detect_moderation_labels({
-        image: { bytes: self.user_media.last.file.read },
-        min_confidence: 1.0
-      })
+    credentials = Aws::Credentials.new(
+      ENV['AWS_ACCESS_KEY_ID'],
+      ENV['AWS_SECRET_ACCESS_KEY']
+    )
 
+    client = Aws::Rekognition::Client.new(
+      region: ENV['AWS_REGION'],
+      credentials: credentials
+    )
 
-      nude = resp.moderation_labels.select { |favor| favor.name == "Explicit Nudity" and favor.confidence > 50 }
+    resp = client.detect_moderation_labels({
+      image: { bytes: bytes },
+      min_confidence: 1.0
+    })
 
-      if !nude.any?
-        return true # Devuelve true si la foto está OK
-      else
-        return false # Devuelve false si la foto no cumple.
-      end
+    nude = resp.moderation_labels.select do |label|
+      label.name == "Explicit Nudity" && label.confidence > 50
+    end
+
+    !nude.any? # true si está limpia, false si tiene desnudez
   end
 
+
+
+
+
+
+
+  
+  def location_name
+  return "" unless lat.present? && lng.present?
+  url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{lat}&lon=#{lng}"
+  response = HTTParty.get(url, headers: { "User-Agent" => "YourAppName" })
+  if response.success? && response['display_name']
+    response['display_name']
+  else
+    "#{lat} / #{lng}"
+  end
+end
+  
 
   # Método para usar un boost
   def use_boost
