@@ -196,8 +196,13 @@ class User < ApplicationRecord
   return "" unless lat.present? && lng.present?
   url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{lat}&lon=#{lng}"
   response = HTTParty.get(url, headers: { "User-Agent" => "YourAppName" })
-  if response.success? && response['display_name']
-    response['display_name']
+  if response.success? && response['address']
+    address = response['address']
+    # Puedes ajustar los campos según lo que devuelva Nominatim
+    town = address['town'] || address['village'] || address['hamlet'] || address['city']
+    city = address['city'] || address['county'] || address['state']
+    result = [town, city].compact.uniq.join(', ')
+    result.presence || "#{lat} / #{lng}"
   else
     "#{lat} / #{lng}"
   end
