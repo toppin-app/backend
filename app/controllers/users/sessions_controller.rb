@@ -23,6 +23,8 @@ class Users::SessionsController < Devise::SessionsController
     def create
       @user = User.find_by(email: params[:user][:email])
 
+      Rails.logger.info "Login params: #{params[:user].inspect}"
+
       if @user && !@user.blocked && @user.valid_password?(params[:user][:password])
         set_flash_message!(:notice, :signed_in)
         sign_in(@user)
