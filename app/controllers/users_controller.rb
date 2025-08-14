@@ -375,7 +375,25 @@ end
     #jbuilder
   end
 
+  def resolve_location
+  lat = params[:lat]
+  lng = params[:lng]
+  if lat.blank? || lng.blank?
+    render json: { error: "lat y lng son requeridos" }, status: 400 and return
+  end
 
+  url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{lat}&lon=#{lng}"
+  response = HTTParty.get(url, headers: { "User-Agent" => "YourAppName" })
+
+  if response.success? && response['address']
+    address = response['address']
+    city = address['city'] || address['town'] || address['village'] || address['hamlet']
+    country = address['country']
+    render json: { city: city, country: country }
+  else
+    render json: { error: "No se pudo resolver la ubicación" }, status: 422
+  end
+end
 
   # Método para usar un boost
   def use_boost

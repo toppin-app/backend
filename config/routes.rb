@@ -65,7 +65,7 @@ Rails.application.routes.draw do
   get '/password_changed', to: 'users#password_changed', as: :password_changed
 
   post '/update_current_conversation', to: 'users#update_current_conversation'
-
+  post 'users/resolve_location', to: 'users#resolve_location'
 
   # Hacer visible / invisible usuario
   post '/toggle_visibility', to: 'users#toggle_visibility'
