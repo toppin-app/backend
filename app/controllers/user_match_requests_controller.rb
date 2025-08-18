@@ -48,8 +48,7 @@ class UserMatchRequestsController < ApplicationController
          umr.update(twilio_conversation_sid: conversation_sid)
          current_user.recalculate_ranking
          # Mandamos la push al usuario del match.
-         match_user = User.find(umr.user_id)
-         if match_user.push_match?
+         match_user = User.find(umr.user_id)    
            devices = Device.where(user_id: match_user.id)
            notification = NotificationLocalizer.for(user: match_user, type: :match)
            devices.each do |device|
@@ -58,13 +57,13 @@ class UserMatchRequestsController < ApplicationController
                  token: device.token,
                  title: notification[:title],
                  body: notification[:body],
-                 data: { action: "match", user_id: umr.target_user.to_s },
+                 data: { action: "match", user_id: umr.user_id.to_s },
                  sound: "match.mp3",
-                 category: "default_match"
+                 channel_id: "sms-channel",
+                 category: "match"
                )
              end
            end
-         end
       
         
       ## SI no se cumplen las anteriores, vamos a ir viendo.
@@ -88,7 +87,18 @@ class UserMatchRequestsController < ApplicationController
           end
           if !umr # Si no lo hay, lo creamos.
              logger.info "create umr"
-             umr = UserMatchRequest.create(user_id: current_user.id, is_sugar_sweet: params[:is_sugar_sweet], target_user: params[:target_user],is_like: params[:is_like], is_superlike: params[:is_superlike], user_ranking: current_user.ranking, target_user_ranking: target_user.ranking)
+             # Lógica para Sugar Sweet
+             is_sugar_sweet = current_user.next_sugar_play == 1
+
+             umr = UserMatchRequest.create(
+               user_id: current_user.id,
+               target_user: params[:target_user],
+               is_like: params[:is_like],
+               is_superlike: params[:is_superlike],
+               user_ranking: current_user.ranking,
+               target_user_ranking: target_user.ranking,
+               is_sugar_sweet: is_sugar_sweet
+             )
           else
              logger.info "update umr"
              umr.update!(is_like: params[:is_like], is_sugar_sweet: params[:is_sugar_sweet], is_superlike: params[:is_superlike], user_ranking: current_user.ranking, target_user_ranking: target_user.ranking)
