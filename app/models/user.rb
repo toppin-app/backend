@@ -363,36 +363,24 @@ end
   # Nos devuelve la puntuación que le damos por la cantidad y calidad de los likes que tiene el usuario
   # (Personas a las que le gusta el usuario.)
   def ranking_incoming_likes
+  likes = self.incoming_likes
 
-    likes = self.incoming_likes
+  return 0 unless likes.any?
 
-    if !likes.any?
-      return 0
-    end
+  # Extraemos el ranking medio de los usuarios a los que le gustamos.
+  average = likes.average(:user_ranking).to_f 
 
-    # Extraemos el ranking medio de los usuarios a los que le gustamos.
-    average = likes.average(:user_ranking)
+  # Puntos max del average: 5
+  score = average * 5 / 100
 
-    # Puntos max del average: 5
-    #percentage = (average * 100) / 100
-    score = average * 5 / 100
+  # Ahora vamos con la media de likes, si tenemos más de la media, le damos 5 puntos extra.
+  incoming_likes = self.incoming_likes.count
+  average_incoming_likes = User.all.average(:incoming_match_request_number).to_f
 
+  score += 5 if incoming_likes > average_incoming_likes
 
-    # Ahora vamos con la media de likes, si tenemos más de la media, le damos 5 puntos extra.
-    # max del porcentaje: 5
-    incoming_likes = self.incoming_likes.count
-    average_incoming_likes = User.all.average(:incoming_match_request_number).to_f
-
-    if incoming_likes > average_incoming_likes
-      score = score + 5
-    end
-
-
-
-    return score.to_f
-
-
-  end
+  score.to_f
+end
 
 
 
