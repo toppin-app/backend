@@ -23,6 +23,7 @@ class UserMediaController < ApplicationController
 def create
   image_file = params[:user_medium][:file]
 
+  # Comprobación de desnudos antes de guardar
   if image_file && current_user.detect_nudity(image_file)
     respond_to do |format|
       format.html { redirect_to user_media_url, alert: "La imagen contenía desnudos y no se ha subido." }
@@ -35,7 +36,7 @@ def create
   respond_to do |format|
     if @user_medium.save
       format.html { redirect_to @user_medium, notice: "User medium was successfully created." }
-      format.json { render json: { status: :created, user_media: current_user.user_media }, status: :created }
+      format.json { render :show, status: :created, location: @user_medium }
     else
       format.html { render :new, status: :unprocessable_entity }
       format.json { render json: @user_medium.errors, status: :unprocessable_entity }
