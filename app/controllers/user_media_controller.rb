@@ -35,7 +35,7 @@ def create
   respond_to do |format|
     if @user_medium.save
       format.html { redirect_to @user_medium, notice: "User medium was successfully created." }
-      format.json { render :show, status: :created, location: @user_medium }
+      format.json { render json: { status: :created, user_media: current_user.user_media }, status: :created }
     else
       format.html { render :new, status: :unprocessable_entity }
       format.json { render json: @user_medium.errors, status: :unprocessable_entity }
