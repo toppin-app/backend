@@ -8,7 +8,7 @@ class UserMedium < ApplicationRecord
   before_create :set_position
 
   def set_position
-    self.position = self.user.user_media.count
+    self.position = self.user.user_media.count + 1
   end
 
 
