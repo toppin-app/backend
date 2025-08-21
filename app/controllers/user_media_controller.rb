@@ -21,42 +21,51 @@ class UserMediaController < ApplicationController
 
 # POST /user_media or /user_media.json
 
-  def create
-    @user_medium = UserMedium.new(user_medium_params)
+def create
+  image_file = params[:user_medium][:file]
 
+  # Comprobación de desnudos antes de guardar
+  if image_file && current_user.detect_nudity(image_file)
     respond_to do |format|
-      if @user_medium.save
-
-        is_valid = @user_medium.user.detect_nudity
-
-        format.html { redirect_to @user_medium, notice: "User medium was successfully created." }
-        format.json { 
-            if is_valid
-              render json: { status: 200, message: "OK", image_data: @user_medium}, status: 200
-            else
-              @user_medium.destroy
-              render json: {  status: 400, message: "La foto no pasa el proceso de verificación"}, status: 400
-            end
-         }
-      else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @user_medium.errors, status: :unprocessable_entity }
-      end
+      format.html { redirect_to user_media_url, alert: "La imagen contenía desnudos y no se ha subido." }
+      format.json { render json: { status: 400, message: "La imagen contenía desnudos y no se ha subido." }, status: :bad_request }
     end
+    return
   end
 
-  # PATCH/PUT /user_media/1 or /user_media/1.json
-  def update
-    respond_to do |format|
-      if @user_medium.update(user_medium_params)
+  @user_medium = UserMedium.new(user_medium_params)
+  respond_to do |format|
+    if @user_medium.save
+      format.html { redirect_to @user_medium, notice: "User medium was successfully created." }
+      format.json { render json: current_user.user_media, status: :created }
+    else
+      format.html { render :new, status: :unprocessable_entity }
+      format.json { render json: @user_medium.errors, status: :unprocessable_entity }
+    end
+  end
+end
+
+# PATCH/PUT /user_media/1 or /user_media/1.json
+def update
+  image_file = params[:user_medium][:file]
+
+  respond_to do |format|
+    if @user_medium.update(user_medium_params)
+      if image_file && current_user.detect_nudity(image_file)
+        @user_medium.remove_file!
+        @user_medium.save
+        format.html { redirect_to user_media_url, alert: "La imagen contenía desnudos y fue eliminada." }
+        format.json { render json: { status: 400, message: "La imagen contenía desnudos y fue eliminada." }, status: :bad_request }
+      else
         format.html { redirect_to @user_medium, notice: "User medium was successfully updated." }
         format.json { render :show, status: :ok, location: @user_medium }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @user_medium.errors, status: :unprocessable_entity }
       end
+    else
+      format.html { render :edit, status: :unprocessable_entity }
+      format.json { render json: @user_medium.errors, status: :unprocessable_entity }
     end
   end
+end
 
   # DELETE /user_media/1 or /user_media/1.json
   def destroy
