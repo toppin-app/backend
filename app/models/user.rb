@@ -150,43 +150,47 @@ class User < ApplicationRecord
 
 
   # Implementación de rekognition para detectar contenido inapropiado en las fotos.
-  def detect_nudity(image_file)
-    file = image_file.tempfile
+def detect_nudity(image)
+  # Si es base64 (app)
+  if image.is_a?(String) && image.start_with?('data:image')
+    # Extrae el base64 puro
+    base64_data = image.split(',')[1]
+    bytes = Base64.decode64(base64_data)
+  # Si es archivo físico (web)
+  elsif image.respond_to?(:tempfile)
+    file = image.tempfile
     file.rewind
-
-    # Reconvertir a JPEG seguro para evitar problemas de formato
     safe_image = MiniMagick::Image.open(file.path)
     safe_image.format("jpg") do |c|
       c.quality "90"
       c.strip
     end
-
     bytes = File.open(safe_image.path, 'rb') { |f| f.read }
-
-    credentials = Aws::Credentials.new(
-      ENV['AWS_ACCESS_KEY_ID'],
-      ENV['AWS_SECRET_ACCESS_KEY']
-    )
-
-    client = Aws::Rekognition::Client.new(
-      region: ENV['AWS_REGION'],
-      credentials: credentials
-    )
-
-    resp = client.detect_moderation_labels({
-      image: { bytes: bytes },
-      min_confidence: 1.0
-    })
-
-    nude = resp.moderation_labels.select do |label|
-      label.name == "Explicit Nudity" && label.confidence > 50
-    end
-
-    !nude.any? # true si está limpia, false si tiene desnudez
+  else
+    return false
   end
 
+  credentials = Aws::Credentials.new(
+    ENV['AWS_ACCESS_KEY_ID'],
+    ENV['AWS_SECRET_ACCESS_KEY']
+  )
 
+  client = Aws::Rekognition::Client.new(
+    region: ENV['AWS_REGION'],
+    credentials: credentials
+  )
 
+  resp = client.detect_moderation_labels({
+    image: { bytes: bytes },
+    min_confidence: 1.0
+  })
+
+  nude = resp.moderation_labels.select do |label|
+    label.name == "Explicit Nudity" && label.confidence > 50
+  end
+
+  nude.any?
+end
 
 
 

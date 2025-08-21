@@ -1105,46 +1105,47 @@ end
 
   end
 
-  def detect_nudity(image_file)
-    file = image_file.tempfile
+  def detect_nudity(image)
+  # Si es base64 (app)
+  if image.is_a?(String) && image.start_with?('data:image')
+    # Extrae el base64 puro
+    base64_data = image.split(',')[1]
+    bytes = Base64.decode64(base64_data)
+  # Si es archivo físico (web)
+  elsif image.respond_to?(:tempfile)
+    file = image.tempfile
     file.rewind
-
-    # Logs para depuración
-    Rails.logger.info "Image path: #{file.path}"
-    Rails.logger.info "Image size: #{file.size} bytes"
-    Rails.logger.info "Detected MIME: #{Marcel::MimeType.for(file)}"
-
-    # Reconvertir a JPEG seguro para evitar problemas de formato
     safe_image = MiniMagick::Image.open(file.path)
     safe_image.format("jpg") do |c|
-      c.quality "90" # Compresión moderada
-      c.strip        # Elimina metadatos
+      c.quality "90"
+      c.strip
     end
-
     bytes = File.open(safe_image.path, 'rb') { |f| f.read }
-
-    credentials = Aws::Credentials.new(
-      ENV['AWS_ACCESS_KEY_ID'],
-      ENV['AWS_SECRET_ACCESS_KEY']
-    )
-
-    client = Aws::Rekognition::Client.new(
-      region: ENV['AWS_REGION'],
-      credentials: credentials
-    )
-
-    resp = client.detect_moderation_labels({
-      image: { bytes: bytes },
-      min_confidence: 1.0
-    })
-
-    nude = resp.moderation_labels.select do |label|
-      label.name == "Explicit Nudity" && label.confidence > 50
-    end
-
-    # true si hay desnudez, false si está limpia
-    nude.any?
+  else
+    return false
   end
+
+  credentials = Aws::Credentials.new(
+    ENV['AWS_ACCESS_KEY_ID'],
+    ENV['AWS_SECRET_ACCESS_KEY']
+  )
+
+  client = Aws::Rekognition::Client.new(
+    region: ENV['AWS_REGION'],
+    credentials: credentials
+  )
+
+  resp = client.detect_moderation_labels({
+    image: { bytes: bytes },
+    min_confidence: 1.0
+  })
+
+  nude = resp.moderation_labels.select do |label|
+    label.name == "Explicit Nudity" && label.confidence > 50
+  end
+
+  nude.any?
+end
 
   # Enviamos algunos datos al chat para un array de users
   def short_info_chat
