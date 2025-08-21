@@ -20,6 +20,7 @@ class UserMediaController < ApplicationController
   end
 
 # POST /user_media or /user_media.json
+
 def create
   image_file = params[:user_medium][:file]
 
@@ -36,7 +37,7 @@ def create
   respond_to do |format|
     if @user_medium.save
       format.html { redirect_to @user_medium, notice: "User medium was successfully created." }
-      format.json { render :show, status: :created, location: @user_medium }
+      format.json { render json: current_user.user_media, status: :created }
     else
       format.html { render :new, status: :unprocessable_entity }
       format.json { render json: @user_medium.errors, status: :unprocessable_entity }
