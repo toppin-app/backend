@@ -1068,8 +1068,8 @@ end
     image: { bytes: current_user.verification_image.file.read }
   )
 
-  hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 65 }
-  fingers = resp.labels.select { |l| l.name == "Finger" && l.confidence > 65 }
+  hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 35 }
+  fingers = resp.labels.select { |l| l.name == "Finger" && l.confidence > 40 }
   face = resp.labels.find { |l| l.name == "Face" && l.confidence > 65 }
 
   # Excluir gestos que no sean 🤘
