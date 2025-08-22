@@ -1052,52 +1052,36 @@ end
     current_user.update!(verification_image: params[:data][:verification_image])
 
     credentials = Aws::Credentials.new(
-       "AKIARM4ZEEKGJIZ2HKUZ",
-       "6PH1iXAB6NuD9710p3nsX0cdJxFVsUkBOYBe8HUE",
+      ENV['AWS_ACCESS_KEY_ID'],
+      ENV['AWS_SECRET_ACCESS_KEY']
     )
 
       client = Aws::Rekognition::Client.new(
-        region: "eu-west-1",
+        region: ENV['AWS_REGION'],
         credentials: credentials,
       )
 
-      img = open("https://www.transfer-lesvos.com/wp-content/uploads/2017/09/MidiBus_1.jpg")
+      img = current_user.verification_image.file
       img = Base64.strict_encode64(img.read)
       data_url = "data:image/jpeg;base64," + img
-      #raise data_url.inspect
-
-      #raise img.inspect
-=begin
-      resp = client.detect_moderation_labels(
-         image: { bytes: User.find(59).user_media.last.file.read },
-         min_confidence: 1.0,
-          human_loop_config: {
-            human_loop_name: "tuxone009125", # required
-            flow_definition_arn: "FlowDefinitionArn", # required
-            data_attributes: {
-              content_classifiers: ["FreeOfPersonallyIdentifiableInformation"], # accepts FreeOfPersonallyIdentifiableInformation, FreeOfAdultContent
-            },
-          },
-       )
-=end
 
      resp = client.detect_labels(
+      image: { bytes: current_user.verification_image.file.read }
+     )
+     
+      person = resp.labels.find { |l| l.name == "Person" && l.confidence > 60 }
+      finger = resp.labels.find { |l| l.name == "Finger" && l.confidence > 85 }
+      hand   = resp.labels.find { |l| l.name == "Hand" && l.confidence > 85 }
+      palm   = resp.labels.find { |l| l.name == "Palm" && l.confidence > 85 }
 
-
-     image: { bytes: current_user.verification_image.file.read })
-     #image: { bytes: User.find(59).verification_image.file.read })
-
-      finger = resp.labels.select { |favor| favor.name == "Finger" and favor.confidence > 50 }
-  #    face = resp.labels.select { |favor| favor.name == "Face" and favor.confidence > 50 }
-      person = resp.labels.select { |favor| favor.name == "Person" and favor.confidence > 60 }
-
-
-      if finger.any? and person.any?
+      if person && finger && !hand && !palm
         current_user.update(verified: true)
-        render json: { status: 200, message: "OK"}, status: 200
+        render json: { status: 200, message: "OK" }, status: :ok
       else
+        current_user.verification_image.remove! if current_user.verification_image.present?
+        current_user.update(verification_image: nil)
         logger.info resp.labels.inspect
-        render json: { status: 400, message: "KO"}, status: 400
+        render json: { status: 400, message: "KO" }, status: :bad_request
       end
 
      # render json: result.to_json
