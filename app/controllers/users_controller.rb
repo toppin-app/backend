@@ -1073,7 +1073,7 @@ end
   face = resp.labels.find { |l| l.name == "Face" && l.confidence > 10 }
 
   forbidden_gestures = ["Thumb", "Palm", "Fist", "Victory Sign", "Peace Sign", "Shoulder"]
-  forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) && l.confidence > 50 }
+  forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) && l.confidence > 80 }
 
   # Solo valida si hay mano, dedo, cara y ningún gesto prohibido
   if hand && finger && face && !forbidden
