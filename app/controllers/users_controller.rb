@@ -1047,7 +1047,7 @@ end
   end
 
 
-    def validate_image
+   def validate_image
   current_user.update!(verification_image: params[:data][:verification_image])
 
   credentials = Aws::Credentials.new(
@@ -1073,9 +1073,10 @@ end
   face = resp.labels.find { |l| l.name == "Face" && l.confidence > 85 }
 
   # Excluir gestos que no sean 🤘
-  forbidden_gestures = ["Thumb", "Palm", "Fist", "Victory Sign", "Peace Sign"]
+  forbidden_gestures = ["Thumb", "Palm", "Fist", "Victory Sign", "Peace Sign", "Shoulder"]
   forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) && l.confidence > 85 }
 
+  # Solo valida si hay una mano, dos dedos, una cara y ningún gesto prohibido
   if hand && fingers.size == 2 && face && !forbidden
     current_user.update(verified: true)
     render json: { status: 200, message: "OK" }, status: :ok
