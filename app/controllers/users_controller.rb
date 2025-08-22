@@ -1068,16 +1068,15 @@ end
     image: { bytes: current_user.verification_image.file.read }
   )
 
-  hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 35 }
-  fingers = resp.labels.select { |l| l.name == "Finger" && l.confidence > 40 }
-  face = resp.labels.find { |l| l.name == "Face" && l.confidence > 65 }
+  hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 10 }
+  finger = resp.labels.find { |l| l.name == "Finger" && l.confidence > 10 }
+  face = resp.labels.find { |l| l.name == "Face" && l.confidence > 10 }
 
-  # Excluir gestos que no sean 🤘
   forbidden_gestures = ["Thumb", "Palm", "Fist", "Victory Sign", "Peace Sign", "Shoulder"]
-  forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) && l.confidence > 85 }
+  forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) && l.confidence > 50 }
 
-  # Solo valida si hay una mano, dos dedos, una cara y ningún gesto prohibido
-  if hand && fingers.size == 2 && face && !forbidden
+  # Solo valida si hay mano, dedo, cara y ningún gesto prohibido
+  if hand && finger && face && !forbidden
     current_user.update(verified: true)
     render json: { status: 200, message: "OK" }, status: :ok
   else
