@@ -1068,9 +1068,9 @@ end
     image: { bytes: current_user.verification_image.file.read }
   )
 
-  hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 85 }
-  fingers = resp.labels.select { |l| l.name == "Finger" && l.confidence > 85 }
-  face = resp.labels.find { |l| l.name == "Face" && l.confidence > 85 }
+  hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 65 }
+  fingers = resp.labels.select { |l| l.name == "Finger" && l.confidence > 65 }
+  face = resp.labels.find { |l| l.name == "Face" && l.confidence > 65 }
 
   # Excluir gestos que no sean 🤘
   forbidden_gestures = ["Thumb", "Palm", "Fist", "Victory Sign", "Peace Sign", "Shoulder"]
