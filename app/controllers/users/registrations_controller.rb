@@ -59,26 +59,19 @@ class Users::RegistrationsController < Devise::RegistrationsController
             resource.save!
 
             if resource.persisted?
-
-                # Save profile image
                 if params[:user][:file].present?
-                  unless resource.detect_nudity(params[:user][:file])
+                if resource.detect_nudity(params[:user][:file])
                     render json: { status: 400, message: "La imagen contiene desnudos y no puede subirse." }, status: :bad_request
                     raise ActiveRecord::Rollback
-                  end
+                end
 
-                  media = UserMedium.create!(
+                media = UserMedium.create!(
                     user_id: resource.id,
                     file: params[:user][:file],
                     position: 0
-                  )
+                )
                 end
 
-                result = User.find(resource.id).detect_nudity
-
-                if !result
-                    media.destroy
-                end
                 allowed_genders = ["male", "female", "non_binary", "couple"]
                 selected_genders = params[:user][:gender_filter] # Esto ahora será un array o una cadena
 
