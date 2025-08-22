@@ -1047,14 +1047,13 @@ end
   end
 
 
-  def validate_image
+    def validate_image
+      current_user.update!(verification_image: params[:data][:verification_image])
 
-    current_user.update!(verification_image: params[:data][:verification_image])
-
-    credentials = Aws::Credentials.new(
-      ENV['AWS_ACCESS_KEY_ID'],
-      ENV['AWS_SECRET_ACCESS_KEY']
-    )
+      credentials = Aws::Credentials.new(
+        ENV['AWS_ACCESS_KEY_ID'],
+        ENV['AWS_SECRET_ACCESS_KEY']
+      )
 
       client = Aws::Rekognition::Client.new(
         region: ENV['AWS_REGION'],
@@ -1065,16 +1064,16 @@ end
       img = Base64.strict_encode64(img.read)
       data_url = "data:image/jpeg;base64," + img
 
-     resp = client.detect_labels(
-      image: { bytes: current_user.verification_image.file.read }
-     )
-     
-      person = resp.labels.find { |l| l.name == "Person" && l.confidence > 60 }
-      finger = resp.labels.find { |l| l.name == "Finger" && l.confidence > 85 }
-      hand   = resp.labels.find { |l| l.name == "Hand" && l.confidence > 85 }
-      palm   = resp.labels.find { |l| l.name == "Palm" && l.confidence > 85 }
+      resp = client.detect_labels(
+        image: { bytes: current_user.verification_image.file.read }
+      )
 
-      if person && finger && !hand && !palm
+      # Busca mano y dedos
+      hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 85 }
+      finger_labels = resp.labels.select { |l| l.name == "Finger" && l.confidence > 85 }
+
+      # Solo verifica si hay mano y exactamente dos dedos detectados
+      if hand && finger_labels.size == 2
         current_user.update(verified: true)
         render json: { status: 200, message: "OK" }, status: :ok
       else
@@ -1083,11 +1082,7 @@ end
         logger.info resp.labels.inspect
         render json: { status: 400, message: "KO" }, status: :bad_request
       end
-
-     # render json: result.to_json
-
-
-  end
+    end
 
   def detect_nudity(image)
   # Si es base64 (app)
