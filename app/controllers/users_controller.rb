@@ -1068,17 +1068,17 @@ end
     image: { bytes: current_user.verification_image.file.read }
   )
 
-  hand = resp.labels.find { |l| l.name == "Hand" && l.confidence > 10 }
-  finger = resp.labels.find { |l| l.name == "Finger" && l.confidence > 10 }
-  face = resp.labels.find { |l| l.name == "Face" && l.confidence > 10 }
+  hand   = resp.labels.find { |l| l.name == "Hand" && l.confidence > 50 }
+  finger = resp.labels.find { |l| l.name == "Finger" && l.confidence > 50 }
+  face   = resp.labels.find { |l| l.name == "Face" && l.confidence > 50 }
 
   forbidden_gestures = ["Thumb", "Palm", "Fist", "Victory Sign", "Peace Sign", "Shoulder"]
-  forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) && l.confidence > 80 }
+  forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) && l.confidence > 40 }
 
   # Solo valida si hay mano, dedo, cara y ningún gesto prohibido
   if hand && finger && face && !forbidden
     current_user.update(verified: true)
-    render json: { status: 200, message: "OK" }, status: :ok
+    render json: { status: 200, message: "🤘 Validado con gesto de cuernos" }, status: :ok
   else
     current_user.verification_image.remove! if current_user.verification_image.present?
     current_user.update(verification_image: nil)
@@ -1086,6 +1086,7 @@ end
     render json: { status: 400, message: "KO" }, status: :bad_request
   end
 end
+
 
   def detect_nudity(image)
   # Si es base64 (app)
