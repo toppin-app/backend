@@ -1049,50 +1049,26 @@ end
 
 def validate_image
   current_user.update!(verification_image: params[:data][:verification_image])
+  img_file = current_user.verification_image.file
+  img_base64 = Base64.strict_encode64(img_file.read)
 
-  credentials = Aws::Credentials.new(
-    ENV['AWS_ACCESS_KEY_ID'],
-    ENV['AWS_SECRET_ACCESS_KEY']
+  response = HTTParty.post(
+    "http://0.0.0.0:8000/verify",
+    body: { image_base64: img_base64 }.to_json,
+    headers: { "Content-Type" => "application/json" }
   )
 
-  client = Aws::Rekognition::Client.new(
-    region: ENV['AWS_REGION'],
-    credentials: credentials,
-  )
+  result = response.parsed_response
 
-  img = current_user.verification_image.file
-  img = Base64.strict_encode64(img.read)
-  data_url = "data:image/jpeg;base64," + img
-
-  resp = client.detect_labels(
-    image: { bytes: current_user.verification_image.file.read }
-  )
-
-  hand   = resp.labels.find { |l| l.name == "Hand" && l.confidence > 50 }
-  finger = resp.labels.find { |l| l.name == "Finger" && l.confidence > 50 }
-  face   = resp.labels.find { |l| l.name == "Face" && l.confidence > 50 }
-
-  forbidden_gestures = ["Thumb", "Palm", "Fist", "Victory Sign", "Peace Sign", "Shoulder"]
-  forbidden = resp.labels.any? { |l| forbidden_gestures.include?(l.name) }
-
-  if forbidden
-    # rechaza directo
-    current_user.verification_image.remove! if current_user.verification_image.present?
-    current_user.update(verification_image: nil)
-    render json: { status: 400, message: "KO - gesto prohibido detectado" }, status: :bad_request
-  elsif hand && finger && face
-    # valida
+  if result["verified"]
     current_user.update(verified: true)
     render json: { status: 200, message: "OK 🤘" }, status: :ok
   else
-    # rechaza por falta de requisitos
     current_user.verification_image.remove! if current_user.verification_image.present?
     current_user.update(verification_image: nil)
     render json: { status: 400, message: "KO" }, status: :bad_request
   end
-
 end
-
 
   def detect_nudity(image)
   # Si es base64 (app)
