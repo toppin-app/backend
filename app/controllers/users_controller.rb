@@ -1050,12 +1050,11 @@ end
 def validate_image
   current_user.update!(verification_image: params[:data][:verification_image])
   img_file = current_user.verification_image.file
-  img_base64 = Base64.strict_encode64(img_file.read)
 
   response = HTTParty.post(
     "https://web-face-detection.uao3jo.easypanel.host/verify",
-    body: { image_base64: img_base64 }.to_json,
-    headers: { "Content-Type" => "application/json" }
+    body: { file: img_file },
+    headers: { "Content-Type" => "multipart/form-data" }
   )
 
   result = response.parsed_response
