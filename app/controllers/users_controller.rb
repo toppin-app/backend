@@ -1046,28 +1046,35 @@ end
     render json: result.to_json
   end
 
+  def validate_image
+    Rails.logger.info "===> Entrando en validate_image"
+    Rails.logger.info "Params recibidos: #{params.inspect}"
 
-def validate_image
-  current_user.update!(verification_image: params[:data][:verification_image])
-  img_file = current_user.verification_image.file
+    current_user.update!(verification_image: params[:data][:verification_image])
+    img_file = current_user.verification_image.file
+    Rails.logger.info "Imagen guardada en el usuario: #{img_file.inspect}"
 
-  response = HTTParty.post(
-    "https://web-face-detection.uao3jo.easypanel.host/verify",
-    body: { file: img_file },
-    headers: { "Content-Type" => "multipart/form-data" }
-  )
+    response = HTTParty.post(
+      "https://web-face-detection.uao3jo.easypanel.host/verify",
+      body: { file: img_file },
+      headers: { "Content-Type" => "multipart/form-data" }
+    )
+    Rails.logger.info "Respuesta de la API de verificación: #{response.inspect}"
 
-  result = response.parsed_response
+    result = response.parsed_response
+    Rails.logger.info "Resultado parseado: #{result.inspect}"
 
-  if result["verified"]
-    current_user.update(verified: true)
-    render json: { status: 200, message: "OK 🤘" }, status: :ok
-  else
-    current_user.verification_image.remove! if current_user.verification_image.present?
-    current_user.update(verification_image: nil)
-    render json: { status: 400, message: "KO" }, status: :bad_request
+    if result["verified"]
+      Rails.logger.info "Imagen verificada correctamente"
+      current_user.update(verified: true)
+      render json: { status: 200, message: "OK 🤘" }, status: :ok
+    else
+      Rails.logger.info "Imagen NO verificada, eliminando imagen del usuario"
+      current_user.verification_image.remove! if current_user.verification_image.present?
+      current_user.update(verification_image: nil)
+      render json: { status: 400, message: "KO" }, status: :bad_request
+    end
   end
-end
 
   def detect_nudity(image)
   # Si es base64 (app)
