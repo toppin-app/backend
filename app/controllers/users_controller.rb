@@ -1053,7 +1053,7 @@ def validate_image
   img_base64 = Base64.strict_encode64(img_file.read)
 
   response = HTTParty.post(
-    "http://web_face-detection:80/verify",
+    "https://web-face-detection.uao3jo.easypanel.host/verify",
     body: { image_base64: img_base64 }.to_json,
     headers: { "Content-Type" => "application/json" }
   )
