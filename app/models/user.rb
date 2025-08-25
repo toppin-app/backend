@@ -57,7 +57,7 @@ class User < ApplicationRecord
   end
 
   def gender_preferences
-  user_filter_preference&.gender_preferences
+    user_filter_preferences&.gender_preferences
   end
 
 
