@@ -982,17 +982,7 @@ def get_vip_toppins
 
       end
 
-        render json: @users.as_json(
-    methods: [:user_age, :user_media_url],
-    include: [
-      :user_media,
-      :user_interests,
-      :user_info_item_values,
-      :user_main_interests,
-      :tmdb_user_data,
-      :tmdb_user_series_data
-    ]
-  )
+      render 'index'
   end
 
 
