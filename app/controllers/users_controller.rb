@@ -72,7 +72,8 @@ class UsersController < ApplicationController
             :user_info_item_values,
             :user_main_interests,
             :tmdb_user_data,
-            :tmdb_user_series_data
+            :tmdb_user_series_data,
+            :user_filter_preferences
           ]
         )
       end
