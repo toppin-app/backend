@@ -56,6 +56,9 @@ class User < ApplicationRecord
     "#{id} # #{name}"
   end
 
+  def gender_preferences
+  user_filter_preference&.gender_preferences
+  end
 
 
   def is_premium
