@@ -65,7 +65,7 @@ class UsersController < ApplicationController
       format.html # renderiza la vista normal
       format.json do
         render json: @user.as_json(
-          methods: [:user_age, :user_media_url, :gender_preferences],
+          methods: [:user_age, :user_media_url],
           include: [
             :user_media,
             :user_interests,
