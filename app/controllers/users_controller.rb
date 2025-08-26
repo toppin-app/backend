@@ -758,16 +758,14 @@ end
 
     # Categorías
     if filter_preference.categories.present?
+      categories = JSON.parse filter_preference.categories
+      categories = categories["categories"]
 
-        categories = JSON.parse filter_preference.categories
-        categories = categories["categories"]
-
-       if categories.any?
-          UserInfoItemValue.where(info_item_value_id: categories, user_id: user_ids).pluck(:user_id).each do |id|
-           user_with_interests << id
-          end
-       end
-
+      if categories.any?
+        user_ids = UserInfoItemValue.where(info_item_value_id: categories, user_id: user_ids).pluck(:user_id)
+      end
+    end
+    
     end
 
 
