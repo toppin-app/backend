@@ -765,8 +765,6 @@ end
         user_ids = UserInfoItemValue.where(info_item_value_id: categories, user_id: user_ids).pluck(:user_id)
       end
     end
-    
-    end
 
 
   if filter_preference.interests.present?
