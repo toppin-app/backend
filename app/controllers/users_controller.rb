@@ -796,6 +796,10 @@ end
 
 
     users = User.where(id: user_ids)
+    # Filtro usuarios verificados
+    if filter_preference.only_verified_users
+        users = users.where(verified: true)
+    end
 
     users_with_boost = users.where(high_visibility: true).pluck(:id).shuffle
     users_without_boost = users.where(high_visibility: false).pluck(:id).shuffle
