@@ -672,6 +672,12 @@ end
       users = users.where(gender: filter_preference.gender_preferences.split(","))
     end
 
+        # 🚨 Aquí metemos el filtro de verificación
+    if filter_preference.only_verified_users
+      users = users.where(verified: true)
+    end
+
+
     limit_users_per_swipe = 20
     users = users.active.visible.near([current_user.lat, current_user.lng], filter_preference.distance_range, order: 'id')
 
@@ -725,10 +731,6 @@ end
 
 
 
-    # Filtro usuarios verificados
-    if filter_preference.only_verified_users
-        users = users.where(verified: true)
-    end
 
     user_ids = users.pluck(:id)
 
@@ -796,10 +798,8 @@ end
 
 
     users = User.where(id: user_ids)
-    # Filtro usuarios verificados
-    if filter_preference.only_verified_users
-        users = users.where(verified: true)
-    end
+
+
 
     users_with_boost = users.where(high_visibility: true).pluck(:id).shuffle
     users_without_boost = users.where(high_visibility: false).pluck(:id).shuffle
