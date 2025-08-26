@@ -89,6 +89,15 @@ class UserFilterPreferencesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def user_filter_preference_params
-      params.require(:user_filter_preference).permit(:user_id, :gender_preferences, :distance_range, :age_from, :age_till, :only_verified_users, :interests, :categories)
+      params.require(:user_filter_preference).permit(
+        :user_id,
+        :gender_preferences,
+        :distance_range,
+        :age_from,
+        :age_till,
+        :only_verified_users,
+        interests: [:interests],
+        categories: [:categories]
+      )
     end
 end
