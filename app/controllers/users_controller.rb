@@ -757,9 +757,9 @@ end
 
 
     # Categorías
-    if filter_preference.categories.present?
+    if user_filter_preferences.categories.present?
 
-        categories = JSON.parse filter_preference.categories
+        categories = JSON.parse user_filter_preferences.categories
         categories = categories["categories"]
 
        if categories.any?
