@@ -73,7 +73,8 @@ class UsersController < ApplicationController
             :user_main_interests,
             :tmdb_user_data,
             :tmdb_user_series_data,
-            :user_filter_preference
+            :user_filter_preference,
+            :favorite_languages
           ]
         )
       end
@@ -92,7 +93,8 @@ class UsersController < ApplicationController
       :user_main_interests,
       :tmdb_user_data,
       :tmdb_user_series_data,
-      :user_filter_preference
+      :user_filter_preference,
+      :favorite_languages
     ]
   )
   end

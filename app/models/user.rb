@@ -199,8 +199,14 @@ end
 
 
 
-
+  def favorite_languages_array
+    favorite_languages&.split(',')&.map(&:strip) || []
+  end
   
+  def favorite_languages
+  favorite_languages_array
+end
+
   def location_name
   return "" unless lat.present? && lng.present?
   url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{lat}&lon=#{lng}"
