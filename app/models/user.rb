@@ -200,7 +200,14 @@ end
 
 
 def favorite_languages_array
-  self[:favorite_languages]&.split(',')&.map(&:strip) || []
+  value = self[:favorite_languages]
+  if value.is_a?(String)
+    value.split(',').map(&:strip)
+  elsif value.is_a?(Array)
+    value
+  else
+    []
+  end
 end
 
 def favorite_languages
