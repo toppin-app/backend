@@ -199,11 +199,11 @@ end
 
 
 
-  def favorite_languages_array
-    favorite_languages&.split(',')&.map(&:strip) || []
-  end
-  
-  def favorite_languages
+def favorite_languages_array
+  self[:favorite_languages]&.split(',')&.map(&:strip) || []
+end
+
+def favorite_languages
   favorite_languages_array
 end
 
