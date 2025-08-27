@@ -65,7 +65,7 @@ class UsersController < ApplicationController
       format.html # renderiza la vista normal
       format.json do
         render json: @user.as_json(
-          methods: [:user_age, :user_media_url],
+          methods: [:user_age, :user_media_url, :favorite_languages],
           include: [
             :user_media,
             :user_interests,
@@ -73,8 +73,7 @@ class UsersController < ApplicationController
             :user_main_interests,
             :tmdb_user_data,
             :tmdb_user_series_data,
-            :user_filter_preference,
-            :favorite_languages
+            :user_filter_preference
           ]
         )
       end
@@ -85,7 +84,7 @@ class UsersController < ApplicationController
   def get_user
      @user = User.find(params[:id])
     render json: @user.as_json(
-    methods: [:user_age, :user_media_url],
+    methods: [:user_age, :user_media_url, :favorite_languages],
     include: [
       :user_media,
       :user_interests,
@@ -93,8 +92,7 @@ class UsersController < ApplicationController
       :user_main_interests,
       :tmdb_user_data,
       :tmdb_user_series_data,
-      :user_filter_preference,
-      :favorite_languages
+      :user_filter_preference
     ]
   )
   end
