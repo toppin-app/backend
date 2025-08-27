@@ -1314,7 +1314,8 @@ end
         :verification_file, :push_token, :device_id, :device_platform, :description,
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
-        :locality, :country, :lat, :lng, :occupation, :studies, :popularity, :favorite_languages[],
+        :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
+        favorite_languages: [],
         language: []
       )
     end
