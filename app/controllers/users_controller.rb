@@ -2,7 +2,7 @@ class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
   before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
-  skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users]
+  skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost]
 
 
   CRON_TOKEN = "8b645d9b-2679-4a9d-a295-faa88e9dca8c"
@@ -474,7 +474,24 @@ def cron_check_outdated_boosts
 
   render json: "OK".to_json
 end
+  
+def cron_regenerate_monthly_boost
+  unless params[:token] == CRON_TOKEN
+    render plain: "Unauthorized", status: :unauthorized and return
+  end
 
+  User.where(current_subscription_name: ['premium', 'supreme']).find_each do |user|
+    last_boost = user.last_monthly_boost_given || DateTime.new(2000)
+    if last_boost < Date.today.beginning_of_month
+      user.update(
+        boost_available: user.boost_available.to_i + 1,
+        last_monthly_boost_given: DateTime.now
+      )
+    end
+  end
+
+  render json: "OK".to_json
+end
 
 
   # Método cron para que te devuelva los likes cada 12h.
