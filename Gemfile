@@ -28,6 +28,7 @@ gem 'devise-jwt'
 gem 'agora_dynamic_key'
 gem 'redis'
 gem 'mini_magick'
+gem 'stripe'
 
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
