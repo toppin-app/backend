@@ -1,6 +1,24 @@
 class StripeController < ApplicationController
   before_action :authenticate_user!
 
+  # Endpoint para comprobar/crear el customer en Stripe
+  def ensure_customer
+    user = current_user
+    email = user.email
+
+    customers = Stripe::Customer.list(email: email).data
+    customer = customers.find { |c| c.email == email }
+
+    unless customer
+      customer = Stripe::Customer.create(email: email)
+    end
+
+    render json: { customer: customer }
+  rescue Stripe::StripeError => e
+    render json: { error: e.message }, status: :bad_request
+  end
+
+  # Endpoint para crear la sesión de pago
   def create_payment_session
     product_id = params[:product_id]
     return render json: { error: 'Product ID missing' }, status: :bad_request unless product_id
@@ -12,10 +30,9 @@ class StripeController < ApplicationController
     customer = customers.find { |c| c.email == email }
 
     unless customer
-      customer = Stripe::Customer.create(email: email)
+      return render json: { error: 'Customer not found. Please create customer first.' }, status: :not_found
     end
 
-    # Obtener el primer precio asociado al producto en Stripe
     prices = Stripe::Price.list(product: product_id, limit: 1).data
     return render json: { error: 'Price not found for product' }, status: :not_found if prices.empty?
 
