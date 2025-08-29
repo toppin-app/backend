@@ -204,6 +204,8 @@ Rails.application.routes.draw do
   post '/video_calls/generate_token', to: 'video_calls#generate_token'  # Obtener token de llamada
   get '/video_calls/match_status', to: 'video_calls#match_status'  # Ver estado de la llamada entre dos usuarios
 
+  # Rutas Stripe
+  post '/stripe/create_payment_session', to: 'stripe#create_payment_session'
 
   # Rutas para token spoti
   get '/spotify/token', to: 'spotify#token'
