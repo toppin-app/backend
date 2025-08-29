@@ -21,6 +21,7 @@ class StripeController < ApplicationController
     return render json: { error: 'Price not found for product' }, status: :not_found if prices.empty?
     price = prices.first
 
+
     # Crear y confirmar el PaymentIntent con método de prueba
     payment_intent = Stripe::PaymentIntent.create(
       amount: price.unit_amount,
@@ -31,6 +32,10 @@ class StripeController < ApplicationController
       metadata: { product_id: product_id }
     )
 
+    if product_id == 'prod_SxKyBS6mNLoICU'
+      user.increment!(:boost_available)
+    end
+    
     # Crear Ephemeral Key
     ephemeral_key = Stripe::EphemeralKey.create(
       { customer: customer.id },
