@@ -30,7 +30,7 @@ class StripeController < ApplicationController
 
     ephemeral_key = Stripe::EphemeralKey.create(
       { customer: customer.id },
-      { stripe_version: '2024-08-01' }
+      { stripe_version: ENV['STRIPE_API_VERSION'] }
     )
 
     render json: {
