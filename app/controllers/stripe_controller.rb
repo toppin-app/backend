@@ -29,13 +29,14 @@ class StripeController < ApplicationController
       customer: customer.id,
       payment_method: 'pm_card_visa', # método de pago de prueba
       confirm: true,
-      metadata: { product_id: product_id }
+      metadata: { product_id: product_id },
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
     )
 
     if product_id == 'prod_SxKyBS6mNLoICU'
       user.increment!(:boost_available)
     end
-    
+
     # Crear Ephemeral Key
     ephemeral_key = Stripe::EphemeralKey.create(
       { customer: customer.id },
