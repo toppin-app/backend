@@ -2,6 +2,10 @@ class StripeController < ApplicationController
   skip_before_action :authenticate_user!, only: [:publishable_key, :create_payment_session]
   before_action :authenticate_user!
 
+    PRODUCT_MAP = {
+    "toppin_sweet_A" => "prod_SysXKSqnpFYDYS"
+    # Agrega más mapeos aquí
+  }
 
   def publishable_key
     render json: { publishable_key: ENV['STRIPE_PUBLISHABLE_KEY'] }
@@ -9,8 +13,10 @@ class StripeController < ApplicationController
 
   # Endpoint para crear la sesión de pago (incluye comprobación/creación de customer)
   def create_payment_session
-    product_id = params[:product_id]
-    return render json: { error: 'Product ID missing' }, status: :bad_request unless product_id
+    product_key = params[:product_id]
+    product_id = PRODUCT_MAP[product_key]
+
+    return render json: { error: 'Product ID missing' }, status: :bad_request unless product_key
 
     user = current_user
     email = user.email
@@ -29,9 +35,6 @@ class StripeController < ApplicationController
 
 
     quantity = params[:quantity].to_i > 0 ? params[:quantity].to_i : 1
-
-
-
     
     # Crear Ephemeral Key
     ephemeral_key = Stripe::EphemeralKey.create(
@@ -47,6 +50,11 @@ class StripeController < ApplicationController
       payment_method: 'pm_card_visa',
       metadata: { product_id: product_id}
     )
+
+
+    if product_id == 'prod_SysXKSqnpFYDYS'
+      user.increment!(:spin_roulette_available)
+    end
 
     render json: {
       customer: customer.id,
