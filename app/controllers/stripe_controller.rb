@@ -31,14 +31,14 @@ class StripeController < ApplicationController
     quantity = params[:quantity].to_i > 0 ? params[:quantity].to_i : 1
 
 
+
     
     # Crear Ephemeral Key
     ephemeral_key = Stripe::EphemeralKey.create(
       { customer: customer.id },
       { stripe_version: ENV['STRIPE_API_VERSION'] }
     )
-
-
+    
     # Crear y confirmar el PaymentIntent con método de prueba
     payment_intent = Stripe::PaymentIntent.create(
       amount: price.unit_amount,
@@ -49,8 +49,8 @@ class StripeController < ApplicationController
     )
 
     render json: {
-      customer: customer,
-      payment_intent: payment_intent,
+      customer: customer.id,
+      payment_intent: payment_intent.client_secret,
       ephemeral_key: ephemeral_key.secret,
       product_id: product_id,
       price_id: price.id
