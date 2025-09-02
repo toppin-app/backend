@@ -207,7 +207,7 @@ Rails.application.routes.draw do
   # Rutas Stripe
   post '/stripe/create_payment_session', to: 'stripe#create_payment_session'
   post '/stripe/ensure_customer', to: 'stripe#ensure_customer'
-  get '/stripe/publishable_key', to: 'stripe_controller#publishable_key'
+  get '/stripe/publishable_key', to: 'stripe#publishable_key'
   # Rutas para token spoti
   get '/spotify/token', to: 'spotify#token'
 
