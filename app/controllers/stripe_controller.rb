@@ -44,7 +44,7 @@ class StripeController < ApplicationController
       amount: price.unit_amount,
       currency: price.currency,
       customer: customer.id,
-      payment_method: 'card',
+      payment_method: 'pm_card_visa',
       metadata: { product_id: product_id}
     )
 
