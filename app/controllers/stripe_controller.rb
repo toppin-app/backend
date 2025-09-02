@@ -1,5 +1,5 @@
 class StripeController < ApplicationController
-  skip_before_action :authenticate_user!, only: [:publishable_key]
+  skip_before_action :authenticate_user!, only: [:publishable_key, :create_payment_session]
   before_action :authenticate_user!
 
 
