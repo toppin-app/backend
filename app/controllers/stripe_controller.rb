@@ -37,8 +37,7 @@ class StripeController < ApplicationController
       customer: customer.id,
       payment_method: 'pm_card_visa',
       confirm: true,
-      metadata: { product_id: product_id},
-      automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
+      metadata: { product_id: product_id}
     )
 
     # Crear Ephemeral Key
@@ -46,8 +45,6 @@ class StripeController < ApplicationController
       { customer: customer.id },
       { stripe_version: ENV['STRIPE_API_VERSION'] }
     )
-
-
 
     render json: {
       customer: customer,
