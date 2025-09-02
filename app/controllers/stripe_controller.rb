@@ -1,5 +1,11 @@
 class StripeController < ApplicationController
+  skip_before_action :authenticate_user!, only: [:publishable_key]
   before_action :authenticate_user!
+
+
+  def publishable_key
+    render json: { publishable_key: ENV['STRIPE_PUBLISHABLE_KEY'] }
+  end
 
   # Endpoint para crear la sesión de pago (incluye comprobación/creación de customer)
   def create_payment_session
@@ -22,26 +28,26 @@ class StripeController < ApplicationController
     price = prices.first
 
 
+    quantity = params[:quantity].to_i > 0 ? params[:quantity].to_i : 1
+
     # Crear y confirmar el PaymentIntent con método de prueba
     payment_intent = Stripe::PaymentIntent.create(
       amount: price.unit_amount,
       currency: price.currency,
       customer: customer.id,
-      payment_method: 'pm_card_visa', # método de pago de prueba
+      payment_method: 'pm_card_visa',
       confirm: true,
-      metadata: { product_id: product_id },
+      metadata: { product_id: product_id, quantity: quantity },
       automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
     )
-
-    if product_id == 'prod_SxKyBS6mNLoICU'
-      user.increment!(:boost_available)
-    end
 
     # Crear Ephemeral Key
     ephemeral_key = Stripe::EphemeralKey.create(
       { customer: customer.id },
       { stripe_version: ENV['STRIPE_API_VERSION'] }
     )
+
+
 
     render json: {
       customer: customer,
