@@ -2,6 +2,10 @@ class StripeController < ApplicationController
   skip_before_action :authenticate_user!, only: [:publishable_key, :create_payment_session]
   before_action :authenticate_user!
 
+    PRODUCT_MAP = {
+    "toppin_sweet_A" => "prod_SysXKSqnpFYDYS"
+    # Agrega más mapeos aquí
+  }
 
   def publishable_key
     render json: { publishable_key: ENV['STRIPE_PUBLISHABLE_KEY'] }
@@ -9,12 +13,6 @@ class StripeController < ApplicationController
 
   # Endpoint para crear la sesión de pago (incluye comprobación/creación de customer)
   def create_payment_session
-
-      PRODUCT_MAP = {
-    "toppin_sweet_A" => "prod_SysXKSqnpFYDYS"
-    # Agrega más mapeos aquí
-  }
-
     product_key = params[:product_id]
     product_id = PRODUCT_MAP[product_key]
 
