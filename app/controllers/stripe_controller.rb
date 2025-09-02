@@ -36,7 +36,6 @@ class StripeController < ApplicationController
       currency: price.currency,
       customer: customer.id,
       payment_method: 'pm_card_visa',
-      confirm: true,
       metadata: { product_id: product_id}
     )
 
@@ -53,6 +52,7 @@ class StripeController < ApplicationController
       product_id: product_id,
       price_id: price.id
     }
+    
   rescue Stripe::StripeError => e
     render json: { error: e.message }, status: :bad_request
   end
