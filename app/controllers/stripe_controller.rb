@@ -37,7 +37,7 @@ class StripeController < ApplicationController
       customer: customer.id,
       payment_method: 'pm_card_visa',
       confirm: true,
-      metadata: { product_id: product_id, quantity: quantity },
+      metadata: { product_id: product_id},
       automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
     )
 
