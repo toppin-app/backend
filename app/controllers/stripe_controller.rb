@@ -2,12 +2,6 @@ class StripeController < ApplicationController
   skip_before_action :authenticate_user!, only: [:publishable_key, :create_payment_session]
   before_action :authenticate_user!
 
-  PRODUCT_MAP = {
-    "toppin_sweet_A" => "price_1S2umXQmb7ZC5DaSZQ190E2f",
-    "toppin_sweet_B" => "price_1S2umkQmb7ZC5DaSE3DbFnZH",
-    "toppin_sweet_C" => "price_1S2umwQmb7ZC5DaSPXsWkr2T"
-  }
-
   INCREMENT_MAP = {
     "toppin_sweet_A" => 5,
     "toppin_sweet_B" => 10,
@@ -21,20 +15,21 @@ class StripeController < ApplicationController
   # Endpoint para crear la sesión de pago (incluye comprobación/creación de customer)
   def create_payment_session
     product_key = params[:product_id]
-    price_id = PRODUCT_MAP[product_key]
-    increment_value = INCREMENT_MAP[product_key]
 
-    return render json: { error: 'Product ID missing' }, status: :bad_request unless price_id
+    price_list = Stripe::Price.list(
+      lookup_keys: [product_key],
+      limit: 1
+    )
+    price = price_list.data.first
+
+    return render json: { error: 'Price not found' }, status: :not_found unless price
 
     user = current_user
     email = user.email
 
-    # Comprobar/crear el customer en Stripe
     customers = Stripe::Customer.list(email: email).data
     customer = customers.find { |c| c.email == email }
     customer ||= Stripe::Customer.create(email: email)
-
-    price = Stripe::Price.retrieve(price_id)
 
     ephemeral_key = Stripe::EphemeralKey.create(
       { customer: customer.id },
@@ -45,12 +40,8 @@ class StripeController < ApplicationController
       amount: price.unit_amount,
       currency: price.currency,
       customer: customer.id,
-      payment_method: 'pm_card_visa',
       metadata: { product_id: price.product, product_key: product_key }
     )
-
-    # Incrementa el campo según la clave
-    user.increment!(:spin_roulette_available, increment_value)
 
     render json: {
       customer: customer.id,
