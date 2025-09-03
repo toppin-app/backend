@@ -53,7 +53,7 @@ class StripeController < ApplicationController
     config = PRODUCT_CONFIG[product_key]
 
     # Guarda la compra en la base de datos
-    PurchasesStripe.create!(
+    Purchases.create!(
       user: user,
       payment_id: payment_intent.id,
       status: "pending",

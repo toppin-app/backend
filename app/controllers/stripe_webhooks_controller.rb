@@ -15,7 +15,7 @@ class StripeWebhooksController < ApplicationController
     # Agrega más productos aquí
   }
 
-  
+
   def receive
     payload = request.body.read
     sig_header = request.env['HTTP_STRIPE_SIGNATURE']
@@ -31,7 +31,7 @@ class StripeWebhooksController < ApplicationController
     product_key = payment_intent['metadata']['product_key']
     email = Stripe::Customer.retrieve(payment_intent['customer']).email
     user = User.find_by(email: email)
-    purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
+    purchase = Purchases.find_by(payment_id: payment_intent['id'])
 
     case event['type']
     when 'payment_intent.succeeded'
