@@ -2,10 +2,17 @@ class StripeController < ApplicationController
   skip_before_action :authenticate_user!, only: [:publishable_key, :create_payment_session]
   before_action :authenticate_user!
 
-  INCREMENT_MAP = {
-    "toppin_sweet_A" => 5,
-    "toppin_sweet_B" => 10,
-    "toppin_sweet_C" => 20
+  PRODUCT_CONFIG = {
+    "toppin_sweet_A" => { field: :spin_roulette_available, increment: 5 },
+    "toppin_sweet_B" => { field: :spin_roulette_available, increment: 10 },
+    "toppin_sweet_C" => { field: :spin_roulette_available, increment: 20 },
+    "power_sweet_A"    => { field: :boost_available, increment: 1 },
+    "power_sweet_B"    => { field: :boost_available, increment: 5 },
+    "power_sweet_C"    => { field: :boost_available, increment: 10 },
+    "super_sweet_A"    => { field: :superlike_available, increment: 5 },
+    "super_sweet_B"    => { field: :superlike_available, increment: 25 },
+    "super_sweet_C"    => { field: :superlike_available, increment: 60 }
+    # Agrega más productos aquí
   }
 
   def publishable_key
@@ -41,6 +48,19 @@ class StripeController < ApplicationController
       currency: price.currency,
       customer: customer.id,
       metadata: { product_id: price.product, product_key: product_key }
+    )
+
+    config = PRODUCT_CONFIG[product_key]
+
+    # Guarda la compra en la base de datos
+    PurchasesStripe.create!(
+      user: user,
+      payment_id: payment_intent.id,
+      status: "pending",
+      product_key: product_key,
+      prize: price.unit_amount,
+      increment: config[:increment],
+      started_at: Time.current
     )
 
     render json: {

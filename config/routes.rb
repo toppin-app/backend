@@ -208,6 +208,9 @@ Rails.application.routes.draw do
   post '/stripe/create_payment_session', to: 'stripe#create_payment_session'
   post '/stripe/ensure_customer', to: 'stripe#ensure_customer'
   get '/stripe/publishable_key', to: 'stripe#publishable_key'
+  post '/stripe/webhook', to: 'stripe_webhooks#receive'
+  get '/purchases_stripe/status/:payment_id', to: 'purchases_stripe#status'
+
   # Rutas para token spoti
   get '/spotify/token', to: 'spotify#token'
 
