@@ -23,7 +23,7 @@ class User < ApplicationRecord
   enum popularity: { low_popularity: 0, medium_popularity: 1, high_popularity: 2 }
   enum activity_level: { low_activity: 0, medium_activity: 1, high_activity: 2 }
   enum language: { ES: 0, EN: 1}
-  has_many :purchases_stripes, dependent: :destroy
+  has_many :purchases_stripes, class_name: 'PurchasesStripe', dependent: :destroy
 
 
   # Include default devise modules. Others available are:
