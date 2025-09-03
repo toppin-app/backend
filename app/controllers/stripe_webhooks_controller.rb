@@ -3,15 +3,15 @@ class StripeWebhooksController < ApplicationController
   skip_before_action :verify_authenticity_token
 
   PRODUCT_CONFIG = {
-    "toppin_sweet_A" => { field: :spin_roulette_available, increment: 5 },
-    "toppin_sweet_B" => { field: :spin_roulette_available, increment: 10 },
-    "toppin_sweet_C" => { field: :spin_roulette_available, increment: 20 },
-    "power_sweet_A"    => { field: :boost_available, increment: 1 },
-    "power_sweet_B"    => { field: :boost_available, increment: 5 },
-    "power_sweet_C"    => { field: :boost_available, increment: 10 },
-    "super_sweet_A"    => { field: :superlike_available, increment: 5 },
-    "super_sweet_B"    => { field: :superlike_available, increment: 25 },
-    "super_sweet_C"    => { field: :superlike_available, increment: 60 }
+    "toppin_sweet_A" => { field: :spin_roulette_available, increment_value: 5 },
+    "toppin_sweet_B" => { field: :spin_roulette_available, increment_value: 10 },
+    "toppin_sweet_C" => { field: :spin_roulette_available, increment_value: 20 },
+    "power_sweet_A"    => { field: :boost_available, increment_value: 1 },
+    "power_sweet_B"    => { field: :boost_available, increment_value: 5 },
+    "power_sweet_C"    => { field: :boost_available, increment_value: 10 },
+    "super_sweet_A"    => { field: :superlike_available, increment_value: 5 },
+    "super_sweet_B"    => { field: :superlike_available, increment_value: 25 },
+    "super_sweet_C"    => { field: :superlike_available, increment_value: 60 }
     # Agrega más productos aquí
   }
 
@@ -37,7 +37,7 @@ class StripeWebhooksController < ApplicationController
     when 'payment_intent.succeeded'
       config = PRODUCT_CONFIG[product_key]
       if user && config
-        user.increment!(config[:field], config[:increment])
+        user.increment!(config[:field], config[:increment_value])
       end
       purchase&.update(status: "succeeded")
     when 'payment_intent.canceled'
