@@ -1,7 +1,8 @@
 class StripeWebhooksController < ApplicationController
   # Stripe recomienda desactivar CSRF para webhooks
-
-
+  skip_before_action :verify_authenticity_token
+  skip_before_action :authenticate_user!
+    
   PRODUCT_CONFIG = {
     "toppin_sweet_A" => { field: :spin_roulette_available, increment_value: 5 },
     "toppin_sweet_B" => { field: :spin_roulette_available, increment_value: 10 },
