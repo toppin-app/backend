@@ -66,6 +66,7 @@ class StripeController < ApplicationController
     render json: {
       customer: customer.id,
       payment_intent: payment_intent.client_secret,
+      payment_id: payment_intent.id,
       ephemeral_key: ephemeral_key.secret,
       product_id: price.product,
       price_id: price.id
