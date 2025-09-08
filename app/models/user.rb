@@ -211,7 +211,24 @@ def favorite_languages_array
 end
 
 def favorite_languages
-  favorite_languages_array
+  raw = self[:favorite_languages]
+  return [] if raw.blank?
+
+  # Si ya es un array, devuélvelo tal cual
+  return raw if raw.is_a?(Array)
+
+  # Si es un string serializado, deserialízalo
+  begin
+    arr = JSON.parse(raw)
+    # Si el resultado es un array de strings serializados, deserialízalos
+    if arr.is_a?(Array) && arr.length == 1 && arr.first.is_a?(String) && arr.first.include?("[")
+      arr = JSON.parse(arr.first)
+    end
+    arr
+  rescue
+    # Si no se puede parsear, intenta dividir por comas
+    raw.split(",")
+  end
 end
 
   def location_name
