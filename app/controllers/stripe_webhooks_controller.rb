@@ -13,12 +13,12 @@ class StripeWebhooksController < ApplicationController
     "super_sweet_A"    => { field: :superlike_available, increment_value: 5 },
     "super_sweet_B"    => { field: :superlike_available, increment_value: 25 },
     "super_sweet_C"    => { field: :superlike_available, increment_value: 60 },
-    "toppin_supreme_A" => { subscription_name: "Supreme", months: 1 },
-    "toppin_supreme_B" => { subscription_name: "Supreme", months: 3 },
-    "toppin_supreme_C" => { subscription_name: "Supreme", months: 6 },
-    "toppin_premium_A" => { subscription_name: "Premium", months: 1 },
-    "toppin_premium_B" => { subscription_name: "Premium", months: 3 },
-    "toppin_premium_C" => { subscription_name: "Premium", months: 6 }
+    "toppin_supreme_A" => { subscription_name: "supreme", months: 1 },
+    "toppin_supreme_B" => { subscription_name: "supreme", months: 3 },
+    "toppin_supreme_C" => { subscription_name: "supreme", months: 6 },
+    "toppin_premium_A" => { subscription_name: "premium", months: 1 },
+    "toppin_premium_B" => { subscription_name: "premium", months: 3 },
+    "toppin_premium_C" => { subscription_name: "premium", months: 6 }
     # Agrega más productos aquí
   }
 
