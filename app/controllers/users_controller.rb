@@ -151,28 +151,10 @@ def update
     end
   end
 
-    # Limpieza de favorite_languages
-    if params[:user] && params[:user][:favorite_languages].present?
-      fav = params[:user][:favorite_languages]
-      # Si es un string serializado, conviértelo a array
-      if fav.is_a?(String)
-        begin
-          fav = JSON.parse(fav)
-        rescue
-          fav = fav.split(",")
-        end
-      end
-      # Si es un array con strings serializados, conviértelo
-      if fav.is_a?(Array) && fav.length == 1 && fav.first.is_a?(String) && fav.first.include?("[")
-        begin
-          fav = JSON.parse(fav.first)
-        rescue
-          fav = fav.first.split(",")
-        end
-      end
-      # Finalmente, guarda como string separado por comas
-      params[:user][:favorite_languages] = fav.join(",")
-    end
+    # 👇 Añade esto justo antes de @user.update(user_params)
+  if params[:user] && params[:user][:favorite_languages].is_a?(Array)
+    params[:user][:favorite_languages] = params[:user][:favorite_languages].join(',')
+  end
 
   respond_to do |format|
     if @user.update(user_params)
@@ -1352,8 +1334,7 @@ end
         :verification_file, :push_token, :device_id, :device_platform, :description,
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
-        :locality, :country, :lat, :lng, :occupation, :studies, :popularity,
-        favorite_languages: [],
+        :locality, :country, :lat, :lng, :occupation, :studies, :popularity, :favorite_languages,
         language: []
       )
     end
