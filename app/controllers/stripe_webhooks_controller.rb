@@ -12,7 +12,13 @@ class StripeWebhooksController < ApplicationController
     "power_sweet_C"    => { field: :boost_available, increment_value: 10 },
     "super_sweet_A"    => { field: :superlike_available, increment_value: 5 },
     "super_sweet_B"    => { field: :superlike_available, increment_value: 25 },
-    "super_sweet_C"    => { field: :superlike_available, increment_value: 60 }
+    "super_sweet_C"    => { field: :superlike_available, increment_value: 60 },
+    "toppin_supreme_A" => { subscription_name: "Supreme", months: 1 },
+    "toppin_supreme_B" => { subscription_name: "Supreme", months: 3 },
+    "toppin_supreme_C" => { subscription_name: "Supreme", months: 6 },
+    "toppin_premium_A" => { subscription_name: "Premium", months: 1 },
+    "toppin_premium_B" => { subscription_name: "Premium", months: 3 },
+    "toppin_premium_C" => { subscription_name: "Premium", months: 6 }
     # Agrega más productos aquí
   }
 
@@ -28,23 +34,54 @@ class StripeWebhooksController < ApplicationController
       return head :bad_request
     end
 
-    payment_intent = event['data']['object']
-    product_key = payment_intent['metadata']['product_key']
-    email = Stripe::Customer.retrieve(payment_intent['customer']).email
-    user = User.find_by(email: email)
-    purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
-
     case event['type']
     when 'payment_intent.succeeded'
+      payment_intent = event['data']['object']
+      product_key = payment_intent['metadata']['product_key']
       config = PRODUCT_CONFIG[product_key]
+
+      unless config
+        return render json: { error: "Invalid product key" }, status: :bad_request
+      end
+
+      email = Stripe::Customer.retrieve(payment_intent['customer']).email
+      user = User.find_by(email: email)
+      purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
       if user && config
-        user.increment!(config[:field], config[:increment_value])
+        if config[:field] && config[:increment_value]
+          user.increment!(config[:field], config[:increment_value])
+        elsif config[:subscription_name] && config[:months]
+          user.update!(
+            current_subscription_name: config[:subscription_name],
+            current_subscription_expires: (Time.current + config[:months].months)
+          )
+        end
       end
       purchase&.update(status: "succeeded")
     when 'payment_intent.canceled'
+      payment_intent = event['data']['object']
+      purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
       purchase&.update(status: "canceled")
     when 'payment_intent.payment_failed'
+      payment_intent = event['data']['object']
+      purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
       purchase&.update(status: "failed")
+    when 'customer.subscription.created', 'customer.subscription.updated'
+      subscription = event['data']['object']
+      email = Stripe::Customer.retrieve(subscription['customer']).email
+      user = User.find_by(email: email)
+      if user
+        # Usa el nickname del plan y la fecha de expiración real de Stripe
+        user.update(
+          current_subscription_name: subscription['items']['data'][0]['price']['nickname'],
+          current_subscription_expires: Time.at(subscription['current_period_end'])
+        )
+      end
+    when 'customer.subscription.deleted'
+      subscription = event['data']['object']
+      email = Stripe::Customer.retrieve(subscription['customer']).email
+      user = User.find_by(email: email)
+      user&.update(current_subscription_name: nil, current_subscription_expires: nil)
     end
 
     head :ok
