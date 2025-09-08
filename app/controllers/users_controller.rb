@@ -151,6 +151,11 @@ def update
     end
   end
 
+    # 👇 Añade esto justo antes de @user.update(user_params)
+  if params[:user] && params[:user][:favorite_languages].is_a?(Array)
+    params[:user][:favorite_languages] = params[:user][:favorite_languages].join(',')
+  end
+
   respond_to do |format|
     if @user.update(user_params)
 
