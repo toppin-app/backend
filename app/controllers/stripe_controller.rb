@@ -11,7 +11,13 @@ class StripeController < ApplicationController
     "power_sweet_C"    => { field: :boost_available, increment_value: 10 },
     "super_sweet_A"    => { field: :superlike_available, increment_value: 5 },
     "super_sweet_B"    => { field: :superlike_available, increment_value: 25 },
-    "super_sweet_C"    => { field: :superlike_available, increment_value: 60 }
+    "super_sweet_C"    => { field: :superlike_available, increment_value: 60 },
+    "toppin_supreme_A" => { subscription_name: "Supreme", months: 1 },
+    "toppin_supreme_B" => { subscription_name: "Supreme", months: 3 },
+    "toppin_supreme_C" => { subscription_name: "Supreme", months: 6 },
+    "toppin_premium_A" => { subscription_name: "Premium", months: 1 },
+    "toppin_premium_B" => { subscription_name: "Premium", months: 3 },
+    "toppin_premium_C" => { subscription_name: "Premium", months: 6 }
     # Agrega más productos aquí
   }
 
@@ -52,14 +58,13 @@ class StripeController < ApplicationController
 
     config = PRODUCT_CONFIG[product_key]
 
-    # Guarda la compra en la base de datos
     PurchasesStripe.create!(
       user: user,
       payment_id: payment_intent.id,
       status: "pending",
       product_key: product_key,
       prize: price.unit_amount,
-      increment_value: config[:increment_value],
+      increment_value: config ? config[:increment_value] : nil,
       started_at: Time.current
     )
 
