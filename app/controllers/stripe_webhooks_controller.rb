@@ -34,9 +34,14 @@ class StripeWebhooksController < ApplicationController
     case event['type']
     when 'payment_intent.succeeded'
       payment_intent = event['data']['object']
-      product_key = payment_intent['metadata']['product_key']
+      product_key = payment_intent.dig('metadata', 'product_key')
+      if product_key.nil? || product_key.empty?
+        Rails.logger.error("Stripe Webhook: Missing product_key in payment_intent metadata for id #{payment_intent['id']}")
+        return render json: { error: "Missing product key" }, status: :bad_request
+      end
       config = PRODUCT_CONFIG[product_key]
       unless config
+        Rails.logger.error("Stripe Webhook: Invalid product_key '#{product_key}' for payment_intent id #{payment_intent['id']}")
         return render json: { error: "Invalid product key" }, status: :bad_request
       end
       email = Stripe::Customer.retrieve(payment_intent['customer']).email
@@ -46,8 +51,8 @@ class StripeWebhooksController < ApplicationController
         if config[:field] && config[:increment_value]
           user.increment!(config[:field], config[:increment_value])
         elsif config[:subscription_name] && config[:months]
-          user.update!(
-            current_subscription_name: config[:subscription_name],
+          user.update!(\
+            current_subscription_name: config[:subscription_name],\
             current_subscription_expires: (Time.current + config[:months].months)
           )
         end
@@ -66,10 +71,10 @@ class StripeWebhooksController < ApplicationController
       email = Stripe::Customer.retrieve(subscription['customer']).email
       user = User.find_by(email: email)
       if user
-        price_data = subscription['items']['data'][0]['price']
-        nickname = price_data['nickname'] || price_data['lookup_key'] || 'unknown'
+        price_data = subscription['items']['data'][0]['price'] rescue nil
+        nickname = price_data&.[]('nickname') || price_data&.[]('lookup_key') || 'unknown'
         expires_at = subscription['current_period_end']
-        if expires_at
+        if expires_at.present? && expires_at.is_a?(Numeric)
           user.update(
             current_subscription_name: nickname,
             current_subscription_expires: Time.at(expires_at)
