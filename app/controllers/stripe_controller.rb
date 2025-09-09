@@ -53,8 +53,7 @@ class StripeController < ApplicationController
       subscription = Stripe::Subscription.create(
         customer: customer.id,
         items: [{ price: price.id }],
-        payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent']
+        add_invoice_items: [{ price: price.id }]
       )
 
       PurchasesStripe.create!(
