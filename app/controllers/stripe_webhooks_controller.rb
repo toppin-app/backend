@@ -66,11 +66,18 @@ class StripeWebhooksController < ApplicationController
       email = Stripe::Customer.retrieve(subscription['customer']).email
       user = User.find_by(email: email)
       if user
-        # Usa el nickname del plan y la fecha de expiración real de Stripe
-        user.update(
-          current_subscription_name: subscription['items']['data'][0]['price']['nickname'],
-          current_subscription_expires: Time.at(subscription['current_period_end'])
-        )
+        price_data = subscription['items']['data'][0]['price']
+        nickname = price_data['nickname'] || price_data['lookup_key'] || 'unknown'
+        expires_at = subscription['current_period_end']
+        if expires_at
+          user.update(
+            current_subscription_name: nickname,
+            current_subscription_expires: Time.at(expires_at)
+          )
+        else
+          # Handle missing expiration
+          user.update(current_subscription_name: nickname)
+        end
       end
     when 'customer.subscription.deleted'
       subscription = event['data']['object']
