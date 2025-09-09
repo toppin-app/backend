@@ -28,7 +28,6 @@ class StripeController < ApplicationController
   # Endpoint para crear la sesión de pago (incluye comprobación/creación de customer)
   def create_payment_session
     product_key = params[:product_id]
-    payment_method_id = params[:payment_method_id]
 
     price_list = Stripe::Price.list(
       lookup_keys: [product_key],
@@ -47,21 +46,13 @@ class StripeController < ApplicationController
 
     config = PRODUCT_CONFIG[product_key]
 
-    if config && config[:subscription_name] && payment_method_id.present?
+    if config && config[:subscription_name]?
       # Suscripción con Stripe Elements (modal de tarjeta)
-      Stripe::PaymentMethod.attach(
-        payment_method_id,
-        { customer: customer.id }
-      )
-      Stripe::Customer.update(
-        customer.id,
-        invoice_settings: { default_payment_method: payment_method_id }
-      )
 
       subscription = Stripe::Subscription.create(
         customer: customer.id,
         items: [{ price: price.id }],
-        default_payment_method: payment_method_id,
+        payment_settings: { save_default_payment_method: 'on_subscription' },
         expand: ['latest_invoice.payment_intent']
       )
 
@@ -84,7 +75,7 @@ class StripeController < ApplicationController
         client_secret: client_secret
       }
     else
-      # Pago único o suscripción sin payment_method_id (Stripe Checkout)
+      # Pago único
       ephemeral_key = Stripe::EphemeralKey.create(
         { customer: customer.id },
         { stripe_version: ENV['STRIPE_API_VERSION'] }
