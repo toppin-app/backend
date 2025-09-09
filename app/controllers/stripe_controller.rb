@@ -17,7 +17,8 @@ class StripeController < ApplicationController
     "toppin_supreme_C" => { subscription_name: "supreme", months: 6 },
     "toppin_premium_A" => { subscription_name: "premium", months: 1 },
     "toppin_premium_B" => { subscription_name: "premium", months: 3 },
-    "toppin_premium_C" => { subscription_name: "premium", months: 6 }
+    "toppin_premium_C" => { subscription_name: "premium", months: 6 },
+    "toppin_premium_AA" => { subscription_name: "premium", months: 12 }
     # Agrega más productos aquí
   }
 
