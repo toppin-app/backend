@@ -74,7 +74,7 @@ class StripeController < ApplicationController
     render json: {
       customer: customer.id,
       subscription_id: subscription.id,
-      client_secret: subscription.latest_invoice.confirmation_secret.client_secret,
+      payment_intent: subscription.latest_invoice.confirmation_secret.client_secret,
       product_id: price.product,
       price_id: price.id
     }
