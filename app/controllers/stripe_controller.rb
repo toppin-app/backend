@@ -68,7 +68,7 @@ class StripeController < ApplicationController
 
     PurchasesStripe.create!(
       user: user,
-      payment_id: subscription.id,
+      payment_id: subscription.latest_invoice.id,
       status: "pending",
       product_key: product_key,
       prize: price.unit_amount,
@@ -80,7 +80,7 @@ class StripeController < ApplicationController
 
     render json: {
       customer: customer.id,
-      payment_id: subscription.id,
+      payment_id: subscription.latest_invoice.id,
       payment_intent: subscription.latest_invoice.confirmation_secret.client_secret,
       product_id: price.product,
       price_id: price.id,
