@@ -47,7 +47,32 @@ class StripeController < ApplicationController
     customer ||= Stripe::Customer.create(email: email)
 
     config = PRODUCT_CONFIG[product_key]
-    
+    if product_key == "toppin_premium_AA"
+    # Suscripción para toppin_premium_AA
+    subscription = Stripe::Subscription.create(
+      customer: customer.id,
+      items: [{ price: price.id }],
+      metadata: { product_id: price.product, product_key: product_key }
+    )
+
+    PurchasesStripe.create!(
+      user: user,
+      payment_id: subscription.id,
+      status: "pending",
+      product_key: product_key,
+      prize: price.unit_amount,
+      increment_value: config ? config[:increment_value] : nil,
+      started_at: Time.current
+    )
+
+    render json: {
+      customer: customer.id,
+      subscription_id: subscription.id,
+      client_secret: subscription.latest_invoice.payment_intent.client_secret,
+      product_id: price.product,
+      price_id: price.id
+    }
+  else
       # Pago único
       ephemeral_key = Stripe::EphemeralKey.create(
         { customer: customer.id },
@@ -79,7 +104,7 @@ class StripeController < ApplicationController
         product_id: price.product,
         price_id: price.id
       }
-  
+    end
   rescue Stripe::StripeError => e
     render json: { error: e.message }, status: :bad_request
   end
