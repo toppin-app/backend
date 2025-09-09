@@ -19,32 +19,26 @@ class StripeWebhooksController < ApplicationController
     "toppin_premium_A" => { subscription_name: "premium", months: 1 },
     "toppin_premium_B" => { subscription_name: "premium", months: 3 },
     "toppin_premium_C" => { subscription_name: "premium", months: 6 },
-    "toppin_premium_AA" => { subscription_name: "premium", months: 12 }
+     "toppin_premium_AA" => { subscription_name: "premium", months: 12 }
     # Agrega más productos aquí
   }
-
-
   def receive
     payload = request.body.read
     sig_header = request.env['HTTP_STRIPE_SIGNATURE']
     endpoint_secret = ENV['STRIPE_WEBHOOK_SECRET']
-
     begin
       event = Stripe::Webhook.construct_event(payload, sig_header, endpoint_secret)
     rescue JSON::ParserError, Stripe::SignatureVerificationError
       return head :bad_request
     end
-
     case event['type']
     when 'payment_intent.succeeded'
       payment_intent = event['data']['object']
       product_key = payment_intent['metadata']['product_key']
       config = PRODUCT_CONFIG[product_key]
-
       unless config
         return render json: { error: "Invalid product key" }, status: :bad_request
       end
-
       email = Stripe::Customer.retrieve(payment_intent['customer']).email
       user = User.find_by(email: email)
       purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
@@ -71,24 +65,11 @@ class StripeWebhooksController < ApplicationController
       subscription = event['data']['object']
       email = Stripe::Customer.retrieve(subscription['customer']).email
       user = User.find_by(email: email)
-      if user && ['active', 'trialing'].include?(subscription['status'])
-        price_data = subscription['items']['data'][0]['price']
-        lookup_key = price_data['lookup_key']
-        unit_amount = price_data['unit_amount'] || 0
-        nickname = price_data['nickname'] || lookup_key || "subscription"
-        expires_at = Time.at(subscription['current_period_end'])
-        purchase = PurchasesStripe.find_or_initialize_by(payment_id: subscription['id'])
-        purchase.assign_attributes(
-          user: user,
-          status: "active",
-          product_key: lookup_key,
-          prize: unit_amount,
-          started_at: Time.current
-        )
-        purchase.save!
+      if user
+        # Usa el nickname del plan y la fecha de expiración real de Stripe
         user.update(
-          current_subscription_name: nickname,
-          current_subscription_expires: expires_at
+          current_subscription_name: subscription['items']['data'][0]['price']['nickname'],
+          current_subscription_expires: Time.at(subscription['current_period_end'])
         )
       end
     when 'customer.subscription.deleted'
@@ -97,7 +78,6 @@ class StripeWebhooksController < ApplicationController
       user = User.find_by(email: email)
       user&.update(current_subscription_name: nil, current_subscription_expires: nil)
     end
-
     head :ok
   end
 end
