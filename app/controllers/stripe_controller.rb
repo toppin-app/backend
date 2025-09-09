@@ -52,7 +52,7 @@ class StripeController < ApplicationController
     )
 
     config = PRODUCT_CONFIG[product_key]
-    if product_key == config[:subscription_name]
+    if product_key.start_with?('toppin_supreme_', 'toppin_premium_')
     subscription = Stripe::Subscription.create(
       customer: customer.id,
       items: [{ price: price.id }],
