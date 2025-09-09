@@ -44,38 +44,68 @@ class StripeController < ApplicationController
     customer = customers.find { |c| c.email == email }
     customer ||= Stripe::Customer.create(email: email)
 
-    ephemeral_key = Stripe::EphemeralKey.create(
-      { customer: customer.id },
-      { stripe_version: ENV['STRIPE_API_VERSION'] }
-    )
-
-    payment_intent = Stripe::PaymentIntent.create(
-      amount: price.unit_amount,
-      currency: price.currency,
-      customer: customer.id,
-      metadata: { product_id: price.product, product_key: product_key }
-    )
-
     config = PRODUCT_CONFIG[product_key]
 
-    PurchasesStripe.create!(
-      user: user,
-      payment_id: payment_intent.id,
-      status: "pending",
-      product_key: product_key,
-      prize: price.unit_amount,
-      increment_value: config ? config[:increment_value] : nil,
-      started_at: Time.current
-    )
+    if config && config[:subscription_name]
+      # Crear sesión de suscripción
+      session = Stripe::Checkout::Session.create(
+        customer: customer.id,
+        payment_method_types: ['card'],
+        line_items: [{
+          price: price.id,
+          quantity: 1
+        }],
+        mode: 'subscription',
+        success_url: 'https://tuapp.com/success?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url: 'https://tuapp.com/cancel'
+      )
+      # Puedes guardar el session.id si lo necesitas para rastrear la compra
+      PurchasesStripe.create!(
+        user: user,
+        payment_id: session.id,
+        status: "pending",
+        product_key: product_key,
+        prize: price.unit_amount,
+        increment_value: config[:increment_value],
+        started_at: Time.current
+      )
+      render json: {
+        checkout_url: session.url,
+        session_id: session.id
+      }
+    else
+      # Pago único (como ya lo tienes)
+      ephemeral_key = Stripe::EphemeralKey.create(
+        { customer: customer.id },
+        { stripe_version: ENV['STRIPE_API_VERSION'] }
+      )
 
-    render json: {
-      customer: customer.id,
-      payment_intent: payment_intent.client_secret,
-      payment_id: payment_intent.id,
-      ephemeral_key: ephemeral_key.secret,
-      product_id: price.product,
-      price_id: price.id
-    }
+      payment_intent = Stripe::PaymentIntent.create(
+        amount: price.unit_amount,
+        currency: price.currency,
+        customer: customer.id,
+        metadata: { product_id: price.product, product_key: product_key }
+      )
+
+      PurchasesStripe.create!(
+        user: user,
+        payment_id: payment_intent.id,
+        status: "pending",
+        product_key: product_key,
+        prize: price.unit_amount,
+        increment_value: config ? config[:increment_value] : nil,
+        started_at: Time.current
+      )
+
+      render json: {
+        customer: customer.id,
+        payment_intent: payment_intent.client_secret,
+        payment_id: payment_intent.id,
+        ephemeral_key: ephemeral_key.secret,
+        product_id: price.product,
+        price_id: price.id
+      }
+    end
   rescue Stripe::StripeError => e
     render json: { error: e.message }, status: :bad_request
   end
