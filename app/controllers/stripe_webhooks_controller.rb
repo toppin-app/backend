@@ -34,8 +34,8 @@ class StripeWebhooksController < ApplicationController
     case event['type']
     when 'payment_intent.succeeded'
       payment_intent = event['data']['object']
-      product_key = payment_intent.dig('metadata', 'product_key')
-      if product_key.nil? || product_key.empty?
+      product_key = payment_intent.metadata['product_key'] rescue nil
+      if product_key.nil? || product_key.to_s.empty?
         Rails.logger.error("Stripe Webhook: Missing product_key in payment_intent metadata for id #{payment_intent['id']}")
         return render json: { error: "Missing product key" }, status: :bad_request
       end
