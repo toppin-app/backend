@@ -52,7 +52,11 @@ class StripeController < ApplicationController
     subscription = Stripe::Subscription.create(
       customer: customer.id,
       items: [{ price: price.id }],
-      metadata: { product_id: price.product, product_key: product_key }
+      payment_behavior: 'default_incomplete',
+      payment_settings: {
+        save_default_payment_method: 'on_subscription'
+      },
+      expand: ['latest_invoice.confirmation_secret']
     )
 
     PurchasesStripe.create!(
@@ -70,7 +74,7 @@ class StripeController < ApplicationController
     render json: {
       customer: customer.id,
       subscription_id: subscription.id,
-      client_secret: subscription.latest_invoice,
+      client_secret: subscription.latest_invoice.confirmation_secret.client_secret,
       product_id: price.product,
       price_id: price.id
     }
