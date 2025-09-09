@@ -75,9 +75,10 @@ class StripeController < ApplicationController
         started_at: Time.current
       )
 
+      client_secret = subscription.latest_invoice.payment_intent&.client_secret
       render json: {
         subscription_id: subscription.id,
-        client_secret: subscription.latest_invoice.payment_intent.client_secret
+        client_secret: client_secret
       }
     else
       # Pago único o suscripción sin payment_method_id (Stripe Checkout)
