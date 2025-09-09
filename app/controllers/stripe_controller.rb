@@ -46,6 +46,11 @@ class StripeController < ApplicationController
     customer = customers.find { |c| c.email == email }
     customer ||= Stripe::Customer.create(email: email)
 
+    ephemeral_key = Stripe::EphemeralKey.create(
+      { customer: customer.id },
+      { stripe_version: ENV['STRIPE_API_VERSION'] }
+    )
+
     config = PRODUCT_CONFIG[product_key]
     if product_key == "toppin_premium_AA"
     # Suscripción para toppin_premium_AA
@@ -76,14 +81,11 @@ class StripeController < ApplicationController
       subscription_id: subscription.id,
       payment_intent: subscription.latest_invoice.confirmation_secret.client_secret,
       product_id: price.product,
-      price_id: price.id
+      price_id: price.id,
+      ephemeral_key: ephemeral_key.secret
     }
   else
       # Pago único
-      ephemeral_key = Stripe::EphemeralKey.create(
-        { customer: customer.id },
-        { stripe_version: ENV['STRIPE_API_VERSION'] }
-      )
 
       payment_intent = Stripe::PaymentIntent.create(
         amount: price.unit_amount,
