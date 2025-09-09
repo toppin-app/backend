@@ -52,7 +52,7 @@ class StripeController < ApplicationController
     )
 
     config = PRODUCT_CONFIG[product_key]
-    if product_key == "toppin_premium_AA"
+    if product_key == config[:subscription_name] && config[:months]
     # Suscripción para toppin_premium_AA
     subscription = Stripe::Subscription.create(
       customer: customer.id,
@@ -61,7 +61,10 @@ class StripeController < ApplicationController
       payment_settings: {
         save_default_payment_method: 'on_subscription'
       },
-      expand: ['latest_invoice.confirmation_secret']
+      expand: ['latest_invoice.confirmation_secret'],
+      metadata: {
+        product_key: product_key
+      }
     )
 
     PurchasesStripe.create!(
@@ -82,7 +85,8 @@ class StripeController < ApplicationController
       payment_intent: subscription.latest_invoice.confirmation_secret.client_secret,
       product_id: price.product,
       price_id: price.id,
-      ephemeral_key: ephemeral_key.secret
+      ephemeral_key: ephemeral_key.secret,
+      product_key: product_key
     }
   else
       # Pago único
@@ -110,7 +114,8 @@ class StripeController < ApplicationController
         payment_id: payment_intent.id,
         ephemeral_key: ephemeral_key.secret,
         product_id: price.product,
-        price_id: price.id
+        price_id: price.id,
+        product_key: product_key
       }
     end
   rescue Stripe::StripeError => e
