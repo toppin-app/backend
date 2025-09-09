@@ -75,7 +75,10 @@ class StripeController < ApplicationController
         started_at: Time.current
       )
 
-      client_secret = subscription.latest_invoice.payment_intent&.client_secret
+      client_secret = nil
+      if subscription.latest_invoice.respond_to?(:payment_intent) && subscription.latest_invoice.payment_intent
+        client_secret = subscription.latest_invoice.payment_intent.client_secret
+      end
       render json: {
         subscription_id: subscription.id,
         client_secret: client_secret
