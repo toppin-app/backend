@@ -28,6 +28,7 @@ class StripeController < ApplicationController
   # Endpoint para crear la sesión de pago (incluye comprobación/creación de customer)
   def create_payment_session
     product_key = params[:product_id]
+    payment_method_id = params[:payment_method_id]
 
     price_list = Stripe::Price.list(
       lookup_keys: [product_key],
@@ -46,35 +47,40 @@ class StripeController < ApplicationController
 
     config = PRODUCT_CONFIG[product_key]
 
-    if config && config[:subscription_name]
-      # Crear sesión de suscripción
-      session = Stripe::Checkout::Session.create(
-        customer: customer.id,
-        payment_method_types: ['card'],
-        line_items: [{
-          price: price.id,
-          quantity: 1
-        }],
-        mode: 'subscription',
-        success_url: 'https://tuapp.com/success?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url: 'https://tuapp.com/cancel'
+    if config && config[:subscription_name] && payment_method_id.present?
+      # Suscripción con Stripe Elements (modal de tarjeta)
+      Stripe::PaymentMethod.attach(
+        payment_method_id,
+        { customer: customer.id }
       )
-      # Puedes guardar el session.id si lo necesitas para rastrear la compra
+      Stripe::Customer.update(
+        customer.id,
+        invoice_settings: { default_payment_method: payment_method_id }
+      )
+
+      subscription = Stripe::Subscription.create(
+        customer: customer.id,
+        items: [{ price: price.id }],
+        default_payment_method: payment_method_id,
+        expand: ['latest_invoice.payment_intent']
+      )
+
       PurchasesStripe.create!(
         user: user,
-        payment_id: session.id,
+        payment_id: subscription.id,
         status: "pending",
         product_key: product_key,
         prize: price.unit_amount,
         increment_value: config[:increment_value],
         started_at: Time.current
       )
+
       render json: {
-        checkout_url: session.url,
-        session_id: session.id
+        subscription_id: subscription.id,
+        client_secret: subscription.latest_invoice.payment_intent.client_secret
       }
     else
-      # Pago único (como ya lo tienes)
+      # Pago único o suscripción sin payment_method_id (Stripe Checkout)
       ephemeral_key = Stripe::EphemeralKey.create(
         { customer: customer.id },
         { stripe_version: ENV['STRIPE_API_VERSION'] }
