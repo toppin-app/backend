@@ -70,19 +70,31 @@ class StripeWebhooksController < ApplicationController
       subscription = event['data']['object']
       email = Stripe::Customer.retrieve(subscription['customer']).email
       user = User.find_by(email: email)
-      if user
-        price_data = subscription['items']['data'][0]['price'] rescue nil
-        nickname = price_data&.[]('nickname') || price_data&.[]('lookup_key') || 'unknown'
-        expires_at = subscription['current_period_end']
+      price_data = subscription['items']['data'][0]['price'] rescue nil
+      lookup_key = price_data&.[]('lookup_key')
+      config = PRODUCT_CONFIG[lookup_key]
+      subscription_name = config&.[](:subscription_name)
+      # fallback: if lookup_key starts with 'toppin_premium' or 'toppin_supreme'
+      if subscription_name.nil? && lookup_key
+        if lookup_key.include?('premium')
+          subscription_name = 'premium'
+        elsif lookup_key.include?('supreme')
+          subscription_name = 'supreme'
+        end
+      end
+      expires_at = subscription['current_period_end']
+      if user && subscription_name
         if expires_at.present? && expires_at.is_a?(Numeric)
           user.update(
-            current_subscription_name: nickname,
+            current_subscription_name: subscription_name,
             current_subscription_expires: Time.at(expires_at)
           )
         else
-          # Handle missing expiration
-          user.update(current_subscription_name: nickname)
+          user.update(current_subscription_name: subscription_name)
         end
+        # Update PurchasesStripe status to succeeded if payment_id matches latest_invoice
+        purchase = PurchasesStripe.find_by(payment_id: subscription['latest_invoice'])
+        purchase&.update(status: "succeeded")
       end
     when 'customer.subscription.deleted'
       subscription = event['data']['object']
