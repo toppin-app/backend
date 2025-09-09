@@ -33,6 +33,7 @@ class StripeController < ApplicationController
       lookup_keys: [product_key],
       limit: 1
     )
+    
     price = price_list.data.first
 
     return render json: { error: 'Price not found' }, status: :not_found unless price
@@ -46,7 +47,7 @@ class StripeController < ApplicationController
 
     config = PRODUCT_CONFIG[product_key]
 
-    if config && config[:subscription_name]?
+    if config && config[:subscription_name]
       # Suscripción con Stripe Elements (modal de tarjeta)
 
       subscription = Stripe::Subscription.create(
