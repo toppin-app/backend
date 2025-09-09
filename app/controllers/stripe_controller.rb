@@ -68,7 +68,7 @@ class StripeController < ApplicationController
 
     PurchasesStripe.create!(
       user: user,
-      payment_id: subscription.id,
+      payment_id: subscription.latest_invoice.id,
       status: "pending",
       product_key: product_key,
       prize: price.unit_amount,
