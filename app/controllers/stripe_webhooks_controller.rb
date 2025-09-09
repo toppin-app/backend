@@ -71,22 +71,23 @@ class StripeWebhooksController < ApplicationController
       subscription = event['data']['object']
       email = Stripe::Customer.retrieve(subscription['customer']).email
       user = User.find_by(email: email)
-      # Solo guardar si la suscripción está activa o en trial
       if user && ['active', 'trialing'].include?(subscription['status'])
         price_data = subscription['items']['data'][0]['price']
         lookup_key = price_data['lookup_key']
-        unit_amount = price_data['unit_amount'] || 0 # Evita nil
-        user.update(
-          current_subscription_name: price_data['nickname'],
-          current_subscription_expires: Time.at(subscription['current_period_end'])
-        )
-        PurchasesStripe.create!(
+        unit_amount = price_data['unit_amount'] || 0
+        expires_at = Time.at(subscription['current_period_end'])
+        purchase = PurchasesStripe.find_or_initialize_by(payment_id: subscription['id'])
+        purchase.assign_attributes(
           user: user,
-          payment_id: subscription['id'],
           status: "active",
           product_key: lookup_key,
           prize: unit_amount,
           started_at: Time.current
+        )
+        purchase.save!
+        user.update(
+          current_subscription_name: price_data['nickname'],
+          current_subscription_expires: expires_at
         )
       end
     when 'customer.subscription.deleted'
