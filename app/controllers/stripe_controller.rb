@@ -65,10 +65,12 @@ class StripeController < ApplicationController
       started_at: Time.current
     )
 
+    Rails.logger.info #{subscription.latest_invoice}
+
     render json: {
       customer: customer.id,
       subscription_id: subscription.id,
-      client_secret: subscription.latest_invoice.payment_intent.client_secret,
+      client_secret: subscription.latest_invoice,
       product_id: price.product,
       price_id: price.id
     }
