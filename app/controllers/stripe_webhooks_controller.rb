@@ -75,6 +75,7 @@ class StripeWebhooksController < ApplicationController
         price_data = subscription['items']['data'][0]['price']
         lookup_key = price_data['lookup_key']
         unit_amount = price_data['unit_amount'] || 0
+        nickname = price_data['nickname'] || lookup_key || "subscription"
         expires_at = Time.at(subscription['current_period_end'])
         purchase = PurchasesStripe.find_or_initialize_by(payment_id: subscription['id'])
         purchase.assign_attributes(
@@ -86,7 +87,7 @@ class StripeWebhooksController < ApplicationController
         )
         purchase.save!
         user.update(
-          current_subscription_name: price_data['nickname'],
+          current_subscription_name: nickname,
           current_subscription_expires: expires_at
         )
       end
