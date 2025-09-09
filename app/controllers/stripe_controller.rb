@@ -46,40 +46,7 @@ class StripeController < ApplicationController
     customer ||= Stripe::Customer.create(email: email)
 
     config = PRODUCT_CONFIG[product_key]
-
-    if config && config[:subscription_name]
-      # Suscripción con Stripe Elements (modal de tarjeta)
-
-      Rails.logger.info("Creating subscription for user #{user.id} with product #{product_key} and prize #{price.unit_amount}")
-
-      subscription = Stripe::Subscription.create(
-        customer: customer.id,
-        items: [{ price: price.id }],
-        add_invoice_items: [{ price: price.id }],
-        payment_settings: { save_default_payment_method: 'on_subscription' }
-      )
-
-      Rails.logger.info("Subscription created successfully: #{subscription.id}")
-
-      PurchasesStripe.create!(
-        user: user,
-        payment_id: subscription.id,
-        status: "pending",
-        product_key: product_key,
-        prize: price.unit_amount,
-        increment_value: config[:increment_value],
-        started_at: Time.current
-      )
-
-      client_secret = nil
-      if subscription.latest_invoice.respond_to?(:payment_intent) && subscription.latest_invoice.payment_intent
-        client_secret = subscription.latest_invoice.payment_intent.client_secret
-      end
-      render json: {
-        subscription_id: subscription.id,
-        client_secret: client_secret
-      }
-    else
+    
       # Pago único
       ephemeral_key = Stripe::EphemeralKey.create(
         { customer: customer.id },
@@ -111,7 +78,7 @@ class StripeController < ApplicationController
         product_id: price.product,
         price_id: price.id
       }
-    end
+  
   rescue Stripe::StripeError => e
     render json: { error: e.message }, status: :bad_request
   end
