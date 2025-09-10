@@ -554,7 +554,7 @@ end
       last_weekly_super_like = user.last_superlike_given || DateTime.new(2000)
       if last_weekly_super_like < Date.today.beginning_of_week
         user.update(
-          super_like_available: +5,
+          superlike_available: +5,
           last_superlike_given: DateTime.now
         )
       end
