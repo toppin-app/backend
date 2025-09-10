@@ -48,6 +48,7 @@ Rails.application.routes.draw do
   get 'users/cron_regenerate_superlike', to: 'users#cron_regenerate_superlike'
   get 'users/cron_check_online_users', to: 'users#cron_check_online_users'
   get 'cron_regenerate_monthly_boost', to: 'users#cron_regenerate_monthly_boost'
+  post 'users/cron_regenerate_weekly_super_sweet', to: 'users#cron_regenerate_weekly_super_sweet'
 
 
   get '/users' => 'users#index', as: :users
