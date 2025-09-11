@@ -91,14 +91,16 @@ class StripeWebhooksController < ApplicationController
             current_subscription_expires: Time.at(expires_at)
           )
         else
-          # Si no hay current_period_end, calcula usando el config[:months]
           months = config&.[](:months) || 1
           user.update(
             current_subscription_name: subscription_name,
             current_subscription_expires: Time.current + months.months
           )
         end
-        # Update PurchasesStripe status to succeeded if payment_id matches latest_invoice
+        # 👇 Añade likes si es premium/supreme y no tiene
+        if user.likes_left == 0
+          user.update(likes_left: 1)
+        end
         purchase = PurchasesStripe.find_by(payment_id: subscription['latest_invoice'])
         purchase&.update(status: "succeeded")
       end
