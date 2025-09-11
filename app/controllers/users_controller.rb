@@ -682,7 +682,17 @@ end
 
   # User swipes, la madre del cordero. El que te devuelve todos los usuarios.
   def user_swipes
+      # IDs de usuarios ocultos
+    hidden_user_ids = User.where(hidden_by_user: true).pluck(:id)
 
+    # De esos ocultos, cuáles ME han dado like (user_id es quien da el like)
+    hidden_who_liked_me = UserMatchRequest.where(user_id: hidden_user_ids, target_user: current_user.id, is_like: true).pluck(:user_id)
+
+    # Ocultos que NO me han likeado -> hay que excluirlos
+    hidden_to_exclude = hidden_user_ids - hidden_who_liked_me
+
+    # Resultado: todos los usuarios excepto esos ocultos que no me han likeado
+    users = User.where.not(id: hidden_to_exclude)
     # Si no tiene ninguna foto, le vamos a tirar un KO para que complete su perfil.
     if !current_user.user_media.any?
         render json: { status: 405, message: "Debes completar tu perfil con al menos una foto para poder ver a otros usuarios."}, status: 405

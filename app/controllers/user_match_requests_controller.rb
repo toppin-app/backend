@@ -9,10 +9,6 @@ class UserMatchRequestsController < ApplicationController
   # Solicitud de match / dislike
   def send_match
       # Si estás oculto no puedes dar likes ni superlikes.
-      if current_user.hidden_by_user and (params[:is_like] == true or params[:is_superlike] == true)
-        render json: { status: 406, error: "No puedes estando oculto."}, status: 406
-        return
-      end
       # Comprobamos si hay alguna solicitud de match (con like) del otro usuario hacia el que lo solicita
       umr =  UserMatchRequest.match_between(params[:target_user],current_user.id)
       target_user =  User.find(params[:target_user])
