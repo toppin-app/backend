@@ -1038,7 +1038,7 @@ def get_vip_toppins
 
 
 
-    @users = users.visible.where.not(id: to_remove).order(ratio_likes: :desc).limit(12)
+    @users = users.visible.where.not(id: to_remove).order(ratio_likes: :desc).limit(6)
 
 
     unlocked = current_user.user_vip_unlocks.pluck(:target_id)
