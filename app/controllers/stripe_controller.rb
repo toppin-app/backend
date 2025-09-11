@@ -61,9 +61,7 @@ class StripeController < ApplicationController
         save_default_payment_method: 'on_subscription'
       },
       expand: ['latest_invoice.confirmation_secret'],
-      metadata: {
-        product_key: product_key
-      }
+        metadata: { product_id: price.product, product_key: product_key }
     )
 
     PurchasesStripe.create!(

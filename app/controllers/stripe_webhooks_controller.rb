@@ -82,6 +82,7 @@ class StripeWebhooksController < ApplicationController
           subscription_name = 'supreme'
         end
       end
+      # Extrae el periodo de expiración de la suscripción
       expires_at = subscription['current_period_end']
       if user && subscription_name
         if expires_at.present? && expires_at.is_a?(Numeric)
@@ -90,7 +91,12 @@ class StripeWebhooksController < ApplicationController
             current_subscription_expires: Time.at(expires_at)
           )
         else
-          user.update(current_subscription_name: subscription_name)
+          # Si no hay current_period_end, calcula usando el config[:months]
+          months = config&.[](:months) || 1
+          user.update(
+            current_subscription_name: subscription_name,
+            current_subscription_expires: Time.current + months.months
+          )
         end
         # Update PurchasesStripe status to succeeded if payment_id matches latest_invoice
         purchase = PurchasesStripe.find_by(payment_id: subscription['latest_invoice'])
