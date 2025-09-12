@@ -46,6 +46,16 @@ class StripeController < ApplicationController
     customer = customers.find { |c| c.email == email }
     customer ||= Stripe::Customer.create(email: email)
 
+    
+    # 👇 Cancelar suscripciones activas antes de crear una nueva
+    active_subs = Stripe::Subscription.list(customer: customer.id, status: 'active').data
+    active_subs.each do |sub|
+      Stripe::Subscription.delete(sub.id) # Cancela inmediatamente
+      # Si prefieres cancelar al final del periodo, usa:
+      # Stripe::Subscription.update(sub.id, cancel_at_period_end: true)
+    end
+
+  
     ephemeral_key = Stripe::EphemeralKey.create(
       { customer: customer.id },
       { stripe_version: ENV['STRIPE_API_VERSION'] }
