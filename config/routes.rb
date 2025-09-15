@@ -211,6 +211,7 @@ Rails.application.routes.draw do
   post '/stripe/webhook', to: 'stripe_webhooks#receive'
   get '/purchases_stripe/status/:payment_id', to: 'purchases_stripe#status'
   get '/stripe/subscription_status', to: 'stripe#subscription_status'
+  post '/stripe/cancel_subscription', to: 'stripe#cancel_subscription'
 
   # Rutas para token spoti
   get '/spotify/token', to: 'spotify#token'

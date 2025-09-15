@@ -177,5 +177,21 @@ class StripeController < ApplicationController
     end
   end
 
-  
+  def cancel_subscription
+    user = current_user
+    email = user.email
+
+    customers = Stripe::Customer.list(email: email).data
+    customer = customers.find { |c| c.email == email }
+    return render json: { error: "Customer not found" }, status: :not_found unless customer
+
+    subscriptions = Stripe::Subscription.list(customer: customer.id, status: 'active').data
+    subscription = subscriptions.first
+    return render json: { error: "No active subscription found" }, status: :not_found unless subscription
+
+    # Marcar para cancelar al final del periodo actual
+    Stripe::Subscription.update(subscription.id, cancel_at_period_end: true)
+
+    render json: { success: true, message: "La suscripción no se renovará al final del periodo actual." }
+  end
 end
