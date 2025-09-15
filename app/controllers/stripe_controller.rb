@@ -156,8 +156,8 @@ class StripeController < ApplicationController
         subscription_name = product.name
       end
 
-      # Definir current_period_end correctamente
       current_period_end = item ? Time.at(item.current_period_end) : nil
+      subscribed_at = subscription.created ? Time.at(subscription.created) : nil
 
       render json: {
         active: subscription.status == "active",
@@ -166,6 +166,7 @@ class StripeController < ApplicationController
         payment_method: payment_method ? payment_method.card.brand : nil,
         last4: payment_method ? payment_method.card.last4 : nil,
         current_period_end: current_period_end,
+        subscribed_at: subscribed_at,
         status: subscription.status
       }
     else
