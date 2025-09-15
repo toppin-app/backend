@@ -143,6 +143,7 @@ class StripeController < ApplicationController
     subscriptions = Stripe::Subscription.list(customer: customer.id, limit: 1).data
     subscription = subscriptions.first
 
+    
     if subscription
       payment_method_id = subscription.default_payment_method
       payment_method = payment_method_id ? Stripe::PaymentMethod.retrieve(payment_method_id) : nil
@@ -167,6 +168,8 @@ class StripeController < ApplicationController
         last4: payment_method ? payment_method.card.last4 : nil,
         current_period_end: current_period_end,
         subscribed_at: subscribed_at,
+        price: price ? price.unit_amount : nil,
+        currency: price ? price.currency : nil,
         status: subscription.status
       }
     else
