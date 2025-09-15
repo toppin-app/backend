@@ -26,6 +26,8 @@ class StripeController < ApplicationController
     render json: { publishable_key: ENV['STRIPE_PUBLISHABLE_KEY'] }
   end
 
+  
+
   # Endpoint para crear la sesión de pago (incluye comprobación/creación de customer)
   def create_payment_session
     product_key = params[:product_id]
@@ -125,6 +127,7 @@ class StripeController < ApplicationController
         product_key: product_key
       }
     end
+
   rescue Stripe::StripeError => e
     render json: { error: e.message }, status: :bad_request
   end
@@ -144,13 +147,17 @@ class StripeController < ApplicationController
       payment_method_id = subscription.default_payment_method
       payment_method = payment_method_id ? Stripe::PaymentMethod.retrieve(payment_method_id) : nil
 
+      # current_period_end está en subscription.items.data[0]
+      item = subscription.items.data.first
+      current_period_end = item ? Time.at(item.current_period_end) : nil
+
       render json: {
         active: subscription.status == "active",
         will_renew: !subscription.cancel_at_period_end,
-        subscription_name: subscription.items.data.first.price.nickname,
+        subscription_name: item&.price&.nickname,
         payment_method: payment_method ? payment_method.card.brand : nil,
         last4: payment_method ? payment_method.card.last4 : nil,
-        current_period_end: Time.at(subscription.current_period_end),
+        current_period_end: current_period_end,
         status: subscription.status
       }
     else
