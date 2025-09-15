@@ -147,7 +147,6 @@ class StripeController < ApplicationController
       payment_method_id = subscription.default_payment_method
       payment_method = payment_method_id ? Stripe::PaymentMethod.retrieve(payment_method_id) : nil
 
-      # current_period_end está en subscription.items.data[0]
       item = subscription.items.data.first
       price = item&.price
       subscription_name = price&.nickname
@@ -156,6 +155,9 @@ class StripeController < ApplicationController
         product = Stripe::Product.retrieve(price.product)
         subscription_name = product.name
       end
+
+      # Definir current_period_end correctamente
+      current_period_end = item ? Time.at(item.current_period_end) : nil
 
       render json: {
         active: subscription.status == "active",
