@@ -149,12 +149,18 @@ class StripeController < ApplicationController
 
       # current_period_end está en subscription.items.data[0]
       item = subscription.items.data.first
-      current_period_end = item ? Time.at(item.current_period_end) : nil
+      price = item&.price
+      subscription_name = price&.nickname
+
+      if subscription_name.blank? && price&.product
+        product = Stripe::Product.retrieve(price.product)
+        subscription_name = product.name
+      end
 
       render json: {
         active: subscription.status == "active",
         will_renew: !subscription.cancel_at_period_end,
-        subscription_name: item&.price&.nickname,
+        subscription_name: subscription_name,
         payment_method: payment_method ? payment_method.card.brand : nil,
         last4: payment_method ? payment_method.card.last4 : nil,
         current_period_end: current_period_end,
