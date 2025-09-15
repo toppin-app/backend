@@ -128,4 +128,35 @@ class StripeController < ApplicationController
   rescue Stripe::StripeError => e
     render json: { error: e.message }, status: :bad_request
   end
+
+  def subscription_status
+    user = current_user
+    email = user.email
+
+    customers = Stripe::Customer.list(email: email).data
+    customer = customers.find { |c| c.email == email }
+    return render json: { error: "Customer not found" }, status: :not_found unless customer
+
+    subscriptions = Stripe::Subscription.list(customer: customer.id, limit: 1).data
+    subscription = subscriptions.first
+
+    if subscription
+      payment_method_id = subscription.default_payment_method
+      payment_method = payment_method_id ? Stripe::PaymentMethod.retrieve(payment_method_id) : nil
+
+      render json: {
+        active: subscription.status == "active",
+        will_renew: !subscription.cancel_at_period_end,
+        subscription_name: subscription.items.data.first.price.nickname,
+        payment_method: payment_method ? payment_method.card.brand : nil,
+        last4: payment_method ? payment_method.card.last4 : nil,
+        current_period_end: Time.at(subscription.current_period_end),
+        status: subscription.status
+      }
+    else
+      render json: { active: false, subscription_name: nil }
+    end
+  end
+
+  
 end
