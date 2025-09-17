@@ -1034,18 +1034,19 @@ def available_publis
   Rails.logger.info "Available publis IDs: #{available_publis.map(&:id).inspect}"
 
   if available_publis.any?
-    # Crear registros en la base de datos para todas las publis disponibles
-    available_publis.each do |publi|
-      user_publi = current_user.user_publis.find_or_initialize_by(publi_id: publi.id)
-      user_publi.viewed = false # Siempre resetear a false cuando aparecen disponibles
-      user_publi.save!
+    # Devolver toda la lista de publis disponibles con la URL base
+    publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
+    
+    # Agregar la URL base a cada publi
+    publis_with_url = available_publis.as_json.map do |publi|
+      publi.merge("base_url" => base_url)
     end
-
-    # Devolver toda la lista de publis disponibles
+    
     render json: {
       status: 200,
-      publis: available_publis.as_json,
-      count: available_publis.count
+      publis: publis_with_url,
+      count: available_publis.count,
+      publi_url: publi_url
     }
   else
     render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
