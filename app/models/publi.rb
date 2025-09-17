@@ -1,6 +1,8 @@
 class Publi < ApplicationRecord
 	  mount_uploader :image, ImageUploader
 	  mount_uploader :video, ImageUploader
+		has_many :user_publis, dependent: :destroy
+		has_many :viewers, through: :user_publis, source: :user
 	  scope :active_date, -> { where("start_date < ? AND end_date > ?", DateTime.now, DateTime.now) }
 	  scope :active_time, -> { where("start_time < NOW() AND end_time > NOW()") }
 

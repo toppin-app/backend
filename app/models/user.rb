@@ -13,6 +13,8 @@ class User < ApplicationRecord
   has_one :user_filter_preference, dependent: :destroy
   has_many :user_info_item_values, dependent: :destroy
   has_many :purchases, dependent: :destroy
+  has_many :user_publis, dependent: :destroy
+  has_many :viewed_publis, through: :user_publis, source: :publi
   has_many :user_vip_unlocks, dependent: :destroy
   has_many :spotify_user_data, dependent: :destroy
   has_many :tmdb_user_data, class_name: 'TmdbUserDatum', foreign_key: :user_id, dependent: :destroy

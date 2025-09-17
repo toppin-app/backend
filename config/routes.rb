@@ -81,6 +81,8 @@ Rails.application.routes.draw do
 
   # Update usuario desde la app
   put '/users/:id' => 'users#update'
+  get 'users/available_publis', to: 'users#available_publis'
+  put 'users/mark_publi_viewed', to: 'users#mark_publi_viewed'
 
   # Eliminar cuenta usuario
   post '/delete_account' => 'users#delete_account'
