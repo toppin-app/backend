@@ -1016,7 +1016,7 @@ render json: {
 # GET /users/available_publis
 def available_publis
   # Obtener IDs de publis ya vistas por el usuario
-  viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id)
+  viewed_publi_ids = current_user.users_publis.where(viewed: true).pluck(:publi_id)
   
   # Si no ha visto ninguna, devolver una aleatoria de todas las disponibles
   if viewed_publi_ids.empty?
