@@ -1039,9 +1039,7 @@ def available_publis
 
     render json: {
       status: 200,
-      publis: available_publis.as_json,
-      count: available_publis.count,
-      publi_url: publi_url
+      publis: available_publis.as_json.map { |publi| publi.merge("image_url" => "#{publi_url}#{publi['image_url']}") }
     }
   else
     render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
