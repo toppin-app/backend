@@ -1037,10 +1037,6 @@ def available_publis
     # Devolver toda la lista de publis disponibles con la URL base
     publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
     
-    # Agregar la URL base a cada publi
-    publis_with_url = available_publis.as_json.map do |publi|
-      publi.merge("base_url" => base_url)
-    end
     
     render json: {
       status: 200,
