@@ -1017,12 +1017,21 @@ render json: {
 def available_publis
   viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id)
 
+  Rails.logger.info "=== DEBUG PUBLIS ==="
+  Rails.logger.info "Viewed publis: #{viewed_publi_ids.inspect}"
+
   if viewed_publi_ids.empty?
     available_publis = Publi.active_now
+    Rails.logger.info "Primera vez - publis totales: #{available_publis.count}"
   else
     last_viewed_publi_id = current_user.user_publis.where(viewed: true).order(created_at: :desc).first.publi_id
-    available_publis = Publi.active_now.where.not(id: last_viewed_publi_id)
+    Rails.logger.info "Last viewed publi ID: #{last_viewed_publi_id}"
+    all_active = Publi.active_now
+    available_publis = all_active.reject { |publi| publi.id == last_viewed_publi_id }
+    Rails.logger.info "Publis activas totales: #{all_active.count}, disponibles: #{available_publis.count}"
   end
+
+  Rails.logger.info "Available publis IDs: #{available_publis.map(&:id).inspect}"
 
   if available_publis.any?
     # Crear registros en la base de datos para todas las publis disponibles
