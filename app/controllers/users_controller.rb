@@ -1036,8 +1036,11 @@ def available_publis
   if available_publis.any?
     # Devolver toda la lista de publis disponibles con la URL base
     publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
-    
-    
+
+    publis_with_url = available_publis.as_json.map do |publi|
+      publi.merge("publi_url" => "#{publi_url}/publis/#{publi['id']}")
+    end
+
     render json: {
       status: 200,
       publis: publis_with_url,
