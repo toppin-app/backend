@@ -682,6 +682,16 @@ end
 
   # User swipes, la madre del cordero. El que te devuelve todos los usuarios.
   def user_swipes
+
+    
+    if current_user.show_publi
+       @publis = Publi.active_now
+    else
+      @publis = []
+    end
+
+    Rails.logger.info @publis.inspect
+
       # IDs de usuarios ocultos
     hidden_user_ids = User.where(hidden_by_user: true).pluck(:id)
 
@@ -941,9 +951,8 @@ render json: {
       :tmdb_user_data,
       :tmdb_user_series_data # <-- añade esto
     ]
-  )
-}
-    
+  )}
+
 =begin
 
     @users = User.where(id: user_ids).where.not(id: current_user_id)
