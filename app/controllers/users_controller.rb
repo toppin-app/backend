@@ -1024,10 +1024,20 @@ def available_publis
     available_publis = Publi.active_now.where.not(id: last_viewed_publi_id)
   end
 
-  random_publi = available_publis.sample
+  if available_publis.any?
+    # Crear registros en la base de datos para todas las publis disponibles
+    available_publis.each do |publi|
+      current_user.user_publis.find_or_create_by(publi_id: publi.id) do |user_publi|
+        user_publi.viewed = false # Inicialmente no vistas
+      end
+    end
 
-  if random_publi
-    render json: random_publi.as_json
+    # Devolver toda la lista de publis disponibles
+    render json: {
+      status: 200,
+      publis: available_publis.as_json,
+      count: available_publis.count
+    }
   else
     render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
   end
@@ -1042,23 +1052,21 @@ def mark_publi_viewed
     return
   end
 
-  viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id)
-
-  if viewed_publi_ids.empty?
-    available_publis = Publi.active_now
-  else
-    last_viewed_publi_id = current_user.user_publis.where(viewed: true).order(created_at: :desc).first.publi_id
-    available_publis = Publi.active_now.where.not(id: last_viewed_publi_id)
+  publi_id = params[:publi_id]
+  
+  unless publi_id
+    render json: { status: 400, message: "publi_id es requerido" }, status: 400
+    return
   end
 
-  current_publi = available_publis.sample
-
-  if current_publi
-    user_publi = current_user.user_publis.find_or_create_by(publi_id: current_publi.id)
+  # Buscar el registro existente y marcarlo como visto
+  user_publi = current_user.user_publis.find_by(publi_id: publi_id)
+  
+  if user_publi
     user_publi.update(viewed: true)
     render json: { status: 200, message: "Publi marcada como vista" }
   else
-    render json: { status: 400, message: "No hay publis para marcar" }
+    render json: { status: 404, message: "Publi no encontrada para este usuario" }, status: 404
   end
 end
   # High popularity profiles (vip toppins)
