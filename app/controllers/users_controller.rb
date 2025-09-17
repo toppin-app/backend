@@ -1040,6 +1040,12 @@ end
 # PUT /users/mark_publi_viewed  
 def mark_publi_viewed
   # Obtener la última publi mostrada al usuario
+   Rails.logger.info "Current user: #{current_user.inspect}"
+  
+  unless current_user
+    render json: { status: 401, message: "Usuario no autenticado" }, status: 401
+    return
+  end
   viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id)
   
   if viewed_publi_ids.empty?
