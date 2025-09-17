@@ -1036,9 +1036,9 @@ def available_publis
   if available_publis.any?
     # Crear registros en la base de datos para todas las publis disponibles
     available_publis.each do |publi|
-      current_user.user_publis.find_or_create_by(publi_id: publi.id) do |user_publi|
-        user_publi.viewed = false # Inicialmente no vistas
-      end
+      user_publi = current_user.user_publis.find_or_initialize_by(publi_id: publi.id)
+      user_publi.viewed = false # Siempre resetear a false cuando aparecen disponibles
+      user_publi.save!
     end
 
     # Devolver toda la lista de publis disponibles
