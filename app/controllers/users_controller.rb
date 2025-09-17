@@ -1023,7 +1023,7 @@ def available_publis
     available_publis = Publi.active_now
   else
     # Si ya ha visto algunas, excluir la última vista
-    last_viewed_publi_id = current_user.user_publis.where(viewed: true).order(created_at: :desc).first.publi_id
+    last_viewed_publi_id = current_user.users_publis.where(viewed: true).order(created_at: :desc).first.publi_id
     available_publis = Publi.active_now.where.not(id: last_viewed_publi_id)
   end
   
@@ -1046,21 +1046,21 @@ def mark_publi_viewed
     render json: { status: 401, message: "Usuario no autenticado" }, status: 401
     return
   end
-  viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id)
+  viewed_publi_ids = current_user.users_publis.where(viewed: true).pluck(:publi_id)
   
   if viewed_publi_ids.empty?
     # Primera vez: marcar una publi aleatoria como vista
     available_publis = Publi.active_now
   else
     # No es la primera vez: obtener publis disponibles excluyendo la última vista
-    last_viewed_publi_id = current_user.user_publis.where(viewed: true).order(created_at: :desc).first.publi_id
+    last_viewed_publi_id = current_user.users_publis.where(viewed: true).order(created_at: :desc).first.publi_id
     available_publis = Publi.active_now.where.not(id: last_viewed_publi_id)
   end
   
   current_publi = available_publis.sample
   
   if current_publi
-    user_publi = current_user.user_publis.find_or_create_by(publi_id: current_publi.id)
+    user_publi = current_user.users_publis.find_or_create_by(publi_id: current_publi.id)
     user_publi.update(viewed: true)
     render json: { status: 200, message: "Publi marcada como vista" }
   else
