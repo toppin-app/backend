@@ -1013,29 +1013,25 @@ render json: {
     # render json: @users.as_json(methods: [:user_age, :user_media_url], :include => [:user_media])
   end
 
-# GET /users/available_publis
-def available_publis
-  # Obtener IDs de publis ya vistas por el usuario
-  viewed_publi_ids = current_user.users_publis.where(viewed: true).pluck(:publi_id)
-  
-  # Si no ha visto ninguna, devolver una aleatoria de todas las disponibles
-  if viewed_publi_ids.empty?
-    available_publis = Publi.active_now
-  else
-    # Si ya ha visto algunas, excluir la última vista
-    last_viewed_publi_id = current_user.users_publis.where(viewed: true).order(created_at: :desc).first.publi_id
-    available_publis = Publi.active_now.where.not(id: last_viewed_publi_id)
+  # GET /users/available_publis
+  def available_publis
+    viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id)
+
+    if viewed_publi_ids.empty?
+      available_publis = Publi.active_now
+    else
+      last_viewed_publi_id = current_user.user_publis.where(viewed: true).order(created_at: :desc).first.publi_id
+      available_publis = Publi.active_now.where.not(id: last_viewed_publi_id)
+    end
+
+    random_publi = available_publis.sample
+
+    if random_publi
+      render json: random_publi.as_json
+    else
+      render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
+    end
   end
-  
-  # Seleccionar una publi aleatoria
-  random_publi = available_publis.sample
-  
-  if random_publi
-    render json: random_publi.as_json
-  else
-    render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
-  end
-end
 
 # PUT /users/mark_publi_viewed  
 def mark_publi_viewed
