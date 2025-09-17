@@ -1034,14 +1034,12 @@ def available_publis
   Rails.logger.info "Available publis IDs: #{available_publis.map(&:id).inspect}"
 
   if available_publis.any?
-    # Devolver toda la lista de publis disponibles con la URL base
-    publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
-
-
+    # Devolver toda la lista de publis disponibles
+        publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
 
     render json: {
       status: 200,
-      publis: publis_with_url,
+      publis: available_publis.as_json,
       count: available_publis.count,
       publi_url: publi_url
     }
