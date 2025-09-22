@@ -1045,12 +1045,11 @@ def available_publis
   Rails.logger.info "Available publis IDs finales: #{available_publis.map(&:id).inspect}"
 
   if available_publis.any?
-    # Crear registros pendientes de marcar para las publis disponibles
-    available_publis.each do |publi|
-      # Solo crear el registro si no existe ya uno pendiente para esta publi
-      unless current_user.user_publis.exists?(publi_id: publi.id, viewed: false)
-        current_user.user_publis.create(publi_id: publi.id, viewed: false)
-      end
+    # Crear SOLO un registro para la PRIMERA publi de la lista (la que se mostrará al usuario)
+    first_publi = available_publis.first
+    unless current_user.user_publis.exists?(publi_id: first_publi.id, viewed: false)
+      current_user.user_publis.create(publi_id: first_publi.id, viewed: false)
+      Rails.logger.info "Registro creado para la primera publi: #{first_publi.id}"
     end
     
     # Devolver toda la lista de publis disponibles
@@ -1086,6 +1085,9 @@ def mark_publi_viewed
   last_viewed_record.update(viewed: true)
   
   Rails.logger.info "Registro marcado como visto: #{last_viewed_record.inspect}"
+  
+  # Crear el siguiente registro pendiente si hay más publis disponibles
+  create_next_pending_record
   
   if last_viewed_record.viewed?
     # Contar cuántas veces ha visto esta publi específica
@@ -1481,6 +1483,32 @@ end
     end
     def redis
       @redis ||= Redis.new(url: ENV["REDIS_URL"])
+    end
+    
+    def create_next_pending_record
+      # Lógica similar a available_publis para determinar la siguiente publi
+      last_viewed_record = current_user.user_publis.where(viewed: true).order(created_at: :desc).first
+      last_viewed_publi_id = last_viewed_record&.publi_id
+
+      all_active = Publi.active_now
+
+      if last_viewed_publi_id.nil?
+        available_publis = all_active
+      else
+        available_publis = all_active.reject { |publi| publi.id == last_viewed_publi_id }
+        if available_publis.empty?
+          available_publis = all_active
+        end
+      end
+
+      # Crear registro para la primera publi disponible si no existe uno pendiente
+      if available_publis.any?
+        first_publi = available_publis.first
+        unless current_user.user_publis.exists?(publi_id: first_publi.id, viewed: false)
+          current_user.user_publis.create(publi_id: first_publi.id, viewed: false)
+          Rails.logger.info "Siguiente registro creado para publi: #{first_publi.id}"
+        end
+      end
     end
     end
 
