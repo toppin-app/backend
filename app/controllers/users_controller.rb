@@ -1117,6 +1117,60 @@ def mark_publi_viewed
   end
 end
 
+# GET /users/get_banner
+def get_banner
+  Rails.logger.info "=== GET BANNER REQUEST ==="
+  Rails.logger.info "Current user: #{current_user.id}"
+
+  unless current_user
+    render json: { status: 401, message: "Usuario no autenticado" }, status: 401
+    return
+  end
+
+  # Obtener todos los banners activos y vigentes
+  active_banners = Banner.active_now
+  Rails.logger.info "Banners activos: #{active_banners.map(&:id).inspect}"
+
+  if active_banners.empty?
+    render json: { status: 404, message: "No hay banners disponibles" }, status: 404
+    return
+  end
+
+  # Obtener banners que el usuario NO ha visto
+  viewed_banner_ids = current_user.banner_users.pluck(:banner_id)
+  unseen_banners = active_banners.where.not(id: viewed_banner_ids)
+  
+  Rails.logger.info "Banners no vistos: #{unseen_banners.map(&:id).inspect}"
+
+  # Si no hay banners sin ver, tomar uno aleatorio de todos los activos
+  banner_to_show = if unseen_banners.any?
+                     unseen_banners.sample
+                   else
+                     active_banners.sample
+                   end
+
+  Rails.logger.info "Banner seleccionado: #{banner_to_show.id}"
+
+  # Marcar automáticamente como visto
+  banner_to_show.mark_as_viewed_by(current_user)
+  Rails.logger.info "Banner marcado como visto para usuario #{current_user.id}"
+
+  # Construir URL completa de la imagen
+  banner_url = "https://web-backend-ruby.uao3jo.easypanel.host"
+  
+  render json: {
+    status: 200,
+    banner: {
+      id: banner_to_show.id,
+      title: banner_to_show.title,
+      description: banner_to_show.description,
+      image_url: "#{banner_url}#{banner_to_show.image_url}",
+      url: banner_to_show.url,
+      viewed_at: Time.current
+    }
+  }
+end
+
   # High popularity profiles (vip toppins)
 def get_vip_toppins
 
@@ -1494,37 +1548,6 @@ end
     end
     def redis
       @redis ||= Redis.new(url: ENV["REDIS_URL"])
-    end
-    
-    def create_next_pending_record
-      all_active = Publi.active_now
-      return if all_active.empty?
-
-      # Obtener todas las publis vistas por el usuario (únicas)
-      viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id).uniq
-
-      # Si el usuario ha visto todas las publis disponibles, reiniciar el ciclo
-      if viewed_publi_ids.sort == all_active.map(&:id).sort
-        Rails.logger.info "Reiniciando ciclo en create_next_pending_record"
-        available_publis = all_active
-      else
-        # Mostrar solo las publis que NO ha visto
-        available_publis = all_active.reject { |publi| viewed_publi_ids.include?(publi.id) }
-        
-        # Si no hay publis no vistas (caso edge), mostrar todas
-        if available_publis.empty?
-          available_publis = all_active
-        end
-      end
-
-      # Crear registro para la primera publi disponible si no existe uno pendiente
-      if available_publis.any?
-        first_publi = available_publis.first
-        unless current_user.user_publis.exists?(publi_id: first_publi.id, viewed: false)
-          current_user.user_publis.create(publi_id: first_publi.id, viewed: false)
-          Rails.logger.info "Siguiente registro creado para publi: #{first_publi.id}"
-        end
-      end
     end
     end
 
