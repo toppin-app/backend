@@ -1015,8 +1015,10 @@ render json: {
 
 # GET /users/available_publis
 def available_publis
-  all_active = Publi.active_now
   Rails.logger.info "=== DEBUG PUBLIS ==="
+  
+  # 1. Ver la lista de publicidades disponibles
+  all_active = Publi.active_now
   Rails.logger.info "Todas las publis activas: #{all_active.map(&:id).inspect}"
 
   if all_active.empty?
@@ -1024,80 +1026,93 @@ def available_publis
     return
   end
 
-  # Obtener todas las publis vistas por el usuario (únicas)
-  viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id).uniq
-  Rails.logger.info "Publis vistas por el usuario: #{viewed_publi_ids.inspect}"
+  # 2. Comprobar registros pendientes (sin vista) del usuario
+  pending_records = current_user.user_publis.where(viewed: false)
+  pending_publi_ids = pending_records.pluck(:publi_id)
+  Rails.logger.info "Registros pendientes: #{pending_publi_ids.inspect}"
 
-  # Si el usuario ha visto todas las publis disponibles, reiniciar el ciclo
-  if viewed_publi_ids.sort == all_active.map(&:id).sort
-    Rails.logger.info "Usuario ha visto todas las publis, reiniciando ciclo"
-    available_publis = all_active
-  else
-    # Mostrar solo las publis que NO ha visto
-    available_publis = all_active.reject { |publi| viewed_publi_ids.include?(publi.id) }
-    Rails.logger.info "Publis no vistas: #{available_publis.map(&:id).inspect}"
+  # 3. Crear registros para publicidades que no los tengan + actualizar fechas de los existentes
+  all_active.each do |publi|
+    existing_record = current_user.user_publis.find_by(publi_id: publi.id, viewed: false)
     
-    # Si no hay publis no vistas (caso edge), mostrar todas
-    if available_publis.empty?
-      available_publis = all_active
-      Rails.logger.info "No hay publis no vistas, mostrando todas"
+    if existing_record
+      # Si ya existe, actualizar fecha
+      existing_record.update(updated_at: Time.current)
+      Rails.logger.info "Actualizada fecha del registro para publi #{publi.id}"
+    else
+      # Si no existe, crear nuevo registro
+      current_user.user_publis.create(publi_id: publi.id, viewed: false)
+      Rails.logger.info "Creado nuevo registro para publi #{publi.id}"
     end
   end
 
-  # Crear SOLO un registro para la PRIMERA publi de la lista (la que se mostrará al usuario)
-  first_publi = available_publis.first
-  unless current_user.user_publis.exists?(publi_id: first_publi.id, viewed: false)
-    current_user.user_publis.create(publi_id: first_publi.id, viewed: false)
-    Rails.logger.info "Registro creado para la primera publi: #{first_publi.id}"
-  end
+  # 4. Ordenar de manera aleatoria pero con la última vista al final
+  last_viewed_record = current_user.user_publis.where(viewed: true).order(updated_at: :desc).first
+  last_viewed_publi_id = last_viewed_record&.publi_id
+  Rails.logger.info "Última publi vista: #{last_viewed_publi_id}"
+
+  # Separar la última vista del resto
+  other_publis = all_active.reject { |publi| publi.id == last_viewed_publi_id }
+  last_viewed_publi = all_active.find { |publi| publi.id == last_viewed_publi_id }
+
+  # Mezclar las otras de forma aleatoria
+  shuffled_publis = other_publis.shuffle
+
+  # Agregar la última vista al final (si existe)
+  ordered_publis = last_viewed_publi ? shuffled_publis + [last_viewed_publi] : shuffled_publis
   
-  # Devolver toda la lista de publis disponibles
+  Rails.logger.info "Orden final de publis: #{ordered_publis.map(&:id).inspect}"
+
+  # 5. Enviar las publicidades al front
   publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
 
   render json: {
     status: 200,
-    publis: available_publis.as_json.map { |publi| publi.merge("image_url" => "#{publi_url}#{publi['image_url']}")}
+    publis: ordered_publis.as_json.map { |publi| publi.merge("image_url" => "#{publi_url}#{publi['image_url']}")}
   }
 end
-
+ 
 # PUT /users/mark_publi_viewed  
 def mark_publi_viewed
   Rails.logger.info "Current user: #{current_user.inspect}"
+  Rails.logger.info "Publi ID recibido: #{params[:publi_id]}"
 
   unless current_user
     render json: { status: 401, message: "Usuario no autenticado" }, status: 401
     return
   end
 
-  # Obtener la última publi vista (el último registro creado sin marcar como viewed)
-  last_viewed_record = current_user.user_publis.where(viewed: false).order(created_at: :desc).first
-  
-  unless last_viewed_record
-    render json: { status: 404, message: "No hay publis pendientes de marcar como vistas" }, status: 404
+  unless params[:publi_id]
+    render json: { status: 400, message: "publi_id es requerido" }, status: 400
     return
   end
 
-  # Marcar como vista el último registro
-  last_viewed_record.update(viewed: true)
+  # Buscar el registro específico de esta publi para este usuario
+  user_publi_record = current_user.user_publis.find_by(publi_id: params[:publi_id], viewed: false)
   
-  Rails.logger.info "Registro marcado como visto: #{last_viewed_record.inspect}"
+  unless user_publi_record
+    render json: { status: 404, message: "No se encontró registro pendiente para esta publi" }, status: 404
+    return
+  end
+
+  # Marcar como vista el registro específico y actualizar fecha
+  user_publi_record.update(viewed: true, updated_at: Time.current)
   
-  # Crear el siguiente registro pendiente si hay más publis disponibles
-  create_next_pending_record
+  Rails.logger.info "Registro marcado como visto: #{user_publi_record.inspect}"
   
-  if last_viewed_record.viewed?
+  if user_publi_record.viewed?
     # Contar cuántas veces ha visto esta publi específica
-    view_count = current_user.user_publis.where(publi_id: last_viewed_record.publi_id, viewed: true).count
-    Rails.logger.info "Usuario #{current_user.id} ha visto la publi #{last_viewed_record.publi_id} un total de #{view_count} veces"
+    view_count = current_user.user_publis.where(publi_id: params[:publi_id], viewed: true).count
+    Rails.logger.info "Usuario #{current_user.id} ha visto la publi #{params[:publi_id]} un total de #{view_count} veces"
     
     render json: { 
       status: 200, 
       message: "Publi marcada como vista", 
-      publi_id: last_viewed_record.publi_id,
+      publi_id: params[:publi_id].to_i,
       view_count: view_count 
     }
   else
-    Rails.logger.error "Error marcando registro como visto: #{last_viewed_record.errors.inspect}"
+    Rails.logger.error "Error marcando registro como visto: #{user_publi_record.errors.inspect}"
     render json: { status: 500, message: "Error al marcar el registro como visto" }, status: 500
   end
 end
