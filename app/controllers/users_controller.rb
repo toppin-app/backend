@@ -1015,53 +1015,49 @@ render json: {
 
 # GET /users/available_publis
 def available_publis
-  # Obtener la última publi vista (el último registro creado)
-  last_viewed_record = current_user.user_publis.where(viewed: true).order(created_at: :desc).first
-  last_viewed_publi_id = last_viewed_record&.publi_id
-
-  Rails.logger.info "=== DEBUG PUBLIS ==="
-  Rails.logger.info "Último registro visto: #{last_viewed_record&.inspect}"
-  Rails.logger.info "Última publi vista ID: #{last_viewed_publi_id}"
-
   all_active = Publi.active_now
+  Rails.logger.info "=== DEBUG PUBLIS ==="
   Rails.logger.info "Todas las publis activas: #{all_active.map(&:id).inspect}"
 
-  if last_viewed_publi_id.nil?
-    # Primera vez: mostrar todas las publis activas
+  if all_active.empty?
+    render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
+    return
+  end
+
+  # Obtener todas las publis vistas por el usuario (únicas)
+  viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id).uniq
+  Rails.logger.info "Publis vistas por el usuario: #{viewed_publi_ids.inspect}"
+
+  # Si el usuario ha visto todas las publis disponibles, reiniciar el ciclo
+  if viewed_publi_ids.sort == all_active.map(&:id).sort
+    Rails.logger.info "Usuario ha visto todas las publis, reiniciando ciclo"
     available_publis = all_active
-    Rails.logger.info "Primera vez - publis totales: #{available_publis.count}"
   else
-    # Ya ha visto algunas: excluir solo la última vista
-    available_publis = all_active.reject { |publi| publi.id == last_viewed_publi_id }
-    Rails.logger.info "Publis disponibles (sin la última vista): #{available_publis.count}"
+    # Mostrar solo las publis que NO ha visto
+    available_publis = all_active.reject { |publi| viewed_publi_ids.include?(publi.id) }
+    Rails.logger.info "Publis no vistas: #{available_publis.map(&:id).inspect}"
     
-    # Si no hay publis disponibles (solo queda la última vista), mostrar todas de nuevo
+    # Si no hay publis no vistas (caso edge), mostrar todas
     if available_publis.empty?
       available_publis = all_active
-      Rails.logger.info "No hay publis disponibles, mostrando todas - publis totales: #{available_publis.count}"
+      Rails.logger.info "No hay publis no vistas, mostrando todas"
     end
   end
 
-  Rails.logger.info "Available publis IDs finales: #{available_publis.map(&:id).inspect}"
-
-  if available_publis.any?
-    # Crear SOLO un registro para la PRIMERA publi de la lista (la que se mostrará al usuario)
-    first_publi = available_publis.first
-    unless current_user.user_publis.exists?(publi_id: first_publi.id, viewed: false)
-      current_user.user_publis.create(publi_id: first_publi.id, viewed: false)
-      Rails.logger.info "Registro creado para la primera publi: #{first_publi.id}"
-    end
-    
-    # Devolver toda la lista de publis disponibles
-    publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
-
-    render json: {
-      status: 200,
-      publis: available_publis.as_json.map { |publi| publi.merge("image_url" => "#{publi_url}#{publi['image_url']}")}
-    }
-  else
-    render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
+  # Crear SOLO un registro para la PRIMERA publi de la lista (la que se mostrará al usuario)
+  first_publi = available_publis.first
+  unless current_user.user_publis.exists?(publi_id: first_publi.id, viewed: false)
+    current_user.user_publis.create(publi_id: first_publi.id, viewed: false)
+    Rails.logger.info "Registro creado para la primera publi: #{first_publi.id}"
   end
+  
+  # Devolver toda la lista de publis disponibles
+  publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
+
+  render json: {
+    status: 200,
+    publis: available_publis.as_json.map { |publi| publi.merge("image_url" => "#{publi_url}#{publi['image_url']}")}
+  }
 end
 
 # PUT /users/mark_publi_viewed  
@@ -1486,16 +1482,21 @@ end
     end
     
     def create_next_pending_record
-      # Lógica similar a available_publis para determinar la siguiente publi
-      last_viewed_record = current_user.user_publis.where(viewed: true).order(created_at: :desc).first
-      last_viewed_publi_id = last_viewed_record&.publi_id
-
       all_active = Publi.active_now
+      return if all_active.empty?
 
-      if last_viewed_publi_id.nil?
+      # Obtener todas las publis vistas por el usuario (únicas)
+      viewed_publi_ids = current_user.user_publis.where(viewed: true).pluck(:publi_id).uniq
+
+      # Si el usuario ha visto todas las publis disponibles, reiniciar el ciclo
+      if viewed_publi_ids.sort == all_active.map(&:id).sort
+        Rails.logger.info "Reiniciando ciclo en create_next_pending_record"
         available_publis = all_active
       else
-        available_publis = all_active.reject { |publi| publi.id == last_viewed_publi_id }
+        # Mostrar solo las publis que NO ha visto
+        available_publis = all_active.reject { |publi| viewed_publi_ids.include?(publi.id) }
+        
+        # Si no hay publis no vistas (caso edge), mostrar todas
         if available_publis.empty?
           available_publis = all_active
         end
