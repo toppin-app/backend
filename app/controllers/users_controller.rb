@@ -1155,19 +1155,12 @@ def get_banner
   banner_to_show.mark_as_viewed_by(current_user)
   Rails.logger.info "Banner marcado como visto para usuario #{current_user.id}"
 
-  # Construir URL completa de la imagen
+  # URL base igual que en available_publis
   banner_url = "https://web-backend-ruby.uao3jo.easypanel.host"
-  
+
   render json: {
     status: 200,
-    banner: {
-      id: banner_to_show.id,
-      title: banner_to_show.title,
-      description: banner_to_show.description,
-      image_url: "#{banner_url}#{banner_to_show.image_url}",
-      url: banner_to_show.url,
-      viewed_at: Time.current
-    }
+    banner: banner_to_show.as_json.merge("image_url" => "#{banner_url}#{banner_to_show.image.url}")
   }
 end
 

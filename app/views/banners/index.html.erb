@@ -24,8 +24,8 @@
     <% @banners.each do |banner| %>
       <tr>
         <td>
-          <% if banner.image_url.present? %>
-            <%= image_tag banner.image_url, style: 'height: 60px;', class: 'img-thumbnail' %>
+          <% if banner.image? %>
+            <%= image_tag banner.image.thumb.url, style: 'height: 60px;', class: 'img-thumbnail' %>
           <% else %>
             <i class="fas fa-image" style="font-size: 40px; color: #ccc;"></i>
           <% end %>

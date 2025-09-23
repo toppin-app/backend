@@ -2,8 +2,10 @@ class Banner < ApplicationRecord
   has_many :banner_users, dependent: :destroy
   has_many :users, through: :banner_users
 
+  # Agregar CarrierWave para subir archivos
+  mount_uploader :image, ImageUploader
+
   validates :title, presence: true
-  validates :image_url, presence: true
   validates :url, presence: true
 
   scope :active, -> { where(active: true) }

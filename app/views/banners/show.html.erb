@@ -37,8 +37,8 @@
         <h5>Vista previa</h5>
       </div>
       <div class="card-body text-center">
-        <% if @banner.image_url.present? %>
-          <%= image_tag @banner.image_url, class: 'img-fluid', style: 'max-height: 300px;' %>
+        <% if @banner.image? %>
+          <%= image_tag @banner.image.url, class: 'img-fluid', style: 'max-height: 300px;' %>
         <% else %>
           <i class="fas fa-image" style="font-size: 80px; color: #ccc;"></i>
           <p class="text-muted">No hay imagen</p>
