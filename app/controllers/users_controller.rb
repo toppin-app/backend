@@ -659,15 +659,16 @@ end
 
 
   # Desactivar publi, solo usuarios premium
-  def toggle_publi
-    if current_user.is_premium
-      current_user.toggle :show_publi
-      current_user.save
-      render json: { status: 200, message: current_user.show_publi }, status: 200
-    else
-      render json: { status: 400, message: "User is not premium" }, status: 400
-    end
+def toggle_publi
+  # Verificar si el usuario tiene suscripción premium o supreme
+  if current_user.current_subscription_name.in?(['premium', 'supreme'])
+    current_user.toggle :show_publi
+    current_user.save
+    render json: { status: 200, message: current_user.show_publi }, status: 200
+  else
+    render json: { status: 400, message: "User is not premium" }, status: 400
   end
+end
 
 
   # Método para reordenar las imágenes de un usuario
