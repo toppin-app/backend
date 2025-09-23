@@ -68,12 +68,20 @@ class StripeWebhooksController < ApplicationController
       purchase&.update(status: "failed")
     when 'customer.subscription.created', 'customer.subscription.updated'
       subscription = event['data']['object']
+      
+      # 🚨 NUEVO: Solo procesar si la suscripción está activa o en trialing
+      unless ['active', 'trialing'].include?(subscription['status'])
+        Rails.logger.info("Stripe Webhook: Skipping subscription #{subscription['id']} with status #{subscription['status']}")
+        head :ok and return
+      end
+      
       email = Stripe::Customer.retrieve(subscription['customer']).email
       user = User.find_by(email: email)
       price_data = subscription['items']['data'][0]['price'] rescue nil
       lookup_key = price_data&.[]('lookup_key')
       config = PRODUCT_CONFIG[lookup_key]
       subscription_name = config&.[](:subscription_name)
+      
       # fallback: if lookup_key starts with 'toppin_premium' or 'toppin_supreme'
       if subscription_name.nil? && lookup_key
         if lookup_key.include?('premium')
@@ -82,8 +90,10 @@ class StripeWebhooksController < ApplicationController
           subscription_name = 'supreme'
         end
       end
+
       # Extrae el periodo de expiración de la suscripción
       expires_at = subscription['current_period_end']
+      
       if user && subscription_name
         if expires_at.present? && expires_at.is_a?(Numeric)
           user.update(
@@ -97,12 +107,16 @@ class StripeWebhooksController < ApplicationController
             current_subscription_expires: Time.current + months.months
           )
         end
+        
         # 👇 Añade likes si es premium/supreme y no tiene
         if user.likes_left == 0
           user.update(likes_left: 1)
         end
+        
         purchase = PurchasesStripe.find_by(payment_id: subscription['latest_invoice'])
         purchase&.update(status: "succeeded")
+        
+        Rails.logger.info("Stripe Webhook: User #{user.id} subscription updated to #{subscription_name} (status: #{subscription['status']})")
       end
     when 'customer.subscription.deleted'
       subscription = event['data']['object']
