@@ -1,0 +1,53 @@
+<br>
+
+<%= link_to 'Añadir banner', new_banner_path, class: 'btn btn-success btn-sm text-white', :"data-turbolinks" => false  %>
+
+<hr>
+
+<div class="card card-body">
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Imagen</th>
+      <th>Título</th>
+      <th>Descripción</th>
+      <th>URL</th>
+      <th>Activo</th>
+      <th>Fecha inicio</th>
+      <th>Fecha fin</th>
+      <th>Vistas</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @banners.each do |banner| %>
+      <tr>
+        <td>
+          <% if banner.image_url.present? %>
+            <%= image_tag banner.image_url, style: 'height: 60px;', class: 'img-thumbnail' %>
+          <% else %>
+            <i class="fas fa-image" style="font-size: 40px; color: #ccc;"></i>
+          <% end %>
+        </td>
+        <td><%= banner.title %></td>
+        <td><%= truncate(banner.description, length: 50) %></td>
+        <td><%= link_to banner.url, banner.url, target: '_blank', class: 'btn btn-sm btn-outline-primary' if banner.url.present? %></td>
+        <td>
+          <% if banner.active? %>
+            <span class="badge badge-success">Activo</span>
+          <% else %>
+            <span class="badge badge-secondary">Inactivo</span>
+          <% end %>
+        </td>
+        <td><%= banner.start_date&.strftime("%d-%m-%Y %H:%M") %></td>
+        <td><%= banner.end_date&.strftime("%d-%m-%Y %H:%M") %></td>
+        <td><%= banner.banner_users.count %></td>
+        <td><%= link_to 'Ver', banner, class: 'btn btn-sm btn-info' %></td>
+        <td><%= link_to 'Editar', edit_banner_path(banner), :"data-turbolinks" => false, class: 'btn btn-sm btn-warning'  %></td>
+        <td><%= link_to 'Eliminar', banner, method: :delete, data: { confirm: '¿Eliminar este banner?' }, class: 'btn btn-sm btn-danger' %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+</div>

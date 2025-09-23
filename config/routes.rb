@@ -24,6 +24,7 @@ Rails.application.routes.draw do
   resources :interests
   resources :interest_categories
   resources :user_media
+  resources :banners
   resources :app_versions, only: [:index, :edit, :update]
   resources :user_watchlists, only: [:create, :show]
 

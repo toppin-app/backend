@@ -1,0 +1,54 @@
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title"><%= @banner.title %></h4>
+        
+        <p><strong>Descripción:</strong></p>
+        <p><%= @banner.description %></p>
+
+        <p><strong>URL:</strong></p>
+        <p><%= link_to @banner.url, @banner.url, target: '_blank' if @banner.url.present? %></p>
+
+        <p><strong>Estado:</strong></p>
+        <p>
+          <% if @banner.active? %>
+            <span class="badge badge-success">Activo</span>
+          <% else %>
+            <span class="badge badge-secondary">Inactivo</span>
+          <% end %>
+        </p>
+
+        <p><strong>Fecha de inicio:</strong></p>
+        <p><%= @banner.start_date&.strftime("%d-%m-%Y %H:%M") || "Sin límite" %></p>
+
+        <p><strong>Fecha de fin:</strong></p>
+        <p><%= @banner.end_date&.strftime("%d-%m-%Y %H:%M") || "Sin límite" %></p>
+
+        <p><strong>Total de visualizaciones:</strong></p>
+        <p><%= @banner.banner_users.count %></p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5>Vista previa</h5>
+      </div>
+      <div class="card-body text-center">
+        <% if @banner.image_url.present? %>
+          <%= image_tag @banner.image_url, class: 'img-fluid', style: 'max-height: 300px;' %>
+        <% else %>
+          <i class="fas fa-image" style="font-size: 80px; color: #ccc;"></i>
+          <p class="text-muted">No hay imagen</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3">
+  <%= link_to 'Editar', edit_banner_path(@banner), class: 'btn btn-warning', :"data-turbolinks" => false  %> |
+  <%= link_to 'Atrás', banners_path, class: 'btn btn-secondary' %>
+</div>
