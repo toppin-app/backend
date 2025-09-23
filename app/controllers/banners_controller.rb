@@ -37,16 +37,11 @@ class BannersController < ApplicationController
 
   # PATCH/PUT /banners/1
   def update
-    Rails.logger.info "=== DEBUG BANNER UPDATE ==="
-    Rails.logger.info "Params recibidos: #{params.inspect}"
-    Rails.logger.info "Banner params permitidos: #{banner_params.inspect}"
-    
     respond_to do |format|
       if @banner.update(banner_params)
         format.html { redirect_to @banner, notice: 'Banner actualizado exitosamente.' }
         format.json { render :show, status: :ok, location: @banner }
       else
-        Rails.logger.error "Errores en banner: #{@banner.errors.inspect}"
         format.html { render :edit }
         format.json { render json: @banner.errors, status: :unprocessable_entity }
       end
@@ -69,9 +64,6 @@ class BannersController < ApplicationController
   end
 
   def banner_params
-    Rails.logger.info "=== BANNER PARAMS DEBUG ==="
-    permitted = params.require(:banner).permit(:title, :description, :image, :url, :active, :start_date, :end_date)
-    Rails.logger.info "Parámetros permitidos: #{permitted.inspect}"
-    permitted
+    params.require(:banner).permit(:title, :description, :image, :url, :active, :start_date, :end_date)
   end
 end

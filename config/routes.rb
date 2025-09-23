@@ -55,8 +55,8 @@ Rails.application.routes.draw do
     # Rutas para publicidad
   get 'users/available_publis', to: 'users#available_publis'
   put 'users/mark_publi_viewed', to: 'users#mark_publi_viewed'
-  get '/users/get_banner', to: 'users#get_banner'
-  
+  get 'users/get_banner', to: 'users#get_banner'
+
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user
   get '/new_user' => 'users#new', as: :new_user
