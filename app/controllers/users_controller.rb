@@ -648,7 +648,34 @@ end
 
   end
 
+  def rollback
+    target_user_id = params[:target_user_id]
+    
+    unless target_user_id.present?
+      render json: { status: 400, message: "target_user_id es requerido" }, status: :bad_request
+      return
+    end
 
+    # Buscar la interacción más reciente del usuario actual con el target_user
+    interaction = UserMatchRequest.where(
+      user_id: current_user.id,
+      target_user: target_user_id
+    ).order(created_at: :desc).first
+
+    unless interaction
+      render json: { status: 404, message: "No se encontró interacción para deshacer" }, status: :not_found
+      return
+    end
+
+    # Eliminar la interacción
+    interaction.destroy
+
+    render json: { 
+      status: 200, 
+      message: "Swipe deshecho correctamente",
+      target_user_id: target_user_id.to_i
+    }
+  end
 
   def toggle_visibility
       current_user.toggle :hidden_by_user
