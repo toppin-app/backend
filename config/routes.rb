@@ -58,7 +58,7 @@ Rails.application.routes.draw do
   get 'users/get_banner', to: 'users#get_banner'
 
   # Rutas para deshacer swipe
-  put 'users/rollback_swipe', to: 'users#rollback_swipe'
+  put 'users/rollback', to: 'users#rollback'
   
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user
