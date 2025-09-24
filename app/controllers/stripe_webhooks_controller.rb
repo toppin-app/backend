@@ -51,10 +51,14 @@ class StripeWebhooksController < ApplicationController
         if config[:field] && config[:increment_value]
           user.increment!(config[:field], config[:increment_value])
         elsif config[:subscription_name] && config[:months]
+          previous_subscription = user.current_subscription_name
           user.update!(\
             current_subscription_name: config[:subscription_name],\
             current_subscription_expires: (Time.current + config[:months].months)
           )
+          
+          # Notificar al frontend sobre el cambio de suscripción
+          notify_subscription_change(user, previous_subscription, config[:subscription_name])
         end
       end
       purchase&.update(status: "succeeded")
@@ -95,6 +99,8 @@ class StripeWebhooksController < ApplicationController
       expires_at = subscription['current_period_end']
       
       if user && subscription_name
+        previous_subscription = user.current_subscription_name
+        
         if expires_at.present? && expires_at.is_a?(Numeric)
           user.update(
             current_subscription_name: subscription_name,
@@ -107,6 +113,9 @@ class StripeWebhooksController < ApplicationController
             current_subscription_expires: Time.current + months.months
           )
         end
+        
+        # Notificar al frontend sobre el cambio de suscripción
+        notify_subscription_change(user, previous_subscription, subscription_name)
         
         # 👇 Añade likes si es premium/supreme y no tiene
         if user.likes_left == 0
@@ -122,8 +131,36 @@ class StripeWebhooksController < ApplicationController
       subscription = event['data']['object']
       email = Stripe::Customer.retrieve(subscription['customer']).email
       user = User.find_by(email: email)
-      user&.update(current_subscription_name: nil, current_subscription_expires: nil)
+      
+      if user
+        previous_subscription = user.current_subscription_name
+        user.update(current_subscription_name: nil, current_subscription_expires: nil)
+        
+        # Notificar al frontend sobre la cancelación de suscripción
+        notify_subscription_change(user, previous_subscription, nil)
+      end
     end
     head :ok
+  end
+  
+  private
+  
+  # Método para notificar al frontend sobre cambios en la suscripción
+  def notify_subscription_change(user, previous_subscription, new_subscription)
+    return unless user
+    
+    if previous_subscription != new_subscription
+      message = {
+        type: 'subscription_change',
+        user_id: user.id,
+        previous_subscription: previous_subscription || "null",
+        new_subscription: new_subscription || "null"
+      }
+      
+      # Enviar mensaje a través del AliveChannel
+      ActionCable.server.broadcast("alive_#{user.id}", message)
+      
+      Rails.logger.info("Subscription change notification sent to user #{user.id}: #{previous_subscription || 'none'} -> #{new_subscription || 'none'}")
+    end
   end
 end
