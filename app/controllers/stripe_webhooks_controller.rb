@@ -158,7 +158,7 @@ class StripeWebhooksController < ApplicationController
       }
       
       # Enviar mensaje a través del AliveChannel
-      ActionCable.server.broadcast("alive_#{user.id}", message)
+      AliveChannel.broadcast_to(user, { type: "subscription_change", message: message })
       
       Rails.logger.info("Subscription change notification sent to user #{user.id}: #{previous_subscription || 'none'} -> #{new_subscription || 'none'}")
     end
