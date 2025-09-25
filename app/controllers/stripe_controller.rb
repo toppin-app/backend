@@ -138,7 +138,22 @@ class StripeController < ApplicationController
 
     customers = Stripe::Customer.list(email: email).data
     customer = customers.find { |c| c.email == email }
-    return render json: { error: "Customer not found" }, status: :not_found unless customer
+    
+    # Si no tiene customer en Stripe, simplemente no tiene suscripción activa
+    unless customer
+      return render json: { 
+        active: false, 
+        subscription_name: nil,
+        will_renew: false,
+        payment_method: nil,
+        last4: nil,
+        current_period_end: nil,
+        subscribed_at: nil,
+        price: nil,
+        currency: nil,
+        status: nil
+      }
+    end
 
     subscriptions = Stripe::Subscription.list(customer: customer.id, limit: 1).data
     subscription = subscriptions.first
