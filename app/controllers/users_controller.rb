@@ -925,6 +925,25 @@ end
     # Filtra los incoming_likes para que no estén en users_to_exclude
     incoming_likes = incoming_likes.reject { |il| users_to_exclude.include?(il) }
 
+    # 🚨 NUEVO: Filtrar incoming_likes por criterios básicos (distancia, edad, género)
+    if incoming_likes.any?
+      incoming_likes_filtered = User.where(id: incoming_likes)
+        .where(gender: filter_preference.gender_preferences.split(",")) # género
+        .active.visible
+            
+      # Filtro de edad si está definido
+      if filter_preference.age_from.present? && filter_preference.age_till.present?
+        incoming_likes_filtered = incoming_likes_filtered.born_between(start_date, end_date)
+      end
+      
+      # Filtro de verificación
+      if filter_preference.only_verified_users
+        incoming_likes_filtered = incoming_likes_filtered.where(verified: true)
+      end
+      
+      incoming_likes = incoming_likes_filtered.pluck(:id)
+    end
+
     if incoming_likes.count > 1
         # mezclamos y eliminamos uno para el sugar play
           incoming_likes = incoming_likes.shuffle
