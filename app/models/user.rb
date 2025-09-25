@@ -43,6 +43,9 @@ class User < ApplicationRecord
   scope :visible, -> { where(hidden_by_user: false) }
   scope :bundled, -> { where(bundled: true) }
   scope :with_likes, -> { where("id in (select target_user FROM user_match_requests)") }
+    # Agregar scope para excluir cuentas eliminadas
+  scope :active_accounts, -> { where(deleted_account: false) }
+  scope :deleted_accounts, -> { where(deleted_account: true) }
   #before_update :recalculate_percentage
   after_create :create_filters
   before_destroy :destroy_match_requests
@@ -81,7 +84,24 @@ class User < ApplicationRecord
     end
   end
 
+  # Método para marcar cuenta como eliminada
+  def soft_delete!
+    update!(deleted_account: true)
+  end
 
+  # Método para restaurar cuenta
+  def restore_account!
+    update!(deleted_account: false)
+  end
+
+    # Sobrescribir el método de Devise para no permitir login a cuentas eliminadas
+  def active_for_authentication?
+    super && !deleted_account
+  end
+
+  def inactive_message
+    deleted_account ? :deleted_account : super
+  end
 
   # Nos dice si un usuario tiene likes de otros usuarios.
   def has_likes

@@ -253,11 +253,17 @@ end
   end
 
 
-  # Elimina la cuenta de un usuario.
+  # Elimina la cuenta de un usuario (soft delete)
   def delete_account
-      current_user.destroy
-      render json: { status: 200, error: "User deleted"}, status: 200
+    # Primero marcamos la cuenta como eliminada
+    current_user.update!(deleted_account: true)
+    
+    # Luego deslogueamos al usuario
+    sign_out current_user
+    
+    render json: { status: 200, message: "Account deleted successfully" }, status: 200
   end
+
 
 
   # Hace manualmente un match entre dos usuarios. (desde el admin)
@@ -723,11 +729,16 @@ end
       # IDs de usuarios ocultos
     hidden_user_ids = User.where(hidden_by_user: true).pluck(:id)
 
+
+    deleted_user_ids = User.where(deleted_account: true).pluck(:id)
+
     # De esos ocultos, cuáles ME han dado like (user_id es quien da el like)
     hidden_who_liked_me = UserMatchRequest.where(user_id: hidden_user_ids, target_user: current_user.id, is_like: true).pluck(:user_id)
 
     # Ocultos que NO me han likeado -> hay que excluirlos
     hidden_to_exclude = hidden_user_ids - hidden_who_liked_me
+
+    users_to_exclude_basic = hidden_to_exclude + deleted_user_ids
 
     # Resultado: todos los usuarios excepto esos ocultos que no me han likeado
     users = User.where.not(id: hidden_to_exclude)
