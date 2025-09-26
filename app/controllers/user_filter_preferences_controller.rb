@@ -96,8 +96,8 @@ class UserFilterPreferencesController < ApplicationController
         :age_from,
         :age_till,
         :only_verified_users,
-        interests:,
-        categories: 
+        :interests,
+        :categories
       )
     end
 end
