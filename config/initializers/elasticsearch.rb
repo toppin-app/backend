@@ -1,6 +1,30 @@
 # Elasticsearch configuration for logging
 require 'elasticsearch'
 
+# Global Elasticsearch client
+if ENV['ELASTICSEARCH_SECURITY_ENABLED'] == 'false'
+  # Sin autenticación (solo para desarrollo)
+  $elasticsearch_client = Elasticsearch::Client.new(
+    url: ENV.fetch('ELASTICSEARCH_URL', 'https://web-elasticsearch-logs.uao3jo.easypanel.host:443'),
+    transport_options: {
+      request: { timeout: 5 },
+      ssl: { verify: false }
+    }
+  )
+else
+  # Con autenticación
+  $elasticsearch_client = Elasticsearch::Client.new(
+    url: ENV.fetch('ELASTICSEARCH_URL', 'https://web-elasticsearch-logs.uao3jo.easypanel.host:443'),
+    user: ENV.fetch('ELASTICSEARCH_USER', 'elastic'),
+    password: ENV.fetch('ELASTICSEARCH_PASSWORD', 'elasticsearch-logs'),
+    transport_options: {
+      request: { timeout: 5 },
+      ssl: { verify: false } # Para desarrollo - en producción usa certificados válidos
+    }
+  )
+endnfiguration for logging
+require 'elasticsearch'
+
 # Configuration for Elasticsearch client
 $elasticsearch_client = Elasticsearch::Client.new(
   hosts: [
