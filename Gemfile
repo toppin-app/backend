@@ -31,7 +31,6 @@ gem 'mini_magick'
 gem 'stripe'
 
 # Logging to Elasticsearch
-gem 'elasticsearch-rails'
 gem 'lograge'
 gem 'elasticsearch', '~> 7.17'
 

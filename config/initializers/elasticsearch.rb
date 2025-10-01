@@ -2,7 +2,7 @@
 require 'elasticsearch'
 
 # Configuration for Elasticsearch client
-Elasticsearch::Model.client = Elasticsearch::Client.new(
+$elasticsearch_client = Elasticsearch::Client.new(
   hosts: [
     {
       host: ENV.fetch('ELASTICSEARCH_HOST', 'web_elasticsearch-logs'),
@@ -21,7 +21,7 @@ Elasticsearch::Model.client = Elasticsearch::Client.new(
 unless Rails.env.test?
   begin
     Rails.logger.info "Testing Elasticsearch connection..."
-    response = Elasticsearch::Model.client.ping
+    response = $elasticsearch_client.ping
     if response
       Rails.logger.info "✅ Elasticsearch connection successful!"
     else

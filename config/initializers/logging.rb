@@ -5,7 +5,7 @@ require 'elasticsearch'
 class ElasticsearchLogger < Logger
   def initialize
     super(STDOUT)
-    @elasticsearch_client = Elasticsearch::Model.client
+    @elasticsearch_client = $elasticsearch_client
   end
 
   def add(severity, message = nil, progname = nil)
