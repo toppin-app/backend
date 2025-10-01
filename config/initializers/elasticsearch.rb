@@ -22,24 +22,7 @@ else
       ssl: { verify: false } # Para desarrollo - en producción usa certificados válidos
     }
   )
-endnfiguration for logging
-require 'elasticsearch'
-
-# Configuration for Elasticsearch client
-$elasticsearch_client = Elasticsearch::Client.new(
-  hosts: [
-    {
-      host: ENV.fetch('ELASTICSEARCH_HOST', 'web_elasticsearch-logs'),
-      port: ENV.fetch('ELASTICSEARCH_PORT', 9200),
-      scheme: ENV.fetch('ELASTICSEARCH_SCHEME', 'http')
-    }
-  ],
-  user: ENV.fetch('ELASTICSEARCH_USER', 'elastic'),
-  password: ENV.fetch('ELASTICSEARCH_PASSWORD', 'elasticsearch-logs'),
-  transport_options: {
-    request: { timeout: 5 }
-  }
-)
+end
 
 # Test connection on startup (only in non-test environments)
 unless Rails.env.test?
