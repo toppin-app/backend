@@ -30,6 +30,10 @@ gem 'redis'
 gem 'mini_magick'
 gem 'stripe'
 
+# Logging to Elasticsearch
+gem 'elasticsearch-rails'
+gem 'lograge'
+gem 'elasticsearch', '~> 7.17'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 6.0.3', '>= 6.0.3.5'
