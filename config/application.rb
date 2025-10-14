@@ -13,7 +13,15 @@ module RailsToppin
     config.load_defaults 6.0
     config.time_zone = "Europe/Madrid"
 
-    # Elasticsearch Request Logger will be loaded via initializer
+    # Load Elasticsearch middleware if enabled
+    config.before_initialize do
+      if ENV['ENABLE_ELASTICSEARCH_LOGGING'] == 'true'
+        # Load the middleware class
+        require_relative '../app/middleware/elasticsearch_request_logger'
+        # Add to middleware stack
+        config.middleware.use ElasticsearchRequestLogger
+      end
+    end
 
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration can go into files in config/initializers
