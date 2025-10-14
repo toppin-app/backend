@@ -62,28 +62,36 @@ class ElasticsearchLogger < Logger
   end
 end
 
-# Configure Lograge for structured logging
+# Configure Lograge for structured logging (complementary to middleware)
 Rails.application.configure do
-  if Rails.env.production?
-    config.lograge.enabled = true
-    config.lograge.formatter = Lograge::Formatters::Json.new
+  config.lograge.enabled = true
+  config.lograge.formatter = Lograge::Formatters::Json.new
+  
+  # Disable default Rails request logging to avoid duplication
+  config.lograge.keep_original_rails_log = false
+  
+  config.lograge.custom_payload do |controller|
+    payload = {
+      host: controller.request.host,
+      user_agent: controller.request.user_agent,
+      ip: controller.request.remote_ip,
+      referer: controller.request.referer
+    }
     
-    config.lograge.custom_payload do |controller|
-      {
-        host: controller.request.host,
-        user_agent: controller.request.user_agent,
-        user_id: controller.current_user&.id,
-        ip: controller.request.remote_ip,
-        referer: controller.request.referer
-      }
+    # Add user info if available
+    if controller.respond_to?(:current_user) && controller.current_user
+      payload[:user_id] = controller.current_user.id
     end
+    
+    payload
+  end
 
-    config.lograge.custom_options = lambda do |event|
-      {
-        time: Time.current.iso8601,
-        environment: Rails.env,
-        application: 'toppin-backend'
-      }
-    end
+  config.lograge.custom_options = lambda do |event|
+    {
+      '@timestamp' => Time.current.iso8601,
+      environment: Rails.env,
+      application: 'toppin-backend',
+      event_type: 'rails_controller'
+    }
   end
 end

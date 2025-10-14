@@ -32,7 +32,8 @@ gem 'stripe'
 
 # Logging to Elasticsearch
 gem 'lograge'
-gem 'elasticsearch', '~> 7.17'
+gem 'elasticsearch', '~> 8.0'
+gem 'json'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 6.0.3', '>= 6.0.3.5'
