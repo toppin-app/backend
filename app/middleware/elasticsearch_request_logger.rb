@@ -103,9 +103,10 @@ class ElasticsearchRequestLogger
       # Determinar el índice por fecha
       index_name = "toppin-backend-logs-#{Date.current.strftime('%Y.%m.%d')}"
       
-      # Enviar a Elasticsearch
+      # Enviar a Elasticsearch con pipeline de geolocalización
       @elasticsearch_client.index(
         index: index_name,
+        pipeline: 'geoip-pipeline',
         body: log_entry
       )
 
