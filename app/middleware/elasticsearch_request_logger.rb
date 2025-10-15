@@ -101,7 +101,7 @@ class ElasticsearchRequestLogger
       end
 
       # Determinar el índice por fecha
-      index_name = "toppin-backend-requests-#{Date.current.strftime('%Y.%m.%d')}"
+      index_name = "toppin-backend-logs-#{Date.current.strftime('%Y.%m.%d')}"
       
       # Enviar a Elasticsearch
       @elasticsearch_client.index(
