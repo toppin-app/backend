@@ -149,46 +149,22 @@ class ElasticsearchRequestLogger
   end
 
   def get_manual_location(ip)
-    # Usar servicio gratuito de geolocalización
-    # NOTA: Solo para desarrollo - en producción usar caché local
-    return get_geoip_from_service(ip) if Rails.env.development?
+    # Mapeo manual SIMPLE para diagnosticar
+    Rails.logger.info "🔍 Procesando IP: #{ip}"
     
-    # Fallback: mapeo manual para IPs conocidas
-    case ip
-    when /^90\.162\.|^88\.26\.|^85\.59\./  # España
+    location = case ip
+    when /^90\.162\./  # Tu IP de España
       { lat: 40.4165, lon: -3.7026, city: 'Madrid', country: 'Spain', country_code: 'ES' }
-    when /^8\.8\.|^172\.217\./  # Google/USA
+    when /^8\.8\./  # Google DNS
       { lat: 39.0458, lon: -76.6413, city: 'Maryland', country: 'United States', country_code: 'US' }
+    when /^1\.1\.1\./  # Cloudflare
+      { lat: 48.8566, lon: 2.3522, city: 'Paris', country: 'France', country_code: 'FR' }
     else
-      nil # IPs desconocidas no se mapean
-    end
-  end
-
-  def get_geoip_from_service(ip)
-    # Usar ipapi.co (gratuito hasta 30k requests/mes)
-    return nil if ip.start_with?('127.', '10.', '192.168.', '172.')
-    
-    begin
-      require 'net/http'
-      require 'json'
-      
-      uri = URI("http://ipapi.co/#{ip}/json/")
-      response = Net::HTTP.get_response(uri)
-      
-      if response.code == '200'
-        data = JSON.parse(response.body)
-        return {
-          lat: data['latitude'],
-          lon: data['longitude'],
-          city: data['city'],
-          country: data['country_name'],
-          country_code: data['country_code']
-        }
-      end
-    rescue => e
-      Rails.logger.warn "Geoip service failed: #{e.message}"
+      # Para cualquier otra IP, asignar España por defecto
+      { lat: 40.4165, lon: -3.7026, city: 'Madrid', country: 'Spain', country_code: 'ES' }
     end
     
-    nil
+    Rails.logger.info "📍 Ubicación asignada: #{location}"
+    location
   end
 end
