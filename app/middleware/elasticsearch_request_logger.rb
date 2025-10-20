@@ -62,6 +62,9 @@ class ElasticsearchRequestLogger
 
     begin
       # Extraer información de la petición
+      # Mapeo manual de IPs conocidas (opcional)
+      location = get_manual_location(request.ip)
+      
       log_entry = {
         '@timestamp' => timestamp.iso8601,
         'method' => request.request_method,
@@ -82,6 +85,11 @@ class ElasticsearchRequestLogger
         'log_type' => 'http_request',
         'hostname' => Socket.gethostname
       }
+
+      # Agregar ubicación si está disponible
+      if location
+        log_entry['manual_location'] = location
+      end
 
       # Agregar headers importantes
       log_entry['headers'] = extract_important_headers(request)
@@ -138,5 +146,49 @@ class ElasticsearchRequestLogger
     end
 
     important_headers
+  end
+
+  def get_manual_location(ip)
+    # Usar servicio gratuito de geolocalización
+    # NOTA: Solo para desarrollo - en producción usar caché local
+    return get_geoip_from_service(ip) if Rails.env.development?
+    
+    # Fallback: mapeo manual para IPs conocidas
+    case ip
+    when /^90\.162\.|^88\.26\.|^85\.59\./  # España
+      { lat: 40.4165, lon: -3.7026, city: 'Madrid', country: 'Spain', country_code: 'ES' }
+    when /^8\.8\.|^172\.217\./  # Google/USA
+      { lat: 39.0458, lon: -76.6413, city: 'Maryland', country: 'United States', country_code: 'US' }
+    else
+      nil # IPs desconocidas no se mapean
+    end
+  end
+
+  def get_geoip_from_service(ip)
+    # Usar ipapi.co (gratuito hasta 30k requests/mes)
+    return nil if ip.start_with?('127.', '10.', '192.168.', '172.')
+    
+    begin
+      require 'net/http'
+      require 'json'
+      
+      uri = URI("http://ipapi.co/#{ip}/json/")
+      response = Net::HTTP.get_response(uri)
+      
+      if response.code == '200'
+        data = JSON.parse(response.body)
+        return {
+          lat: data['latitude'],
+          lon: data['longitude'],
+          city: data['city'],
+          country: data['country_name'],
+          country_code: data['country_code']
+        }
+      end
+    rescue => e
+      Rails.logger.warn "Geoip service failed: #{e.message}"
+    end
+    
+    nil
   end
 end
