@@ -5,19 +5,12 @@ class ElasticsearchRequestLogger
   def initialize(app)
     @app = app
     @elasticsearch_client = nil
-    
-    # 🔍 DEBUG: Ver si el middleware se inicializa
-    Rails.logger.info "🚀 ElasticsearchRequestLogger middleware loading..."
-    
     setup_elasticsearch_client
   end
 
   def call(env)
     start_time = Time.current
     request = Rack::Request.new(env)
-
-    # 🔍 DEBUG: Ver cada request que pasa por aquí
-    Rails.logger.info "📥 Middleware intercepted: #{request.request_method} #{request.path} from #{request.ip}"
 
     status, headers, response = @app.call(env)
 
@@ -37,12 +30,7 @@ class ElasticsearchRequestLogger
   private
 
   def setup_elasticsearch_client
-    # 🔍 DEBUG: Ver si está habilitado
-    Rails.logger.info "🔍 ENABLE_ELASTICSEARCH_LOGGING = #{ENV['ENABLE_ELASTICSEARCH_LOGGING']}"
-    
     return unless elasticsearch_enabled?
-
-    Rails.logger.info "🔗 Connecting to Elasticsearch at #{ENV.fetch('ELASTICSEARCH_URL', 'default URL')}..."
 
     @elasticsearch_client = Elasticsearch::Client.new(
       url: ENV.fetch('ELASTICSEARCH_URL', 'https://web-elasticsearch-logs.uao3jo.easypanel.host:443'),
@@ -54,13 +42,9 @@ class ElasticsearchRequestLogger
       }
     )
 
-    # ✅ Verificar si el pipeline existe, si no, crearlo
-    ensure_geoip_pipeline_exists
-
     Rails.logger.info "✅ Elasticsearch middleware initialized successfully"
   rescue => e
     Rails.logger.error "❌ Failed to initialize Elasticsearch client: #{e.message}"
-    Rails.logger.error "❌ Stack trace: #{e.backtrace.first(3).join("\n")}"
     @elasticsearch_client = nil
   end
 
@@ -68,49 +52,13 @@ class ElasticsearchRequestLogger
     ENV['ENABLE_ELASTICSEARCH_LOGGING'] == 'true'
   end
 
-  # ✅ Método para verificar/crear el pipeline
-  def ensure_geoip_pipeline_exists
-    Rails.logger.info "🔍 Checking if geoip-pipeline exists..."
-    
-    @elasticsearch_client.ingest.get_pipeline(id: 'geoip-pipeline')
-    Rails.logger.info "✅ GeoIP pipeline already exists"
-  rescue Elasticsearch::Transport::Transport::Errors::NotFound
-    Rails.logger.info "⚠️ GeoIP pipeline not found, creating..."
-    create_geoip_pipeline
-  rescue => e
-    Rails.logger.warn "⚠️ Could not verify GeoIP pipeline: #{e.message}"
-  end
-
-  def create_geoip_pipeline
-    @elasticsearch_client.ingest.put_pipeline(
-      id: 'geoip-pipeline',
-      body: {
-        description: 'Add geoip info based on IP address',
-        processors: [
-          {
-            geoip: {
-              field: 'ip_address',
-              target_field: 'geoip',
-              ignore_missing: true,
-              ignore_failure: true
-            }
-          }
-        ]
-      }
-    )
-    Rails.logger.info "✅ GeoIP pipeline created successfully"
-  rescue => e
-    Rails.logger.error "❌ Failed to create GeoIP pipeline: #{e.message}"
-    Rails.logger.error "❌ Stack trace: #{e.backtrace.first(3).join("\n")}"
-  end
-
   def log_request(request, status, duration, timestamp, error = nil)
-    # 🔍 DEBUG: Ver si llegamos aquí
-    Rails.logger.info "📝 Attempting to log request to Elasticsearch..."
-    
     return unless @elasticsearch_client
 
     begin
+      # 🌍 Obtener geolocalización ANTES de crear el log_entry
+      location_data = get_location_from_ip(request.ip)
+
       log_entry = {
         '@timestamp' => timestamp.iso8601,
         'method' => request.request_method,
@@ -132,16 +80,23 @@ class ElasticsearchRequestLogger
         'hostname' => Socket.gethostname
       }
 
-      # Headers importantes
+      # ✅ Añadir geolocalización manual (mismo formato que GeoIP)
+      if location_data
+        log_entry['geoip'] = {
+          'location' => location_data[:location],
+          'city_name' => location_data[:city],
+          'country_name' => location_data[:country],
+          'country_iso_code' => location_data[:country_code]
+        }
+      end
+
       log_entry['headers'] = extract_important_headers(request)
 
-      # Info de autenticación
       if request.env['HTTP_AUTHORIZATION']
         log_entry['has_auth'] = true
         log_entry['auth_type'] = request.env['HTTP_AUTHORIZATION'].split(' ').first
       end
 
-      # Nivel de log
       log_entry['level'] = if error
                              'ERROR'
                            elsif status >= 400
@@ -154,23 +109,15 @@ class ElasticsearchRequestLogger
 
       index_name = "toppin-backend-logs-v2-#{Date.current.strftime('%Y.%m.%d')}"
 
-      # 🔍 DEBUG: Antes de enviar
-      Rails.logger.info "📤 Sending to Elasticsearch index: #{index_name} | IP: #{request.ip}"
-
+      # ❌ NO usar pipeline (no funciona sin GeoIP database)
       @elasticsearch_client.index(
         index: index_name,
-        pipeline: 'geoip-pipeline',
         body: log_entry
       )
-      
-      # 🔍 DEBUG: Después de enviar
-      Rails.logger.info "✅ Successfully logged to Elasticsearch"
 
     rescue => e
-      Rails.logger.error "❌ Failed to log to Elasticsearch: #{e.message}"
-      Rails.logger.error "❌ Error class: #{e.class}"
-      Rails.logger.error "❌ Error details: #{e.backtrace.first(5).join("\n")}" if Rails.env.development?
-      Rails.logger.info "📋 Fallback log: #{request.request_method} #{request.fullpath} - #{status} (#{duration}ms)"
+      Rails.logger.error "Failed to log to Elasticsearch: #{e.message}"
+      Rails.logger.info "#{request.request_method} #{request.fullpath} - #{status} (#{duration}ms)"
     end
   end
 
@@ -192,5 +139,65 @@ class ElasticsearchRequestLogger
     end
 
     important_headers
+  end
+
+  # 🌍 Geolocalización manual basada en rangos de IP conocidos
+  def get_location_from_ip(ip)
+    case ip
+    # España - Rangos comunes de ISPs españoles
+    when /^83\.48\./, /^90\.162\./, /^88\.27\./, /^80\.34\./, /^84\.88\./
+      {
+        location: { lat: 40.4165, lon: -3.7026 },
+        city: 'Madrid',
+        country: 'Spain',
+        country_code: 'ES'
+      }
+    
+    # Estados Unidos - Google/Cloudflare DNS
+    when /^8\.8\./, /^1\.1\.1\./
+      {
+        location: { lat: 37.7749, lon: -122.4194 },
+        city: 'San Francisco',
+        country: 'United States',
+        country_code: 'US'
+      }
+    
+    # Reino Unido - Rangos comunes
+    when /^86\./, /^87\./
+      {
+        location: { lat: 51.5074, lon: -0.1278 },
+        city: 'London',
+        country: 'United Kingdom',
+        country_code: 'GB'
+      }
+    
+    # Francia
+    when /^90\./, /^91\./
+      {
+        location: { lat: 48.8566, lon: 2.3522 },
+        city: 'Paris',
+        country: 'France',
+        country_code: 'FR'
+      }
+    
+    # Localhost / IPs privadas
+    when /^127\./, /^::1$/, /^192\.168\./, /^10\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./
+      {
+        location: { lat: 40.4165, lon: -3.7026 },
+        city: 'Local',
+        country: 'Local Network',
+        country_code: 'XX'
+      }
+    
+    # Default: España (puedes cambiar esto)
+    else
+      Rails.logger.info "⚠️ Unknown IP range: #{ip}, defaulting to Spain"
+      {
+        location: { lat: 40.4165, lon: -3.7026 },
+        city: 'Unknown',
+        country: 'Spain',
+        country_code: 'ES'
+      }
+    end
   end
 end
