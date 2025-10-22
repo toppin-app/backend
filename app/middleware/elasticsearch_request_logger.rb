@@ -88,7 +88,8 @@ class ElasticsearchRequestLogger
 
       # Agregar ubicación si está disponible
       if location
-        log_entry['manual_location'] = location
+        log_entry['manual_location'] = location[:location] # solo lat/lon → geo_point
+        log_entry['manual_location_meta'] = location[:meta] # info extra → object normal
       end
 
       # Agregar headers importantes
@@ -148,23 +149,33 @@ class ElasticsearchRequestLogger
     important_headers
   end
 
-  def get_manual_location(ip)
-    # Mapeo manual SIMPLE para diagnosticar
-    Rails.logger.info "🔍 Procesando IP: #{ip}"
-    
-    location = case ip
-    when /^90\.162\./  # Tu IP de España
-      { lat: 40.4165, lon: -3.7026, city: 'Madrid', country: 'Spain', country_code: 'ES' }
-    when /^8\.8\./  # Google DNS
-      { lat: 39.0458, lon: -76.6413, city: 'Maryland', country: 'United States', country_code: 'US' }
-    when /^1\.1\.1\./  # Cloudflare
-      { lat: 48.8566, lon: 2.3522, city: 'Paris', country: 'France', country_code: 'FR' }
-    else
-      # Para cualquier otra IP, asignar España por defecto
-      { lat: 40.4165, lon: -3.7026, city: 'Madrid', country: 'Spain', country_code: 'ES' }
-    end
-    
-    Rails.logger.info "📍 Ubicación asignada: #{location}"
-    location
+def get_manual_location(ip)
+  Rails.logger.info "🔍 Procesando IP: #{ip}"
+
+  location_data = case ip
+  when /^90\.162\./  # Tu IP de España
+    {
+      location: { lat: 40.4165, lon: -3.7026 },
+      meta: { city: 'Madrid', country: 'Spain', country_code: 'ES' }
+    }
+  when /^8\.8\./  # Google DNS
+    {
+      location: { lat: 39.0458, lon: -76.6413 },
+      meta: { city: 'Maryland', country: 'United States', country_code: 'US' }
+    }
+  when /^1\.1\.1\./  # Cloudflare
+    {
+      location: { lat: 48.8566, lon: 2.3522 },
+      meta: { city: 'Paris', country: 'France', country_code: 'FR' }
+    }
+  else
+    {
+      location: { lat: 40.4165, lon: -3.7026 },
+      meta: { city: 'Madrid', country: 'Spain', country_code: 'ES' }
+    }
   end
+
+  Rails.logger.info "📍 Ubicación asignada: #{location_data}"
+  location_data
+end
 end
