@@ -88,8 +88,8 @@ class ElasticsearchRequestLogger
 
       # Agregar ubicación si está disponible
       if location
-        log_entry['manual_location'] = location[:location] # solo lat/lon → geo_point
-        log_entry['manual_location_meta'] = location[:meta] # info extra → object normal
+        log_entry['geo_point_location'] = location[:location]
+        log_entry['geo_point_meta'] = location[:meta]
       end
 
       # Agregar headers importantes
