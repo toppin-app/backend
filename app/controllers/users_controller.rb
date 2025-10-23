@@ -46,16 +46,10 @@ class UsersController < ApplicationController
     @likes = @user.incoming_likes.order(id: :desc)
     @sent_likes = @user.sent_likes.order(id: :desc).paginate(page: params[:sent_likes_page], per_page: 5)
     
-    # Calcular total gastado en Stripe
-    @all_purchases = @user.purchases_stripes rescue []
-    @completed_purchases = @all_purchases.where(status: 'completed') rescue []
+    # Calcular total gastado en Stripe (succeeded purchases)
+    @completed_purchases = @user.purchases_stripes.where(status: 'succeeded')
     @total_spent = @completed_purchases.sum(:prize).to_f / 100.0
     @total_purchases = @completed_purchases.count
-    
-    # Debug info
-    Rails.logger.info "Usuario #{@user.id} - Total purchases: #{@all_purchases.count}"
-    Rails.logger.info "Usuario #{@user.id} - Completed purchases: #{@completed_purchases.count}"
-    Rails.logger.info "Usuario #{@user.id} - Total spent: #{@total_spent}"
 
     generate_access_token(@user.id)
 
