@@ -252,44 +252,10 @@
 
     <hr>
 
-    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart-o"></i> Likes dados (<%= @sent_likes.count %>)</b></p>
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart-o"></i> Likes dados (<%= @sent_likes.total_entries %>)</b></p>
 
-    <table class="table">
-      <thead>
-        <th></th>
-        <th>Usuario</th>
-        <th>Es superlike</th>
-        <th>Fecha</th>
-        <th>Estado</th>
-      </thead>
-
-      <% @sent_likes.each do |match_request| %>
-      <tr>
-        <td>
-          <% if match_request.target && match_request.target.profile_picture_thumb.present? %>
-            <%= image_tag match_request.target.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' %>
-          <% end %>
-        </td>
-        <td>
-          <%= link_to match_request.target.name, show_user_path(id: match_request.target.id) if match_request.target %>
-        </td>
-        <td><%= true_false(match_request.is_superlike) %></td>
-        <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
-        <td>
-          <% if match_request.is_match %>
-            <span class="badge badge-success">Match</span>
-          <% elsif match_request.is_rejected %>
-            <span class="badge badge-danger">Rechazado</span>
-          <% else %>
-            <span class="badge badge-warning">Pendiente</span>
-          <% end %>
-        </td>
-      </tr>
-      <% end %>
-    </table>
-
-    <div class="text-center">
-      <%= will_paginate @sent_likes, param_name: 'sent_likes_page', previous_label: '← Anterior', next_label: 'Siguiente →' %>
+    <div id="sent-likes-container">
+      <%= render 'sent_likes' %>
     </div>
 
     <hr>
@@ -394,6 +360,69 @@ document.addEventListener('DOMContentLoaded', function() {
       cargarMensajes(currentSid);
     } else {
       alert('Primero selecciona una conversación.');
+    }
+  });
+
+  // Paginación AJAX para "Likes dados"
+  document.addEventListener('click', function(e) {
+    const paginationLink = e.target.closest('#sent-likes-container .pagination a');
+    if (paginationLink) {
+      e.preventDefault();
+      
+      const url = paginationLink.href;
+      
+      // Mostrar loading
+      const container = document.getElementById('sent-likes-container');
+      const originalOpacity = container.style.opacity;
+      container.style.opacity = '0.5';
+      container.style.pointerEvents = 'none';
+      
+      fetch(url, {
+        headers: {
+          'Accept': 'text/html'
+        }
+      })
+      .then(response => response.text())
+      .then(html => {
+        // Crear un elemento temporal para parsear el HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Extraer solo el contenido del container de sent-likes
+        const newContent = doc.querySelector('#sent-likes-container');
+        if (newContent) {
+          container.innerHTML = newContent.innerHTML;
+        } else {
+          // Si no encuentra el container, busca el partial directamente
+          const table = doc.querySelector('table');
+          const pagination = doc.querySelector('.pagination');
+          if (table) {
+            container.innerHTML = '';
+            container.appendChild(table.cloneNode(true));
+            if (pagination) {
+              const paginationDiv = document.createElement('div');
+              paginationDiv.className = 'text-center';
+              paginationDiv.appendChild(pagination.cloneNode(true));
+              container.appendChild(paginationDiv);
+            }
+          }
+        }
+        
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
+        
+        // Scroll suave a la sección
+        const header = container.previousElementSibling;
+        if (header) {
+          header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        container.style.opacity = originalOpacity || '1';
+        container.style.pointerEvents = 'auto';
+        alert('Error al cargar la página');
+      });
     }
   });
 });

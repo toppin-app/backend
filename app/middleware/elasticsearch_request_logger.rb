@@ -143,7 +143,7 @@ class ElasticsearchRequestLogger
 
   # 🌍 Geolocalización manual basada en rangos de IP conocidos
   def get_location_from_ip(ip)
-    case ip
+    case ip     
     # España - Rangos comunes de ISPs españoles
     when /^83\.48\./, /^90\.162\./, /^88\.27\./, /^80\.34\./, /^84\.88\./
       {

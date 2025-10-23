@@ -64,6 +64,7 @@ class UsersController < ApplicationController
 
     respond_to do |format|
       format.html # renderiza la vista normal
+      format.js { render partial: 'sent_likes', layout: false } # Para paginación AJAX
       format.json do
         render json: @user.as_json(
           methods: [:user_age, :user_media_url, :favorite_languages],
