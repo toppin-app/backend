@@ -44,6 +44,7 @@ class UsersController < ApplicationController
     @title = "Mostrando usuario"
     @matches = @user.matches
     @likes = @user.incoming_likes.order(id: :desc)
+    @sent_likes = @user.sent_likes.order(id: :desc)
 
     generate_access_token(@user.id)
 

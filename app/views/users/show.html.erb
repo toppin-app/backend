@@ -251,6 +251,44 @@
     </table>
 
     <hr>
+
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart-o"></i> Likes dados (<%= @sent_likes.count %>)</b></p>
+
+    <table class="table">
+      <thead>
+        <th></th>
+        <th>Usuario</th>
+        <th>Es superlike</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+      </thead>
+
+      <% @sent_likes.each do |match_request| %>
+      <tr>
+        <td>
+          <% if match_request.target && match_request.target.profile_picture_thumb.present? %>
+            <%= image_tag match_request.target.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' %>
+          <% end %>
+        </td>
+        <td>
+          <%= link_to match_request.target.name, show_user_path(id: match_request.target.id) if match_request.target %>
+        </td>
+        <td><%= true_false(match_request.is_superlike) %></td>
+        <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
+        <td>
+          <% if match_request.is_match %>
+            <span class="badge badge-success">Match</span>
+          <% elsif match_request.is_rejected %>
+            <span class="badge badge-danger">Rechazado</span>
+          <% else %>
+            <span class="badge badge-warning">Pendiente</span>
+          <% end %>
+        </td>
+      </tr>
+      <% end %>
+    </table>
+
+    <hr>
     <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart"></i> Dar un like</b></p>
 
     <%= form_with url: "/create_like",local: true do |form| %>
