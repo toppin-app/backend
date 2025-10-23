@@ -48,7 +48,17 @@ class UsersController < ApplicationController
     
     # Calcular total gastado en Stripe (succeeded purchases)
     @completed_purchases = @user.purchases_stripes.where(status: 'succeeded')
-    @total_spent = @completed_purchases.sum(:prize).to_f / 100.0
+    
+    # Debug: ver algunos valores
+    Rails.logger.info "=== DEBUG PURCHASES ==="
+    @completed_purchases.limit(5).each do |p|
+      Rails.logger.info "Purchase ID: #{p.id}, prize: #{p.prize}, product_key: #{p.product_key}"
+    end
+    
+    total_cents = @completed_purchases.sum(:prize).to_f
+    Rails.logger.info "Total cents from DB: #{total_cents}"
+    
+    @total_spent = total_cents / 100.0
     @total_purchases = @completed_purchases.count
 
     generate_access_token(@user.id)
