@@ -133,6 +133,7 @@ Rails.application.routes.draw do
   get '/create_match', to: 'users#create_match', as: :create_match
   post '/create_like', to: 'users#create_like'
   post '/unmatch', to: 'users#unmatch', as: :unmatch
+  post '/clear_all_matches', to: 'users#clear_all_matches', as: :clear_all_matches
   get 'users/:id/matches_status', to: 'users#matches_status'
 
   post '/reject_match', to: "user_match_requests#reject_match" # Deshacer un match

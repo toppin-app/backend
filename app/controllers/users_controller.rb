@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
-  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch]
+  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet]
 
@@ -398,6 +398,34 @@ end
     inverse_umr&.destroy
 
     redirect_to show_user_path(id: params[:user_id]), notice: 'Match eliminado con éxito.'
+  end
+
+  # Limpiar todos los matches de un usuario desde el admin
+  def clear_all_matches
+    user = User.find(params[:user_id])
+    
+    # Obtener todos los matches del usuario (en ambas direcciones)
+    matches = UserMatchRequest.where(user_id: user.id, is_match: true)
+                              .or(UserMatchRequest.where(target_user: user.id, is_match: true))
+    
+    matches_count = matches.count
+    
+    # Eliminar las conversaciones de Twilio
+    matches.each do |match|
+      if match.twilio_conversation_sid.present?
+        begin
+          twilio = TwilioController.new
+          twilio.destroy_conversation(match.twilio_conversation_sid)
+        rescue => e
+          Rails.logger.error "Error eliminando conversación de Twilio: #{e.message}"
+        end
+      end
+    end
+    
+    # Eliminar todos los matches
+    matches.destroy_all
+    
+    redirect_to show_user_path(id: user.id), notice: "Se eliminaron #{matches_count} matches con éxito."
   end
 
 
