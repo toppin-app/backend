@@ -30,6 +30,17 @@
         <br>
         <small>Total de <%= @total_purchases %> <%= @total_purchases == 1 ? 'compra' : 'compras' %> completadas</small>
       </div>
+      <% elsif @all_purchases.any? %>
+      <div class="alert alert-warning" style="margin-top: 10px;">
+        <strong><i class="fas fa-info-circle"></i> Compras registradas (no completadas):</strong><br>
+        <small>
+          Total compras: <%= @all_purchases.count %><br>
+          Estados: 
+          <% @all_purchases.group(:status).count.each do |status, count| %>
+            <%= status %>: <%= count %> |
+          <% end %>
+        </small>
+      </div>
       <% else %>
       <div class="alert alert-secondary" style="margin-top: 10px;">
         <small><i class="fas fa-info-circle"></i> Este usuario aún no ha realizado compras</small>
