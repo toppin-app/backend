@@ -15,6 +15,12 @@
       <p>
         <strong>Email:</strong>
         <%= @user.email %>
+        <br>
+        <a href="https://dashboard.stripe.com/customers?email=<%= CGI.escape(@user.email) %>" 
+           target="_blank" 
+           class="btn btn-sm btn-primary mt-2">
+          <i class="fab fa-stripe"></i> Ver perfil en Stripe
+        </a>
       </p>
 
       <p>
