@@ -288,6 +288,10 @@
       <% end %>
     </table>
 
+    <div class="text-center">
+      <%= will_paginate @sent_likes, param_name: 'sent_likes_page', previous_label: '← Anterior', next_label: 'Siguiente →' %>
+    </div>
+
     <hr>
     <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart"></i> Dar un like</b></p>
 
