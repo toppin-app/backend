@@ -156,13 +156,14 @@
 
 
 <div class="card">
-  <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+  <div class="card-header bg-dark" style="display: flex; justify-content: space-between; align-items: center;">
     <span><b>Matches (<%= @matches.count %>)</b></span>
     <% if @matches.any? %>
       <%= link_to clear_all_matches_path(user_id: @user.id), 
           method: :post,
           data: { confirm: "¿Estás seguro de que quieres eliminar TODOS los matches (#{@matches.count}) de este usuario? Esta acción no se puede deshacer y se eliminarán todas las conversaciones de Twilio." },
-          class: 'btn btn-danger btn-sm' do %>
+          class: 'btn btn-danger btn-sm',
+          style: 'margin-left: auto;' do %>
         <i class="fas fa-trash-alt"></i> Limpiar todos
       <% end %>
     <% end %>
