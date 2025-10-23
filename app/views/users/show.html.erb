@@ -191,12 +191,27 @@
         <td><%= true_false(match_request.is_superlike) %></td>
         <td><%= match_request.target_user_ranking %></td>
         <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
-        <td><button class="btn btn-sm btn-primary chat disabled"
-        id="<%= match_request.twilio_conversation_sid %>"
-        data-sid="<%= match_request.twilio_conversation_sid %>">
-  <i class="fas fa-comments"></i>
-  Ver Chat
-</button></td>
+        <td>
+          <button class="btn btn-sm btn-primary chat disabled"
+            id="<%= match_request.twilio_conversation_sid %>"
+            data-sid="<%= match_request.twilio_conversation_sid %>">
+            <i class="fas fa-comments"></i>
+            Ver Chat
+          </button>
+          
+          <% 
+            # Determinar el target_user_id correcto
+            other_user_id = match_request.target.id != @user.id ? match_request.target.id : match_request.user.id
+          %>
+          
+          <%= link_to unmatch_path(user_id: @user.id, target_user: other_user_id), 
+              method: :post,
+              data: { confirm: '¿Estás seguro de que quieres deshacer este match? Se eliminará la conversación de Twilio.' },
+              class: 'btn btn-sm btn-danger' do %>
+            <i class="fas fa-times"></i> Deshacer
+          <% end %>
+        </td>
+      </tr>
      <% end %>
 
 

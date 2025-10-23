@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
-  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like]
+  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet]
 
@@ -355,6 +355,48 @@ end
 
       redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
     end
+
+  # Deshacer un match desde el admin
+  def unmatch
+    # Buscar el match en ambas direcciones
+    umr = UserMatchRequest.find_by(
+      user_id: params[:user_id],
+      target_user: params[:target_user],
+      is_match: true
+    ) || UserMatchRequest.find_by(
+      user_id: params[:target_user],
+      target_user: params[:user_id],
+      is_match: true
+    )
+
+    unless umr
+      redirect_to show_user_path(id: params[:user_id]), alert: 'Match no encontrado.'
+      return
+    end
+
+    # Eliminar la conversación de Twilio si existe
+    if umr.twilio_conversation_sid.present?
+      begin
+        twilio = TwilioController.new
+        twilio.destroy_conversation(umr.twilio_conversation_sid)
+      rescue => e
+        Rails.logger.error "Error eliminando conversación de Twilio: #{e.message}"
+      end
+    end
+
+    # Eliminar el match
+    umr.destroy
+
+    # También eliminar el match inverso si existe
+    inverse_umr = UserMatchRequest.find_by(
+      user_id: umr.target_user,
+      target_user: umr.user_id,
+      is_match: true
+    )
+    inverse_umr&.destroy
+
+    redirect_to show_user_path(id: params[:user_id]), notice: 'Match eliminado con éxito.'
+  end
 
 
 
