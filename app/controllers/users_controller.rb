@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
-  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches]
+  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet]
 
@@ -426,6 +426,56 @@ end
     matches.destroy_all
     
     redirect_to show_user_path(id: user.id), notice: "Se eliminaron #{matches_count} matches con éxito."
+  end
+
+  # Rechazar un like recibido individual
+  def reject_incoming_like
+    umr = UserMatchRequest.find(params[:like_id])
+    
+    unless umr
+      redirect_to show_user_path(id: params[:user_id]), alert: 'Like no encontrado.'
+      return
+    end
+    
+    umr.update(is_rejected: true)
+    
+    redirect_to show_user_path(id: params[:user_id]), notice: 'Like rechazado con éxito.'
+  end
+
+  # Hacer match con todos los likes recibidos
+  def match_all_likes
+    user = User.find(params[:user_id])
+    likes = user.incoming_likes
+    
+    matches_created = 0
+    
+    likes.each do |like|
+      like.update(is_match: true, match_date: DateTime.now, user_ranking: like.user.ranking, target_user_ranking: like.target.ranking)
+      
+      # Crear conversación de Twilio
+      begin
+        twilio = TwilioController.new
+        conversation_sid = twilio.create_conversation(like.user_id, like.target_user)
+        like.update(twilio_conversation_sid: conversation_sid)
+      rescue => e
+        Rails.logger.error "Error creando conversación de Twilio: #{e.message}"
+      end
+      
+      matches_created += 1
+    end
+    
+    redirect_to show_user_path(id: user.id), notice: "Se crearon #{matches_created} matches con éxito."
+  end
+
+  # Rechazar todos los likes recibidos
+  def reject_all_likes
+    user = User.find(params[:user_id])
+    likes = user.incoming_likes
+    
+    likes_rejected = likes.count
+    likes.update_all(is_rejected: true)
+    
+    redirect_to show_user_path(id: user.id), notice: "Se rechazaron #{likes_rejected} likes con éxito."
   end
 
 

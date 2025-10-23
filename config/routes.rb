@@ -134,6 +134,9 @@ Rails.application.routes.draw do
   post '/create_like', to: 'users#create_like'
   post '/unmatch', to: 'users#unmatch', as: :unmatch
   post '/clear_all_matches', to: 'users#clear_all_matches', as: :clear_all_matches
+  post '/reject_incoming_like', to: 'users#reject_incoming_like', as: :reject_incoming_like
+  post '/match_all_likes', to: 'users#match_all_likes', as: :match_all_likes
+  post '/reject_all_likes', to: 'users#reject_all_likes', as: :reject_all_likes
   get 'users/:id/matches_status', to: 'users#matches_status'
 
   post '/reject_match', to: "user_match_requests#reject_match" # Deshacer un match

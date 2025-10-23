@@ -228,7 +228,27 @@
 
     <hr>
 
-    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart"></i> Likes (<%= @likes.count %>)</b></p>
+    <div style="background: #eee; padding: 5px; display: flex; justify-content: space-between; align-items: center;">
+      <span><b><i class="fa fa-heart"></i> Likes (<%= @likes.count %>)</b></span>
+      <% if @likes.any? %>
+        <div>
+          <%= link_to match_all_likes_path(user_id: @user.id), 
+              method: :post,
+              data: { confirm: "¿Estás seguro de que quieres hacer match con TODOS los likes (#{@likes.count})?" },
+              class: 'btn btn-success btn-sm',
+              style: 'margin-right: 5px;' do %>
+            <i class="fas fa-check-double"></i> Match con todos
+          <% end %>
+          
+          <%= link_to reject_all_likes_path(user_id: @user.id), 
+              method: :post,
+              data: { confirm: "¿Estás seguro de que quieres rechazar TODOS los likes (#{@likes.count})?" },
+              class: 'btn btn-danger btn-sm' do %>
+            <i class="fas fa-times-circle"></i> Rechazar todos
+          <% end %>
+        </div>
+      <% end %>
+    </div>
 
 
     <table class="table">
@@ -254,6 +274,14 @@
         <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
         <td>
           <%= link_to 'Hacer match', create_match_path(id: match_request.id), class: 'btn btn-success btn-sm text-white' %>
+          
+          <%= link_to reject_incoming_like_path(user_id: @user.id, like_id: match_request.id), 
+              method: :post,
+              data: { confirm: '¿Estás seguro de que quieres rechazar este like?' },
+              class: 'btn btn-danger btn-sm',
+              style: 'margin-left: 5px;' do %>
+            <i class="fas fa-times"></i>
+          <% end %>
         </td>
      <% end %>
 
