@@ -23,6 +23,19 @@
         </a>
       </p>
 
+      <% if @total_purchases > 0 %>
+      <div class="alert alert-success" style="margin-top: 10px;">
+        <strong><i class="fas fa-shopping-cart"></i> Compras realizadas:</strong><br>
+        <span style="font-size: 1.2em;"><strong><%= number_to_currency(@total_spent, unit: "€", separator: ",", delimiter: ".", format: "%n %u") %></strong></span>
+        <br>
+        <small>Total de <%= @total_purchases %> <%= @total_purchases == 1 ? 'compra' : 'compras' %> completadas</small>
+      </div>
+      <% else %>
+      <div class="alert alert-secondary" style="margin-top: 10px;">
+        <small><i class="fas fa-info-circle"></i> Este usuario aún no ha realizado compras</small>
+      </div>
+      <% end %>
+
       <p>
         <strong>Ranking:</strong>
         <%= @user.ranking %>

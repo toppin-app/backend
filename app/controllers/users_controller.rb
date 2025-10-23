@@ -45,6 +45,10 @@ class UsersController < ApplicationController
     @matches = @user.matches
     @likes = @user.incoming_likes.order(id: :desc)
     @sent_likes = @user.sent_likes.order(id: :desc).paginate(page: params[:sent_likes_page], per_page: 5)
+    
+    # Calcular total gastado en Stripe (completed purchases)
+    @total_spent = @user.purchases_stripes.where(status: 'completed').sum(:prize) / 100.0 rescue 0
+    @total_purchases = @user.purchases_stripes.where(status: 'completed').count rescue 0
 
     generate_access_token(@user.id)
 
