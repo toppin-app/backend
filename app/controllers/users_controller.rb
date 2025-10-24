@@ -496,62 +496,32 @@ end
         redirect_to show_user_path(id: user.id), alert: 'No se encontró un customer en Stripe con este email.' and return
       end
       
+      Rails.logger.info "=== SYNC STRIPE DEBUG ==="
+      Rails.logger.info "Customer ID: #{customer.id}"
+      
       # Obtener todos los payment intents del customer
       payment_intents = Stripe::PaymentIntent.list(customer: customer.id, limit: 100).data
-      stripe_payment_ids = payment_intents.map(&:id)
+      Rails.logger.info "Payment Intents encontrados: #{payment_intents.count}"
+      payment_intents.first(3).each do |pi|
+        Rails.logger.info "  PI: #{pi.id}, status: #{pi.status}, amount: #{pi.amount}"
+      end
       
       # Obtener todas las invoices (para suscripciones)
       invoices = Stripe::Invoice.list(customer: customer.id, limit: 100).data
-      stripe_invoice_ids = invoices.map(&:id)
-      
-      # IDs válidos en Stripe
-      valid_stripe_ids = (stripe_payment_ids + stripe_invoice_ids).uniq
+      Rails.logger.info "Invoices encontradas: #{invoices.count}"
+      invoices.first(3).each do |inv|
+        Rails.logger.info "  Invoice: #{inv.id}, status: #{inv.status}, total: #{inv.total}"
+      end
       
       # Compras en tu base de datos
       db_purchases = user.purchases_stripes
-      
-      # Marcar como 'invalid' las que no existen en Stripe
-      invalid_count = 0
-      db_purchases.each do |purchase|
-        unless valid_stripe_ids.include?(purchase.payment_id)
-          purchase.update(status: 'invalid_deleted_from_stripe')
-          invalid_count += 1
-        end
-      end
-      
-      # Actualizar estados de las que sí existen
-      synced_count = 0
-      db_purchases.where(payment_id: stripe_payment_ids).each do |purchase|
-        pi = payment_intents.find { |p| p.id == purchase.payment_id }
-        if pi
-          new_status = case pi.status
-                      when 'succeeded' then 'succeeded'
-                      when 'canceled' then 'canceled'
-                      when 'processing' then 'pending'
-                      else pi.status
-                      end
-          purchase.update(status: new_status)
-          synced_count += 1
-        end
-      end
-      
-      # Actualizar estados de invoices
-      db_purchases.where(payment_id: stripe_invoice_ids).each do |purchase|
-        invoice = invoices.find { |i| i.id == purchase.payment_id }
-        if invoice
-          new_status = case invoice.status
-                      when 'paid' then 'succeeded'
-                      when 'open' then 'pending'
-                      when 'void', 'uncollectible' then 'canceled'
-                      else invoice.status
-                      end
-          purchase.update(status: new_status)
-          synced_count += 1
-        end
+      Rails.logger.info "Compras en DB: #{db_purchases.count}"
+      db_purchases.first(3).each do |p|
+        Rails.logger.info "  DB Purchase: payment_id=#{p.payment_id}, status=#{p.status}, prize=#{p.prize}"
       end
       
       redirect_to show_user_path(id: user.id), 
-                  notice: "Sincronización completada: #{synced_count} actualizadas, #{invalid_count} marcadas como inválidas."
+                  notice: "Debug completado. Revisa los logs del servidor para ver la información."
       
     rescue Stripe::StripeError => e
       redirect_to show_user_path(id: user.id), alert: "Error al sincronizar con Stripe: #{e.message}"
