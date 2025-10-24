@@ -25,8 +25,8 @@
         <%= link_to sync_stripe_purchases_path(user_id: @user.id), 
             method: :post,
             data: { confirm: '¿Sincronizar las compras de este usuario con Stripe? Esto actualizará los estados y marcará como inválidas las compras que no existan en Stripe.' },
-            class: 'btn btn-sm btn-success mt-2 ml-2' do %>
-          <i class="fas fa-sync-alt"></i> Sincronizar con Stripe
+            class: 'btn btn-sm btn-danger mt-2 ml-2' do %>
+          <i class="fas fa-sync-alt"></i> Forzar sincronización con Stripe
         <% end %>
       </p>
 
