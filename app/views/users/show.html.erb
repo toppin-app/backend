@@ -18,14 +18,14 @@
         <br>
         <a href="https://dashboard.stripe.com/customers?email=<%= CGI.escape(@user.email) %>" 
            target="_blank" 
-           class="btn btn-sm btn-primary mt-2">
+           class="btn btn-sm btn-primary mt-2 text-white">
           <i class="fab fa-stripe"></i> Ver perfil en Stripe
         </a>
         
         <%= link_to sync_stripe_purchases_path(user_id: @user.id), 
             method: :post,
             data: { confirm: '¿Sincronizar las compras de este usuario con Stripe? Esto actualizará los estados y marcará como inválidas las compras que no existan en Stripe.' },
-            class: 'btn btn-sm btn-danger mt-2 ml-2' do %>
+            class: 'btn btn-sm btn-danger mt-2 ml-2 text-white' do %>
           <i class="fas fa-sync-alt"></i> Forzar sincronización con Stripe
         <% end %>
       </p>
