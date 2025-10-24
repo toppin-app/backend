@@ -137,6 +137,7 @@ Rails.application.routes.draw do
   post '/reject_incoming_like', to: 'users#reject_incoming_like', as: :reject_incoming_like
   post '/match_all_likes', to: 'users#match_all_likes', as: :match_all_likes
   post '/reject_all_likes', to: 'users#reject_all_likes', as: :reject_all_likes
+  post '/sync_stripe_purchases', to: 'users#sync_stripe_purchases', as: :sync_stripe_purchases
   get 'users/:id/matches_status', to: 'users#matches_status'
 
   post '/reject_match', to: "user_match_requests#reject_match" # Deshacer un match

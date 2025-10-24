@@ -21,6 +21,13 @@
            class="btn btn-sm btn-primary mt-2">
           <i class="fab fa-stripe"></i> Ver perfil en Stripe
         </a>
+        
+        <%= link_to sync_stripe_purchases_path(user_id: @user.id), 
+            method: :post,
+            data: { confirm: '¿Sincronizar las compras de este usuario con Stripe? Esto actualizará los estados y marcará como inválidas las compras que no existan en Stripe.' },
+            class: 'btn btn-sm btn-success mt-2 ml-2' do %>
+          <i class="fas fa-sync-alt"></i> Sincronizar con Stripe
+        <% end %>
       </p>
 
       <% if @total_purchases > 0 %>

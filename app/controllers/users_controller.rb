@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
-  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes]
+  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes, :sync_stripe_purchases]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet]
 
@@ -481,6 +481,81 @@ end
     likes.update_all(is_rejected: true)
     
     redirect_to show_user_path(id: user.id), notice: "Se rechazaron #{likes_rejected} likes con éxito."
+  end
+
+  # Sincronizar compras con Stripe
+  def sync_stripe_purchases
+    user = User.find(params[:user_id])
+    
+    begin
+      # Buscar el customer en Stripe por email
+      customers = Stripe::Customer.list(email: user.email).data
+      customer = customers.find { |c| c.email == user.email }
+      
+      unless customer
+        redirect_to show_user_path(id: user.id), alert: 'No se encontró un customer en Stripe con este email.' and return
+      end
+      
+      # Obtener todos los payment intents del customer
+      payment_intents = Stripe::PaymentIntent.list(customer: customer.id, limit: 100).data
+      stripe_payment_ids = payment_intents.map(&:id)
+      
+      # Obtener todas las invoices (para suscripciones)
+      invoices = Stripe::Invoice.list(customer: customer.id, limit: 100).data
+      stripe_invoice_ids = invoices.map(&:id)
+      
+      # IDs válidos en Stripe
+      valid_stripe_ids = (stripe_payment_ids + stripe_invoice_ids).uniq
+      
+      # Compras en tu base de datos
+      db_purchases = user.purchases_stripes
+      
+      # Marcar como 'invalid' las que no existen en Stripe
+      invalid_count = 0
+      db_purchases.each do |purchase|
+        unless valid_stripe_ids.include?(purchase.payment_id)
+          purchase.update(status: 'invalid_deleted_from_stripe')
+          invalid_count += 1
+        end
+      end
+      
+      # Actualizar estados de las que sí existen
+      synced_count = 0
+      db_purchases.where(payment_id: stripe_payment_ids).each do |purchase|
+        pi = payment_intents.find { |p| p.id == purchase.payment_id }
+        if pi
+          new_status = case pi.status
+                      when 'succeeded' then 'succeeded'
+                      when 'canceled' then 'canceled'
+                      when 'processing' then 'pending'
+                      else pi.status
+                      end
+          purchase.update(status: new_status)
+          synced_count += 1
+        end
+      end
+      
+      # Actualizar estados de invoices
+      db_purchases.where(payment_id: stripe_invoice_ids).each do |purchase|
+        invoice = invoices.find { |i| i.id == purchase.payment_id }
+        if invoice
+          new_status = case invoice.status
+                      when 'paid' then 'succeeded'
+                      when 'open' then 'pending'
+                      when 'void', 'uncollectible' then 'canceled'
+                      else invoice.status
+                      end
+          purchase.update(status: new_status)
+          synced_count += 1
+        end
+      end
+      
+      redirect_to show_user_path(id: user.id), 
+                  notice: "Sincronización completada: #{synced_count} actualizadas, #{invalid_count} marcadas como inválidas."
+      
+    rescue Stripe::StripeError => e
+      redirect_to show_user_path(id: user.id), alert: "Error al sincronizar con Stripe: #{e.message}"
+    end
   end
 
 
