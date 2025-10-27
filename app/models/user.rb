@@ -264,7 +264,6 @@ def favorite_languages
   # Default: array vacío
   []
 end
-end
 
   def location_name
   return "" unless lat.present? && lng.present?
