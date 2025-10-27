@@ -14,7 +14,6 @@ class InterestsTest < ApplicationSystemTestCase
     visit interests_url
     click_on "New Interest"
 
-    fill_in "Interest category", with: @interest.interest_category_id
     fill_in "Name", with: @interest.name
     click_on "Create Interest"
 
@@ -26,7 +25,6 @@ class InterestsTest < ApplicationSystemTestCase
     visit interests_url
     click_on "Edit", match: :first
 
-    fill_in "Interest category", with: @interest.interest_category_id
     fill_in "Name", with: @interest.name
     click_on "Update Interest"
 

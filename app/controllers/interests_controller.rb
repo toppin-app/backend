@@ -35,7 +35,7 @@ class InterestsController < ApplicationController
 
     respond_to do |format|
       if @interest.save
-        format.html { redirect_to @interest.interest_category, notice: "Interés creado con éxito." }
+        format.html { redirect_to interests_path, notice: "Interés creado con éxito." }
         format.json { render :show, status: :created, location: @interest }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -48,7 +48,7 @@ class InterestsController < ApplicationController
   def update
     respond_to do |format|
       if @interest.update(interest_params)
-        format.html { redirect_to @interest.interest_category, notice: "Interés editado con éxito." }
+        format.html { redirect_to interests_path, notice: "Interés editado con éxito." }
         format.json { render :show, status: :ok, location: @interest }
       else
         format.html { render :edit, status: :unprocessable_entity }
@@ -59,10 +59,9 @@ class InterestsController < ApplicationController
 
   # DELETE /interests/1 or /interests/1.json
   def destroy
-    cat = @interest.interest_category
     @interest.destroy
     respond_to do |format|
-      format.html { redirect_to cat, notice: "Interés eliminado con éxito" }
+      format.html { redirect_to interests_path, notice: "Interés eliminado con éxito" }
       format.json { head :no_content }
     end
   end
@@ -75,6 +74,6 @@ class InterestsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def interest_params
-      params.require(:interest).permit(:interest_category_id, :name)
+      params.require(:interest).permit(:name)
     end
 end

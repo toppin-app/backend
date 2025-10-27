@@ -17,10 +17,10 @@ class InterestsControllerTest < ActionDispatch::IntegrationTest
 
   test "should create interest" do
     assert_difference('Interest.count') do
-      post interests_url, params: { interest: { interest_category_id: @interest.interest_category_id, name: @interest.name } }
+      post interests_url, params: { interest: { name: @interest.name } }
     end
 
-    assert_redirected_to interest_url(Interest.last)
+    assert_redirected_to interests_url
   end
 
   test "should show interest" do
@@ -34,8 +34,8 @@ class InterestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update interest" do
-    patch interest_url(@interest), params: { interest: { interest_category_id: @interest.interest_category_id, name: @interest.name } }
-    assert_redirected_to interest_url(@interest)
+    patch interest_url(@interest), params: { interest: { name: @interest.name } }
+    assert_redirected_to interests_url
   end
 
   test "should destroy interest" do

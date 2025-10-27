@@ -22,7 +22,6 @@ Rails.application.routes.draw do
   resources :user_filter_references
   resources :user_interests
   resources :interests
-  resources :interest_categories
   resources :user_media
   resources :banners
   resources :app_versions, only: [:index, :edit, :update]

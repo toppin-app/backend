@@ -12,11 +12,6 @@
   <% end %>
 
   <div class="field">
-    <%= form.label "Categoría" %>
-    <%= form.collection_select(:interest_category_id, InterestCategory.all, :id, :name, { prompt: true }, {class: 'form-control'}) %>
-  </div>
-
-  <div class="field">
     <%= form.label "Nombre" %>
     <%= form.text_field :name, class: 'form-control' %>
   </div>
