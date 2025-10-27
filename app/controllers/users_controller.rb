@@ -161,23 +161,41 @@ def update
     # Limpieza de favorite_languages
     if params[:user] && params[:user][:favorite_languages].present?
       fav = params[:user][:favorite_languages]
-      # Si es un string serializado, conviértelo a array
-      if fav.is_a?(String)
+      
+      # Convertir a array según el tipo
+      if fav.is_a?(Integer) || fav.is_a?(Numeric)
+        # Si es un número, convertirlo a string y luego a array
+        fav = [fav.to_s]
+      elsif fav.is_a?(String)
+        # Intentar parsear como JSON primero
         begin
-          fav = JSON.parse(fav)
-        rescue
-          fav = fav.split(",")
+          parsed = JSON.parse(fav)
+          fav = parsed.is_a?(Array) ? parsed : [fav]
+        rescue JSON::ParserError
+          # Si no es JSON válido, dividir por comas
+          fav = fav.split(",").map(&:strip).reject(&:blank?)
         end
-      end
-      # Si es un array con strings serializados, conviértelo
-      if fav.is_a?(Array) && fav.length == 1 && fav.first.is_a?(String) && fav.first.include?("[")
-        begin
-          fav = JSON.parse(fav.first)
-        rescue
-          fav = fav.first.split(",")
+      elsif fav.is_a?(Array)
+        # Si ya es un array, limpiar elementos vacíos
+        fav = fav.flatten.map(&:to_s).map(&:strip).reject(&:blank?)
+        
+        # Si el array contiene un único elemento que es un JSON string, parsearlo
+        if fav.length == 1 && fav.first.to_s.start_with?('[')
+          begin
+            parsed = JSON.parse(fav.first)
+            fav = parsed if parsed.is_a?(Array)
+          rescue JSON::ParserError
+            # Dejar como está si no se puede parsear
+          end
         end
+      else
+        # Para cualquier otro tipo, convertir a array
+        fav = [fav.to_s]
       end
-      # Finalmente, guarda como string separado por comas
+      
+      # Asegurar que fav es un array y guardar como string separado por comas
+      fav = [fav.to_s] unless fav.is_a?(Array)
+      fav = fav.map(&:to_s).reject(&:blank?)
       params[:user][:favorite_languages] = fav.join(",")
     end
 

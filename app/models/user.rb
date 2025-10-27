@@ -225,10 +225,12 @@ end
 
 def favorite_languages_array
   value = self[:favorite_languages]
+  return [] if value.blank?
+  
   if value.is_a?(String)
-    value.split(',').map(&:strip)
+    value.split(',').map(&:strip).reject(&:blank?)
   elsif value.is_a?(Array)
-    value
+    value.map(&:to_s).map(&:strip).reject(&:blank?)
   else
     []
   end
@@ -238,21 +240,30 @@ def favorite_languages
   raw = self[:favorite_languages]
   return [] if raw.blank?
 
-  # Si ya es un array, devuélvelo tal cual
-  return raw if raw.is_a?(Array)
-
-  # Si es un string serializado, deserialízalo
-  begin
-    arr = JSON.parse(raw)
-    # Si el resultado es un array de strings serializados, deserialízalos
-    if arr.is_a?(Array) && arr.length == 1 && arr.first.is_a?(String) && arr.first.include?("[")
-      arr = JSON.parse(arr.first)
-    end
-    arr
-  rescue
-    # Si no se puede parsear, intenta dividir por comas
-    raw.split(",")
+  # Si ya es un array, devuélvelo limpio
+  if raw.is_a?(Array)
+    return raw.map(&:to_s).map(&:strip).reject(&:blank?)
   end
+
+  # Si es un string, dividir por comas
+  if raw.is_a?(String)
+    # Primero intentar parsear como JSON
+    begin
+      parsed = JSON.parse(raw)
+      if parsed.is_a?(Array)
+        return parsed.map(&:to_s).map(&:strip).reject(&:blank?)
+      end
+    rescue JSON::ParserError
+      # No es JSON válido, continuar con split
+    end
+    
+    # Dividir por comas como fallback
+    return raw.split(',').map(&:strip).reject(&:blank?)
+  end
+
+  # Default: array vacío
+  []
+end
 end
 
   def location_name
