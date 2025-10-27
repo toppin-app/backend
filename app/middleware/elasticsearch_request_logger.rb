@@ -107,7 +107,9 @@ class ElasticsearchRequestLogger
 
       log_entry['error'] = error if error
 
-      index_name = "toppin-backend-logs-v2-#{Date.current.strftime('%Y.%m.%d')}"
+      # Usar índice diferente según el entorno
+      index_prefix = Rails.env.production? ? 'toppin-backend-prod' : 'toppin-backend-dev'
+      index_name = "#{index_prefix}-logs-v2-#{Date.current.strftime('%Y.%m.%d')}"
 
       # ❌ NO usar pipeline (no funciona sin GeoIP database)
       @elasticsearch_client.index(
@@ -141,63 +143,70 @@ class ElasticsearchRequestLogger
     important_headers
   end
 
-  # 🌍 Geolocalización manual basada en rangos de IP conocidos
+  # 🌍 Geolocalización REAL usando API de ipapi.co (Gratis: 1000 requests/día)
   def get_location_from_ip(ip)
-    case ip     
-    # España - Rangos comunes de ISPs españoles
-    when /^83\.48\./, /^90\.162\./, /^88\.27\./, /^80\.34\./, /^84\.88\./
-      {
-        location: { lat: 40.4165, lon: -3.7026 },
-        city: 'Madrid',
-        country: 'Spain',
-        country_code: 'ES'
-      }
-    
-    # Estados Unidos - Google/Cloudflare DNS
-    when /^8\.8\./, /^1\.1\.1\./
-      {
-        location: { lat: 37.7749, lon: -122.4194 },
-        city: 'San Francisco',
-        country: 'United States',
-        country_code: 'US'
-      }
-    
-    # Reino Unido - Rangos comunes
-    when /^86\./, /^87\./
-      {
-        location: { lat: 51.5074, lon: -0.1278 },
-        city: 'London',
-        country: 'United Kingdom',
-        country_code: 'GB'
-      }
-    
-    # Francia
-    when /^90\./, /^91\./
-      {
-        location: { lat: 48.8566, lon: 2.3522 },
-        city: 'Paris',
-        country: 'France',
-        country_code: 'FR'
-      }
-    
-    # Localhost / IPs privadas
-    when /^127\./, /^::1$/, /^192\.168\./, /^10\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./
-      {
+    # Localhost / IPs privadas - no gastar requests de API
+    if ip =~ /^127\./ || ip == '::1' || ip =~ /^192\.168\./ || ip =~ /^10\./ || ip =~ /^172\.(1[6-9]|2[0-9]|3[0-1])\./
+      return {
         location: { lat: 40.4165, lon: -3.7026 },
         city: 'Local',
         country: 'Local Network',
         country_code: 'XX'
       }
-    
-    # Default: España (puedes cambiar esto)
-    else
-      Rails.logger.info "⚠️ Unknown IP range: #{ip}, defaulting to Spain"
-      {
-        location: { lat: 40.4165, lon: -3.7026 },
-        city: 'Unknown',
-        country: 'Spain',
-        country_code: 'ES'
-      }
     end
+
+    # Usar cache para no hacer la misma petición varias veces
+    cache_key = "geoip:#{ip}"
+    cached_data = Rails.cache.read(cache_key)
+    return cached_data if cached_data
+
+    begin
+      # API gratuita de ipapi.co - 1000 requests/día sin API key
+      # Para más requests, registrarse en https://ipapi.co/
+      require 'net/http'
+      require 'json'
+      
+      uri = URI("https://ipapi.co/#{ip}/json/")
+      response = Net::HTTP.get_response(uri)
+      
+      if response.is_a?(Net::HTTPSuccess)
+        data = JSON.parse(response.body)
+        
+        location_data = {
+          location: { 
+            lat: data['latitude'].to_f, 
+            lon: data['longitude'].to_f 
+          },
+          city: data['city'] || 'Unknown',
+          country: data['country_name'] || 'Unknown',
+          country_code: data['country_code'] || 'XX',
+          region: data['region'] || 'Unknown',
+          postal: data['postal'] || 'Unknown',
+          timezone: data['timezone'] || 'Unknown'
+        }
+        
+        # Cachear por 24 horas (las IPs no cambian de ubicación frecuentemente)
+        Rails.cache.write(cache_key, location_data, expires_in: 24.hours)
+        
+        Rails.logger.info "✅ Geolocalización obtenida para #{ip}: #{data['city']}, #{data['country_name']}"
+        return location_data
+      else
+        Rails.logger.warn "⚠️ Error en API de geolocalización: #{response.code}"
+        return default_location
+      end
+      
+    rescue => e
+      Rails.logger.error "❌ Error obteniendo geolocalización: #{e.message}"
+      return default_location
+    end
+  end
+
+  def default_location
+    {
+      location: { lat: 40.4165, lon: -3.7026 },
+      city: 'Unknown',
+      country: 'Spain',
+      country_code: 'ES'
+    }
   end
 end
