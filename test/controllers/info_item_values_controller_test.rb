@@ -17,7 +17,7 @@ class InfoItemValuesControllerTest < ActionDispatch::IntegrationTest
 
   test "should create info_item_value" do
     assert_difference('InfoItemValue.count') do
-      post info_item_values_url, params: { info_item_value: { info_item_category_id: @info_item_value.info_item_category_id, value: @info_item_value.value } }
+      post info_item_values_url, params: { info_item_value: { info_item_category_id: @info_item_value.info_item_category_id, name: @info_item_value.name } }
     end
 
     assert_redirected_to info_item_value_url(InfoItemValue.last)
@@ -34,7 +34,7 @@ class InfoItemValuesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update info_item_value" do
-    patch info_item_value_url(@info_item_value), params: { info_item_value: { info_item_category_id: @info_item_value.info_item_category_id, value: @info_item_value.value } }
+    patch info_item_value_url(@info_item_value), params: { info_item_value: { info_item_category_id: @info_item_value.info_item_category_id, name: @info_item_value.name } }
     assert_redirected_to info_item_value_url(@info_item_value)
   end
 

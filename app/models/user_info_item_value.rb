@@ -18,7 +18,7 @@ class UserInfoItemValue < ApplicationRecord
   end
 
   def set_item_name
-      self.item_name = self.info_item_value.value
+      self.item_name = self.info_item_value.name
   end
 
 

@@ -15,7 +15,7 @@ class InfoItemValuesTest < ApplicationSystemTestCase
     click_on "New Info Item Value"
 
     fill_in "Info item category", with: @info_item_value.info_item_category_id
-    fill_in "Value", with: @info_item_value.value
+    fill_in "Value", with: @info_item_value.name
     click_on "Create Info item value"
 
     assert_text "Info item value was successfully created"
@@ -27,7 +27,7 @@ class InfoItemValuesTest < ApplicationSystemTestCase
     click_on "Edit", match: :first
 
     fill_in "Info item category", with: @info_item_value.info_item_category_id
-    fill_in "Value", with: @info_item_value.value
+    fill_in "Value", with: @info_item_value.name
     click_on "Update Info item value"
 
     assert_text "Info item value was successfully updated"

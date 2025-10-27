@@ -67,6 +67,6 @@ class InfoItemValuesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def info_item_value_params
-      params.require(:info_item_value).permit(:value, :info_item_category_id)
+      params.require(:info_item_value).permit(:name, :info_item_category_id)
     end
 end
