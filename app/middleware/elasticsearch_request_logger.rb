@@ -107,9 +107,7 @@ class ElasticsearchRequestLogger
 
       log_entry['error'] = error if error
 
-      # Usar índice diferente según el entorno
-      index_prefix = Rails.env.production? ? 'toppin-backend-prod' : 'toppin-backend-dev'
-      index_name = "#{index_prefix}-logs-v2-#{Date.current.strftime('%Y.%m.%d')}"
+      index_name = "toppin-backend-logs-v2-#{Date.current.strftime('%Y.%m.%d')}"
 
       # ❌ NO usar pipeline (no funciona sin GeoIP database)
       @elasticsearch_client.index(
