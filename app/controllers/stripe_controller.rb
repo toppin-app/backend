@@ -48,13 +48,16 @@ class StripeController < ApplicationController
     customer = customers.find { |c| c.email == email }
     customer ||= Stripe::Customer.create(email: email)
 
+    config = PRODUCT_CONFIG[product_key]
     
-    # 👇 Cancelar suscripciones activas antes de crear una nueva
-    active_subs = Stripe::Subscription.list(customer: customer.id, status: 'active').data
-    active_subs.each do |sub|
-      Stripe::Subscription.cancel(sub.id) # Cancela inmediatamente
-      # Si prefieres cancelar al final del periodo, usa:
-      # Stripe::Subscription.update(sub.id, cancel_at_period_end: true)
+    # 👇 Solo cancelar suscripciones activas si estás comprando otra suscripción
+    if product_key.start_with?('toppin_supreme_', 'toppin_premium_')
+      active_subs = Stripe::Subscription.list(customer: customer.id, status: 'active').data
+      active_subs.each do |sub|
+        Stripe::Subscription.cancel(sub.id) # Cancela inmediatamente
+        # Si prefieres cancelar al final del periodo, usa:
+        # Stripe::Subscription.update(sub.id, cancel_at_period_end: true)
+      end
     end
 
   
@@ -63,7 +66,6 @@ class StripeController < ApplicationController
       { stripe_version: ENV['STRIPE_API_VERSION'] }
     )
 
-    config = PRODUCT_CONFIG[product_key]
     if product_key.start_with?('toppin_supreme_', 'toppin_premium_')
     subscription = Stripe::Subscription.create(
       customer: customer.id,
