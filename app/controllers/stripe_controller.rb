@@ -104,6 +104,7 @@ class StripeController < ApplicationController
         amount: price.unit_amount,
         currency: price.currency,
         customer: customer.id,
+        receipt_email: email,
         metadata: { product_id: price.product, product_key: product_key }
       )
 
