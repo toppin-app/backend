@@ -1779,25 +1779,42 @@ end
   def change_language
     new_language = params[:language]
     
+    # Validar que se haya enviado el parámetro language
+    if new_language.blank?
+      Rails.logger.warn "change_language: No se recibió el parámetro 'language'. Params: #{params.inspect}"
+      render json: { 
+        status: 400, 
+        message: "El parámetro 'language' es requerido" 
+      }, status: :bad_request
+      return
+    end
+    
+    # Normalizar el idioma a mayúsculas
+    new_language = new_language.to_s.upcase.strip
+    
     # Validar que el idioma sea uno de los permitidos
     allowed_languages = ['ES', 'EN', 'IT', 'FR', 'DE']
     
     unless allowed_languages.include?(new_language)
+      Rails.logger.warn "change_language: Idioma no válido '#{new_language}'. Params: #{params.inspect}"
       render json: { 
         status: 400, 
-        message: "Idioma no válido. Idiomas permitidos: #{allowed_languages.join(', ')}" 
+        message: "Idioma no válido. Idiomas permitidos: #{allowed_languages.join(', ')}", 
+        received: params[:language]
       }, status: :bad_request
       return
     end
     
     # Actualizar el idioma del usuario
     if current_user.update(language: new_language)
+      Rails.logger.info "change_language: Idioma actualizado a '#{new_language}' para usuario #{current_user.id}"
       render json: { 
         status: 200, 
         message: "Idioma actualizado correctamente",
         language: current_user.language 
       }, status: :ok
     else
+      Rails.logger.error "change_language: Error al actualizar idioma para usuario #{current_user.id}. Errors: #{current_user.errors.full_messages}"
       render json: { 
         status: 500, 
         message: "Error al actualizar el idioma",
