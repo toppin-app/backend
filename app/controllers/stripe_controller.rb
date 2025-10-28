@@ -73,8 +73,11 @@ class StripeController < ApplicationController
         save_default_payment_method: 'on_subscription'
       },
       expand: ['latest_invoice.confirmation_secret'],
-        metadata: { product_id: price.product, product_key: product_key }
+      metadata: { product_id: price.product, product_key: product_key }
     )
+    
+    # Asegurar que el customer tenga el email actualizado
+    Stripe::Customer.update(customer.id, email: email) if customer.email != email
 
     PurchasesStripe.create!(
       user: user,
