@@ -72,6 +72,7 @@ Rails.application.routes.draw do
   post '/social_login_check', to: 'users#social_login_check'
   post '/update_spotify', to: 'users#update_spotify'
   post '/update_push_preferences', to: 'users#update_push_preferences'
+  post '/change_language', to: 'users#change_language'
   get '/reset_password_sent', to: 'users#reset_password_sent', as: :reset_password_sent
   get '/password_changed', to: 'users#password_changed', as: :password_changed
 

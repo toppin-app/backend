@@ -26,7 +26,7 @@ class User < ApplicationRecord
   enum gender: { female: 0, male: 1, non_binary: 2, couple: 3 }
   enum popularity: { low_popularity: 0, medium_popularity: 1, high_popularity: 2 }
   enum activity_level: { low_activity: 0, medium_activity: 1, high_activity: 2 }
-  enum language: { ES: 'ES', EN: 'EN', IT: 'IT', FR: 'FR' }, _suffix: true
+  enum language: { ES: 'ES', EN: 'EN', IT: 'IT', FR: 'FR', DE: 'DE' }, _suffix: true
   has_many :purchases_stripes, class_name: 'PurchasesStripe', dependent: :destroy
 
 

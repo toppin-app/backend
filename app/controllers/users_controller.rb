@@ -1775,6 +1775,37 @@ end
      render json: "OK".to_json
   end
 
+  # Cambia el idioma del usuario
+  def change_language
+    new_language = params[:language]
+    
+    # Validar que el idioma sea uno de los permitidos
+    allowed_languages = ['ES', 'EN', 'IT', 'FR', 'DE']
+    
+    unless allowed_languages.include?(new_language)
+      render json: { 
+        status: 400, 
+        message: "Idioma no válido. Idiomas permitidos: #{allowed_languages.join(', ')}" 
+      }, status: :bad_request
+      return
+    end
+    
+    # Actualizar el idioma del usuario
+    if current_user.update(language: new_language)
+      render json: { 
+        status: 200, 
+        message: "Idioma actualizado correctamente",
+        language: current_user.language 
+      }, status: :ok
+    else
+      render json: { 
+        status: 500, 
+        message: "Error al actualizar el idioma",
+        errors: current_user.errors.full_messages 
+      }, status: :internal_server_error
+    end
+  end
+
 
   # Desbloquea un vip toppin (si eres premium, max 6 por semana)
   def unlock_vip_toppin
@@ -1863,7 +1894,7 @@ end
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :occupation, :studies, :popularity, :favorite_languages,
-        language: []
+        :language
       )
     end
     def redis
