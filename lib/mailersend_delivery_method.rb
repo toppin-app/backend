@@ -11,8 +11,15 @@ class MailersendDeliveryMethod
   end
 
   def deliver!(mail)
-    return if ENV['MAILERSEND_API_TOKEN'].blank?
+    api_token = ENV['MAILERSEND_API_TOKEN']
+    
+    if api_token.blank?
+      Rails.logger.error "MailerSend: API Token no configurado"
+      raise "MailerSend API Token no está configurado en las variables de entorno"
+    end
 
+    # Crear cliente de MailerSend con el API token
+    ms_emails = Mailersend::Emails.new(api_token)
     ms_email = Mailersend::Email.new
 
     # Configurar remitente
@@ -72,7 +79,6 @@ class MailersendDeliveryMethod
     end
 
     # Enviar email
-    ms_emails = Mailersend::Emails.new
     response = ms_emails.send(ms_email)
 
     # Logging
