@@ -65,9 +65,14 @@ Rails.application.configure do
 
   config.action_mailer.perform_caching = false
 
-  # Ignore bad email addresses and do not raise email delivery errors.
-  # Set this to true and configure the email server for immediate delivery to raise delivery errors.
-  # config.action_mailer.raise_delivery_errors = false
+  # Configuración de MailerSend para producción
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.delivery_method = :mailersend
+  
+  config.action_mailer.default_url_options = { 
+    host: ENV['MAILERSEND_DEFAULT_URL_HOST'] || "web-backend-ruby.uao3jo.easypanel.host" 
+  }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
