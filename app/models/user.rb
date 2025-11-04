@@ -497,9 +497,9 @@ end
   end
 
 
-  # Likes enviados o dislikes por el usuario.
+  # Likes enviados por el usuario (solo likes, no rechazos).
   def sent_likes
-     return UserMatchRequest.where(user_id: self.id)
+     return UserMatchRequest.where(user_id: self.id, is_like: true)
   end
 
 
