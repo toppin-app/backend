@@ -134,7 +134,7 @@
 
       <div class="field">
          <%= f.label "Añadir intereses" %>
-        <%= collection_select(nil,:user_interests, Interest.where.not(id: @user.user_interests.pluck(:interest_id)), :id, :name_with_category, {}, {:multiple => true, class: 'form-control selectpicker', "data-live-search" => "true", style: "height: 300px;"}) %>
+        <%= collection_select(nil,:user_interests, Interest.where.not(id: @user.user_interests.pluck(:interest_id)), :id, :name, {}, {:multiple => true, class: 'form-control selectpicker', "data-live-search" => "true", style: "height: 300px;"}) %>
       </div>
    </div>
 

@@ -4,7 +4,7 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby '3.0.6'
 
 # Innobing
-gem 'mailjet'
+gem 'mailersend-ruby'
 gem 'devise'
 gem 'will_paginate'
 gem 'ransack'

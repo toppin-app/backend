@@ -36,6 +36,15 @@ Rails.application.routes.draw do
   root to: 'users#index'
 
   get '/test' => 'admin#index'
+  
+  # Admin - Panel de pruebas de emails
+  namespace :admin do
+    get 'mailer_test', to: 'mailer_test#index'
+    post 'mailer_test/send', to: 'mailer_test#send_test_email'
+    post 'mailer_test/clear_logs', to: 'mailer_test#clear_logs'
+    get 'mailer_test/config', to: 'mailer_test#check_config'
+  end
+  
   get '/match_requests_current_user', to: 'user_match_requests#current_user_requests'
   devise_scope :user do
     post '/signup', to: 'users/registrations#create'

@@ -32,25 +32,14 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Don't care if the mailer can't send.
-  # Don't care if the mailer can't send.
+  # Configuración de MailerSend
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_deliveries = true
-  config.action_mailer.delivery_method = :mailjet
-
-
-
-  config.action_mailer.default_url_options = { host: "toppin-dev.itechglobal.solutions" }
-
-  config.action_mailer.smtp_settings = {
-  address:              'in-v3.mailjet.com',
-  port:                 587,
-  domain:               'innobing.net',
-  user_name:            'noreply@innobing.net',
-  password:             '1349cb156f45c9a2261b19b9fc2cea35',
-  authentication:       :plain,
-  enable_starttls_auto: true
-}
+  config.action_mailer.delivery_method = :mailersend
+  
+  config.action_mailer.default_url_options = { 
+    host: ENV['MAILERSEND_DEFAULT_URL_HOST'] || "web-backend-ruby.uao3jo.easypanel.host" 
+  }
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log

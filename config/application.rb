@@ -12,6 +12,10 @@ module RailsToppin
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 6.0
     config.time_zone = "Europe/Madrid"
+    
+    # Autoload lib directory
+    config.autoload_paths << Rails.root.join('lib')
+    config.eager_load_paths << Rails.root.join('lib')
 
     # Load Elasticsearch middleware if enabled
     config.before_initialize do

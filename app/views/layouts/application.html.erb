@@ -173,6 +173,15 @@
           </li>
 
           <li class="nav-item">
+            <%= link_to admin_mailer_test_path, class: "nav-link" do %>
+              <i class="fas fa-envelope"></i>
+              <p>
+                Test de Emails
+              </p>
+            <% end %>
+          </li>
+
+          <li class="nav-item">
 
             <%= link_to logout_path, class: 'nav-link' do %>
               <i class="fas fa-sign-out-alt"></i>

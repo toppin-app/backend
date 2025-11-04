@@ -1,0 +1,294 @@
+<!-- Alert container -->
+<div id="alert-container"></div>
+
+<!-- Cards Grid -->
+<div class="row">
+  <!-- Formulario de envío -->
+  <div class="col-md-6">
+    <div class="card card-primary">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-paper-plane"></i> Enviar Email de Prueba</h3>
+      </div>
+      <div class="card-body">
+        <form id="email-form">
+          <div class="form-group">
+            <label for="email">Destinatario <span class="text-danger">*</span></label>
+            <input 
+              type="email" 
+              class="form-control" 
+              id="email" 
+              name="email" 
+              placeholder="ejemplo@gmail.com"
+              required
+            >
+          </div>
+          
+          <div class="form-group">
+            <label for="subject">Asunto</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="subject" 
+              name="subject" 
+              placeholder="Email de prueba desde Toppin"
+              value="Email de prueba desde Toppin"
+            >
+          </div>
+          
+          <div class="form-group">
+            <label for="message">Mensaje</label>
+            <textarea 
+              class="form-control" 
+              id="message" 
+              name="message" 
+              rows="4"
+              placeholder="Escribe aquí el contenido del email..."
+            >Este es un email de prueba enviado desde el panel de administración de Toppin.</textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-primary" id="send-btn">
+            <i class="fas fa-paper-plane"></i> Enviar Email de Prueba
+          </button>
+        </form>
+        
+        <div class="text-center mt-3" style="display: none;" id="loading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Enviando...</span>
+          </div>
+          <p class="mt-2">Enviando email...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Estado de configuración -->
+  <div class="col-md-6">
+    <div class="card card-info">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-cog"></i> Estado de Configuración</h3>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm">
+          <tr>
+            <td><strong>API Token</strong></td>
+            <td>
+              <% if @config_status[:api_token] %>
+                <span class="badge badge-success">✓ Configurado</span>
+              <% else %>
+                <span class="badge badge-danger">✗ No configurado</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>From Email</strong></td>
+            <td>
+              <% if @config_status[:from_email] %>
+                <code class="text-sm"><%= ENV['MAILERSEND_FROM_EMAIL'] %></code>
+              <% else %>
+                <span class="badge badge-danger">✗ No configurado</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>From Name</strong></td>
+            <td>
+              <% if @config_status[:from_name] %>
+                <code class="text-sm"><%= ENV['MAILERSEND_FROM_NAME'] %></code>
+              <% else %>
+                <span class="badge badge-danger">✗ No configurado</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Default Host</strong></td>
+            <td>
+              <% if @config_status[:default_host] %>
+                <code class="text-sm"><%= ENV['MAILERSEND_DEFAULT_URL_HOST'] %></code>
+              <% else %>
+                <span class="badge badge-danger">✗ No configurado</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Delivery Method</strong></td>
+            <td><code class="text-sm"><%= ActionMailer::Base.delivery_method %></code></td>
+          </tr>
+        </table>
+        
+        <div class="mt-3">
+          <% if @config_status.values.all? %>
+            <div class="alert alert-success mb-0">
+              <i class="fas fa-check-circle"></i> Configuración completa y lista para usar
+            </div>
+          <% else %>
+            <div class="alert alert-warning mb-0">
+              <i class="fas fa-exclamation-triangle"></i> Faltan algunas configuraciones. Revisa el archivo .env
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Logs de emails -->
+<div class="row">
+  <div class="col-12">
+    <div class="card card-success">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-list"></i> Logs de Emails Enviados</h3>
+        <div class="card-tools">
+          <% if @recent_logs.any? %>
+            <button class="btn btn-danger btn-sm" onclick="clearLogs()">
+              <i class="fas fa-trash"></i> Limpiar Logs
+            </button>
+          <% end %>
+        </div>
+      </div>
+      <div class="card-body" id="logs-container">
+        <% if @recent_logs.any? %>
+          <% @recent_logs.each do |log| %>
+            <div class="alert <%= log[:status] == 'success' ? 'alert-success' : 'alert-danger' %>" role="alert">
+              <div class="d-flex justify-content-between">
+                <strong>
+                  <% if log[:status] == 'success' %>
+                    <i class="fas fa-check-circle"></i> Enviado
+                  <% else %>
+                    <i class="fas fa-times-circle"></i> Error
+                  <% end %>
+                </strong>
+                <small class="text-muted"><%= log[:timestamp] %></small>
+              </div>
+              <hr class="my-2">
+              <p class="mb-1"><strong>Para:</strong> <%= log[:to] %></p>
+              <p class="mb-1"><strong>Asunto:</strong> <%= log[:subject] %></p>
+              <p class="mb-0"><strong>Estado:</strong> <%= log[:message] %></p>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-center text-muted py-5">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>No hay logs de emails todavía.</p>
+            <p class="small">Los emails que envíes aparecerán aquí.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('email-form');
+  const loading = document.getElementById('loading');
+  const sendBtn = document.getElementById('send-btn');
+  const alertContainer = document.getElementById('alert-container');
+  const logsContainer = document.getElementById('logs-container');
+  
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    loading.style.display = 'block';
+    sendBtn.disabled = true;
+    
+    try {
+      const response = await fetch('/admin/mailer_test/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showAlert('success', result.message);
+        form.reset();
+        if (result.log) prependLog(result.log);
+      } else {
+        showAlert('error', result.error || 'Error al enviar el email');
+        if (result.log) prependLog(result.log);
+      }
+    } catch (error) {
+      showAlert('error', 'Error de conexión: ' + error.message);
+    } finally {
+      loading.style.display = 'none';
+      sendBtn.disabled = false;
+    }
+  });
+  
+  function showAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const icon = type === 'success' ? 'check-circle' : 'times-circle';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show`;
+    alert.innerHTML = `
+      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+      <h5><i class="icon fas fa-${icon}"></i> ${type === 'success' ? 'Éxito' : 'Error'}</h5>
+      ${message}
+    `;
+    
+    alertContainer.innerHTML = '';
+    alertContainer.appendChild(alert);
+    
+    setTimeout(() => {
+      $(alert).fadeOut(() => alert.remove());
+    }, 5000);
+  }
+  
+  function prependLog(log) {
+    const emptyState = logsContainer.querySelector('.text-center.text-muted');
+    if (emptyState) emptyState.remove();
+    
+    const alertClass = log.status === 'success' ? 'alert-success' : 'alert-danger';
+    const icon = log.status === 'success' ? 'check-circle' : 'times-circle';
+    const statusText = log.status === 'success' ? 'Enviado' : 'Error';
+    
+    const logHtml = `
+      <div class="alert ${alertClass}" role="alert">
+        <div class="d-flex justify-content-between">
+          <strong><i class="fas fa-${icon}"></i> ${statusText}</strong>
+          <small class="text-muted">${log.timestamp}</small>
+        </div>
+        <hr class="my-2">
+        <p class="mb-1"><strong>Para:</strong> ${log.to}</p>
+        <p class="mb-1"><strong>Asunto:</strong> ${log.subject}</p>
+        <p class="mb-0"><strong>Estado:</strong> ${log.message}</p>
+      </div>
+    `;
+    
+    logsContainer.insertAdjacentHTML('afterbegin', logHtml);
+  }
+  
+  async function clearLogs() {
+    if (!confirm('¿Estás seguro de que quieres limpiar todos los logs?')) return;
+    
+    try {
+      const response = await fetch('/admin/mailer_test/clear_logs', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        logsContainer.innerHTML = `
+          <div class="text-center text-muted py-5">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>No hay logs de emails todavía.</p>
+            <p class="small">Los emails que envíes aparecerán aquí.</p>
+          </div>
+        `;
+        showAlert('success', 'Logs limpiados correctamente');
+      }
+    } catch (error) {
+      showAlert('error', 'Error al limpiar los logs');
+    }
+  }
+</script>
