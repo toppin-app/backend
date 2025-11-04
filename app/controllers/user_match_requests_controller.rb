@@ -114,6 +114,8 @@ class UserMatchRequestsController < ApplicationController
             if umr_like
               umr_like.update(is_rejected: true, is_like: false)
             end
+            # Notificar dislike si el target_user tiene boost activo
+            notify_boost_interaction(target_user, umr)
           end
           # Si está dando un like y no es premium ni mujer, se lo descontamos.
           if umr.is_like and !current_user.is_premium and !umr.is_superlike and !umr.user.female?
@@ -365,9 +367,10 @@ class UserMatchRequestsController < ApplicationController
       boost_start = target_user.last_boost_started_at
       return unless boost_start && umr.created_at >= boost_start
       
-      # Obtener todas las interacciones del boost actual
+      # Obtener todas las interacciones del boost actual (excluyendo matches)
       boost_end_time = target_user.high_visibility_expire
       all_interactions = UserMatchRequest.where(target_user: target_user.id)
+                                         .where(is_match: false)  # ⭐ Excluir matches
                                          .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
                                          .order(created_at: :desc)
       
@@ -376,15 +379,35 @@ class UserMatchRequestsController < ApplicationController
         user = User.find_by(id: interaction.user_id)
         next unless user
         
+        # Determinar el tipo de interacción
+        interaction_type = if interaction.is_rejected
+                            "dislike"
+                          elsif interaction.is_like
+                            "like"
+                          else
+                            "dislike"
+                          end
+        
         {
           id: user.id,
           name: user.name,
           age: user.age,
-          interaction_type: interaction.is_match ? "match" : (interaction.is_rejected ? "rejected" : "like"),
+          interaction_type: interaction_type,
           interaction_time: interaction.created_at,
           user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
         }
       end.compact
+      
+      # Determinar el tipo de la última interacción
+      latest_interaction_type = if umr.is_match
+                                  "match"
+                                elsif umr.is_rejected
+                                  "dislike"
+                                elsif umr.is_like
+                                  "like"
+                                else
+                                  "dislike"
+                                end
       
       # Enviar la lista completa actualizada a través de AliveChannel
       AliveChannel.broadcast_to(target_user, {
@@ -399,7 +422,7 @@ class UserMatchRequestsController < ApplicationController
             name: current_user.name,
             age: current_user.age
           },
-          interaction_type: umr.is_match ? "match" : (umr.is_rejected ? "rejected" : "like"),
+          interaction_type: latest_interaction_type,
           interaction_time: umr.created_at
         }
       })

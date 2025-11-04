@@ -738,8 +738,9 @@ end
     boost_end_time = current_user.last_boost_ended_at || current_user.high_visibility_expire || (boost_start_time + 30.minutes)
 
     # Buscar todas las interacciones donde el usuario actual es el target_user
-    # durante el período del último boost
+    # durante el período del último boost (excluyendo matches)
     interactions = UserMatchRequest.where(target_user: current_user.id)
+                                   .where(is_match: false)  # ⭐ Excluir matches
                                    .where("created_at >= ? AND created_at <= ?", boost_start_time, boost_end_time)
                                    .order(created_at: :desc)
 
@@ -748,11 +749,20 @@ end
       user = User.find_by(id: interaction.user_id)
       next unless user
       
+      # Determinar el tipo de interacción
+      interaction_type = if interaction.is_rejected
+                          "dislike"
+                        elsif interaction.is_like
+                          "like"
+                        else
+                          "dislike"
+                        end
+      
       {
         id: user.id,
         name: user.name,
         age: user.age,
-        interaction_type: interaction.is_match ? "match" : (interaction.is_rejected ? "rejected" : "like"),
+        interaction_type: interaction_type,
         interaction_time: interaction.created_at,
         user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
       }
