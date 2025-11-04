@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Mailer de prueba para verificar que MailerSend funciona correctamente
+# Mailer de prueba para verificar que Mailjet funciona correctamente
 # 
 # Para probar en consola Rails:
 #   TestMailer.welcome_email('tu-email@ejemplo.com').deliver_now

@@ -3,14 +3,15 @@ class Admin::MailerTestController < ApplicationController
   before_action :check_admin
   
   def index
-    @title = "Test de Emails - MailerSend"
+    @title = "Test de Emails - Mailjet"
     
     # Verificar configuración
     @config_status = {
-      api_token: ENV['MAILERSEND_API_TOKEN'].present?,
-      from_email: ENV['MAILERSEND_FROM_EMAIL'].present?,
-      from_name: ENV['MAILERSEND_FROM_NAME'].present?,
-      default_host: ENV['MAILERSEND_DEFAULT_URL_HOST'].present?
+      api_key: ENV['MAILJET_API_KEY'].present?,
+      secret_key: ENV['MAILJET_SECRET_KEY'].present?,
+      from_email: ENV['MAILJET_FROM_EMAIL'].present?,
+      from_name: ENV['MAILJET_FROM_NAME'].present?,
+      default_host: ENV['MAILJET_DEFAULT_URL_HOST'].present?
     }
     
     # Obtener últimos logs de emails (si existen)
@@ -84,21 +85,25 @@ class Admin::MailerTestController < ApplicationController
   
   def check_config
     config = {
-      api_token: {
-        present: ENV['MAILERSEND_API_TOKEN'].present?,
-        value: ENV['MAILERSEND_API_TOKEN'].present? ? "Configurado (#{ENV['MAILERSEND_API_TOKEN'][0..10]}...)" : "No configurado"
+      api_key: {
+        present: ENV['MAILJET_API_KEY'].present?,
+        value: ENV['MAILJET_API_KEY'].present? ? "Configurado (#{ENV['MAILJET_API_KEY'][0..10]}...)" : "No configurado"
+      },
+      secret_key: {
+        present: ENV['MAILJET_SECRET_KEY'].present?,
+        value: ENV['MAILJET_SECRET_KEY'].present? ? "Configurado (#{ENV['MAILJET_SECRET_KEY'][0..10]}...)" : "No configurado"
       },
       from_email: {
-        present: ENV['MAILERSEND_FROM_EMAIL'].present?,
-        value: ENV['MAILERSEND_FROM_EMAIL'] || "No configurado"
+        present: ENV['MAILJET_FROM_EMAIL'].present?,
+        value: ENV['MAILJET_FROM_EMAIL'] || "No configurado"
       },
       from_name: {
-        present: ENV['MAILERSEND_FROM_NAME'].present?,
-        value: ENV['MAILERSEND_FROM_NAME'] || "No configurado"
+        present: ENV['MAILJET_FROM_NAME'].present?,
+        value: ENV['MAILJET_FROM_NAME'] || "No configurado"
       },
       default_host: {
-        present: ENV['MAILERSEND_DEFAULT_URL_HOST'].present?,
-        value: ENV['MAILERSEND_DEFAULT_URL_HOST'] || "No configurado"
+        present: ENV['MAILJET_DEFAULT_URL_HOST'].present?,
+        value: ENV['MAILJET_DEFAULT_URL_HOST'] || "No configurado"
       },
       delivery_method: ActionMailer::Base.delivery_method.to_s,
       rails_env: Rails.env

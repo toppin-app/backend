@@ -32,13 +32,13 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Configuración de MailerSend
+  # Configuración de Mailjet
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_deliveries = true
-  config.action_mailer.delivery_method = :mailersend
+  config.action_mailer.delivery_method = :mailjet
   
   config.action_mailer.default_url_options = { 
-    host: ENV['MAILERSEND_DEFAULT_URL_HOST'] || "web-backend-ruby.uao3jo.easypanel.host" 
+    host: ENV['MAILJET_DEFAULT_URL_HOST'] || "web-backend-ruby.uao3jo.easypanel.host" 
   }
 
   # Print deprecation notices to the Rails logger.
