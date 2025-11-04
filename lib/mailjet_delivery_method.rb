@@ -120,10 +120,15 @@ class MailjetDeliveryMethod
     # Enviar el email
     response = Mailjet::Send.create(messages: [message])
 
-    # Verificar respuesta
-    if response.success?
+    # Verificar respuesta - Mailjet usa 'persisted' para indicar éxito
+    if response.attributes['persisted'] == true
       Rails.logger.info "✓ Email enviado exitosamente a #{mail.to.join(', ')}"
-      Rails.logger.info "  Mailjet Response: #{response.attributes['Messages'].first['Status']}"
+      
+      # Obtener el status del primer mensaje si existe
+      if response.attributes['Messages'] && response.attributes['Messages'].first
+        status = response.attributes['Messages'].first['Status'] || 'sent'
+        Rails.logger.info "  Mailjet Response: #{status}"
+      end
     else
       error_msg = "Error enviando email: #{response.attributes}"
       Rails.logger.error "✗ #{error_msg}"
