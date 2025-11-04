@@ -705,6 +705,16 @@ end
       end
 
       if current_user.use_boost
+        # Enviar lista inicial vacía al activar el boost
+        AliveChannel.broadcast_to(current_user, {
+          type: "boost_interactions_update",
+          boost_started_at: current_user.last_boost_started_at,
+          boost_expires_at: current_user.high_visibility_expire,
+          interactions_count: 0,
+          interactions: [],
+          latest_interaction: nil
+        })
+        
         render json: "OK".to_json
       else
         render json: { status: 405, error: "No te quedan power sweet"}, status: 405
@@ -714,6 +724,48 @@ end
   def time_to_end_boost
     has_boost = current_user.time_to_end_boost != nil
     return render json: { time: current_user.time_to_end_boost, has_boost: has_boost, now: Time.now}
+  end
+
+  def boost_interactions
+    # Verificar si el usuario ha usado algún boost
+    unless current_user.last_boost_started_at
+      render json: { status: 404, error: "No has usado ningún power sweet aún"}, status: 404
+      return
+    end
+
+    # Usar el último boost (terminado o activo)
+    boost_start_time = current_user.last_boost_started_at
+    boost_end_time = current_user.last_boost_ended_at || current_user.high_visibility_expire || (boost_start_time + 30.minutes)
+
+    # Buscar todas las interacciones donde el usuario actual es el target_user
+    # durante el período del último boost
+    interactions = UserMatchRequest.where(target_user: current_user.id)
+                                   .where("created_at >= ? AND created_at <= ?", boost_start_time, boost_end_time)
+                                   .order(created_at: :desc)
+
+    # Obtener los usuarios que han interactuado
+    users_data = interactions.map do |interaction|
+      user = User.find_by(id: interaction.user_id)
+      next unless user
+      
+      {
+        id: user.id,
+        name: user.name,
+        age: user.age,
+        interaction_type: interaction.is_match ? "match" : (interaction.is_rejected ? "rejected" : "like"),
+        interaction_time: interaction.created_at,
+        user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
+      }
+    end.compact
+
+    render json: {
+      status: 200,
+      boost_started_at: boost_start_time,
+      boost_ended_at: boost_end_time,
+      is_active: current_user.high_visibility,
+      interactions_count: users_data.length,
+      interactions: users_data
+    }
   end
 
 
@@ -757,7 +809,23 @@ def cron_check_outdated_boosts
   users = User.where(high_visibility: true).where("high_visibility_expire <= ?", DateTime.now)
 
   users.each do |user|
-    user.update(high_visibility: false)
+    user.update(high_visibility: false, last_boost_ended_at: DateTime.now)
+
+    # Enviar resumen final del boost por AliveChannel
+    if user.last_boost_started_at
+      final_interactions = UserMatchRequest.where(target_user: user.id)
+                                          .where("created_at >= ? AND created_at <= ?", 
+                                                 user.last_boost_started_at, 
+                                                 user.last_boost_ended_at)
+                                          .count
+      
+      AliveChannel.broadcast_to(user, {
+        type: "boost_expired",
+        boost_started_at: user.last_boost_started_at,
+        boost_ended_at: user.last_boost_ended_at,
+        total_interactions: final_interactions
+      })
+    end
 
     user.devices.each do |device|
       next if device.token.blank?

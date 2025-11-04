@@ -150,6 +150,7 @@ Rails.application.routes.draw do
   # Usar un boost
   post '/use_boost', to: 'users#use_boost'
   get '/time_to_end_boost', to: 'users#time_to_end_boost'
+  get '/boost_interactions', to: 'users#boost_interactions'
 
   get '/dc', to: 'twilio#destroy_conversations'
   post '/twilio_webhook', to: 'twilio#twilio_webhook'

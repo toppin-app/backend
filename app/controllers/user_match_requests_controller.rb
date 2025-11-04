@@ -95,9 +95,15 @@ class UserMatchRequestsController < ApplicationController
                target_user_ranking: target_user.ranking,
                is_sugar_sweet: is_sugar_sweet
              )
+             
+             # Notificar en tiempo real si el target_user tiene boost activo
+             notify_boost_interaction(target_user, umr) if umr.persisted?
           else
              logger.info "update umr"
              umr.update!(is_like: params[:is_like], is_sugar_sweet: params[:is_sugar_sweet], is_superlike: params[:is_superlike], user_ranking: current_user.ranking, target_user_ranking: target_user.ranking)
+             
+             # Notificar en tiempo real si el target_user tiene boost activo
+             notify_boost_interaction(target_user, umr)
           end
           logger.info "umr is now"
           logger.info umr.inspect
@@ -349,5 +355,55 @@ class UserMatchRequestsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def user_match_request_params
       params.require(:user_match_request).permit(:user_id, :target_user, :is_match, :is_paid, :is_rejected, :affinity_index)
+    end
+
+    # Notifica en tiempo real si el target_user tiene un boost activo
+    def notify_boost_interaction(target_user, umr)
+      return unless target_user.high_visibility && target_user.high_visibility_expire
+      
+      # Verificar que la interacción ocurrió durante el boost activo
+      boost_start = target_user.last_boost_started_at
+      return unless boost_start && umr.created_at >= boost_start
+      
+      # Obtener todas las interacciones del boost actual
+      boost_end_time = target_user.high_visibility_expire
+      all_interactions = UserMatchRequest.where(target_user: target_user.id)
+                                         .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
+                                         .order(created_at: :desc)
+      
+      # Construir la lista completa de usuarios que han interactuado
+      interactions_list = all_interactions.map do |interaction|
+        user = User.find_by(id: interaction.user_id)
+        next unless user
+        
+        {
+          id: user.id,
+          name: user.name,
+          age: user.age,
+          interaction_type: interaction.is_match ? "match" : (interaction.is_rejected ? "rejected" : "like"),
+          interaction_time: interaction.created_at,
+          user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
+        }
+      end.compact
+      
+      # Enviar la lista completa actualizada a través de AliveChannel
+      AliveChannel.broadcast_to(target_user, {
+        type: "boost_interactions_update",
+        boost_started_at: boost_start,
+        boost_expires_at: boost_end_time,
+        interactions_count: interactions_list.length,
+        interactions: interactions_list,
+        latest_interaction: {
+          user: {
+            id: current_user.id,
+            name: current_user.name,
+            age: current_user.age
+          },
+          interaction_type: umr.is_match ? "match" : (umr.is_rejected ? "rejected" : "like"),
+          interaction_time: umr.created_at
+        }
+      })
+      
+      logger.info "[BoostInteraction] Lista actualizada enviada a usuario #{target_user.id}. Total interacciones: #{interactions_list.length}"
     end
 end

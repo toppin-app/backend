@@ -286,9 +286,11 @@ end
   def use_boost
 
     if self.boost_available > 0 and !self.high_visibility
-
+        now = DateTime.now
         self.high_visibility = true
-        self.high_visibility_expire = DateTime.now+30.minutes
+        self.high_visibility_expire = now + 30.minutes
+        self.last_boost_started_at = now
+        self.last_boost_ended_at = nil # Se actualizará cuando expire
         self.boost_available = self.boost_available - 1
         self.save
         return true
