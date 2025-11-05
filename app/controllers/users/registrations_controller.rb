@@ -135,16 +135,19 @@ class Users::RegistrationsController < Devise::RegistrationsController
             unless result
                 raise ActiveRecord::Rollback
             end
-            else
-            # manejar errores de creación de usuario
-            end
-
+            
             # Enviar email de bienvenida
             begin
-                WelcomeMailer.welcome_email(resource).deliver_later
+                WelcomeMailer.welcome_email(resource).deliver_now
+                Rails.logger.info "Email de bienvenida enviado a: #{resource.email}"
             rescue StandardError => e
                 Rails.logger.error "Error enviando email de bienvenida: #{e.message}"
+                Rails.logger.error e.backtrace.join("\n")
                 # No lanzamos error para no interrumpir el registro
+            end
+            
+            else
+            # manejar errores de creación de usuario
             end
 
             sign_in(resource)

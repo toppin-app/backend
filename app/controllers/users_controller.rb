@@ -285,8 +285,20 @@ end
 
   # Elimina la cuenta de un usuario (soft delete)
   def delete_account
-    # Primero marcamos la cuenta como eliminada
-    current_user.update!(deleted_account: true)
+    # Anonimizar email para permitir registro futuro con el mismo email
+    timestamp = Time.now.to_i
+    anonymized_email = "deleted_#{current_user.id}_#{timestamp}@toppin.deleted"
+    
+    # Marcar cuenta como eliminada y anonimizar datos sensibles
+    current_user.update!(
+      deleted_account: true,
+      email: anonymized_email,
+      user_name: "deleted_user_#{current_user.id}_#{timestamp}",
+      name: "Usuario Eliminado",
+      push_token: nil,
+      device_id: nil,
+      social_login_token: nil
+    )
     
     # Luego deslogueamos al usuario
     sign_out current_user
@@ -1182,6 +1194,10 @@ end
     # IDs de usuarios bloqueados por el usuario actual (complaints)
     blocked_user_ids = Complaint.where(user_id: current_user_id).pluck(:to_user_id)
     users_to_exclude += blocked_user_ids
+    
+    # Agregar usuarios con cuentas eliminadas
+    users_to_exclude += deleted_user_ids
+    
     users_to_exclude = users_to_exclude.uniq
 
     logger.info "USUARIOS A EXCLUIR: " + users_to_exclude.inspect
