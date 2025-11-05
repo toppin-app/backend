@@ -21,6 +21,7 @@ class Admin::MailerTestController < ApplicationController
   def send_test_email
     begin
       recipient = params[:email]
+      email_type = params[:email_type] || 'test' # 'test' o 'welcome'
       subject = params[:subject] || "Email de prueba desde Toppin"
       message = params[:message] || "Este es un email de prueba del panel de administración."
       
@@ -32,8 +33,18 @@ class Admin::MailerTestController < ApplicationController
         return
       end
       
-      # Enviar email
-      result = TestMailer.notification_email(recipient, subject, message).deliver_now
+      # Enviar email según el tipo
+      if email_type == 'welcome'
+        # Crear un usuario temporal para la vista previa
+        temp_user = User.new(
+          name: params[:name] || "Usuario de Prueba",
+          email: recipient
+        )
+        result = WelcomeMailer.welcome_email(temp_user).deliver_now
+        subject = "¡Bienvenido a Toppin! 🍩"
+      else
+        result = TestMailer.notification_email(recipient, subject, message).deliver_now
+      end
       
       # Guardar log en sesión
       log_entry = {

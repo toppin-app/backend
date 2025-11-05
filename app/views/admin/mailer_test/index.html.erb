@@ -12,6 +12,14 @@
       <div class="card-body">
         <form id="email-form">
           <div class="form-group">
+            <label for="email_type">Tipo de Email</label>
+            <select class="form-control" id="email_type" name="email_type">
+              <option value="test">Email de Prueba Simple</option>
+              <option value="welcome">Email de Bienvenida 🍩</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="email">Destinatario <span class="text-danger">*</span></label>
             <input 
               type="email" 
@@ -22,8 +30,21 @@
               required
             >
           </div>
+
+          <div class="form-group" id="name-group" style="display: none;">
+            <label for="name">Nombre del Usuario</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="name" 
+              name="name" 
+              placeholder="Juan Pérez"
+              value="Usuario de Prueba"
+            >
+            <small class="form-text text-muted">Solo para email de bienvenida</small>
+          </div>
           
-          <div class="form-group">
+          <div class="form-group" id="subject-group">
             <label for="subject">Asunto</label>
             <input 
               type="text" 
@@ -35,7 +56,7 @@
             >
           </div>
           
-          <div class="form-group">
+          <div class="form-group" id="message-group">
             <label for="message">Mensaje</label>
             <textarea 
               class="form-control" 
@@ -183,6 +204,18 @@
   const sendBtn = document.getElementById('send-btn');
   const alertContainer = document.getElementById('alert-container');
   const logsContainer = document.getElementById('logs-container');
+  const emailTypeSelect = document.getElementById('email_type');
+  const nameGroup = document.getElementById('name-group');
+  const subjectGroup = document.getElementById('subject-group');
+  const messageGroup = document.getElementById('message-group');
+  
+  // Mostrar/ocultar campos según el tipo de email
+  emailTypeSelect.addEventListener('change', (e) => {
+    const isWelcome = e.target.value === 'welcome';
+    nameGroup.style.display = isWelcome ? 'block' : 'none';
+    subjectGroup.style.display = isWelcome ? 'none' : 'block';
+    messageGroup.style.display = isWelcome ? 'none' : 'block';
+  });
   
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

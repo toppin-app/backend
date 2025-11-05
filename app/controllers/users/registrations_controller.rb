@@ -139,6 +139,14 @@ class Users::RegistrationsController < Devise::RegistrationsController
             # manejar errores de creación de usuario
             end
 
+            # Enviar email de bienvenida
+            begin
+                WelcomeMailer.welcome_email(resource).deliver_later
+            rescue StandardError => e
+                Rails.logger.error "Error enviando email de bienvenida: #{e.message}"
+                # No lanzamos error para no interrumpir el registro
+            end
+
             sign_in(resource)
             render 'users/show'
             #render json: resource, status: :created
