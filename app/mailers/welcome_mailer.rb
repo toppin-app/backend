@@ -5,8 +5,8 @@ class WelcomeMailer < ApplicationMailer
     @user = user
     @app_url = ENV['MAILJET_DEFAULT_URL_HOST'] || 'toppin.es'
     
-    # Intentar cargar el logo desde app/assets/images
-    logo_path = Rails.root.join('app', 'assets', 'images', 'logo-html.png')
+    # Cargar el logo desde public
+    logo_path = Rails.root.join('public', 'logo-devise.png')
     
     if File.exist?(logo_path)
       begin
