@@ -6,7 +6,7 @@ class WelcomeMailer < ApplicationMailer
     # Leer y convertir logo a base64 para embederlo directamente
     logo_path = Rails.root.join('public', 'logo-devise.png')
     if File.exist?(logo_path)
-      @logo_base64 = Base64.strict_encode64(File.read(logo_path))
+      @logo_base64 = Base64.strict_encode64(File.binread(logo_path))
     else
       @logo_base64 = nil
     end
