@@ -22,8 +22,6 @@ class Admin::MailerTestController < ApplicationController
     begin
       recipient = params[:email]
       email_type = params[:email_type] || 'test' # 'test' o 'welcome'
-      subject = params[:subject] || "Email de prueba desde Toppin"
-      message = params[:message] || "Este es un email de prueba del panel de administración."
       
       if recipient.blank?
         render json: { 
@@ -34,16 +32,31 @@ class Admin::MailerTestController < ApplicationController
       end
       
       # Enviar email según el tipo
-      if email_type == 'welcome'
-        # Crear un usuario temporal para la vista previa
+      case email_type
+      when 'welcome'
+        # Email de bienvenida
         temp_user = User.new(
           name: params[:name] || "Usuario de Prueba",
-          email: recipient
+          email: recipient,
+          user_name: (params[:name] || "Usuario de Prueba").downcase.gsub(' ', '')
         )
         result = WelcomeMailer.welcome_email(temp_user).deliver_now
         subject = "¡Bienvenido a Toppin! 🍩"
-      else
+        email_description = "Email de Bienvenida"
+        
+      when 'test'
+        # Email de prueba simple
+        subject = params[:subject] || "Email de prueba desde Toppin"
+        message = params[:message] || "Este es un email de prueba del panel de administración."
         result = TestMailer.notification_email(recipient, subject, message).deliver_now
+        email_description = "Email de Prueba Simple"
+        
+      else
+        render json: { 
+          success: false, 
+          error: "Tipo de email no válido: #{email_type}" 
+        }, status: :unprocessable_entity
+        return
       end
       
       # Guardar log en sesión
@@ -51,6 +64,7 @@ class Admin::MailerTestController < ApplicationController
         timestamp: Time.current.strftime("%Y-%m-%d %H:%M:%S"),
         to: recipient,
         subject: subject,
+        email_type: email_description,
         status: "success",
         message: "Email enviado exitosamente"
       }
@@ -61,7 +75,7 @@ class Admin::MailerTestController < ApplicationController
       
       render json: { 
         success: true, 
-        message: "Email enviado exitosamente a #{recipient}",
+        message: "#{email_description} enviado exitosamente a #{recipient}",
         log: log_entry
       }
       
@@ -73,6 +87,7 @@ class Admin::MailerTestController < ApplicationController
         timestamp: Time.current.strftime("%Y-%m-%d %H:%M:%S"),
         to: recipient || "N/A",
         subject: subject || "N/A",
+        email_type: email_type == 'welcome' ? "Email de Bienvenida" : "Email de Prueba Simple",
         status: "error",
         message: e.message
       }

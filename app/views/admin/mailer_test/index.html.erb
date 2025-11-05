@@ -12,11 +12,15 @@
       <div class="card-body">
         <form id="email-form">
           <div class="form-group">
-            <label for="email_type">Tipo de Email</label>
+            <label for="email_type">Tipo de Email <span class="text-danger">*</span></label>
             <select class="form-control" id="email_type" name="email_type">
-              <option value="test">Email de Prueba Simple</option>
-              <option value="welcome">Email de Bienvenida 🍩</option>
+              <option value="test">📧 Email de Prueba Simple</option>
+              <option value="welcome">🍩 Email de Bienvenida (Welcome)</option>
+              <!-- Aquí puedes agregar más tipos de emails en el futuro -->
+              <!-- <option value="password_reset">🔑 Recuperación de Contraseña</option> -->
+              <!-- <option value="match_notification">💝 Notificación de Match</option> -->
             </select>
+            <small class="form-text text-muted">Selecciona el tipo de email que quieres probar</small>
           </div>
 
           <div class="form-group">
@@ -29,46 +33,57 @@
               placeholder="ejemplo@gmail.com"
               required
             >
+            <small class="form-text text-muted">El email donde se enviará la prueba</small>
           </div>
 
-          <div class="form-group" id="name-group" style="display: none;">
-            <label for="name">Nombre del Usuario</label>
-            <input 
-              type="text" 
-              class="form-control" 
-              id="name" 
-              name="name" 
-              placeholder="Juan Pérez"
-              value="Usuario de Prueba"
-            >
-            <small class="form-text text-muted">Solo para email de bienvenida</small>
+          <!-- Campos específicos para email de bienvenida -->
+          <div id="welcome-fields" style="display: none;">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> <strong>Email de Bienvenida:</strong> Este es el email que reciben los usuarios al registrarse en Toppin.
+            </div>
+            
+            <div class="form-group">
+              <label for="name">Nombre del Usuario</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="name" 
+                name="name" 
+                placeholder="Juan Pérez"
+                value="Usuario de Prueba"
+              >
+              <small class="form-text text-muted">El nombre que aparecerá en el email de bienvenida</small>
+            </div>
+          </div>
+
+          <!-- Campos específicos para email de prueba simple -->
+          <div id="test-fields">
+            <div class="form-group">
+              <label for="subject">Asunto</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="subject" 
+                name="subject" 
+                placeholder="Email de prueba desde Toppin"
+                value="Email de prueba desde Toppin"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label for="message">Mensaje</label>
+              <textarea 
+                class="form-control" 
+                id="message" 
+                name="message" 
+                rows="4"
+                placeholder="Escribe aquí el contenido del email..."
+              >Este es un email de prueba enviado desde el panel de administración de Toppin.</textarea>
+            </div>
           </div>
           
-          <div class="form-group" id="subject-group">
-            <label for="subject">Asunto</label>
-            <input 
-              type="text" 
-              class="form-control" 
-              id="subject" 
-              name="subject" 
-              placeholder="Email de prueba desde Toppin"
-              value="Email de prueba desde Toppin"
-            >
-          </div>
-          
-          <div class="form-group" id="message-group">
-            <label for="message">Mensaje</label>
-            <textarea 
-              class="form-control" 
-              id="message" 
-              name="message" 
-              rows="4"
-              placeholder="Escribe aquí el contenido del email..."
-            >Este es un email de prueba enviado desde el panel de administración de Toppin.</textarea>
-          </div>
-          
-          <button type="submit" class="btn btn-primary" id="send-btn">
-            <i class="fas fa-paper-plane"></i> Enviar Email de Prueba
+          <button type="submit" class="btn btn-primary btn-block" id="send-btn">
+            <i class="fas fa-paper-plane"></i> Enviar Email
           </button>
         </form>
         
@@ -181,6 +196,7 @@
                 <small class="text-muted"><%= log[:timestamp] %></small>
               </div>
               <hr class="my-2">
+              <p class="mb-1"><strong>Tipo:</strong> <%= log[:email_type] || 'Email de Prueba' %></p>
               <p class="mb-1"><strong>Para:</strong> <%= log[:to] %></p>
               <p class="mb-1"><strong>Asunto:</strong> <%= log[:subject] %></p>
               <p class="mb-0"><strong>Estado:</strong> <%= log[:message] %></p>
@@ -205,16 +221,22 @@
   const alertContainer = document.getElementById('alert-container');
   const logsContainer = document.getElementById('logs-container');
   const emailTypeSelect = document.getElementById('email_type');
-  const nameGroup = document.getElementById('name-group');
-  const subjectGroup = document.getElementById('subject-group');
-  const messageGroup = document.getElementById('message-group');
+  const welcomeFields = document.getElementById('welcome-fields');
+  const testFields = document.getElementById('test-fields');
   
   // Mostrar/ocultar campos según el tipo de email
   emailTypeSelect.addEventListener('change', (e) => {
-    const isWelcome = e.target.value === 'welcome';
-    nameGroup.style.display = isWelcome ? 'block' : 'none';
-    subjectGroup.style.display = isWelcome ? 'none' : 'block';
-    messageGroup.style.display = isWelcome ? 'none' : 'block';
+    const emailType = e.target.value;
+    
+    if (emailType === 'welcome') {
+      welcomeFields.style.display = 'block';
+      testFields.style.display = 'none';
+      sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Email de Bienvenida';
+    } else if (emailType === 'test') {
+      welcomeFields.style.display = 'none';
+      testFields.style.display = 'block';
+      sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Email de Prueba';
+    }
   });
   
   form.addEventListener('submit', async (e) => {
@@ -288,6 +310,7 @@
           <small class="text-muted">${log.timestamp}</small>
         </div>
         <hr class="my-2">
+        <p class="mb-1"><strong>Tipo:</strong> ${log.email_type || 'Email de Prueba'}</p>
         <p class="mb-1"><strong>Para:</strong> ${log.to}</p>
         <p class="mb-1"><strong>Asunto:</strong> ${log.subject}</p>
         <p class="mb-0"><strong>Estado:</strong> ${log.message}</p>
