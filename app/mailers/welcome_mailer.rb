@@ -1,3 +1,5 @@
+require 'base64'
+
 class WelcomeMailer < ApplicationMailer
   def welcome_email(user)
     @user = user
