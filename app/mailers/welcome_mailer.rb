@@ -5,14 +5,20 @@ class WelcomeMailer < ApplicationMailer
     @user = user
     @app_url = ENV['MAILJET_DEFAULT_URL_HOST'] || 'toppin.es'
     
-    # Adjuntar logo como inline attachment
+    # Intentar cargar el logo desde app/assets/images
     logo_path = Rails.root.join('app', 'assets', 'images', 'logo-html.png')
     
     if File.exist?(logo_path)
-      attachments.inline['logo.png'] = File.read(logo_path)
-      @logo_attached = true
+      begin
+        logo_content = File.binread(logo_path)
+        @logo_base64 = Base64.strict_encode64(logo_content)
+      rescue => e
+        Rails.logger.error "Error leyendo logo: #{e.message}"
+        @logo_base64 = nil
+      end
     else
-      @logo_attached = false
+      Rails.logger.warn "Logo no encontrado en: #{logo_path}"
+      @logo_base64 = nil
     end
     
     mail(
