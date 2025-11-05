@@ -5,19 +5,17 @@ class WelcomeMailer < ApplicationMailer
     @user = user
     @app_url = ENV['MAILJET_DEFAULT_URL_HOST'] || 'toppin.es'
     
-    # Usar el asset pipeline para obtener la imagen
-    logo_path = Rails.root.join('app', 'assets', 'images', 'logo-html.png')
+    # Usar URL pública del logo en lugar de base64
+    @logo_url = "https://#{@app_url}/logo-html.png"
     
-    if File.exist?(logo_path)
-      logo_content = File.binread(logo_path)
-      @logo_base64 = Base64.strict_encode64(logo_content)
-    else
-      @logo_base64 = nil
+    # Usar el idioma del usuario o el idioma por defecto
+    user_locale = @user.language&.to_sym || I18n.default_locale
+    
+    I18n.with_locale(user_locale) do
+      mail(
+        to: @user.email,
+        subject: t('welcome_mailer.subject')
+      )
     end
-    
-    mail(
-      to: @user.email,
-      subject: '¡Bienvenido a Toppin! 🍩'
-    )
   end
 end

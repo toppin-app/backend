@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<%= I18n.locale %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bienvenido a Toppin</title>
+  <title><%= t('.title') %></title>
   <style>
     body {
       margin: 0;
@@ -153,65 +153,61 @@
     <!-- Header con logo -->
     <div class="header">
       <div class="logo">
-        <% if @logo_base64.present? %>
-          <img src="data:image/png;base64,<%= @logo_base64 %>" alt="Toppin Logo" style="width: 100%; height: 100%; object-fit: cover;">
-        <% else %>
-          <span style="font-size: 60px;">🍩</span>
-        <% end %>
+        <img src="<%= @logo_url %>" alt="Toppin Logo" style="width: 100%; height: 100%; object-fit: cover;">
       </div>
-      <h1>¡Bienvenido a Toppin!</h1>
+      <h1><%= t('.header') %></h1>
     </div>
 
     <!-- Contenido principal -->
     <div class="content">
-      <p class="welcome-text">¡Hola!</p>
-      <p class="user-name">¡Bienvenido <%= @user.name || @user.user_name %>! 👋</p>
+      <p class="welcome-text"><%= t('.greeting') %></p>
+      <p class="user-name"><%= t('.welcome_user', name: @user.name || @user.user_name) %></p>
       
-      <p>Nos emociona tenerte con nosotros. Toppin es el lugar perfecto para conocer gente nueva, hacer conexiones auténticas y encontrar a personas que compartan tus mismos gustos e intereses.</p>
+      <p><%= t('.intro') %></p>
 
       <!-- Características destacadas -->
       <div class="features">
         <div class="feature-item">
           <div class="feature-icon">💝</div>
           <div class="feature-text">
-            <h3>Conexiones reales</h3>
-            <p>Encuentra personas con gustos musicales, películas y series similares a las tuyas.</p>
+            <h3><%= t('.feature_connections_title') %></h3>
+            <p><%= t('.feature_connections_desc') %></p>
           </div>
         </div>
 
         <div class="feature-item">
           <div class="feature-icon">🎵</div>
           <div class="feature-text">
-            <h3>Integración con Spotify</h3>
-            <p>Conecta tu cuenta de Spotify y descubre matches basados en tu música favorita.</p>
+            <h3><%= t('.feature_spotify_title') %></h3>
+            <p><%= t('.feature_spotify_desc') %></p>
           </div>
         </div>
 
         <div class="feature-item">
           <div class="feature-icon">💬</div>
           <div class="feature-text">
-            <h3>Chat en tiempo real</h3>
-            <p>Inicia conversaciones auténticas con tus matches y conoce gente increíble.</p>
+            <h3><%= t('.feature_chat_title') %></h3>
+            <p><%= t('.feature_chat_desc') %></p>
           </div>
         </div>
 
         <div class="feature-item">
           <div class="feature-icon">✨</div>
           <div class="feature-text">
-            <h3>Boosts y Superlikes</h3>
-            <p>Destaca tu perfil y aumenta tus posibilidades de hacer match.</p>
+            <h3><%= t('.feature_boosts_title') %></h3>
+            <p><%= t('.feature_boosts_desc') %></p>
           </div>
         </div>
       </div>
 
-      <p style="margin-top: 30px;">Completa tu perfil, añade tus fotos más auténticas y empieza a descubrir personas increíbles cerca de ti.</p>
+      <p style="margin-top: 30px;"><%= t('.complete_profile') %></p>
 
       <center>
-        <a href="https://<%= @app_url %>" class="cta-button">Empezar a explorar 🚀</a>
+        <a href="https://<%= @app_url %>" class="cta-button"><%= t('.cta_button') %></a>
       </center>
 
       <p style="margin-top: 30px; font-size: 14px; color: #888888;">
-        Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos. ¡Estamos aquí para ayudarte!
+        <%= t('.help_text') %>
       </p>
     </div>
 
@@ -224,14 +220,14 @@
       </div>
       
       <p>
-        © <%= Time.current.year %> Toppin. Todos los derechos reservados.<br>
-        <a href="https://<%= @app_url %>/privacy">Política de Privacidad</a> | 
-        <a href="https://<%= @app_url %>/terms">Términos de Servicio</a>
+        © <%= Time.current.year %> Toppin. <%= t('.footer_rights') %><br>
+        <a href="https://<%= @app_url %>/privacy"><%= t('.footer_privacy') %></a> | 
+        <a href="https://<%= @app_url %>/terms"><%= t('.footer_terms') %></a>
       </p>
       
       <p style="margin-top: 15px; font-size: 12px;">
-        Has recibido este email porque te has registrado en Toppin.<br>
-        Si no creaste una cuenta, puedes ignorar este mensaje.
+        <%= t('.footer_reason') %><br>
+        <%= t('.footer_ignore') %>
       </p>
     </div>
   </div>

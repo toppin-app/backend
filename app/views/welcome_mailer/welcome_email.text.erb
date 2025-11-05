@@ -1,29 +1,29 @@
-¡Bienvenido a Toppin! 🍩
+<%= t('.header') %>
 
-¡Hola <%= @user.name || @user.user_name %>! 👋
+<%= t('.welcome_user', name: @user.name || @user.user_name) %>
 
-Nos emociona tenerte con nosotros. Toppin es el lugar perfecto para conocer gente nueva, hacer conexiones auténticas y encontrar a personas que compartan tus mismos gustos e intereses.
+<%= t('.intro') %>
 
-✨ ¿Qué puedes hacer en Toppin?
+✨ <%= t('.features_what') %>
 
-💝 Conexiones reales
-Encuentra personas con gustos musicales, películas y series similares a las tuyas.
+💝 <%= t('.feature_connections_title') %>
+<%= t('.feature_connections_desc') %>
 
-🎵 Integración con Spotify
-Conecta tu cuenta de Spotify y descubre matches basados en tu música favorita.
+🎵 <%= t('.feature_spotify_title') %>
+<%= t('.feature_spotify_desc') %>
 
-💬 Chat en tiempo real
-Inicia conversaciones auténticas con tus matches y conoce gente increíble.
+💬 <%= t('.feature_chat_title') %>
+<%= t('.feature_chat_desc') %>
 
-✨ Boosts y Superlikes
-Destaca tu perfil y aumenta tus posibilidades de hacer match.
+✨ <%= t('.feature_boosts_title') %>
+<%= t('.feature_boosts_desc') %>
 
-🚀 Empezar a explorar: https://<%= @app_url %>
+🚀 <%= t('.cta_explore') %>: https://<%= @app_url %>
 
-Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos. ¡Estamos aquí para ayudarte!
+<%= t('.help_text') %>
 
 ---
-© <%= Time.current.year %> Toppin. Todos los derechos reservados.
+© <%= Time.current.year %> Toppin. <%= t('.footer_rights') %>
 
-Has recibido este email porque te has registrado en Toppin.
-Si no creaste una cuenta, puedes ignorar este mensaje.
+<%= t('.footer_reason') %>
+<%= t('.footer_ignore') %>
