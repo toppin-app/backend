@@ -6,7 +6,7 @@ class WelcomeMailer < ApplicationMailer
     @app_url = ENV['MAILJET_DEFAULT_URL_HOST'] || 'toppin.es'
     
     # Leer y convertir logo a base64 para embederlo directamente
-    logo_path = Rails.root.join('public', 'logo-devise.png')
+    logo_path = Rails.root.join('app', 'assets', 'images', 'logo-html.png')
     if File.exist?(logo_path)
       @logo_base64 = Base64.strict_encode64(File.binread(logo_path))
     else
