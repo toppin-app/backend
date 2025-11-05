@@ -6,7 +6,7 @@ class WelcomeMailer < ApplicationMailer
     @app_url = ENV['MAILJET_DEFAULT_URL_HOST'] || 'toppin.es'
     
     # Usar el asset pipeline para obtener la imagen
-    logo_path = Rails.root.join('app', 'assets', 'images', 'logo-devise.png')
+    logo_path = Rails.root.join('app', 'assets', 'images', 'logo-html.png')
     
     if File.exist?(logo_path)
       logo_content = File.binread(logo_path)
