@@ -153,7 +153,11 @@
     <!-- Header con logo -->
     <div class="header">
       <div class="logo">
-        <img src="cid:logo-toppin.png" alt="Toppin Logo" style="width: 100%; height: 100%; object-fit: cover;">
+        <% if @logo_base64 %>
+          <img src="data:image/png;base64,<%= @logo_base64 %>" alt="Toppin Logo" style="width: 100%; height: 100%; object-fit: cover;">
+        <% else %>
+          <span style="font-size: 60px;">🍩</span>
+        <% end %>
       </div>
       <h1>¡Bienvenido a Toppin!</h1>
     </div>

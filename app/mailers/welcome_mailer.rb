@@ -3,10 +3,12 @@ class WelcomeMailer < ApplicationMailer
     @user = user
     @app_url = ENV['MAILJET_DEFAULT_URL_HOST'] || 'toppin.es'
     
-    # Adjuntar el logo como inline attachment para que se vea en el email
+    # Leer y convertir logo a base64 para embederlo directamente
     logo_path = Rails.root.join('public', 'logo-devise.png')
     if File.exist?(logo_path)
-      attachments.inline['logo-toppin.png'] = File.read(logo_path)
+      @logo_base64 = Base64.strict_encode64(File.read(logo_path))
+    else
+      @logo_base64 = nil
     end
     
     mail(
