@@ -17,27 +17,30 @@
       background-color: #ffffff;
     }
     .header {
-      background: linear-gradient(135deg, #FF6B9D 0%, #C239B3 100%);
+      background: #FFFFFF;
       padding: 40px 20px;
       text-align: center;
+      border-bottom: 3px solid #FF6B9D;
     }
     .logo {
       width: 120px;
       height: 120px;
       margin: 0 auto 20px;
-      background-color: white;
+      background: linear-gradient(135deg, #FF6B9D 0%, #C239B3 100%);
       border-radius: 60px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+      overflow: hidden;
     }
-    .donut {
-      font-size: 80px;
-      line-height: 1;
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     .header h1 {
-      color: white;
+      color: #FF6B9D;
       margin: 0;
       font-size: 32px;
       font-weight: 700;
@@ -93,19 +96,23 @@
     }
     .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #FF6B9D 0%, #C239B3 100%);
-      color: white;
+      background: #FFFFFF;
+      color: #FF6B9D;
       text-decoration: none;
       padding: 15px 40px;
       border-radius: 30px;
       font-weight: 600;
       font-size: 16px;
       margin: 20px 0;
-      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
-      transition: transform 0.2s;
+      border: 3px solid #FF6B9D;
+      box-shadow: 0 4px 15px rgba(255, 107, 157, 0.2);
+      transition: all 0.3s;
     }
     .cta-button:hover {
+      background: #FF6B9D;
+      color: white;
       transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
     }
     .footer {
       background-color: #F8F8F8;
@@ -146,7 +153,7 @@
     <!-- Header con logo -->
     <div class="header">
       <div class="logo">
-        <span class="donut">🍩</span>
+        <img src="<%= attachments['logo-devise.png'].url %>" alt="Toppin Logo" style="width: 100%; height: 100%; object-fit: cover;">
       </div>
       <h1>¡Bienvenido a Toppin!</h1>
     </div>
