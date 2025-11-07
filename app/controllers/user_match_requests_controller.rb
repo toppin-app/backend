@@ -391,7 +391,7 @@ class UserMatchRequestsController < ApplicationController
         {
           id: user.id,
           name: user.name,
-          age: user.age,
+          age: user.user_age,
           interaction_type: interaction_type,
           interaction_time: interaction.created_at,
           user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
@@ -420,7 +420,7 @@ class UserMatchRequestsController < ApplicationController
           user: {
             id: current_user.id,
             name: current_user.name,
-            age: current_user.age
+            age: current_user.user_age
           },
           interaction_type: latest_interaction_type,
           interaction_time: umr.created_at

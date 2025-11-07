@@ -773,7 +773,7 @@ end
       {
         id: user.id,
         name: user.name,
-        age: user.age,
+        age: user.user_age,
         interaction_type: interaction_type,
         interaction_time: interaction.created_at,
         user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
