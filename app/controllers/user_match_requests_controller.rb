@@ -370,13 +370,20 @@ class UserMatchRequestsController < ApplicationController
       # Obtener todas las interacciones del boost actual (excluyendo matches)
       boost_end_time = target_user.high_visibility_expire
       all_interactions = UserMatchRequest.where(target_user: target_user.id)
-                                         .where(is_match: false)  # ⭐ Excluir matches
+                                         .where(is_match: false)
                                          .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
                                          .order(created_at: :desc)
       
-      # Construir la lista completa de usuarios que han interactuado
-      interactions_list = all_interactions.map do |interaction|
-        user = User.find_by(id: interaction.user_id)
+      # Obtener los IDs de usuarios que han interactuado
+      user_ids = all_interactions.pluck(:user_id).uniq
+      
+      # Cargar usuarios con todas sus relaciones (igual que en user_swipes y boost_interactions)
+      users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data)
+                  .where(id: user_ids)
+      
+      # Construir array con información de cada interacción
+      interactions_data = all_interactions.map do |interaction|
+        user = users.find { |u| u.id == interaction.user_id }
         next unless user
         
         # Determinar el tipo de interacción
@@ -389,12 +396,19 @@ class UserMatchRequestsController < ApplicationController
                           end
         
         {
-          id: user.id,
-          name: user.name,
-          age: user.user_age,
           interaction_type: interaction_type,
           interaction_time: interaction.created_at,
-          user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
+          user: user.as_json(
+            methods: [:user_age, :user_media_url],
+            include: [
+              :user_media,
+              :user_interests,
+              :user_info_item_values,
+              :user_main_interests,
+              :tmdb_user_data,
+              :tmdb_user_series_data
+            ]
+          )
         }
       end.compact
       
@@ -414,19 +428,25 @@ class UserMatchRequestsController < ApplicationController
         type: "boost_interactions_update",
         boost_started_at: boost_start,
         boost_expires_at: boost_end_time,
-        interactions_count: interactions_list.length,
-        interactions: interactions_list,
+        interactions_count: interactions_data.length,
+        interactions: interactions_data,
         latest_interaction: {
-          user: {
-            id: current_user.id,
-            name: current_user.name,
-            age: current_user.user_age
-          },
           interaction_type: latest_interaction_type,
-          interaction_time: umr.created_at
+          interaction_time: umr.created_at,
+          user: current_user.as_json(
+            methods: [:user_age, :user_media_url],
+            include: [
+              :user_media,
+              :user_interests,
+              :user_info_item_values,
+              :user_main_interests,
+              :tmdb_user_data,
+              :tmdb_user_series_data
+            ]
+          )
         }
       })
       
-      logger.info "[BoostInteraction] Lista actualizada enviada a usuario #{target_user.id}. Total interacciones: #{interactions_list.length}"
+      logger.info "[BoostInteraction] Lista actualizada enviada a usuario #{target_user.id}. Total interacciones: #{interactions_data.length}"
     end
 end

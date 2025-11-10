@@ -756,9 +756,16 @@ end
                                    .where("created_at >= ? AND created_at <= ?", boost_start_time, boost_end_time)
                                    .order(created_at: :desc)
 
-    # Obtener los usuarios que han interactuado
-    users_data = interactions.map do |interaction|
-      user = User.find_by(id: interaction.user_id)
+    # Obtener los IDs de usuarios que han interactuado
+    user_ids = interactions.pluck(:user_id).uniq
+    
+    # Cargar usuarios con todas sus relaciones (igual que en user_swipes)
+    users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data)
+                .where(id: user_ids)
+    
+    # Construir array con información de cada interacción
+    interactions_data = interactions.map do |interaction|
+      user = users.find { |u| u.id == interaction.user_id }
       next unless user
       
       # Determinar el tipo de interacción
@@ -771,12 +778,19 @@ end
                         end
       
       {
-        id: user.id,
-        name: user.name,
-        age: user.user_age,
         interaction_type: interaction_type,
         interaction_time: interaction.created_at,
-        user_data: user.as_json(only: [:id, :name, :age, :bio, :gender])
+        user: user.as_json(
+          methods: [:user_age, :user_media_url],
+          include: [
+            :user_media,
+            :user_interests,
+            :user_info_item_values,
+            :user_main_interests,
+            :tmdb_user_data,
+            :tmdb_user_series_data
+          ]
+        )
       }
     end.compact
 
@@ -785,8 +799,8 @@ end
       boost_started_at: boost_start_time,
       boost_ended_at: boost_end_time,
       is_active: current_user.high_visibility,
-      interactions_count: users_data.length,
-      interactions: users_data
+      interactions_count: interactions_data.length,
+      interactions: interactions_data
     }
   end
 
