@@ -367,10 +367,9 @@ class UserMatchRequestsController < ApplicationController
       boost_start = target_user.last_boost_started_at
       return unless boost_start && umr.created_at >= boost_start
       
-      # Obtener todas las interacciones del boost actual (excluyendo matches)
+      # Obtener todas las interacciones del boost actual (INCLUYENDO matches)
       boost_end_time = target_user.high_visibility_expire
       all_interactions = UserMatchRequest.where(target_user: target_user.id)
-                                         .where(is_match: false)
                                          .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
                                          .order(created_at: :desc)
       
@@ -387,7 +386,9 @@ class UserMatchRequestsController < ApplicationController
         next unless user
         
         # Determinar el tipo de interacción
-        interaction_type = if interaction.is_rejected
+        interaction_type = if interaction.is_match
+                            "match"
+                          elsif interaction.is_rejected
                             "dislike"
                           elsif interaction.is_like
                             "like"
