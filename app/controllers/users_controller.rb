@@ -784,10 +784,10 @@ end
       my_action = if my_interaction
                     if my_interaction.is_match
                       "match"
-                    elsif my_interaction.is_rejected
-                      "dislike"
-                    elsif my_interaction.is_like
+                    elsif my_interaction.is_like == true
                       "like"
+                    elsif my_interaction.is_rejected == true
+                      "dislike"
                     else
                       "none"
                     end
