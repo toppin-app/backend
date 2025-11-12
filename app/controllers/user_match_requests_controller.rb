@@ -385,19 +385,37 @@ class UserMatchRequestsController < ApplicationController
         user = users.find { |u| u.id == interaction.user_id }
         next unless user
         
-        # Determinar el tipo de interacción
-        interaction_type = if interaction.is_match
-                            "match"
-                          elsif interaction.is_rejected
-                            "dislike"
-                          elsif interaction.is_like
-                            "like"
-                          else
-                            "dislike"
-                          end
+        # Determinar el tipo de interacción que ELLOS hicieron hacia el target_user
+        their_action = if interaction.is_match
+                         "match"
+                       elsif interaction.is_rejected
+                         "dislike"
+                       elsif interaction.is_like
+                         "like"
+                       else
+                         "dislike"
+                       end
+        
+        # Buscar si el target_user también tiene una interacción hacia ELLOS
+        my_interaction = UserMatchRequest.find_by(user_id: target_user.id, target_user: user.id)
+        
+        my_action = if my_interaction
+                      if my_interaction.is_match
+                        "match"
+                      elsif my_interaction.is_rejected
+                        "dislike"
+                      elsif my_interaction.is_like
+                        "like"
+                      else
+                        "none"
+                      end
+                    else
+                      "none"  # El target_user no ha interactuado con esta persona aún
+                    end
         
         {
-          interaction_type: interaction_type,
+          interaction_type: their_action,  # Lo que ELLOS hicieron
+          my_action: my_action,            # Lo que el target_user hizo (o "none")
           interaction_time: interaction.created_at,
           user: user.as_json(
             methods: [:user_age, :user_media_url],
@@ -413,16 +431,33 @@ class UserMatchRequestsController < ApplicationController
         }
       end.compact
       
-      # Determinar el tipo de la última interacción
-      latest_interaction_type = if umr.is_match
-                                  "match"
-                                elsif umr.is_rejected
-                                  "dislike"
-                                elsif umr.is_like
-                                  "like"
-                                else
-                                  "dislike"
-                                end
+      # Determinar el tipo de la última interacción que ELLOS hicieron
+      latest_their_action = if umr.is_match
+                              "match"
+                            elsif umr.is_rejected
+                              "dislike"
+                            elsif umr.is_like
+                              "like"
+                            else
+                              "dislike"
+                            end
+      
+      # Buscar si el target_user ya respondió al current_user
+      my_response = UserMatchRequest.find_by(user_id: target_user.id, target_user: current_user.id)
+      
+      latest_my_action = if my_response
+                           if my_response.is_match
+                             "match"
+                           elsif my_response.is_rejected
+                             "dislike"
+                           elsif my_response.is_like
+                             "like"
+                           else
+                             "none"
+                           end
+                         else
+                           "none"
+                         end
       
       # Enviar la lista completa actualizada a través de AliveChannel
       AliveChannel.broadcast_to(target_user, {
@@ -432,7 +467,8 @@ class UserMatchRequestsController < ApplicationController
         interactions_count: interactions_data.length,
         interactions: interactions_data,
         latest_interaction: {
-          interaction_type: latest_interaction_type,
+          interaction_type: latest_their_action,  # Lo que ELLOS hicieron
+          my_action: latest_my_action,            # Lo que el target_user hizo (o "none")
           interaction_time: umr.created_at,
           user: current_user.as_json(
             methods: [:user_age, :user_media_url],

@@ -767,19 +767,37 @@ end
       user = users.find { |u| u.id == interaction.user_id }
       next unless user
       
-      # Determinar el tipo de interacción
-      interaction_type = if interaction.is_match
-                          "match"
-                        elsif interaction.is_rejected
-                          "dislike"
-                        elsif interaction.is_like
-                          "like"
-                        else
-                          "dislike"
-                        end
+      # Determinar el tipo de interacción que ELLOS hicieron hacia TI
+      their_action = if interaction.is_match
+                       "match"
+                     elsif interaction.is_rejected
+                       "dislike"
+                     elsif interaction.is_like
+                       "like"
+                     else
+                       "dislike"
+                     end
+      
+      # Buscar si TÚ también tienes una interacción hacia ELLOS
+      my_interaction = UserMatchRequest.find_by(user_id: current_user.id, target_user: user.id)
+      
+      my_action = if my_interaction
+                    if my_interaction.is_match
+                      "match"
+                    elsif my_interaction.is_rejected
+                      "dislike"
+                    elsif my_interaction.is_like
+                      "like"
+                    else
+                      "none"
+                    end
+                  else
+                    "none"  # No has interactuado con esta persona aún
+                  end
       
       {
-        interaction_type: interaction_type,
+        interaction_type: their_action,  # Lo que ELLOS hicieron
+        my_action: my_action,            # Lo que TÚ hiciste (o "none")
         interaction_time: interaction.created_at,
         user: user.as_json(
           methods: [:user_age, :user_media_url],
