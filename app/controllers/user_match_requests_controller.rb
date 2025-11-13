@@ -385,7 +385,7 @@ class UserMatchRequestsController < ApplicationController
         user = users.find { |u| u.id == interaction.user_id }
         next unless user
         
-        # Determinar el tipo de interacción que ELLOS hicieron hacia el target_user
+        # Determinar el tipo de interacción que ELLOS hicieron hacia MÍ (el que tiene boost)
         their_action = if interaction.is_match
                          "match"
                        elsif interaction.is_rejected
@@ -396,26 +396,26 @@ class UserMatchRequestsController < ApplicationController
                          "dislike"
                        end
         
-        # Buscar si el target_user también tiene una interacción hacia ELLOS
+        # Buscar si YO (el que tiene boost) también tengo una interacción hacia ELLOS
         my_interaction = UserMatchRequest.find_by(user_id: target_user.id, target_user: user.id)
         
         my_action = if my_interaction
                       if my_interaction.is_match
                         "match"
-                      elsif my_interaction.is_rejected
-                        "dislike"
-                      elsif my_interaction.is_like
+                      elsif my_interaction.is_like == true
                         "like"
+                      elsif my_interaction.is_rejected == true
+                        "dislike"
                       else
                         "none"
                       end
                     else
-                      "none"  # El target_user no ha interactuado con esta persona aún
+                      "none"  # No he interactuado con esta persona aún
                     end
         
         {
-          interaction_type: their_action,  # Lo que ELLOS hicieron
-          my_action: my_action,            # Lo que el target_user hizo (o "none")
+          interaction_type: their_action,  # Lo que ELLOS me hicieron
+          my_action: my_action,            # Lo que YO les hice (o "none")
           interaction_time: interaction.created_at,
           user: user.as_json(
             methods: [:user_age, :user_media_url],
@@ -442,16 +442,16 @@ class UserMatchRequestsController < ApplicationController
                               "dislike"
                             end
       
-      # Buscar si el target_user ya respondió al current_user
+      # Buscar si YO (el que tiene boost) ya respondí al current_user
       my_response = UserMatchRequest.find_by(user_id: target_user.id, target_user: current_user.id)
       
       latest_my_action = if my_response
                            if my_response.is_match
                              "match"
-                           elsif my_response.is_rejected
-                             "dislike"
-                           elsif my_response.is_like
+                           elsif my_response.is_like == true
                              "like"
+                           elsif my_response.is_rejected == true
+                             "dislike"
                            else
                              "none"
                            end
@@ -459,7 +459,7 @@ class UserMatchRequestsController < ApplicationController
                            "none"
                          end
       
-      # Enviar la lista completa actualizada a través de AliveChannel
+      # Enviar la lista completa actualizada a través de AliveChannel AL USUARIO CON BOOST
       AliveChannel.broadcast_to(target_user, {
         type: "boost_interactions_update",
         boost_started_at: boost_start,
@@ -467,8 +467,8 @@ class UserMatchRequestsController < ApplicationController
         interactions_count: interactions_data.length,
         interactions: interactions_data,
         latest_interaction: {
-          interaction_type: latest_their_action,  # Lo que ELLOS hicieron
-          my_action: latest_my_action,            # Lo que el target_user hizo (o "none")
+          interaction_type: latest_their_action,  # Lo que ELLOS me hicieron
+          my_action: latest_my_action,            # Lo que YO les hice (o "none")
           interaction_time: umr.created_at,
           user: current_user.as_json(
             methods: [:user_age, :user_media_url],
