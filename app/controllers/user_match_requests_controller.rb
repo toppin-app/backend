@@ -96,14 +96,20 @@ class UserMatchRequestsController < ApplicationController
                is_sugar_sweet: is_sugar_sweet
              )
              
-             # Notificar en tiempo real si el target_user tiene boost activo
-             notify_boost_interaction(target_user, umr) if umr.persisted?
+             if umr.persisted?
+               # Notificar si el target_user tiene boost activo
+               notify_boost_interaction(target_user, umr)
+               # NUEVO: Notificar si YO (current_user) tengo boost activo y acabo de dar swipe
+               notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
+             end
           else
              logger.info "update umr"
              umr.update!(is_like: params[:is_like], is_sugar_sweet: params[:is_sugar_sweet], is_superlike: params[:is_superlike], user_ranking: current_user.ranking, target_user_ranking: target_user.ranking)
              
-             # Notificar en tiempo real si el target_user tiene boost activo
+             # Notificar si el target_user tiene boost activo
              notify_boost_interaction(target_user, umr)
+             # NUEVO: Notificar si YO (current_user) tengo boost activo y acabo de dar swipe
+             notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
           end
           logger.info "umr is now"
           logger.info umr.inspect
@@ -498,5 +504,102 @@ class UserMatchRequestsController < ApplicationController
       
       # Enviar la lista completa actualizada a través de AliveChannel AL USUARIO CON BOOST
       AliveChannel.broadcast_to(target_user, websocket_payload)
+    end
+    
+    # Notifica cuando YO (con boost activo) doy swipe a alguien
+    def notify_my_boost_action(me_with_boost, person_i_swiped, umr)
+      return unless me_with_boost.high_visibility && me_with_boost.high_visibility_expire
+      
+      # Verificar que mi boost está activo
+      boost_start = me_with_boost.last_boost_started_at
+      return unless boost_start
+      
+      # Obtener todas las interacciones durante MI boost
+      boost_end_time = me_with_boost.high_visibility_expire
+      all_interactions = UserMatchRequest.where(target_user: me_with_boost.id)
+                                         .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
+                                         .order(created_at: :desc)
+      
+      # Obtener los IDs de usuarios que han interactuado CONMIGO
+      user_ids = all_interactions.pluck(:user_id).uniq
+      
+      # Cargar usuarios con todas sus relaciones
+      users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data)
+                  .where(id: user_ids)
+      
+      # Construir array con información de cada interacción
+      interactions_data = all_interactions.map do |interaction|
+        user = users.find { |u| u.id == interaction.user_id }
+        next unless user
+        
+        # Lo que ELLOS me hicieron
+        their_action = if interaction.is_match
+                         "match"
+                       elsif interaction.is_rejected
+                         "dislike"
+                       elsif interaction.is_like
+                         "like"
+                       else
+                         "dislike"
+                       end
+        
+        # Lo que YO les hice
+        my_interaction = UserMatchRequest.find_by(user_id: me_with_boost.id, target_user: user.id)
+        
+        my_action = if my_interaction
+                      if my_interaction.is_match
+                        "match"
+                      elsif my_interaction.is_like == true
+                        "like"
+                      elsif my_interaction.is_rejected == true
+                        "dislike"
+                      else
+                        "none"
+                      end
+                    else
+                      "none"
+                    end
+        
+        {
+          interaction_type: their_action,
+          my_action: my_action,
+          interaction_time: interaction.created_at,
+          user: user.as_json(
+            methods: [:user_age, :user_media_url],
+            include: [
+              :user_media,
+              :user_interests,
+              :user_info_item_values,
+              :user_main_interests,
+              :tmdb_user_data,
+              :tmdb_user_series_data
+            ]
+          )
+        }
+      end.compact
+      
+      # Preparar el payload
+      websocket_payload = {
+        type: "boost_interactions_update",
+        boost_started_at: boost_start,
+        boost_expires_at: boost_end_time,
+        interactions_count: interactions_data.length,
+        interactions: interactions_data,
+        latest_interaction: nil  # No hay "última interacción" porque YO di el swipe
+      }
+      
+      # LOG DETALLADO
+      Rails.logger.info "=" * 80
+      Rails.logger.info "[MyBoostAction WebSocket] YO DI SWIPE durante MI boost"
+      Rails.logger.info "YO (con boost): #{me_with_boost.id} (#{me_with_boost.name})"
+      Rails.logger.info "A QUIEN le di swipe: #{person_i_swiped.id} (#{person_i_swiped.name})"
+      Rails.logger.info "MI acción: #{umr.is_like ? 'like' : 'dislike'}"
+      Rails.logger.info "Total de interacciones en mi boost: #{interactions_data.length}"
+      Rails.logger.info "Payload completo del websocket:"
+      Rails.logger.info JSON.pretty_generate(websocket_payload.as_json)
+      Rails.logger.info "=" * 80
+      
+      # Enviar a MÍ MISMO (quien tiene el boost y acaba de dar swipe)
+      AliveChannel.broadcast_to(me_with_boost, websocket_payload)
     end
 end
