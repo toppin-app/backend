@@ -375,6 +375,10 @@ end
       end
 
       target_user = User.find(umr.target_user)
+      
+      # Notificar en tiempo real si el target_user tiene boost activo
+      notify_boost_interaction_from_admin(target_user, umr, User.find(params[:user_id]))
+      
       devices = Device.where(user_id: target_user.id)
       notification = NotificationLocalizer.for(user: target_user, type: :like)
 
@@ -2043,6 +2047,147 @@ end
     end
     def redis
       @redis ||= Redis.new(url: ENV["REDIS_URL"])
+    end
+    
+    # Notifica en tiempo real si el target_user tiene un boost activo (versión para admin)
+    def notify_boost_interaction_from_admin(target_user, umr, acting_user)
+      return unless target_user.high_visibility && target_user.high_visibility_expire
+      
+      # Verificar que la interacción ocurrió durante el boost activo
+      boost_start = target_user.last_boost_started_at
+      return unless boost_start && umr.created_at >= boost_start
+      
+      # Obtener todas las interacciones del boost actual (INCLUYENDO matches)
+      boost_end_time = target_user.high_visibility_expire
+      all_interactions = UserMatchRequest.where(target_user: target_user.id)
+                                         .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
+                                         .order(created_at: :desc)
+      
+      # Obtener los IDs de usuarios que han interactuado
+      user_ids = all_interactions.pluck(:user_id).uniq
+      
+      # Cargar usuarios con todas sus relaciones
+      users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data)
+                  .where(id: user_ids)
+      
+      # Construir array con información de cada interacción
+      interactions_data = all_interactions.map do |interaction|
+        user = users.find { |u| u.id == interaction.user_id }
+        next unless user
+        
+        # Determinar el tipo de interacción que ELLOS hicieron hacia MÍ
+        their_action = if interaction.is_match
+                         "match"
+                       elsif interaction.is_rejected
+                         "dislike"
+                       elsif interaction.is_like
+                         "like"
+                       else
+                         "dislike"
+                       end
+        
+        # Buscar si YO (el que tiene boost) también tengo una interacción hacia ELLOS
+        my_interaction = UserMatchRequest.find_by(user_id: target_user.id, target_user: user.id)
+        
+        my_action = if my_interaction
+                      if my_interaction.is_match
+                        "match"
+                      elsif my_interaction.is_like == true
+                        "like"
+                      elsif my_interaction.is_rejected == true
+                        "dislike"
+                      else
+                        "none"
+                      end
+                    else
+                      "none"
+                    end
+        
+        {
+          interaction_type: their_action,
+          my_action: my_action,
+          interaction_time: interaction.created_at,
+          user: user.as_json(
+            methods: [:user_age, :user_media_url],
+            include: [
+              :user_media,
+              :user_interests,
+              :user_info_item_values,
+              :user_main_interests,
+              :tmdb_user_data,
+              :tmdb_user_series_data
+            ]
+          )
+        }
+      end.compact
+      
+      # Determinar el tipo de la última interacción
+      latest_their_action = if umr.is_match
+                              "match"
+                            elsif umr.is_rejected
+                              "dislike"
+                            elsif umr.is_like
+                              "like"
+                            else
+                              "dislike"
+                            end
+      
+      # Buscar si YO ya respondí al acting_user
+      my_response = UserMatchRequest.find_by(user_id: target_user.id, target_user: acting_user.id)
+      
+      latest_my_action = if my_response
+                           if my_response.is_match
+                             "match"
+                           elsif my_response.is_like == true
+                             "like"
+                           elsif my_response.is_rejected == true
+                             "dislike"
+                           else
+                             "none"
+                           end
+                         else
+                           "none"
+                         end
+      
+      # Preparar el payload para el websocket
+      websocket_payload = {
+        type: "boost_interactions_update",
+        boost_started_at: boost_start,
+        boost_expires_at: boost_end_time,
+        interactions_count: interactions_data.length,
+        interactions: interactions_data,
+        latest_interaction: {
+          interaction_type: latest_their_action,
+          my_action: latest_my_action,
+          interaction_time: umr.created_at,
+          user: acting_user.as_json(
+            methods: [:user_age, :user_media_url],
+            include: [
+              :user_media,
+              :user_interests,
+              :user_info_item_values,
+              :user_main_interests,
+              :tmdb_user_data,
+              :tmdb_user_series_data
+            ]
+          )
+        }
+      }
+      
+      # LOG DETALLADO DEL WEBSOCKET
+      logger.info "=" * 80
+      logger.info "[BoostInteraction WebSocket - ADMIN] Enviando actualización"
+      logger.info "Usuario con boost (receptor): #{target_user.id} (#{target_user.name})"
+      logger.info "Usuario que hizo swipe: #{acting_user.id} (#{acting_user.name})"
+      logger.info "Tipo de interacción recibida: #{latest_their_action}"
+      logger.info "Mi acción hacia ellos: #{latest_my_action}"
+      logger.info "Total de interacciones en boost: #{interactions_data.length}"
+      logger.info "Payload completo del websocket:"
+      logger.info JSON.pretty_generate(websocket_payload.as_json)
+      logger.info "=" * 80
+      
+      # Enviar la lista completa actualizada a través de AliveChannel
+      AliveChannel.broadcast_to(target_user, websocket_payload)
     end
     end
 
