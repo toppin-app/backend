@@ -514,7 +514,7 @@ class UserMatchRequestsController < ApplicationController
       boost_start = me_with_boost.last_boost_started_at
       return unless boost_start
       
-      # Obtener todas las interacciones durante MI boost
+      # Obtener todas las interacciones durante MI boost (donde YO soy el target)
       boost_end_time = me_with_boost.high_visibility_expire
       all_interactions = UserMatchRequest.where(target_user: me_with_boost.id)
                                          .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
@@ -535,10 +535,10 @@ class UserMatchRequestsController < ApplicationController
         # Lo que ELLOS me hicieron
         their_action = if interaction.is_match
                          "match"
-                       elsif interaction.is_rejected
-                         "dislike"
-                       elsif interaction.is_like
+                       elsif interaction.is_like == true
                          "like"
+                       elsif interaction.is_rejected == true
+                         "dislike"
                        else
                          "dislike"
                        end
