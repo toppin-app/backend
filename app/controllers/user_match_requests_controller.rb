@@ -497,6 +497,6 @@ class UserMatchRequestsController < ApplicationController
       logger.info "=" * 80
       
       # Enviar la lista completa actualizada a través de AliveChannel AL USUARIO CON BOOST
-      AliveChannel.broadcast_to(current_user, websocket_payload)
+      AliveChannel.broadcast_to(target_user, websocket_payload)
     end
 end
