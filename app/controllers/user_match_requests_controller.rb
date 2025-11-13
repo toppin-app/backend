@@ -514,38 +514,52 @@ class UserMatchRequestsController < ApplicationController
       boost_start = me_with_boost.last_boost_started_at
       return unless boost_start
       
-      # Obtener todas las interacciones durante MI boost (donde YO soy el target)
       boost_end_time = me_with_boost.high_visibility_expire
-      all_interactions = UserMatchRequest.where(target_user: me_with_boost.id)
-                                         .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
-                                         .order(created_at: :desc)
       
-      # Obtener los IDs de usuarios que han interactuado CONMIGO
-      user_ids = all_interactions.pluck(:user_id).uniq
+      # 1. Interacciones donde OTROS me swipearon durante mi boost
+      incoming_interactions = UserMatchRequest.where(target_user: me_with_boost.id)
+                                              .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
       
-      # Cargar usuarios con todas sus relaciones
+      # 2. Interacciones donde YO swipeé a OTROS durante mi boost
+      outgoing_interactions = UserMatchRequest.where(user_id: me_with_boost.id)
+                                              .where("created_at >= ? AND created_at <= ?", boost_start, boost_end_time)
+      
+      # Combinar ambos conjuntos de usuarios (sin duplicados)
+      incoming_user_ids = incoming_interactions.pluck(:user_id).uniq
+      outgoing_user_ids = outgoing_interactions.pluck(:target_user).uniq
+      all_user_ids = (incoming_user_ids + outgoing_user_ids).uniq
+      
+      # Cargar todos los usuarios con sus relaciones
       users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data)
-                  .where(id: user_ids)
+                  .where(id: all_user_ids)
       
       # Construir array con información de cada interacción
-      interactions_data = all_interactions.map do |interaction|
-        user = users.find { |u| u.id == interaction.user_id }
+      interactions_data = all_user_ids.map do |user_id|
+        user = users.find { |u| u.id == user_id }
         next unless user
         
+        # Buscar si ELLOS me swipearon
+        their_interaction = incoming_interactions.find { |i| i.user_id == user_id }
+        
         # Lo que ELLOS me hicieron
-        their_action = if interaction.is_match
-                         "match"
-                       elsif interaction.is_like == true
-                         "like"
-                       elsif interaction.is_rejected == true
-                         "dislike"
+        their_action = if their_interaction
+                         if their_interaction.is_match
+                           "match"
+                         elsif their_interaction.is_like == true
+                           "like"
+                         elsif their_interaction.is_rejected == true
+                           "dislike"
+                         else
+                           "none"
+                         end
                        else
-                         "dislike"
+                         "none"  # No me han swipeado
                        end
         
-        # Lo que YO les hice
-        my_interaction = UserMatchRequest.find_by(user_id: me_with_boost.id, target_user: user.id)
+        # Buscar si YO les swipeé
+        my_interaction = outgoing_interactions.find { |i| i.target_user == user_id }
         
+        # Lo que YO les hice
         my_action = if my_interaction
                       if my_interaction.is_match
                         "match"
@@ -557,13 +571,16 @@ class UserMatchRequestsController < ApplicationController
                         "none"
                       end
                     else
-                      "none"
+                      "none"  # No les he swipeado
                     end
+        
+        # Usar la fecha de la interacción más reciente
+        interaction_time = [their_interaction&.created_at, my_interaction&.created_at].compact.max
         
         {
           interaction_type: their_action,
           my_action: my_action,
-          interaction_time: interaction.created_at,
+          interaction_time: interaction_time,
           user: user.as_json(
             methods: [:user_age, :user_media_url],
             include: [
@@ -576,7 +593,7 @@ class UserMatchRequestsController < ApplicationController
             ]
           )
         }
-      end.compact
+      end.compact.sort_by { |i| i[:interaction_time] }.reverse
       
       # Preparar el payload
       websocket_payload = {
