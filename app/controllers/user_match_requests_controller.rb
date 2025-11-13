@@ -459,8 +459,8 @@ class UserMatchRequestsController < ApplicationController
                            "none"
                          end
       
-      # Enviar la lista completa actualizada a través de AliveChannel AL USUARIO CON BOOST
-      AliveChannel.broadcast_to(target_user, {
+      # Preparar el payload para el websocket
+      websocket_payload = {
         type: "boost_interactions_update",
         boost_started_at: boost_start,
         boost_expires_at: boost_end_time,
@@ -482,8 +482,21 @@ class UserMatchRequestsController < ApplicationController
             ]
           )
         }
-      })
+      }
       
-      logger.info "[BoostInteraction] Lista actualizada enviada a usuario #{target_user.id}. Total interacciones: #{interactions_data.length}"
+      # LOG DETALLADO DEL WEBSOCKET
+      logger.info "=" * 80
+      logger.info "[BoostInteraction WebSocket] Enviando actualización"
+      logger.info "Usuario con boost (receptor): #{target_user.id} (#{target_user.name})"
+      logger.info "Usuario que hizo swipe: #{current_user.id} (#{current_user.name})"
+      logger.info "Tipo de interacción recibida: #{latest_their_action}"
+      logger.info "Mi acción hacia ellos: #{latest_my_action}"
+      logger.info "Total de interacciones en boost: #{interactions_data.length}"
+      logger.info "Payload completo del websocket:"
+      logger.info JSON.pretty_generate(websocket_payload.as_json)
+      logger.info "=" * 80
+      
+      # Enviar la lista completa actualizada a través de AliveChannel AL USUARIO CON BOOST
+      AliveChannel.broadcast_to(current_user, websocket_payload)
     end
 end
