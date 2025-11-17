@@ -9,7 +9,8 @@ class WelcomeMailer < ApplicationMailer
     @logo_url = "https://#{@app_url}/logo-html.png"
     
     # Usar el idioma del usuario o el idioma por defecto
-    user_locale = @user.language&.to_sym || I18n.default_locale
+    # Convertir a minúsculas porque en BD está en mayúsculas (ES, EN, etc.)
+    user_locale = @user.language&.downcase&.to_sym || I18n.default_locale
     
     I18n.with_locale(user_locale) do
       mail(
