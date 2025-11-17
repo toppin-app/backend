@@ -332,6 +332,17 @@
         <%= form.submit "Enviar like", class: 'btn btn-success btn-sm btn-block mt-2' %>
     <% end %>
 
+    <hr>
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-times-circle"></i> Dar un dislike</b></p>
+
+    <%= form_with url: "/create_dislike",local: true do |form| %>
+
+       <%= collection_select(nil,:target_user, @users, :id, :id_with_name, {}, {class: 'form-control selectpicker', "data-live-search" => "true", style: "height: 300px;"}) %>
+       <%= hidden_field nil, :user_id, value: @user.id %>
+
+        <%= form.submit "Enviar dislike", class: 'btn btn-danger btn-sm btn-block mt-2' %>
+    <% end %>
+
   </div>
 </div>
 

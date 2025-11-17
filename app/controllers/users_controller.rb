@@ -402,6 +402,32 @@ end
       redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
     end
 
+  # Hacer manualmente dislike entre dos users (desde el admin)
+  def create_dislike
+    umr = UserMatchRequest.find_by(user_id: params[:user_id], target_user: params[:target_user])
+    
+    unless umr
+      umr = UserMatchRequest.create(
+        user_id: params[:user_id],
+        target_user: params[:target_user],
+        is_like: false,
+        is_rejected: true,
+        is_superlike: false
+      )
+    else
+      # Si ya existe, actualizarlo a dislike
+      umr.update(is_like: false, is_rejected: true, is_match: false)
+    end
+
+    target_user = User.find(umr.target_user)
+    acting_user = User.find(params[:user_id])
+    
+    # Notificar en tiempo real si el target_user tiene boost activo
+    notify_boost_interaction_from_admin(target_user, umr, acting_user)
+
+    redirect_to show_user_path(id: umr.user_id), notice: 'Dislike generado con éxito.'
+  end
+
   # Deshacer un match desde el admin
   def unmatch
     # Buscar el match en ambas direcciones

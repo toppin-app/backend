@@ -141,6 +141,7 @@ Rails.application.routes.draw do
   get '/get_user/:id', to: 'users#get_user'
   get '/create_match', to: 'users#create_match', as: :create_match
   post '/create_like', to: 'users#create_like'
+  post '/create_dislike', to: 'users#create_dislike'
   post '/unmatch', to: 'users#unmatch', as: :unmatch
   post '/clear_all_matches', to: 'users#clear_all_matches', as: :clear_all_matches
   post '/reject_incoming_like', to: 'users#reject_incoming_like', as: :reject_incoming_like
