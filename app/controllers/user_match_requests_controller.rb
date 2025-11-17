@@ -547,7 +547,7 @@ class UserMatchRequestsController < ApplicationController
                            "match"
                          elsif their_interaction.is_like == true
                            "like"
-                         elsif their_interaction.is_rejected == true
+                         elsif their_interaction.is_rejected == true || their_interaction.is_like == false
                            "dislike"
                          else
                            "none"
@@ -556,16 +556,18 @@ class UserMatchRequestsController < ApplicationController
                          "none"  # No me han swipeado
                        end
         
-        # Buscar si YO les swipeé
-        my_interaction = outgoing_interactions.find { |i| i.target_user == user_id }
+        # Buscar si YO les swipeé (BUSCAR CUALQUIER INTERACCIÓN, no solo durante el boost)
+        my_interaction = UserMatchRequest.where(user_id: me_with_boost.id, target_user: user_id)
+                                         .order(updated_at: :desc)
+                                         .first
         
-        # Lo que YO les hice
-        my_action = if my_interaction
-                      if my_interaction.is_match
-                        "match"
-                      elsif my_interaction.is_like == true
+        # Lo que YO les hice (usando la búsqueda actualizada)
+        my_action = if their_interaction&.is_match
+                      "match"
+                    elsif my_interaction
+                      if my_interaction.is_like == true
                         "like"
-                      elsif my_interaction.is_rejected == true
+                      elsif my_interaction.is_rejected == true || my_interaction.is_like == false
                         "dislike"
                       else
                         "none"
