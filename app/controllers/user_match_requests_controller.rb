@@ -77,6 +77,12 @@ class UserMatchRequestsController < ApplicationController
           # Buscar si existe un match_request previo EN CUALQUIER DIRECCIÓN
           umr = UserMatchRequest.match_between(current_user.id, params[:target_user])
           
+          logger.info "UMR FOUND:"
+          logger.info umr.inspect
+          logger.info "current_user.id: #{current_user.id}"
+          logger.info "umr.target_user: #{umr&.target_user}"
+          logger.info "umr.user_id: #{umr&.user_id}"
+          
           # Si existe un registro pero YO soy el target_user (ellos me dieron swipe primero)
           # entonces voy a ACTUALIZAR ese registro con mi respuesta
           if umr && umr.target_user == current_user.id
