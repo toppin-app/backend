@@ -444,7 +444,9 @@ class UserMatchRequestsController < ApplicationController
                     end
                   else
                     "none"  # No he interactuado con esta persona aún
-                  end        {
+                  end
+        
+        {
           interaction_type: their_action,  # Lo que ELLOS me hicieron
           my_action: my_action,            # Lo que YO les hice (o "none")
           interaction_time: interaction.created_at,
