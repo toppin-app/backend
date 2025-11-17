@@ -403,17 +403,39 @@ class UserMatchRequestsController < ApplicationController
                        end
         
         # Buscar si YO (el que tiene boost) también tengo una interacción hacia ELLOS
-        my_interaction = UserMatchRequest.find_by(user_id: target_user.id, target_user: user.id)
+        # Buscar en AMBAS direcciones porque el registro puede estar invertido
+        my_interaction = UserMatchRequest.where(
+          "(user_id = ? AND target_user = ?) OR (user_id = ? AND target_user = ?)",
+          target_user.id, user.id, user.id, target_user.id
+        ).order(updated_at: :desc).first
         
+        # Determinar MI acción hacia ELLOS
         my_action = if my_interaction
                       if my_interaction.is_match
                         "match"
-                      elsif my_interaction.is_like == true
-                        "like"
-                      elsif my_interaction.is_rejected == true
-                        "dislike"
+                      elsif my_interaction.user_id == target_user.id
+                        # YO creé este registro, mi acción es directa
+                        if my_interaction.is_like == true
+                          "like"
+                        elsif my_interaction.is_rejected == true || my_interaction.is_like == false
+                          "dislike"
+                        else
+                          "none"
+                        end
                       else
-                        "none"
+                        # ELLOS crearon el registro, verificar si YO lo actualicé
+                        if my_interaction.created_at != my_interaction.updated_at
+                          # El registro fue actualizado
+                          if my_interaction.is_rejected == true || my_interaction.is_like == false
+                            "dislike"
+                          elsif my_interaction.is_like == true
+                            "like"
+                          else
+                            "none"
+                          end
+                        else
+                          "none"  # No he respondido aún
+                        end
                       end
                     else
                       "none"  # No he interactuado con esta persona aún
@@ -449,17 +471,37 @@ class UserMatchRequestsController < ApplicationController
                             end
       
       # Buscar si YO (el que tiene boost) ya respondí al current_user
-      my_response = UserMatchRequest.find_by(user_id: target_user.id, target_user: current_user.id)
+      # Buscar en AMBAS direcciones
+      my_response = UserMatchRequest.where(
+        "(user_id = ? AND target_user = ?) OR (user_id = ? AND target_user = ?)",
+        target_user.id, current_user.id, current_user.id, target_user.id
+      ).order(updated_at: :desc).first
       
       latest_my_action = if my_response
                            if my_response.is_match
                              "match"
-                           elsif my_response.is_like == true
-                             "like"
-                           elsif my_response.is_rejected == true
-                             "dislike"
+                           elsif my_response.user_id == target_user.id
+                             # YO creé este registro
+                             if my_response.is_like == true
+                               "like"
+                             elsif my_response.is_rejected == true || my_response.is_like == false
+                               "dislike"
+                             else
+                               "none"
+                             end
                            else
-                             "none"
+                             # ELLOS crearon el registro, verificar si YO lo actualicé
+                             if my_response.created_at != my_response.updated_at
+                               if my_response.is_rejected == true || my_response.is_like == false
+                                 "dislike"
+                               elsif my_response.is_like == true
+                                 "like"
+                               else
+                                 "none"
+                               end
+                             else
+                               "none"
+                             end
                            end
                          else
                            "none"
