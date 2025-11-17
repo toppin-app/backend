@@ -91,6 +91,7 @@ class UserMatchRequestsController < ApplicationController
             umr.update!(
               is_like: params[:is_like], 
               is_rejected: params[:is_like] == false,
+              is_match: params[:is_like] == false ? false : umr.is_match, # Si cambio a dislike, deshacer match
               user_ranking: target_user.ranking,
               target_user_ranking: current_user.ranking
             )
@@ -116,7 +117,8 @@ class UserMatchRequestsController < ApplicationController
               is_superlike: params[:is_superlike], 
               user_ranking: current_user.ranking, 
               target_user_ranking: target_user.ranking,
-              is_rejected: params[:is_like] == false
+              is_rejected: params[:is_like] == false,
+              is_match: params[:is_like] == false ? false : umr.is_match # Si cambio a dislike, deshacer match
             )
             
             # Notificar si el target_user tiene boost activo
