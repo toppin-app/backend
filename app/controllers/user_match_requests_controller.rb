@@ -556,10 +556,25 @@ class UserMatchRequestsController < ApplicationController
                          "none"  # No me han swipeado
                        end
         
-        # Buscar si YO les swipeé (BUSCAR CUALQUIER INTERACCIÓN, no solo durante el boost)
+        # Buscar si YO les swipeé (FORZAR RECARGA DESDE LA BASE DE DATOS)
         my_interaction = UserMatchRequest.where(user_id: me_with_boost.id, target_user: user_id)
                                          .order(updated_at: :desc)
+                                         .limit(1)
                                          .first
+        
+        # RELOAD para asegurar que tenemos los datos más recientes
+        my_interaction&.reload
+        
+        # DEBUG LOG
+        if user_id == person_i_swiped.id
+          Rails.logger.info "=" * 40
+          Rails.logger.info "[DEBUG] Procesando interacción con #{user.name} (#{user_id})"
+          Rails.logger.info "my_interaction encontrado: #{my_interaction.inspect}"
+          Rails.logger.info "is_like: #{my_interaction&.is_like}"
+          Rails.logger.info "is_rejected: #{my_interaction&.is_rejected}"
+          Rails.logger.info "updated_at: #{my_interaction&.updated_at}"
+          Rails.logger.info "=" * 40
+        end
         
         # Lo que YO les hice (usando la búsqueda actualizada)
         my_action = if their_interaction&.is_match
