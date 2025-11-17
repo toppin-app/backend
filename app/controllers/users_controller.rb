@@ -816,22 +816,16 @@ end
       ).order(updated_at: :desc).first
       
       # Determinar MI acción hacia ELLOS
-      my_action = if my_interaction
-                    if my_interaction.is_match
-                      "match"
-                    elsif my_interaction.user_id == current_user.id
-                      # YO creé este registro, mi acción es directa
-                      if my_interaction.is_like == true
-                        "like"
-                      elsif my_interaction.is_rejected == true || my_interaction.is_like == false
-                        "dislike"
-                      else
-                        "none"
-                      end
-                    else
-                      # ELLOS crearon el registro, verificar si YO lo actualicé
-                      if my_interaction.created_at != my_interaction.updated_at
-                        # El registro fue actualizado
+      my_action = if interaction.is_match
+                    "match"
+                  elsif my_interaction
+                    # Si el registro es el MISMO que la interacción recibida
+                    if my_interaction.id == interaction.id
+                      # Mi respuesta está en la actualización de este registro
+                      if my_interaction.is_match
+                        "match"
+                      elsif my_interaction.created_at != my_interaction.updated_at
+                        # Respondí
                         if my_interaction.is_rejected == true || my_interaction.is_like == false
                           "dislike"
                         elsif my_interaction.is_like == true
@@ -840,8 +834,19 @@ end
                           "none"
                         end
                       else
-                        "none"  # No he respondido aún
+                        "none"
                       end
+                    elsif my_interaction.user_id == current_user.id
+                      # YO creé un registro separado
+                      if my_interaction.is_like == true
+                        "like"
+                      elsif my_interaction.is_rejected == true || my_interaction.is_like == false
+                        "dislike"
+                      else
+                        "none"
+                      end
+                    else
+                      "none"
                     end
                   else
                     "none"  # No has interactuado con esta persona aún

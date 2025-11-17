@@ -402,46 +402,49 @@ class UserMatchRequestsController < ApplicationController
                          "dislike"
                        end
         
-        # Buscar si YO (el que tiene boost) también tengo una interacción hacia ELLOS
-        # Buscar en AMBAS direcciones porque el registro puede estar invertido
-        my_interaction = UserMatchRequest.where(
-          "(user_id = ? AND target_user = ?) OR (user_id = ? AND target_user = ?)",
-          target_user.id, user.id, user.id, target_user.id
-        ).order(updated_at: :desc).first
-        
-        # Determinar MI acción hacia ELLOS
-        my_action = if my_interaction
+      # Buscar si YO (el que tiene boost) también tengo una interacción hacia ELLOS
+      # Buscar en AMBAS direcciones porque el registro puede estar invertido
+      my_interaction = UserMatchRequest.where(
+        "(user_id = ? AND target_user = ?) OR (user_id = ? AND target_user = ?)",
+        target_user.id, user.id, user.id, target_user.id
+      ).order(updated_at: :desc).first
+      
+      # Determinar MI acción hacia ELLOS
+      my_action = if interaction.is_match
+                    "match"
+                  elsif my_interaction
+                    # Si el registro es el MISMO que la interacción recibida
+                    if my_interaction.id == interaction.id
+                      # Mi respuesta está en la actualización de este registro
                       if my_interaction.is_match
                         "match"
-                      elsif my_interaction.user_id == target_user.id
-                        # YO creé este registro, mi acción es directa
-                        if my_interaction.is_like == true
-                          "like"
-                        elsif my_interaction.is_rejected == true || my_interaction.is_like == false
+                      elsif my_interaction.created_at != my_interaction.updated_at
+                        # Respondí
+                        if my_interaction.is_rejected == true || my_interaction.is_like == false
                           "dislike"
+                        elsif my_interaction.is_like == true
+                          "like"
                         else
                           "none"
                         end
                       else
-                        # ELLOS crearon el registro, verificar si YO lo actualicé
-                        if my_interaction.created_at != my_interaction.updated_at
-                          # El registro fue actualizado
-                          if my_interaction.is_rejected == true || my_interaction.is_like == false
-                            "dislike"
-                          elsif my_interaction.is_like == true
-                            "like"
-                          else
-                            "none"
-                          end
-                        else
-                          "none"  # No he respondido aún
-                        end
+                        "none"
+                      end
+                    elsif my_interaction.user_id == target_user.id
+                      # YO creé un registro separado
+                      if my_interaction.is_like == true
+                        "like"
+                      elsif my_interaction.is_rejected == true || my_interaction.is_like == false
+                        "dislike"
+                      else
+                        "none"
                       end
                     else
-                      "none"  # No he interactuado con esta persona aún
+                      "none"
                     end
-        
-        {
+                  else
+                    "none"  # No he interactuado con esta persona aún
+                  end        {
           interaction_type: their_action,  # Lo que ELLOS me hicieron
           my_action: my_action,            # Lo que YO les hice (o "none")
           interaction_time: interaction.created_at,
@@ -477,21 +480,16 @@ class UserMatchRequestsController < ApplicationController
         target_user.id, current_user.id, current_user.id, target_user.id
       ).order(updated_at: :desc).first
       
-      latest_my_action = if my_response
-                           if my_response.is_match
-                             "match"
-                           elsif my_response.user_id == target_user.id
-                             # YO creé este registro
-                             if my_response.is_like == true
-                               "like"
-                             elsif my_response.is_rejected == true || my_response.is_like == false
-                               "dislike"
-                             else
-                               "none"
-                             end
-                           else
-                             # ELLOS crearon el registro, verificar si YO lo actualicé
-                             if my_response.created_at != my_response.updated_at
+      latest_my_action = if umr.is_match
+                           "match"
+                         elsif my_response
+                           # Si el registro es el MISMO que umr (la interacción recibida)
+                           if my_response.id == umr.id
+                             # Mi respuesta está en la actualización
+                             if my_response.is_match
+                               "match"
+                             elsif my_response.created_at != my_response.updated_at
+                               # Respondí
                                if my_response.is_rejected == true || my_response.is_like == false
                                  "dislike"
                                elsif my_response.is_like == true
@@ -502,6 +500,17 @@ class UserMatchRequestsController < ApplicationController
                              else
                                "none"
                              end
+                           elsif my_response.user_id == target_user.id
+                             # YO creé un registro separado
+                             if my_response.is_like == true
+                               "like"
+                             elsif my_response.is_rejected == true || my_response.is_like == false
+                               "dislike"
+                             else
+                               "none"
+                             end
+                           else
+                             "none"
                            end
                          else
                            "none"
@@ -607,28 +616,18 @@ class UserMatchRequestsController < ApplicationController
         ).order(updated_at: :desc).first
         
         # Lo que YO les hice
-        # Si el registro tiene a ELLOS como user_id y a MÍ como target_user,
-        # entonces MI acción está reflejada en is_rejected/is_like del registro
+        # Necesitamos determinar si existe una interacción mía hacia ellos
         my_action = if their_interaction&.is_match
                       "match"
                     elsif my_interaction
-                      # Determinar si yo soy el user_id o el target_user del registro
-                      if my_interaction.user_id == me_with_boost.id
-                        # YO creé este registro, mi acción es directa
-                        if my_interaction.is_like == true
-                          "like"
-                        elsif my_interaction.is_rejected == true || my_interaction.is_like == false
-                          "dislike"
-                        else
-                          "none"
-                        end
-                      else
-                        # ELLOS crearon el registro, mi acción está en target_is_like o si actualicé su registro
-                        # Necesitamos verificar si el registro fue actualizado (meaning yo respondí)
+                      # Si el registro es their_interaction (ellos me swipearon durante el boost)
+                      # entonces mi acción está en la actualización de ese registro
+                      if my_interaction.id == their_interaction&.id
+                        # Es el MISMO registro - mi respuesta está en la actualización
                         if my_interaction.is_match
                           "match"
                         elsif my_interaction.created_at != my_interaction.updated_at
-                          # El registro fue actualizado, verificar is_rejected
+                          # El registro fue actualizado = respondí
                           if my_interaction.is_rejected == true || my_interaction.is_like == false
                             "dislike"
                           elsif my_interaction.is_like == true
@@ -637,8 +636,19 @@ class UserMatchRequestsController < ApplicationController
                             "none"
                           end
                         else
-                          "none"  # El registro no ha sido actualizado, no he respondido
+                          "none"  # No he respondido
                         end
+                      elsif my_interaction.user_id == me_with_boost.id
+                        # YO creé un registro separado hacia ellos
+                        if my_interaction.is_like == true
+                          "like"
+                        elsif my_interaction.is_rejected == true || my_interaction.is_like == false
+                          "dislike"
+                        else
+                          "none"
+                        end
+                      else
+                        "none"
                       end
                     else
                       "none"  # No existe interacción
