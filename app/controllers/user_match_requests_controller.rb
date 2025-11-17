@@ -556,39 +556,50 @@ class UserMatchRequestsController < ApplicationController
                          "none"  # No me han swipeado
                        end
         
-        # Buscar si YO les swipeé (FORZAR RECARGA DESDE LA BASE DE DATOS)
-        my_interaction = UserMatchRequest.where(user_id: me_with_boost.id, target_user: user_id)
-                                         .order(updated_at: :desc)
-                                         .limit(1)
-                                         .first
+        # Buscar MI interacción hacia ELLOS
+        # Puede estar en cualquier dirección porque cuando respondes a un swipe,
+        # se actualiza el registro original en lugar de crear uno nuevo
+        my_interaction = UserMatchRequest.where(
+          "(user_id = ? AND target_user = ?) OR (user_id = ? AND target_user = ?)",
+          me_with_boost.id, user_id, user_id, me_with_boost.id
+        ).order(updated_at: :desc).first
         
-        # RELOAD para asegurar que tenemos los datos más recientes
-        my_interaction&.reload
-        
-        # DEBUG LOG
-        if user_id == person_i_swiped.id
-          Rails.logger.info "=" * 40
-          Rails.logger.info "[DEBUG] Procesando interacción con #{user.name} (#{user_id})"
-          Rails.logger.info "my_interaction encontrado: #{my_interaction.inspect}"
-          Rails.logger.info "is_like: #{my_interaction&.is_like}"
-          Rails.logger.info "is_rejected: #{my_interaction&.is_rejected}"
-          Rails.logger.info "updated_at: #{my_interaction&.updated_at}"
-          Rails.logger.info "=" * 40
-        end
-        
-        # Lo que YO les hice (usando la búsqueda actualizada)
+        # Lo que YO les hice
+        # Si el registro tiene a ELLOS como user_id y a MÍ como target_user,
+        # entonces MI acción está reflejada en is_rejected/is_like del registro
         my_action = if their_interaction&.is_match
                       "match"
                     elsif my_interaction
-                      if my_interaction.is_like == true
-                        "like"
-                      elsif my_interaction.is_rejected == true || my_interaction.is_like == false
-                        "dislike"
+                      # Determinar si yo soy el user_id o el target_user del registro
+                      if my_interaction.user_id == me_with_boost.id
+                        # YO creé este registro, mi acción es directa
+                        if my_interaction.is_like == true
+                          "like"
+                        elsif my_interaction.is_rejected == true || my_interaction.is_like == false
+                          "dislike"
+                        else
+                          "none"
+                        end
                       else
-                        "none"
+                        # ELLOS crearon el registro, mi acción está en target_is_like o si actualicé su registro
+                        # Necesitamos verificar si el registro fue actualizado (meaning yo respondí)
+                        if my_interaction.is_match
+                          "match"
+                        elsif my_interaction.created_at != my_interaction.updated_at
+                          # El registro fue actualizado, verificar is_rejected
+                          if my_interaction.is_rejected == true || my_interaction.is_like == false
+                            "dislike"
+                          elsif my_interaction.is_like == true
+                            "like"
+                          else
+                            "none"
+                          end
+                        else
+                          "none"  # El registro no ha sido actualizado, no he respondido
+                        end
                       end
                     else
-                      "none"  # No les he swipeado
+                      "none"  # No existe interacción
                     end
         
         # Usar la fecha de la interacción más reciente
