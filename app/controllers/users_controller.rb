@@ -825,16 +825,19 @@ end
                       if my_interaction.is_match
                         "match"
                       elsif my_interaction.created_at != my_interaction.updated_at
-                        # Respondí
-                        if my_interaction.is_rejected == true || my_interaction.is_like == false
+                        # El registro fue actualizado = respondí
+                        # Verificar qué respondí basándome en is_rejected y is_like
+                        if my_interaction.is_rejected == true
                           "dislike"
-                        elsif my_interaction.is_like == true
+                        elsif my_interaction.is_like == true && my_interaction.is_rejected == false
                           "like"
+                        elsif my_interaction.is_like == false
+                          "dislike"
                         else
                           "none"
                         end
                       else
-                        "none"
+                        "none"  # No he respondido aún
                       end
                     elsif my_interaction.user_id == current_user.id
                       # YO creé un registro separado

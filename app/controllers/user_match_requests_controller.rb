@@ -73,43 +73,74 @@ class UserMatchRequestsController < ApplicationController
             render json: { status: 405, error: time_to_likes.to_json }, status: 405
             return
           end
-          # Buscamos si existe un match_request previo
+          
+          # Buscar si existe un match_request previo EN CUALQUIER DIRECCIÓN
           umr = UserMatchRequest.match_between(current_user.id, params[:target_user])
-          # Hay match request, pero el otro usuario lo tiene bloqueado.
-          if umr and umr.is_rejected
-            logger.info "Error 3"
-            render json: { status: 405, error: "Match rejected error"}, status: 405
-            return
-          end
-          if !umr # Si no lo hay, lo creamos.
-             logger.info "create umr"
-             # Lógica para Sugar Sweet
-             is_sugar_sweet = current_user.next_sugar_play == 1
-
-             umr = UserMatchRequest.create(
-               user_id: current_user.id,
-               target_user: params[:target_user],
-               is_like: params[:is_like],
-               is_superlike: params[:is_superlike],
-               user_ranking: current_user.ranking,
-               target_user_ranking: target_user.ranking,
-               is_sugar_sweet: is_sugar_sweet
-             )
-             
-             if umr.persisted?
-               # Notificar si el target_user tiene boost activo
-               notify_boost_interaction(target_user, umr)
-               # NUEVO: Notificar si YO (current_user) tengo boost activo y acabo de dar swipe
-               notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
-             end
+          
+          # Si existe un registro pero YO soy el target_user (ellos me dieron swipe primero)
+          # entonces voy a ACTUALIZAR ese registro con mi respuesta
+          if umr && umr.target_user == current_user.id
+            logger.info "update umr (responding to their swipe)"
+            # Actualizar el registro existente con mi respuesta
+            umr.update!(
+              is_like: params[:is_like], 
+              is_rejected: params[:is_like] == false,
+              user_ranking: target_user.ranking,
+              target_user_ranking: current_user.ranking
+            )
+            
+            # Notificar si el target_user tiene boost activo
+            notify_boost_interaction(target_user, umr)
+            # NUEVO: Notificar si YO (current_user) tengo boost activo y acabo de dar swipe
+            notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
+            
+          # Si existe un registro donde YO soy el user_id (yo swipeé primero)
+          elsif umr && umr.user_id == current_user.id
+            # Verificar si el registro está rechazado (yo lo rechacé antes)
+            if umr.is_rejected
+              logger.info "Error 3"
+              render json: { status: 405, error: "Match rejected error"}, status: 405
+              return
+            end
+            
+            logger.info "update umr (updating my previous swipe)"
+            umr.update!(
+              is_like: params[:is_like], 
+              is_sugar_sweet: params[:is_sugar_sweet], 
+              is_superlike: params[:is_superlike], 
+              user_ranking: current_user.ranking, 
+              target_user_ranking: target_user.ranking,
+              is_rejected: params[:is_like] == false
+            )
+            
+            # Notificar si el target_user tiene boost activo
+            notify_boost_interaction(target_user, umr)
+            # NUEVO: Notificar si YO (current_user) tengo boost activo y acabo de dar swipe
+            notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
+            
           else
-             logger.info "update umr"
-             umr.update!(is_like: params[:is_like], is_sugar_sweet: params[:is_sugar_sweet], is_superlike: params[:is_superlike], user_ranking: current_user.ranking, target_user_ranking: target_user.ranking)
-             
-             # Notificar si el target_user tiene boost activo
-             notify_boost_interaction(target_user, umr)
-             # NUEVO: Notificar si YO (current_user) tengo boost activo y acabo de dar swipe
-             notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
+            # No existe registro, crear uno nuevo
+            logger.info "create umr"
+            # Lógica para Sugar Sweet
+            is_sugar_sweet = current_user.next_sugar_play == 1
+
+            umr = UserMatchRequest.create(
+              user_id: current_user.id,
+              target_user: params[:target_user],
+              is_like: params[:is_like],
+              is_superlike: params[:is_superlike],
+              user_ranking: current_user.ranking,
+              target_user_ranking: target_user.ranking,
+              is_sugar_sweet: is_sugar_sweet,
+              is_rejected: params[:is_like] == false
+            )
+            
+            if umr.persisted?
+              # Notificar si el target_user tiene boost activo
+              notify_boost_interaction(target_user, umr)
+              # NUEVO: Notificar si YO (current_user) tengo boost activo y acabo de dar swipe
+              notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
+            end
           end
           logger.info "umr is now"
           logger.info umr.inspect
