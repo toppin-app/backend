@@ -779,14 +779,17 @@ end
     boost_start_time = current_user.last_boost_started_at
     boost_end_time = current_user.last_boost_ended_at || current_user.high_visibility_expire || (boost_start_time + 30.minutes)
 
-    # Buscar todas las interacciones donde el usuario actual es el target_user
-    # durante el período del último boost (INCLUYENDO matches)
-    interactions = UserMatchRequest.where(target_user: current_user.id)
-                                   .where("created_at >= ? AND created_at <= ?", boost_start_time, boost_end_time)
-                                   .order(created_at: :desc)
+    # Buscar todas las interacciones durante el boost
+    # INCLUYE: interacciones donde OTROS swipearon a current_user Y donde current_user swipeó a OTROS
+    interactions = UserMatchRequest.where(
+      "(target_user = ? OR user_id = ?) AND created_at >= ? AND created_at <= ?",
+      current_user.id, current_user.id, boost_start_time, boost_end_time
+    ).order(created_at: :desc)
 
-    # Obtener los IDs de usuarios que han interactuado
-    user_ids = interactions.pluck(:user_id).uniq
+    # Obtener los IDs de TODOS los usuarios involucrados
+    user_ids = interactions.map do |i|
+      i.user_id == current_user.id ? i.target_user : i.user_id
+    end.uniq
     
     # Cargar usuarios con todas sus relaciones (igual que en user_swipes)
     users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data)
@@ -794,66 +797,66 @@ end
     
     # Construir array con información de cada interacción
     interactions_data = interactions.map do |interaction|
-      user = users.find { |u| u.id == interaction.user_id }
+      # Determinar quién es "el otro usuario" (no current_user)
+      other_user_id = interaction.user_id == current_user.id ? interaction.target_user : interaction.user_id
+      user = users.find { |u| u.id == other_user_id }
       next unless user
       
-      # Determinar el tipo de interacción que ELLOS hicieron hacia TI
-      their_action = if interaction.is_match
-                       "match"
-                     elsif interaction.is_rejected
-                       "dislike"
-                     elsif interaction.is_like
-                       "like"
-                     else
-                       "dislike"
-                     end
-      
-      # Buscar si TÚ también tienes una interacción hacia ELLOS
-      # Buscar en AMBAS direcciones porque el registro puede estar invertido
+      # Buscar la interacción bidireccional
       my_interaction = UserMatchRequest.where(
         "(user_id = ? AND target_user = ?) OR (user_id = ? AND target_user = ?)",
-        current_user.id, user.id, user.id, current_user.id
+        current_user.id, other_user_id, other_user_id, current_user.id
       ).order(updated_at: :desc).first
       
-      # Determinar MI acción hacia ELLOS
-      my_action = if interaction.is_match
-                    "match"
-                  elsif my_interaction
-                    # Si el registro es el MISMO que la interacción recibida
-                    if my_interaction.id == interaction.id
-                      # Mi respuesta está en la actualización de este registro
-                      if my_interaction.is_match
-                        "match"
-                      elsif my_interaction.created_at != my_interaction.updated_at
-                        # El registro fue actualizado = respondí
-                        # Verificar qué respondí basándome en is_rejected y is_like
-                        if my_interaction.is_rejected == true
-                          "dislike"
-                        elsif my_interaction.is_like == true && my_interaction.is_rejected == false
+      # Determinar their_action y my_action basándose en my_interaction
+      if my_interaction
+        # Determinar lo que ELLOS hicieron
+        if my_interaction.target_user == current_user.id
+          # ELLOS me swipearon (YO soy target)
+          their_action = if my_interaction.is_match
+                           "match"
+                         elsif my_interaction.is_like
+                           "like"
+                         else
+                           "dislike"
+                         end
+        else
+          # YO les swipeé (ELLOS son target)
+          their_action = "none"
+        end
+        
+        # Determinar lo que YO hice
+        my_action = if my_interaction.is_match
+                      "match"
+                    elsif my_interaction.user_id == current_user.id
+                      # YO creé/actualicé este registro
+                      if my_interaction.is_like == true
+                        "like"
+                      elsif my_interaction.is_rejected == true
+                        "dislike"
+                      else
+                        "none"
+                      end
+                    elsif my_interaction.target_user == current_user.id
+                      # ELLOS crearon el registro, YO respondí actualizándolo
+                      if my_interaction.created_at != my_interaction.updated_at
+                        if my_interaction.is_like == true
                           "like"
-                        elsif my_interaction.is_like == false
+                        elsif my_interaction.is_rejected == true
                           "dislike"
                         else
                           "none"
                         end
-                      else
-                        "none"  # No he respondido aún
-                      end
-                    elsif my_interaction.user_id == current_user.id
-                      # YO creé un registro separado
-                      if my_interaction.is_like == true
-                        "like"
-                      elsif my_interaction.is_rejected == true || my_interaction.is_like == false
-                        "dislike"
                       else
                         "none"
                       end
                     else
                       "none"
                     end
-                  else
-                    "none"  # No has interactuado con esta persona aún
-                  end
+      else
+        their_action = "none"
+        my_action = "none"
+      end
       
       {
         interaction_type: their_action,  # Lo que ELLOS hicieron
