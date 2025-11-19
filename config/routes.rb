@@ -88,6 +88,12 @@ Rails.application.routes.draw do
   post '/update_current_conversation', to: 'users#update_current_conversation'
   post 'users/resolve_location', to: 'users#resolve_location'
 
+  # Obtener interacciones del usuario (con paginación y filtros)
+  get '/user_interactions', to: 'users#user_interactions'
+  
+  # Obtener estadísticas/contadores de interacciones
+  get '/user_interactions_stats', to: 'users#user_interactions_stats'
+
   # Hacer visible / invisible usuario
   post '/toggle_visibility', to: 'users#toggle_visibility'
 
