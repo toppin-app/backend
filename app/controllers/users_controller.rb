@@ -737,7 +737,7 @@ end
   end
 end
 
-  # GET /user_interactions - Devuelve interacciones del usuario con paginación y filtros
+  # GET /user_interactions - Devuelve interacciones del usuario categorizadas con paginación y filtros
   # Filtros disponibles por query params:
   # - type: 'likes' o 'dislikes'
   # - status: 'matched', 'pending', 'not_reciprocated' (para likes) o 'lost_opportunity', 'pending', 'mutual' (para dislikes)
@@ -749,96 +749,108 @@ end
     interaction_type = params[:type] # 'likes' o 'dislikes'
     status_filter = params[:status]
     
-    # Query base para mis interacciones
-    interactions = UserMatchRequest.where(user_id: current_user.id)
+    # Query base: SOLO las interacciones que YO inicié (likes y dislikes que YO di)
+    my_interactions = UserMatchRequest.where(user_id: current_user.id)
     
-    # Filtrar por tipo (likes o dislikes)
-    if interaction_type == 'likes'
-      interactions = interactions.where(is_like: true)
-    elsif interaction_type == 'dislikes'
-      interactions = interactions.where(is_rejected: true)
-    end
+    # Separar likes y dislikes
+    likes_given = my_interactions.where(is_like: true)
+    dislikes_given = my_interactions.where(is_rejected: true)
     
-    # Aplicar filtros de estado
-    if interaction_type == 'likes' && status_filter.present?
-      case status_filter
-      when 'matched'
-        # Likes que se convirtieron en match
-        interactions = interactions.where(is_match: true)
-      when 'pending'
-        # Likes que aún esperan respuesta (no hay registro del otro usuario)
-        interactions = interactions.where(is_match: false, is_rejected: false).where(
-          "NOT EXISTS (
-            SELECT 1 FROM user_match_requests umr2
-            WHERE umr2.user_id = user_match_requests.target_user
-            AND umr2.target_user = ?
-          )", current_user.id
-        )
-      when 'not_reciprocated'
-        # Likes que no fueron correspondidos (la otra persona dio dislike)
-        interactions = interactions.where(is_match: false).where(
-          "EXISTS (
-            SELECT 1 FROM user_match_requests umr2
-            WHERE umr2.user_id = user_match_requests.target_user
-            AND umr2.target_user = ?
-            AND umr2.is_rejected = true
-          )", current_user.id
-        )
-      end
-    elsif interaction_type == 'dislikes' && status_filter.present?
-      case status_filter
-      when 'lost_opportunity'
-        # Dislikes donde la otra persona me dio like (oportunidad perdida)
-        interactions = interactions.where(
-          "EXISTS (
-            SELECT 1 FROM user_match_requests umr2
-            WHERE umr2.user_id = user_match_requests.target_user
-            AND umr2.target_user = ?
-            AND umr2.is_like = true
-          )", current_user.id
-        )
-      when 'pending'
-        # Dislikes donde la otra persona aún no ha respondido
-        interactions = interactions.where(
-          "NOT EXISTS (
-            SELECT 1 FROM user_match_requests umr2
-            WHERE umr2.user_id = user_match_requests.target_user
-            AND umr2.target_user = ?
-          )", current_user.id
-        )
-      when 'mutual'
-        # Dislikes mutuos (ambos se dieron dislike)
-        interactions = interactions.where(
-          "EXISTS (
-            SELECT 1 FROM user_match_requests umr2
-            WHERE umr2.user_id = user_match_requests.target_user
-            AND umr2.target_user = ?
-            AND umr2.is_rejected = true
-          )", current_user.id
-        )
-      end
-    end
+    # === LIKES DADOS ===
+    # 1.1. Likes que se hicieron match
+    likes_matched = likes_given.where(is_match: true)
     
-    # Ordenar y paginar
+    # 1.2. Likes que siguen esperando respuesta
+    likes_pending = likes_given.where(is_match: false).where(
+      "NOT EXISTS (
+        SELECT 1 FROM user_match_requests umr2
+        WHERE umr2.user_id = user_match_requests.target_user
+        AND umr2.target_user = ?
+      )", current_user.id
+    )
+    
+    # 1.3. Likes que no fueron correspondidos (la otra persona dio dislike)
+    likes_not_reciprocated = likes_given.where(is_match: false).where(
+      "EXISTS (
+        SELECT 1 FROM user_match_requests umr2
+        WHERE umr2.user_id = user_match_requests.target_user
+        AND umr2.target_user = ?
+        AND umr2.is_rejected = true
+      )", current_user.id
+    )
+    
+    # === DISLIKES DADOS ===
+    # 2.1. Dislikes que fueron oportunidad perdida (la otra persona me dio like)
+    dislikes_lost_opportunity = dislikes_given.where(
+      "EXISTS (
+        SELECT 1 FROM user_match_requests umr2
+        WHERE umr2.user_id = user_match_requests.target_user
+        AND umr2.target_user = ?
+        AND umr2.is_like = true
+      )", current_user.id
+    )
+    
+    # 2.2. Dislikes que siguen esperando respuesta
+    dislikes_pending = dislikes_given.where(
+      "NOT EXISTS (
+        SELECT 1 FROM user_match_requests umr2
+        WHERE umr2.user_id = user_match_requests.target_user
+        AND umr2.target_user = ?
+      )", current_user.id
+    )
+    
+    # 2.3. Dislikes mutuos
+    dislikes_mutual = dislikes_given.where(
+      "EXISTS (
+        SELECT 1 FROM user_match_requests umr2
+        WHERE umr2.user_id = user_match_requests.target_user
+        AND umr2.target_user = ?
+        AND umr2.is_rejected = true
+      )", current_user.id
+    )
+    
+    # Aplicar filtros según query params
+    interactions = if interaction_type == 'likes' && status_filter.present?
+                     case status_filter
+                     when 'matched' then likes_matched
+                     when 'pending' then likes_pending
+                     when 'not_reciprocated' then likes_not_reciprocated
+                     else likes_given
+                     end
+                   elsif interaction_type == 'dislikes' && status_filter.present?
+                     case status_filter
+                     when 'lost_opportunity' then dislikes_lost_opportunity
+                     when 'pending' then dislikes_pending
+                     when 'mutual' then dislikes_mutual
+                     else dislikes_given
+                     end
+                   elsif interaction_type == 'likes'
+                     likes_given
+                   elsif interaction_type == 'dislikes'
+                     dislikes_given
+                   else
+                     my_interactions
+                   end
+    
+    # Eager loading para evitar N+1 queries
     interactions = interactions.includes(
       target: [:user_media, :user_interests, :user_info_item_values, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data]
     ).order(created_at: :desc)
     
+    # Paginación
     total_count = interactions.count
     total_pages = (total_count.to_f / per_page).ceil
-    
     paginated_interactions = interactions.offset((page - 1) * per_page).limit(per_page)
     
-    # Formatear datos
+    # Formatear datos con toda la información del usuario (igual que en swipes)
     data = paginated_interactions.map do |interaction|
-      # Determinar el estado de la interacción
+      # Determinar el estado exacto de esta interacción
       other_interaction = UserMatchRequest.find_by(
         user_id: interaction.target_user,
         target_user: current_user.id
       )
       
       if interaction.is_like
-        # Para likes
         interaction_status = if interaction.is_match
                               'matched'
                             elsif other_interaction&.is_rejected
@@ -847,7 +859,6 @@ end
                               'pending'
                             end
       else
-        # Para dislikes
         interaction_status = if other_interaction&.is_rejected
                               'mutual'
                             elsif other_interaction&.is_like
