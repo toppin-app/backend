@@ -832,18 +832,26 @@ end
                      my_interactions
                    end
     
-    # Eager loading para evitar N+1 queries
-    interactions = interactions.includes(
-      target: [:user_media, :user_interests, :user_info_item_values, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data]
-    ).order(created_at: :desc)
+    # Ordenar
+    interactions = interactions.order(created_at: :desc)
     
     # Paginación
     total_count = interactions.count
     total_pages = (total_count.to_f / per_page).ceil
     paginated_interactions = interactions.offset((page - 1) * per_page).limit(per_page)
     
+    # Obtener IDs de usuarios target y hacer eager loading
+    target_user_ids = paginated_interactions.pluck(:target_user).uniq
+    target_users = User.includes(:user_media, :user_interests, :user_info_item_values, :user_main_interests, :tmdb_user_data, :tmdb_user_series_data)
+                       .where(id: target_user_ids)
+                       .index_by(&:id)
+    
     # Formatear datos con toda la información del usuario (igual que en swipes)
     data = paginated_interactions.map do |interaction|
+      # Obtener el usuario target del hash pre-cargado
+      target_user = target_users[interaction.target_user]
+      next unless target_user # Saltar si el usuario no existe
+      
       # Determinar el estado exacto de esta interacción
       other_interaction = UserMatchRequest.find_by(
         user_id: interaction.target_user,
@@ -872,7 +880,7 @@ end
         id: interaction.id,
         type: interaction.is_like ? 'like' : 'dislike',
         status: interaction_status,
-        user: interaction.target.as_json(
+        user: target_user.as_json(
           methods: [:user_age, :user_media_url, :favorite_languages],
           include: [
             :user_media,
@@ -889,7 +897,7 @@ end
         created_at: interaction.created_at,
         updated_at: interaction.updated_at
       }
-    end
+    end.compact
     
     render json: {
       status: 200,
