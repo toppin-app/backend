@@ -123,6 +123,8 @@ class UserMatchRequestsController < ApplicationController
             
             # Verificar si estoy cambiando de dislike a like
             changing_to_like = !umr.is_like && params[:is_like] == true
+            # Verificar si estoy cambiando de like a dislike (deshaciendo match)
+            changing_to_dislike = umr.is_like && params[:is_like] == false
             
             # Si estoy cambiando a like, verificar si ellos ya me dieron like para hacer match
             if changing_to_like
@@ -182,8 +184,61 @@ class UserMatchRequestsController < ApplicationController
                   is_match: false
                 )
               end
+            elsif changing_to_dislike && umr.is_match
+              # Estoy deshaciendo un match al cambiar de like a dislike
+              logger.info "Deshaciendo match: cambio de like a dislike"
+              
+              # Eliminar la conversación de Twilio si existe
+              if umr.twilio_conversation_sid.present?
+                begin
+                  TwilioController.new.destroy_conversation(umr.twilio_conversation_sid)
+                rescue => e
+                  Rails.logger.error "Error eliminando conversación de Twilio: #{e.message}"
+                end
+              end
+              
+              # Actualizar MI registro a dislike (sin match)
+              umr.update!(
+                is_like: false,
+                is_rejected: true,
+                is_match: false,
+                match_date: nil,
+                twilio_conversation_sid: nil,
+                user_ranking: current_user.ranking,
+                target_user_ranking: target_user.ranking
+              )
+              
+              # IMPORTANTE: Verificar si existe el registro de la otra persona
+              # Si existe, dejarlo intacto (ellos siguen con like)
+              # Si no existe, crearlo para mantener que ellos me dieron like
+              their_record = UserMatchRequest.find_by(
+                user_id: params[:target_user],
+                target_user: current_user.id
+              )
+              
+              if their_record
+                # Ya existe su registro, solo asegurarse de que NO está como match
+                their_record.update!(
+                  is_match: false,
+                  match_date: nil,
+                  twilio_conversation_sid: nil
+                )
+                logger.info "Registro de la otra persona actualizado: is_like=#{their_record.is_like}, is_rejected=#{their_record.is_rejected}"
+              else
+                # No existe registro de ellos, crear uno con like (porque hubo match antes)
+                UserMatchRequest.create!(
+                  user_id: params[:target_user].to_i,
+                  target_user: current_user.id,
+                  is_like: true,
+                  is_rejected: false,
+                  is_match: false,
+                  user_ranking: target_user.ranking,
+                  target_user_ranking: current_user.ranking
+                )
+                logger.info "Creado registro de la otra persona con like para mantener el estado de 'oportunidad perdida'"
+              end
             else
-              # Cambio normal (like a dislike o actualización de like)
+              # Cambio normal (like a dislike SIN match previo, o actualización de like)
               umr.update!(
                 is_like: params[:is_like], 
                 is_sugar_sweet: params[:is_sugar_sweet], 
