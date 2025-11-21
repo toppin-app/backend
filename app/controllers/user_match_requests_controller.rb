@@ -9,21 +9,35 @@ class UserMatchRequestsController < ApplicationController
   # Solicitud de match / dislike
   def send_match
       # Si estás oculto no puedes dar likes ni superlikes.
-      # Comprobamos si hay alguna solicitud de match (con like) del otro usuario hacia el que lo solicita
-      umr =  UserMatchRequest.match_between(params[:target_user],current_user.id)
-      target_user =  User.find(params[:target_user])
-      logger.info "UMR"
+      target_user = User.find(params[:target_user])
+      
+      # Buscar si existe un match_request previo EN CUALQUIER DIRECCIÓN
+      umr = UserMatchRequest.match_between(current_user.id, params[:target_user])
+      
+      logger.info "UMR INICIAL"
       logger.info umr.inspect
+      logger.info "current_user.id: #{current_user.id}, target_user: #{params[:target_user]}"
+      
       # Si es superlike, vamos a ver si puede usarlo antes de nada.
       if (params[:is_superlike] === true or params[:is_sugar_sweet] === true) and current_user.superlike_available == 0 
             logger.info "Error 1"
             render json: { status: 422, error: "Error usando supersweet"}, status: 422
             return
       end
-      # Si el user ya está como target de otro usuario sin ser match o superlike y le estamos dando like o superlike
-      # ITS A MATCH
-      if umr and umr.target_user == current_user.id and !umr.is_match and !umr.is_rejected and (params[:is_sugar_sweet] === true or params[:is_like] === true or params[:is_superlike] === true)
-         logger.info umr.inspect
+      
+      # CASO 1: Ellos me dieron like LIMPIO (sin que yo tenga registro previo) y YO les doy like = MATCH
+      if umr and umr.target_user == current_user.id and umr.user_id == params[:target_user].to_i and !umr.is_match and !umr.is_rejected and (params[:is_sugar_sweet] === true or params[:is_like] === true or params[:is_superlike] === true)
+         # Verificar que YO NO tenga un registro previo donde YO soy el user_id
+         my_previous_record = UserMatchRequest.find_by(user_id: current_user.id, target_user: params[:target_user])
+         
+         if my_previous_record
+           # YO ya tenía un registro (di like o dislike antes), NO entrar en este bloque
+           # Dejar que caiga al else para procesar mi registro
+           logger.info "CASO 1 SKIP: Tengo registro previo, procesando en else"
+         else
+           # NO tengo registro previo, es la primera vez que interactúo
+           logger.info "CASO 1: Ellos me dieron like, yo respondo con like = MATCH (sin registro previo)"
+           logger.info umr.inspect
          umr.is_match = true
          umr.user_ranking = current_user.ranking
          umr.target_user_ranking = target_user.ranking
@@ -60,10 +74,10 @@ class UserMatchRequestsController < ApplicationController
                )
              end
            end
+         end # if my_previous_record
       
         
-      ## SI no se cumplen las anteriores, vamos a ir viendo.
-      # Es decir, el current user no tiene un swipe previo del usuario al que le está dando swipe
+      ## CASO 2: Todos los demás casos (tengo registro previo, no hay registro, etc)
       else
           logger.info "NO UMR FOUND"
           # Si no te quedan likes, fuera.
