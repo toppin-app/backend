@@ -104,19 +104,82 @@ class UserMatchRequestsController < ApplicationController
           # Si existe un registro donde YO soy el user_id (yo swipeé primero)
           elsif umr && umr.user_id == current_user.id
             # Permitir cambiar de opinión (de dislike a like o viceversa)
-            # Solo bloquear si está intentando dar dislike de nuevo al mismo usuario
-            # REMOVIDO: El bloqueo de is_rejected para permitir cambios de opinión
             
             logger.info "update umr (updating my previous swipe)"
-            umr.update!(
-              is_like: params[:is_like], 
-              is_sugar_sweet: params[:is_sugar_sweet], 
-              is_superlike: params[:is_superlike], 
-              user_ranking: current_user.ranking, 
-              target_user_ranking: target_user.ranking,
-              is_rejected: params[:is_like] == false,
-              is_match: params[:is_like] == false ? false : umr.is_match # Si cambio a dislike, deshacer match
-            )
+            
+            # Verificar si estoy cambiando de dislike a like
+            changing_to_like = !umr.is_like && params[:is_like] == true
+            
+            # Si estoy cambiando a like, verificar si ellos ya me dieron like para hacer match
+            if changing_to_like
+              # Buscar si la otra persona ya me dio like
+              their_like = UserMatchRequest.find_by(
+                user_id: params[:target_user],
+                target_user: current_user.id,
+                is_like: true,
+                is_rejected: false
+              )
+              
+              if their_like
+                # ¡ES UN MATCH! Ambos se dieron like
+                logger.info "¡MATCH! Cambié de dislike a like y ellos ya me habían dado like"
+                umr.update!(
+                  is_like: true,
+                  is_rejected: false,
+                  is_match: true,
+                  match_date: DateTime.now,
+                  user_ranking: current_user.ranking,
+                  target_user_ranking: target_user.ranking,
+                  is_sugar_sweet: params[:is_sugar_sweet],
+                  is_superlike: params[:is_superlike]
+                )
+                
+                # Crear conversación de Twilio
+                twilio = TwilioController.new
+                conversation_sid = twilio.create_conversation(current_user.id, params[:target_user])
+                umr.update(twilio_conversation_sid: conversation_sid)
+                current_user.recalculate_ranking
+                
+                # Notificar push al otro usuario del match
+                devices = Device.where(user_id: target_user.id)
+                notification = NotificationLocalizer.for(user: target_user, type: :match)
+                devices.each do |device|
+                  if device.token.present?
+                    FirebasePushService.new.send_notification(
+                      token: device.token,
+                      title: notification[:title],
+                      body: notification[:body],
+                      data: { action: "match", user_id: current_user.id.to_s },
+                      sound: "match.mp3",
+                      channel_id: "sms-channel",
+                      category: "match"
+                    )
+                  end
+                end
+              else
+                # No hay match, solo actualizar el swipe
+                umr.update!(
+                  is_like: params[:is_like], 
+                  is_sugar_sweet: params[:is_sugar_sweet], 
+                  is_superlike: params[:is_superlike], 
+                  user_ranking: current_user.ranking, 
+                  target_user_ranking: target_user.ranking,
+                  is_rejected: false,
+                  is_match: false
+                )
+              end
+            else
+              # Cambio normal (like a dislike o actualización de like)
+              umr.update!(
+                is_like: params[:is_like], 
+                is_sugar_sweet: params[:is_sugar_sweet], 
+                is_superlike: params[:is_superlike], 
+                user_ranking: current_user.ranking, 
+                target_user_ranking: target_user.ranking,
+                is_rejected: params[:is_like] == false,
+                is_match: params[:is_like] == false ? false : umr.is_match # Si cambio a dislike, deshacer match
+              )
+            end
             
             # Notificar si el target_user tiene boost activo
             notify_boost_interaction(target_user, umr)
