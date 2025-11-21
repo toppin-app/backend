@@ -798,25 +798,23 @@ end
     )
     
     # Aplicar filtros según query params
-    interactions = if interaction_type == 'likes' && status_filter.present?
+    interactions = case interaction_type
+                   when 'likes'
                      case status_filter
                      when 'matched' then likes_matched
                      when 'pending' then likes_pending
                      when 'not_reciprocated' then likes_not_reciprocated
                      else likes_given
                      end
-                   elsif interaction_type == 'dislikes' && status_filter.present?
+                   when 'dislikes'
                      case status_filter
                      when 'lost_opportunity' then dislikes_lost_opportunity
                      when 'pending' then dislikes_pending
                      when 'mutual' then dislikes_mutual
                      else dislikes_given
                      end
-                   elsif interaction_type == 'likes'
-                     likes_given
-                   elsif interaction_type == 'dislikes'
-                     dislikes_given
                    else
+                     # Sin filtro de type, devolver todas las interacciones
                      my_interactions
                    end
     
