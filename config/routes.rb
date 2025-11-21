@@ -133,6 +133,7 @@ Rails.application.routes.draw do
 
   # Enviar solicitud de match
   post '/send_match', to: "user_match_requests#send_match"
+  post '/send_match.json', to: "user_match_requests#send_match"
 
   # Te devuelve si tienes likes
   get '/have_i_likes', to: "users#have_i_likes"
