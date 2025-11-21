@@ -17,7 +17,7 @@ class UserMatchRequestsController < ApplicationController
       # Si es superlike, vamos a ver si puede usarlo antes de nada.
       if (params[:is_superlike] === true or params[:is_sugar_sweet] === true) and current_user.superlike_available == 0 
             logger.info "Error 1"
-            render json: { status: 405, error: "Error usando supersweet"}, status: 405
+            render json: { status: 422, error: "Error usando supersweet"}, status: 422
             return
       end
       # Si el user ya está como target de otro usuario sin ser match o superlike y le estamos dando like o superlike
@@ -70,7 +70,7 @@ class UserMatchRequestsController < ApplicationController
           if params[:is_like] and params[:is_superlike] == false and current_user.likes_left <= 0
             time_to_likes = current_user.last_like_given+12.hours
             logger.info "Error 2"
-            render json: { status: 405, error: time_to_likes.to_json }, status: 405
+            render json: { status: 422, error: time_to_likes.to_json }, status: 422
             return
           end
           
@@ -103,12 +103,9 @@ class UserMatchRequestsController < ApplicationController
             
           # Si existe un registro donde YO soy el user_id (yo swipeé primero)
           elsif umr && umr.user_id == current_user.id
-            # Verificar si el registro está rechazado (yo lo rechacé antes)
-            if umr.is_rejected
-              logger.info "Error 3"
-              render json: { status: 405, error: "Match rejected error"}, status: 405
-              return
-            end
+            # Permitir cambiar de opinión (de dislike a like o viceversa)
+            # Solo bloquear si está intentando dar dislike de nuevo al mismo usuario
+            # REMOVIDO: El bloqueo de is_rejected para permitir cambios de opinión
             
             logger.info "update umr (updating my previous swipe)"
             umr.update!(
