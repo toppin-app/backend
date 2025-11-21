@@ -285,22 +285,10 @@ end
 
   # Elimina la cuenta de un usuario (soft delete)
   def delete_account
-    # Anonimizar email para permitir registro futuro con el mismo email
-    timestamp = Time.now.to_i
-    anonymized_email = "deleted_#{current_user.id}_#{timestamp}@toppin.deleted"
+    # Simplemente marcar la cuenta como eliminada sin modificar datos del usuario
+    current_user.update!(deleted_account: true)
     
-    # Marcar cuenta como eliminada y anonimizar datos sensibles
-    current_user.update!(
-      deleted_account: true,
-      email: anonymized_email,
-      user_name: "deleted_user_#{current_user.id}_#{timestamp}",
-      name: "Usuario Eliminado",
-      push_token: nil,
-      device_id: nil,
-      social_login_token: nil
-    )
-    
-    # Luego deslogueamos al usuario
+    # Desloguear al usuario
     sign_out current_user
     
     render json: { status: 200, message: "Account deleted successfully" }, status: 200

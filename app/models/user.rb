@@ -36,6 +36,12 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :trackable,
          :recoverable, :rememberable, :validatable, :jwt_authenticatable, jwt_revocation_strategy: self
 
+  # Validación personalizada para permitir emails duplicados si la cuenta anterior está eliminada
+  validates :email, uniqueness: { 
+    conditions: -> { where(deleted_account: false) },
+    message: "ya está en uso por otra cuenta activa"
+  }
+  
   validate :password_complexity
   # Scope para filtrar por fecha de nacimiento.
   scope :born_between, -> (start_date, end_date)  { where("birthday BETWEEN ? AND ?", start_date, end_date ) }
