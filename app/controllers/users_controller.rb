@@ -727,18 +727,20 @@ end
 
   # GET /user_interactions - Devuelve interacciones del usuario categorizadas con paginación y filtros
   # Filtros disponibles por query params:
-  # - type: 'likes' o 'dislikes'
-  # - status: 'matched', 'pending', 'not_reciprocated' (para likes) o 'lost_opportunity', 'pending', 'mutual' (para dislikes)
+  # - type[]: array de tipos - 'likes' y/o 'dislikes' (ej: type[]=likes&type[]=dislikes)
+  # - status[]: array de estados - 'matched', 'pending', 'not_reciprocated', 'lost_opportunity', 'mutual'
   # - page: número de página (default: 1)
   # - per_page: items por página (default: 20)
   def user_interactions
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 20
-    interaction_type = params[:type] # 'likes' o 'dislikes'
-    status_filter = params[:status]
+    
+    # Convertir type y status a arrays (soporta tanto string único como array)
+    types = Array(params[:type]).compact.map(&:to_s)
+    statuses = Array(params[:status]).compact.map(&:to_s)
     
     # DEBUG: Registrar los parámetros recibidos
-    Rails.logger.info "🔍 USER_INTERACTIONS - type: #{interaction_type.inspect}, status: #{status_filter.inspect}"
+    Rails.logger.info "🔍 USER_INTERACTIONS - types: #{types.inspect}, statuses: #{statuses.inspect}"
     
     # Query base: SOLO las interacciones que YO inicié (likes y dislikes que YO di)
     my_interactions = UserMatchRequest.where(user_id: current_user.id)
@@ -800,53 +802,63 @@ end
       )", current_user.id
     )
     
-    # Aplicar filtros según query params
-    # La lógica debe aplicar AMBOS filtros en conjunto cuando están presentes
-    interactions = if interaction_type.present?
-                     # Si hay tipo especificado (likes o dislikes)
-                     base = case interaction_type
-                            when 'likes' then likes_given
-                            when 'dislikes' then dislikes_given
-                            else my_interactions
-                            end
-                     
-                     # Luego aplicar el filtro de estado si existe
-                     if status_filter.present?
-                       case interaction_type
-                       when 'likes'
-                         case status_filter
-                         when 'matched' then likes_matched
-                         when 'pending' then likes_pending
-                         when 'not_reciprocated' then likes_not_reciprocated
-                         else likes_given
-                         end
-                       when 'dislikes'
-                         case status_filter
-                         when 'lost_opportunity' then dislikes_lost_opportunity
-                         when 'pending' then dislikes_pending
-                         when 'mutual' then dislikes_mutual
-                         else dislikes_given
-                         end
-                       else
-                         base
-                       end
-                     else
-                       base
-                     end
-                   elsif status_filter.present?
-                     # Si solo hay filtro de estado sin tipo
-                     case status_filter
-                     when 'matched' then likes_matched
-                     when 'pending' then likes_pending.or(dislikes_pending)
-                     when 'not_reciprocated' then likes_not_reciprocated
-                     when 'lost_opportunity' then dislikes_lost_opportunity
-                     when 'mutual' then dislikes_mutual
-                     else my_interactions
-                     end
-                   else
-                     # Sin filtros
-                     my_interactions
-                   end
+    # Aplicar filtros según query params con soporte para múltiples valores
+    interactions = UserMatchRequest.none # Empezar con query vacío
+    
+    # 1. Filtrar por TIPO(S)
+    type_filtered = if types.empty?
+                      # Sin filtro de tipo, incluir todas las interacciones
+                      my_interactions
+                    else
+                      queries = []
+                      queries << likes_given if types.include?('likes')
+                      queries << dislikes_given if types.include?('dislikes')
+                      
+                      # Combinar queries con OR
+                      queries.reduce(UserMatchRequest.none) { |result, query| result.or(query) }
+                    end
+    
+    # 2. Filtrar por ESTADO(S)
+    if statuses.empty?
+      # Sin filtro de estado, usar solo el filtro de tipo
+      interactions = type_filtered
+    else
+      # Aplicar filtros de estado
+      status_queries = []
+      
+      statuses.each do |status|
+        case status
+        when 'matched'
+          # Solo aplicable a likes
+          status_queries << (types.empty? || types.include?('likes') ? likes_matched : UserMatchRequest.none)
+        when 'pending'
+          # Aplicable a ambos tipos
+          if types.empty?
+            status_queries << likes_pending
+            status_queries << dislikes_pending
+          elsif types.include?('likes') && types.include?('dislikes')
+            status_queries << likes_pending
+            status_queries << dislikes_pending
+          elsif types.include?('likes')
+            status_queries << likes_pending
+          elsif types.include?('dislikes')
+            status_queries << dislikes_pending
+          end
+        when 'not_reciprocated'
+          # Solo aplicable a likes
+          status_queries << (types.empty? || types.include?('likes') ? likes_not_reciprocated : UserMatchRequest.none)
+        when 'lost_opportunity'
+          # Solo aplicable a dislikes
+          status_queries << (types.empty? || types.include?('dislikes') ? dislikes_lost_opportunity : UserMatchRequest.none)
+        when 'mutual'
+          # Solo aplicable a dislikes
+          status_queries << (types.empty? || types.include?('dislikes') ? dislikes_mutual : UserMatchRequest.none)
+        end
+      end
+      
+      # Combinar todas las queries de estado con OR
+      interactions = status_queries.reduce(UserMatchRequest.none) { |result, query| result.or(query) }
+    end
     
     Rails.logger.info "🔍 QUERY RESULT - Total interactions: #{interactions.count}"
     
