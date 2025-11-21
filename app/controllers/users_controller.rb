@@ -737,6 +737,9 @@ end
     interaction_type = params[:type] # 'likes' o 'dislikes'
     status_filter = params[:status]
     
+    # DEBUG: Registrar los parámetros recibidos
+    Rails.logger.info "🔍 USER_INTERACTIONS - type: #{interaction_type.inspect}, status: #{status_filter.inspect}"
+    
     # Query base: SOLO las interacciones que YO inicié (likes y dislikes que YO di)
     my_interactions = UserMatchRequest.where(user_id: current_user.id)
     
@@ -798,25 +801,54 @@ end
     )
     
     # Aplicar filtros según query params
-    interactions = case interaction_type
-                   when 'likes'
+    # La lógica debe aplicar AMBOS filtros en conjunto cuando están presentes
+    interactions = if interaction_type.present?
+                     # Si hay tipo especificado (likes o dislikes)
+                     base = case interaction_type
+                            when 'likes' then likes_given
+                            when 'dislikes' then dislikes_given
+                            else my_interactions
+                            end
+                     
+                     # Luego aplicar el filtro de estado si existe
+                     if status_filter.present?
+                       case interaction_type
+                       when 'likes'
+                         case status_filter
+                         when 'matched' then likes_matched
+                         when 'pending' then likes_pending
+                         when 'not_reciprocated' then likes_not_reciprocated
+                         else likes_given
+                         end
+                       when 'dislikes'
+                         case status_filter
+                         when 'lost_opportunity' then dislikes_lost_opportunity
+                         when 'pending' then dislikes_pending
+                         when 'mutual' then dislikes_mutual
+                         else dislikes_given
+                         end
+                       else
+                         base
+                       end
+                     else
+                       base
+                     end
+                   elsif status_filter.present?
+                     # Si solo hay filtro de estado sin tipo
                      case status_filter
                      when 'matched' then likes_matched
-                     when 'pending' then likes_pending
+                     when 'pending' then likes_pending.or(dislikes_pending)
                      when 'not_reciprocated' then likes_not_reciprocated
-                     else likes_given
-                     end
-                   when 'dislikes'
-                     case status_filter
                      when 'lost_opportunity' then dislikes_lost_opportunity
-                     when 'pending' then dislikes_pending
                      when 'mutual' then dislikes_mutual
-                     else dislikes_given
+                     else my_interactions
                      end
                    else
-                     # Sin filtro de type, devolver todas las interacciones
+                     # Sin filtros
                      my_interactions
                    end
+    
+    Rails.logger.info "🔍 QUERY RESULT - Total interactions: #{interactions.count}"
     
     # Ordenar
     interactions = interactions.order(created_at: :desc)
