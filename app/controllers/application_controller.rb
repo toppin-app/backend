@@ -4,6 +4,8 @@ class ApplicationController < ActionController::Base
      respond_to :json, :html
      before_action :set_titles, :save_last_connection
      before_action :authenticate_user!
+     before_action :log_request_params
+     after_action :log_response_body
 
      def set_titles
     #  logger.info request.authorization.inspect
@@ -26,6 +28,26 @@ class ApplicationController < ActionController::Base
               current_user.update(last_connection: DateTime.now, is_connected: true)
           end
       end
+   end
+
+   # Loguear parámetros del request
+   def log_request_params
+      filtered_params = params.except(:controller, :action, :format).to_unsafe_h
+      Rails.logger.info "📥 REQUEST PARAMS [#{controller_name}##{action_name}]: #{filtered_params.inspect}"
+   rescue => e
+      Rails.logger.error "Error logging request params: #{e.message}"
+   end
+
+   # Loguear el body de la respuesta
+   def log_response_body
+      if response.body.present? && response.content_type&.include?('json')
+         body_preview = response.body.length > 1000 ? "#{response.body[0..1000]}... (truncated)" : response.body
+         Rails.logger.info "📤 RESPONSE [#{controller_name}##{action_name}] Status: #{response.status}: #{body_preview}"
+      else
+         Rails.logger.info "📤 RESPONSE [#{controller_name}##{action_name}] Status: #{response.status} (non-JSON or empty)"
+      end
+   rescue => e
+      Rails.logger.error "Error logging response: #{e.message}"
    end
 
 
