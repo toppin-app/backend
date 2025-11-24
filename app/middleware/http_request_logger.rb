@@ -17,8 +17,11 @@ class HttpRequestLogger
       # Calculate duration
       duration = ((Time.current - start_time) * 1000).round(2)
 
+      # Extract response body
+      response_body = extract_response_body(response)
+
       # Log the request
-      log_http_request(request, status, duration)
+      log_http_request(request, status, duration, response_body)
 
       [status, headers, response]
     rescue => error
@@ -31,8 +34,73 @@ class HttpRequestLogger
 
   private
 
-  def log_http_request(request, status, duration)
+  def extract_response_body(response)
+    return nil unless response.respond_to?(:body)
+    
+    body_content = if response.body.respond_to?(:each)
+      parts = []
+      response.body.each { |part| parts << part }
+      parts.join
+    else
+      response.body.to_s
+    end
+
+    # Limitar tamaño para no saturar logs
+    return nil if body_content.blank?
+    body_content.length > 5000 ? "#{body_content[0..5000]}... (truncated)" : body_content
+  rescue => e
+    Rails.logger.error "Error extracting response body: #{e.message}"
+    nil
+  end
+
+  def safe_params(request)
+    # Extraer parámetros del request
+    params = {}
+    
+    # Parámetros de query string
+    params.merge!(request.query_parameters) if request.query_parameters.present?
+    
+    # Parámetros del body (POST/PUT/PATCH)
+    if request.content_type&.include?('json')
+      begin
+        body = request.body.read
+        request.body.rewind # Important: rewind para que Rails pueda leerlo después
+        params.merge!(JSON.parse(body)) if body.present?
+      rescue JSON::ParserError => e
+        Rails.logger.warn "Failed to parse JSON body: #{e.message}"
+      end
+    elsif request.form_data?
+      params.merge!(request.request_parameters)
+    end
+
+    # Filtrar parámetros sensibles
+    filter_sensitive_params(params)
+  rescue => e
+    Rails.logger.error "Error extracting params: #{e.message}"
+    {}
+  end
+
+  def filter_sensitive_params(params)
+    sensitive_keys = ['password', 'password_confirmation', 'token', 'secret', 'api_key', 'credit_card']
+    
+    params.each do |key, value|
+      if sensitive_keys.any? { |sensitive| key.to_s.downcase.include?(sensitive) }
+        params[key] = '[FILTERED]'
+      elsif value.is_a?(Hash)
+        filter_sensitive_params(value)
+      elsif value.is_a?(Array) && value.first.is_a?(Hash)
+        value.each { |item| filter_sensitive_params(item) if item.is_a?(Hash) }
+      end
+    end
+    
+    params
+  end
+
+  def log_http_request(request, status, duration, response_body = nil)
     begin
+      # Extraer parámetros del request
+      request_params = safe_params(request)
+
       log_entry = {
         '@timestamp' => Time.current.iso8601,
         'event_type' => 'http_request',
@@ -52,6 +120,19 @@ class HttpRequestLogger
         'server_name' => Socket.gethostname,
         'log_level' => determine_log_level(status)
       }
+
+      # Agregar parámetros del request
+      log_entry['request_params'] = request_params if request_params.present?
+
+      # Agregar response body si es JSON
+      if response_body.present? && request.content_type&.include?('json')
+        begin
+          parsed_response = JSON.parse(response_body)
+          log_entry['response_body'] = parsed_response
+        rescue JSON::ParserError
+          log_entry['response_body_text'] = response_body
+        end
+      end
 
       # Add request ID if available
       log_entry['request_id'] = request.uuid if request.respond_to?(:uuid)
