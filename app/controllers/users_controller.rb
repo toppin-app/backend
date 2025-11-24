@@ -143,10 +143,14 @@ def update
     params.delete(:password_confirmation)
   end
 
+  # Obtener el usuario a actualizar
   @user = if params[:id]
             User.find(params[:id])
-          else
+          elsif params[:user] && params[:user][:id].present?
             User.find(params[:user][:id])
+          else
+            # Si no hay ID, usar current_user (para formularios del admin)
+            current_user
           end
 
   # 1️⃣ Validar desnudez antes de actualizar
