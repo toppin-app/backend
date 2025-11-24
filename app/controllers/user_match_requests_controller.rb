@@ -129,16 +129,21 @@ class UserMatchRequestsController < ApplicationController
             # Si estoy cambiando a like, verificar si ellos ya me dieron like para hacer match
             if changing_to_like
               # Buscar si la otra persona ya me dio like
+              # IMPORTANTE: Puede estar en CUALQUIER DIRECCIÓN del registro
               their_like = UserMatchRequest.find_by(
                 user_id: params[:target_user],
                 target_user: current_user.id,
-                is_like: true,
-                is_rejected: false
+                is_like: true
               )
               
-              if their_like
+              # También verificar si el registro actual (umr) tiene información de que ellos dieron like
+              # Esto pasa cuando deshiciste un match y ahora vuelves a dar like
+              was_previous_match = umr.is_rejected && !umr.is_match
+              
+              if their_like || was_previous_match
                 # ¡ES UN MATCH! Ambos se dieron like
                 logger.info "¡MATCH! Cambié de dislike a like y ellos ya me habían dado like"
+                logger.info "their_like existe: #{their_like.present?}, was_previous_match: #{was_previous_match}"
                 umr.update!(
                   is_like: true,
                   is_rejected: false,
@@ -197,45 +202,97 @@ class UserMatchRequestsController < ApplicationController
                 end
               end
               
-              # Actualizar MI registro a dislike (sin match)
-              umr.update!(
-                is_like: false,
-                is_rejected: true,
-                is_match: false,
-                match_date: nil,
-                twilio_conversation_sid: nil,
-                user_ranking: current_user.ranking,
-                target_user_ranking: target_user.ranking
-              )
+              # Determinar quién es quién en el registro actual
+              # Si YO soy el user_id del registro, necesito:
+              # - Actualizar ESTE registro a dislike
+              # - Crear/actualizar un registro INVERSO donde ELLOS son user_id con like
               
-              # IMPORTANTE: Verificar si existe el registro de la otra persona
-              # Si existe, dejarlo intacto (ellos siguen con like)
-              # Si no existe, crearlo para mantener que ellos me dieron like
-              their_record = UserMatchRequest.find_by(
-                user_id: params[:target_user],
-                target_user: current_user.id
-              )
-              
-              if their_record
-                # Ya existe su registro, solo asegurarse de que NO está como match
-                their_record.update!(
+              if umr.user_id == current_user.id
+                # YO soy user_id del registro de match
+                logger.info "YO soy user_id del match, cambio a dislike"
+                
+                # Actualizar MI registro a dislike
+                umr.update!(
+                  is_like: false,
+                  is_rejected: true,
+                  is_match: false,
+                  match_date: nil,
+                  twilio_conversation_sid: nil,
+                  user_ranking: current_user.ranking,
+                  target_user_ranking: target_user.ranking
+                )
+                
+                # Crear/actualizar registro INVERSO donde ELLOS mantienen su like
+                their_record = UserMatchRequest.find_by(
+                  user_id: params[:target_user],
+                  target_user: current_user.id
+                )
+                
+                if their_record
+                  their_record.update!(
+                    is_like: true,
+                    is_rejected: false,
+                    is_match: false,
+                    match_date: nil,
+                    twilio_conversation_sid: nil
+                  )
+                  logger.info "Actualizado registro inverso para mantener su like"
+                else
+                  UserMatchRequest.create!(
+                    user_id: params[:target_user].to_i,
+                    target_user: current_user.id,
+                    is_like: true,
+                    is_rejected: false,
+                    is_match: false,
+                    user_ranking: target_user.ranking,
+                    target_user_ranking: current_user.ranking
+                  )
+                  logger.info "Creado registro inverso para mantener su like"
+                end
+              else
+                # ELLOS son user_id del registro de match, YO soy target
+                logger.info "ELLOS son user_id del match, YO cambio a dislike"
+                
+                # En este caso, necesito crear MI PROPIO registro con dislike
+                # y dejar el de ellos con like
+                my_record = UserMatchRequest.find_by(
+                  user_id: current_user.id,
+                  target_user: params[:target_user]
+                )
+                
+                if my_record
+                  my_record.update!(
+                    is_like: false,
+                    is_rejected: true,
+                    is_match: false,
+                    match_date: nil,
+                    twilio_conversation_sid: nil,
+                    user_ranking: current_user.ranking,
+                    target_user_ranking: target_user.ranking
+                  )
+                  logger.info "Actualizado MI registro a dislike"
+                else
+                  UserMatchRequest.create!(
+                    user_id: current_user.id,
+                    target_user: params[:target_user].to_i,
+                    is_like: false,
+                    is_rejected: true,
+                    is_match: false,
+                    user_ranking: current_user.ranking,
+                    target_user_ranking: target_user.ranking
+                  )
+                  logger.info "Creado MI registro con dislike"
+                end
+                
+                # Actualizar el registro de ELLOS para quitar el match pero mantener su like
+                umr.update!(
+                  is_like: true,
+                  is_rejected: false,
                   is_match: false,
                   match_date: nil,
                   twilio_conversation_sid: nil
                 )
-                logger.info "Registro de la otra persona actualizado: is_like=#{their_record.is_like}, is_rejected=#{their_record.is_rejected}"
-              else
-                # No existe registro de ellos, crear uno con like (porque hubo match antes)
-                UserMatchRequest.create!(
-                  user_id: params[:target_user].to_i,
-                  target_user: current_user.id,
-                  is_like: true,
-                  is_rejected: false,
-                  is_match: false,
-                  user_ranking: target_user.ranking,
-                  target_user_ranking: current_user.ranking
-                )
-                logger.info "Creado registro de la otra persona con like para mantener el estado de 'oportunidad perdida'"
+                logger.info "Actualizado SU registro para mantener su like"
               end
             else
               # Cambio normal (like a dislike SIN match previo, o actualización de like)
