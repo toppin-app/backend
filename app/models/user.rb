@@ -42,6 +42,26 @@ class User < ApplicationRecord
     message: "ya está en uso por otra cuenta activa"
   }
   
+  # Sobrescribir método de Devise para permitir emails de cuentas eliminadas
+  def self.find_for_database_authentication(warden_conditions)
+    conditions = warden_conditions.dup
+    if email = conditions.delete(:email)
+      where(conditions).where(["lower(email) = :value AND deleted_account = :deleted", { value: email.downcase, deleted: false }]).first
+    elsif conditions.has_key?(:email)
+      where(conditions).first
+    end
+  end
+  
+  # Sobrescribir método de Devise para recuperación de contraseña (solo cuentas activas)
+  def self.send_reset_password_instructions(attributes = {})
+    recoverable = find_or_initialize_with_errors(reset_password_keys, attributes, :not_found)
+    if recoverable.persisted? && recoverable.deleted_account?
+      recoverable.errors.add(:email, :not_found)
+    end
+    recoverable.send_reset_password_instructions if recoverable.errors.empty?
+    recoverable
+  end
+  
   validate :password_complexity
   # Scope para filtrar por fecha de nacimiento.
   scope :born_between, -> (start_date, end_date)  { where("birthday BETWEEN ? AND ?", start_date, end_date ) }
