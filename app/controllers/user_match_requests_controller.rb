@@ -126,6 +126,13 @@ class UserMatchRequestsController < ApplicationController
             # Verificar si estoy cambiando de like a dislike (deshaciendo match)
             changing_to_dislike = umr.is_like && params[:is_like] == false
             
+            logger.info "DETECCIÓN DE CAMBIOS:"
+            logger.info "  umr.is_like: #{umr.is_like}"
+            logger.info "  params[:is_like]: #{params[:is_like].inspect} (clase: #{params[:is_like].class})"
+            logger.info "  changing_to_like: #{changing_to_like}"
+            logger.info "  changing_to_dislike: #{changing_to_dislike}"
+            logger.info "  umr.is_match: #{umr.is_match}"
+            
             # Si estoy cambiando a like, verificar si ellos ya me dieron like para hacer match
             if changing_to_like
               # Buscar si la otra persona ya me dio like
