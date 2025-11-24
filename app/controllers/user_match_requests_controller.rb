@@ -252,6 +252,10 @@ class UserMatchRequestsController < ApplicationController
                 umr.destroy
                 logger.info "Registro original de match eliminado (era bidireccional)"
               end
+              
+              # Actualizar umr para que apunte a MY registro (el que se devuelve al front)
+              umr = my_record.reload
+              logger.info "umr actualizado a MI registro con dislike"
             else
               # Cambio normal (like a dislike SIN match previo, o actualización de like)
               umr.update!(
