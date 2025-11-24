@@ -966,7 +966,7 @@ end
     ).count
     
     # DISLIKES DADOS
-    dislikes_given = UserMatchRequest.where(user_id: current_user.id, is_rejected: true)
+    dislikes_given = UserMatchRequest.where(user_id: current_user.id, is_rejected: true, is_like: false)
     
     dislikes_lost_opportunity = dislikes_given.where(
       "EXISTS (
