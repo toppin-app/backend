@@ -36,9 +36,25 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :trackable,
          :recoverable, :rememberable, :validatable, :jwt_authenticatable, jwt_revocation_strategy: self
 
+  # Desactivar validación de email de Devise para usar nuestra validación personalizada
+  def email_required?
+    false
+  end
+
+  def email_changed?
+    false
+  end
+
+  def will_save_change_to_email?
+    false
+  end
+
   # Validación personalizada para permitir emails duplicados si la cuenta anterior está eliminada
+  validates :email, presence: true
+  validates :email, format: { with: Devise.email_regexp }, allow_blank: true
   validates :email, uniqueness: { 
     conditions: -> { where(deleted_account: false) },
+    case_sensitive: false,
     message: "ya está en uso por otra cuenta activa"
   }
   
