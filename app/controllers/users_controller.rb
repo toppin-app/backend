@@ -747,7 +747,7 @@ end
     
     # Separar likes y dislikes
     likes_given = my_interactions.where(is_like: true)
-    dislikes_given = my_interactions.where(is_rejected: true)
+    dislikes_given = my_interactions.where(is_rejected: true, is_like: false)
     
     # === LIKES DADOS ===
     # 1.1. Likes que se hicieron match
