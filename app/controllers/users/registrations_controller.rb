@@ -59,17 +59,24 @@ class Users::RegistrationsController < Devise::RegistrationsController
             resource.save!
 
             if resource.persisted?
-                if params[:user][:file].present?
-                if resource.detect_nudity(params[:user][:file])
-                    render json: { status: 400, message: "La imagen contiene desnudos y no puede subirse." }, status: :bad_request
-                    raise ActiveRecord::Rollback
-                end
+                # Manejar múltiples archivos de imagen
+                files = params[:user][:files] || (params[:user][:file] ? [params[:user][:file]] : [])
+                
+                if files.present?
+                    files.each_with_index do |file, index|
+                        # Detectar desnudos en cada imagen
+                        if resource.detect_nudity(file)
+                            render json: { status: 400, message: "Una o más imágenes contienen desnudos y no pueden subirse." }, status: :bad_request
+                            raise ActiveRecord::Rollback
+                        end
 
-                media = UserMedium.create!(
-                    user_id: resource.id,
-                    file: params[:user][:file],
-                    position: 0
-                )
+                        # Crear el media con la posición correspondiente
+                        UserMedium.create!(
+                            user_id: resource.id,
+                            file: file,
+                            position: index
+                        )
+                    end
                 end
 
                 allowed_genders = ["male", "female", "non_binary", "couple"]
