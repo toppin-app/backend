@@ -33,8 +33,9 @@ class PhoneVerificationsController < ApplicationController
       # Crear nueva verificación
       verification = PhoneVerification.create_for_phone(phone_number)
 
-      # Enviar SMS con Twilio
-      send_verification_sms(phone_number, verification.verification_code)
+      # Enviar SMS con Twilio (comentado temporalmente para desarrollo)
+      # send_verification_sms(phone_number, verification.verification_code)
+      Rails.logger.info "⚠️ SMS desactivado - Código de verificación: #{verification.verification_code}"
 
       render json: {
         status: 200,
