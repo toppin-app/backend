@@ -159,8 +159,10 @@ Rails.application.routes.draw do
 
   post '/reject_match', to: "user_match_requests#reject_match" # Deshacer un match
 
-  post 'users/send_phone_verification', to: 'users#send_phone_verification'
-  post 'users/verify_phone_code', to: 'users#verify_phone_code'
+  # Verificación de teléfono (ANTES del registro)
+  post '/phone_verifications/request_code', to: 'phone_verifications#request_code'
+  post '/phone_verifications/verify_code', to: 'phone_verifications#verify_code'
+  get '/phone_verifications/check_status', to: 'phone_verifications#check_status'
   
   # Boosts y superlikes
 

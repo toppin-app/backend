@@ -5,11 +5,30 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
     def create
         ActiveRecord::Base.transaction do
+            # Validar que el teléfono haya sido verificado ANTES del registro
+            phone_number = params[:user][:phone]
+            
+            if phone_number.present?
+                verified_phone = PhoneVerification.for_phone(phone_number)
+                                                 .where(verified: true)
+                                                 .order(created_at: :desc)
+                                                 .first
+                
+                unless verified_phone
+                    render json: { 
+                        status: 403, 
+                        error: 'Debes verificar tu número de teléfono antes de registrarte',
+                        code: 'PHONE_NOT_VERIFIED'
+                    }, status: :forbidden
+                    return
+                end
+            end
 
             build_resource(sign_up_params)
 
             resource.name = params[:user][:name]
             resource.email = params[:user][:email]
+            resource.phone = params[:user][:phone] # Guardar teléfono verificado
             resource.gender = params[:user][:gender]
             resource.birthday = params[:user][:birthday]
             resource.push_token = params[:user][:push_token]
