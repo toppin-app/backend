@@ -19,8 +19,8 @@ class PhoneVerificationsController < ApplicationController
       return
     end
 
-    # Verificar si el número de teléfono ya está registrado por otro usuario
-    existing_user = User.find_by(phone: phone_number)
+    # Verificar si el número de teléfono ya está registrado por otro usuario activo (no eliminado)
+    existing_user = User.find_by(phone: phone_number, deleted_account: false)
     if existing_user
       render json: { 
         status: 409, 
@@ -76,8 +76,8 @@ class PhoneVerificationsController < ApplicationController
       return
     end
 
-    # Verificar si el número de teléfono ya está registrado por otro usuario
-    existing_user = User.find_by(phone: phone_number)
+    # Verificar si el número de teléfono ya está registrado por otro usuario activo (no eliminado)
+    existing_user = User.find_by(phone: phone_number, deleted_account: false)
     if existing_user
       render json: { 
         status: 409, 
