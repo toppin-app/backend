@@ -201,6 +201,13 @@ class PasswordRecoveriesController < ApplicationController
 
   # Enviar email de recuperación usando Mailjet
   def send_recovery_email(email, code, user_name)
+    # Configurar Mailjet primero
+    Mailjet.configure do |config|
+      config.api_key = ENV['MAILJET_API_KEY']
+      config.secret_key = ENV['MAILJET_SECRET_KEY']
+      config.api_version = 'v3.1'
+    end
+
     # Obtener el template según el idioma
     subject = I18n.t('password_recoveries.email.subject')
     
@@ -213,29 +220,30 @@ class PasswordRecoveriesController < ApplicationController
       'footer' => I18n.t('password_recoveries.email.footer')
     }
 
-    Mailjet::Send.create(
-      messages: [
+    message = {
+      'From' => {
+        'Email' => ENV['MAILJET_FROM_EMAIL'] || 'it@toppin.es',
+        'Name' => ENV['MAILJET_FROM_NAME'] || 'Toppin'
+      },
+      'To' => [
         {
-          From: {
-            Email: ENV['MAILJET_SENDER_EMAIL'] || 'noreply@toppin.app',
-            Name: 'Toppin'
-          },
-          To: [
-            {
-              Email: email,
-              Name: user_name
-            }
-          ],
-          Subject: subject,
-          TextPart: "#{variables['greeting']} #{variables['name']},\n\n#{variables['message']}\n\nCódigo: #{code}\n\n#{variables['validity']}\n\n#{variables['footer']}",
-          HTMLPart: generate_recovery_email_html(variables)
+          'Email' => email,
+          'Name' => user_name
         }
-      ]
-    )
+      ],
+      'Subject' => subject,
+      'TextPart' => "#{variables['greeting']} #{variables['name']},\n\n#{variables['message']}\n\nCódigo: #{code}\n\n#{variables['validity']}\n\n#{variables['footer']}",
+      'HTMLPart' => generate_recovery_email_html(variables)
+    }
 
-    Rails.logger.info "Email de recuperación enviado a #{email}"
+    response = Mailjet::Send.create(messages: [message])
+
+    Rails.logger.info "✓ Email de recuperación enviado a #{email} - Código: #{code}"
   rescue StandardError => e
-    Rails.logger.error "Error enviando email con Mailjet: #{e.message}"
+    Rails.logger.error "✗ Error enviando email con Mailjet: #{e.message}"
+    # Loguear el código para desarrollo
+    Rails.logger.info "⚠️ Email no enviado (error de Mailjet) - Código de recuperación: #{code}"
+    # Re-lanzar para que el controlador maneje el error
     raise e
   end
 
