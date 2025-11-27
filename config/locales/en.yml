@@ -30,6 +30,21 @@
 # available at https://guides.rubyonrails.org/i18n.html.
 
 en:
+  phone_verifications:
+    errors:
+      phone_required: "Phone number is required"
+      invalid_format: "Invalid phone format. Must include country code (e.g., +34612345678)"
+      already_exists: "This phone number is already registered to another account"
+      cooldown: "You must wait %{seconds} seconds before requesting a new code"
+      phone_and_code_required: "Phone number and code are required"
+      no_pending_verification: "No pending verification found for this phone number. Request a new code."
+      send_error: "Error sending code. Please try again."
+      code_expired: "Code expired. Request a new one."
+      max_attempts: "Maximum attempts reached. Request a new code."
+      incorrect_code: "Incorrect code. You have %{remaining} attempts left."
+    success:
+      code_sent: "Code sent successfully"
+      phone_verified: "Phone verified successfully"
   notifications:
     match:
       title: "New match"

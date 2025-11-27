@@ -1,4 +1,19 @@
 es:
+  phone_verifications:
+    errors:
+      phone_required: "El número de teléfono es requerido"
+      invalid_format: "Formato de teléfono inválido. Debe incluir código de país (ej: +34612345678)"
+      already_exists: "Este número de teléfono ya está registrado en otra cuenta"
+      cooldown: "Debes esperar %{seconds} segundos antes de solicitar un nuevo código"
+      phone_and_code_required: "Teléfono y código son requeridos"
+      no_pending_verification: "No se encontró una verificación pendiente para este teléfono. Solicita un nuevo código."
+      send_error: "Error al enviar el código. Inténtalo de nuevo."
+      code_expired: "Código expirado. Solicita uno nuevo."
+      max_attempts: "Máximo de intentos alcanzado. Solicita un nuevo código."
+      incorrect_code: "Código incorrecto. Te quedan %{remaining} intentos."
+    success:
+      code_sent: "Código enviado correctamente"
+      phone_verified: "Teléfono verificado correctamente"
   notifications:
     match:
       title: "Nuevo match"

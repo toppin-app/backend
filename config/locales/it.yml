@@ -1,0 +1,16 @@
+it:
+  phone_verifications:
+    errors:
+      phone_required: "Il numero di telefono è obbligatorio"
+      invalid_format: "Formato telefono non valido. Deve includere il prefisso internazionale (es: +393401234567)"
+      already_exists: "Questo numero di telefono è già registrato su un altro account"
+      cooldown: "Devi aspettare %{seconds} secondi prima di richiedere un nuovo codice"
+      phone_and_code_required: "Numero di telefono e codice sono obbligatori"
+      no_pending_verification: "Nessuna verifica in sospeso trovata per questo numero. Richiedi un nuovo codice."
+      send_error: "Errore nell'invio del codice. Riprova."
+      code_expired: "Codice scaduto. Richiedine uno nuovo."
+      max_attempts: "Numero massimo di tentativi raggiunto. Richiedi un nuovo codice."
+      incorrect_code: "Codice errato. Ti rimangono %{remaining} tentativi."
+    success:
+      code_sent: "Codice inviato con successo"
+      phone_verified: "Telefono verificato con successo"

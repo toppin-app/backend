@@ -1,21 +1,22 @@
 class PhoneVerificationsController < ApplicationController
   skip_before_action :authenticate_user!, only: [:request_code, :verify_code]
   skip_before_action :verify_authenticity_token, only: [:request_code, :verify_code]
+  before_action :set_locale
 
   # POST /phone_verifications/request_code
-  # Params: { phone_number: "+34612345678" }
+  # Params: { phone_number: "+34612345678", language: "ES" }
   def request_code
     phone_number = params[:phone_number]
 
     # Validar que se envió el teléfono
     unless phone_number.present?
-      render json: { status: 400, error: 'El número de teléfono es requerido' }, status: :bad_request
+      render json: { status: 400, error: t('phone_verifications.errors.phone_required') }, status: :bad_request
       return
     end
 
     # Validar formato básico del teléfono (debe empezar con +)
     unless phone_number.match?(/^\+\d{10,15}$/)
-      render json: { status: 400, error: 'Formato de teléfono inválido. Debe incluir código de país (ej: +34612345678)' }, status: :bad_request
+      render json: { status: 400, error: t('phone_verifications.errors.invalid_format') }, status: :bad_request
       return
     end
 
@@ -24,7 +25,7 @@ class PhoneVerificationsController < ApplicationController
     if existing_user
       render json: { 
         status: 409, 
-        error: 'Este número de teléfono ya está registrado en otra cuenta',
+        error: t('phone_verifications.errors.already_exists'),
         code: 'PHONE_ALREADY_EXISTS'
       }, status: :conflict
       return
@@ -35,7 +36,7 @@ class PhoneVerificationsController < ApplicationController
       remaining_seconds = PhoneVerification.cooldown_remaining(phone_number)
       render json: { 
         status: 429, 
-        error: "Debes esperar #{remaining_seconds} segundos antes de solicitar un nuevo código" 
+        error: t('phone_verifications.errors.cooldown', seconds: remaining_seconds)
       }, status: :too_many_requests
       return
     end
@@ -49,7 +50,7 @@ class PhoneVerificationsController < ApplicationController
 
       render json: {
         status: 200,
-        message: 'Código enviado correctamente',
+        message: t('phone_verifications.success.code_sent'),
         expires_in: PhoneVerification::CODE_EXPIRATION_TIME.to_i,
         phone_number: phone_number,
         code: verification.verification_code
@@ -59,20 +60,20 @@ class PhoneVerificationsController < ApplicationController
       Rails.logger.error "Error al enviar código de verificación: #{e.message}"
       render json: { 
         status: 500, 
-        error: 'Error al enviar el código. Inténtalo de nuevo.' 
+        error: t('phone_verifications.errors.send_error')
       }, status: :internal_server_error
     end
   end
 
   # POST /phone_verifications/verify_code
-  # Params: { phone_number: "+34612345678", code: "123456" }
+  # Params: { phone_number: "+34612345678", code: "123456", language: "ES" }
   def verify_code
     phone_number = params[:phone_number]
     code = params[:code]
 
     # Validaciones
     unless phone_number.present? && code.present?
-      render json: { status: 400, error: 'Teléfono y código son requeridos' }, status: :bad_request
+      render json: { status: 400, error: t('phone_verifications.errors.phone_and_code_required') }, status: :bad_request
       return
     end
 
@@ -81,7 +82,7 @@ class PhoneVerificationsController < ApplicationController
     if existing_user
       render json: { 
         status: 409, 
-        error: 'Este número de teléfono ya está registrado en otra cuenta',
+        error: t('phone_verifications.errors.already_exists'),
         code: 'PHONE_ALREADY_EXISTS'
       }, status: :conflict
       return
@@ -96,7 +97,7 @@ class PhoneVerificationsController < ApplicationController
     unless verification
       render json: { 
         status: 404, 
-        error: 'No se encontró una verificación pendiente para este teléfono. Solicita un nuevo código.' 
+        error: t('phone_verifications.errors.no_pending_verification')
       }, status: :not_found
       return
     end
@@ -107,7 +108,7 @@ class PhoneVerificationsController < ApplicationController
     if result[:success]
       render json: {
         status: 200,
-        message: result[:message],
+        message: t('phone_verifications.success.phone_verified'),
         phone_number: phone_number,
         verified: true
       }, status: :ok
@@ -153,6 +154,23 @@ class PhoneVerificationsController < ApplicationController
   end
 
   private
+
+  # Establecer el idioma basado en el parámetro language del request
+  def set_locale
+    language = params[:language]&.upcase
+    
+    # Mapear el código del idioma a locale de Rails
+    locale = case language
+             when 'ES' then :es
+             when 'EN' then :en
+             when 'IT' then :it
+             when 'FR' then :fr
+             when 'DE' then :de
+             else :es # Por defecto español
+             end
+    
+    I18n.locale = locale
+  end
 
   # Enviar SMS usando Twilio
   def send_verification_sms(phone_number, code)

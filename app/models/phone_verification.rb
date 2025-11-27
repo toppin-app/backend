@@ -36,12 +36,12 @@ class PhoneVerification < ApplicationRecord
   def verify_code(input_code)
     # Verificar si ha expirado
     if expired?
-      return { success: false, error: 'Código expirado. Solicita uno nuevo.' }
+      return { success: false, error: I18n.t('phone_verifications.errors.code_expired') }
     end
 
     # Verificar si se excedieron los intentos
     if max_attempts_reached?
-      return { success: false, error: 'Máximo de intentos alcanzado. Solicita un nuevo código.' }
+      return { success: false, error: I18n.t('phone_verifications.errors.max_attempts') }
     end
 
     # Incrementar intentos
@@ -51,10 +51,10 @@ class PhoneVerification < ApplicationRecord
     # Verificar el código
     if verification_code == input_code
       update(verified: true)
-      { success: true, message: 'Teléfono verificado correctamente' }
+      { success: true, message: I18n.t('phone_verifications.success.phone_verified') }
     else
       remaining = MAX_ATTEMPTS - attempts
-      { success: false, error: "Código incorrecto. Te quedan #{remaining} intentos." }
+      { success: false, error: I18n.t('phone_verifications.errors.incorrect_code', remaining: remaining) }
     end
   end
 
