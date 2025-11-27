@@ -19,6 +19,17 @@ class PhoneVerificationsController < ApplicationController
       return
     end
 
+    # Verificar si el número de teléfono ya está registrado por otro usuario
+    existing_user = User.find_by(phone: phone_number)
+    if existing_user
+      render json: { 
+        status: 409, 
+        error: 'Este número de teléfono ya está registrado en otra cuenta',
+        code: 'PHONE_ALREADY_EXISTS'
+      }, status: :conflict
+      return
+    end
+
     # Verificar cooldown
     unless PhoneVerification.can_request_new_code?(phone_number)
       remaining_seconds = PhoneVerification.cooldown_remaining(phone_number)
@@ -34,7 +45,6 @@ class PhoneVerificationsController < ApplicationController
       verification = PhoneVerification.create_for_phone(phone_number)
 
       # Enviar SMS con Twilio (comentado temporalmente para desarrollo)
-      # send_verification_sms(phone_number, verification.verification_code)
       Rails.logger.info "⚠️ SMS desactivado - Código de verificación: #{verification.verification_code}"
 
       render json: {
@@ -63,6 +73,17 @@ class PhoneVerificationsController < ApplicationController
     # Validaciones
     unless phone_number.present? && code.present?
       render json: { status: 400, error: 'Teléfono y código son requeridos' }, status: :bad_request
+      return
+    end
+
+    # Verificar si el número de teléfono ya está registrado por otro usuario
+    existing_user = User.find_by(phone: phone_number)
+    if existing_user
+      render json: { 
+        status: 409, 
+        error: 'Este número de teléfono ya está registrado en otra cuenta',
+        code: 'PHONE_ALREADY_EXISTS'
+      }, status: :conflict
       return
     end
 
