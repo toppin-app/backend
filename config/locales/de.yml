@@ -1,4 +1,30 @@
 de:
+  password_recoveries:
+    errors:
+      email_required: "E-Mail ist erforderlich"
+      invalid_format: "Ungültiges E-Mail-Format"
+      user_not_found: "Es existiert kein Konto mit dieser E-Mail"
+      cooldown: "Sie müssen %{seconds} Sekunden warten, bevor Sie einen neuen Code anfordern"
+      email_and_code_required: "E-Mail und Code sind erforderlich"
+      no_pending_recovery: "Keine ausstehende Wiederherstellungsanfrage für diese E-Mail gefunden. Fordern Sie einen neuen Code an."
+      send_error: "Fehler beim Senden des Codes. Bitte versuchen Sie es erneut."
+      code_expired: "Code abgelaufen. Fordern Sie einen neuen an."
+      max_attempts: "Maximale Anzahl von Versuchen erreicht. Fordern Sie einen neuen Code an."
+      incorrect_code: "Falscher Code. Sie haben noch %{remaining} Versuche."
+      all_fields_required: "E-Mail, Code und neues Passwort sind erforderlich"
+      invalid_or_expired: "Ungültiger oder abgelaufener Code. Fordern Sie einen neuen Wiederherstellungscode an."
+      reset_error: "Fehler beim Zurücksetzen des Passworts. Bitte versuchen Sie es erneut."
+    success:
+      code_sent: "Wiederherstellungscode an Ihre E-Mail gesendet"
+      code_verified: "Code erfolgreich verifiziert"
+      password_reset: "Passwort erfolgreich zurückgesetzt"
+    email:
+      subject: "Passwort-Wiederherstellung - Toppin"
+      greeting: "Hallo"
+      message: "Sie haben die Zurücksetzung Ihres Passworts angefordert. Verwenden Sie den folgenden Code, um fortzufahren:"
+      your_code: "Ihr Wiederherstellungscode:"
+      validity: "Dieser Code ist 10 Minuten gültig."
+      footer: "Wenn Sie diesen Code nicht angefordert haben, können Sie diese Nachricht sicher ignorieren."
   phone_verifications:
     errors:
       phone_required: "Telefonnummer ist erforderlich"

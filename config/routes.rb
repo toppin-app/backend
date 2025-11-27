@@ -164,6 +164,11 @@ Rails.application.routes.draw do
   post '/phone_verifications/verify_code', to: 'phone_verifications#verify_code'
   get '/phone_verifications/check_status', to: 'phone_verifications#check_status'
   
+  # Recuperación de contraseña
+  post '/password_recoveries/request_code', to: 'password_recoveries#request_code'
+  post '/password_recoveries/verify_code', to: 'password_recoveries#verify_code'
+  post '/password_recoveries/reset_password', to: 'password_recoveries#reset_password'
+  
   # Boosts y superlikes
 
   # Usar un boost

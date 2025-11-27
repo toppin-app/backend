@@ -30,6 +30,32 @@
 # available at https://guides.rubyonrails.org/i18n.html.
 
 en:
+  password_recoveries:
+    errors:
+      email_required: "Email is required"
+      invalid_format: "Invalid email format"
+      user_not_found: "No account exists with this email"
+      cooldown: "You must wait %{seconds} seconds before requesting a new code"
+      email_and_code_required: "Email and code are required"
+      no_pending_recovery: "No pending recovery request found for this email. Request a new code."
+      send_error: "Error sending code. Please try again."
+      code_expired: "Code expired. Request a new one."
+      max_attempts: "Maximum attempts reached. Request a new code."
+      incorrect_code: "Incorrect code. You have %{remaining} attempts left."
+      all_fields_required: "Email, code and new password are required"
+      invalid_or_expired: "Invalid or expired code. Request a new recovery code."
+      reset_error: "Error resetting password. Please try again."
+    success:
+      code_sent: "Recovery code sent to your email"
+      code_verified: "Code verified successfully"
+      password_reset: "Password reset successfully"
+    email:
+      subject: "Password Recovery - Toppin"
+      greeting: "Hi"
+      message: "You have requested to reset your password. Use the following code to continue:"
+      your_code: "Your recovery code:"
+      validity: "This code is valid for 10 minutes."
+      footer: "If you didn't request this code, you can safely ignore this message."
   phone_verifications:
     errors:
       phone_required: "Phone number is required"

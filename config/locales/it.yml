@@ -1,4 +1,30 @@
 it:
+  password_recoveries:
+    errors:
+      email_required: "L'email è obbligatoria"
+      invalid_format: "Formato email non valido"
+      user_not_found: "Non esiste un account con questa email"
+      cooldown: "Devi aspettare %{seconds} secondi prima di richiedere un nuovo codice"
+      email_and_code_required: "Email e codice sono obbligatori"
+      no_pending_recovery: "Nessuna richiesta di recupero in sospeso trovata per questa email. Richiedi un nuovo codice."
+      send_error: "Errore nell'invio del codice. Riprova."
+      code_expired: "Codice scaduto. Richiedine uno nuovo."
+      max_attempts: "Numero massimo di tentativi raggiunto. Richiedi un nuovo codice."
+      incorrect_code: "Codice errato. Ti rimangono %{remaining} tentativi."
+      all_fields_required: "Email, codice e nuova password sono obbligatori"
+      invalid_or_expired: "Codice non valido o scaduto. Richiedi un nuovo codice di recupero."
+      reset_error: "Errore nel ripristino della password. Riprova."
+    success:
+      code_sent: "Codice di recupero inviato alla tua email"
+      code_verified: "Codice verificato con successo"
+      password_reset: "Password ripristinata con successo"
+    email:
+      subject: "Recupero Password - Toppin"
+      greeting: "Ciao"
+      message: "Hai richiesto di ripristinare la tua password. Usa il seguente codice per continuare:"
+      your_code: "Il tuo codice di recupero:"
+      validity: "Questo codice è valido per 10 minuti."
+      footer: "Se non hai richiesto questo codice, puoi ignorare questo messaggio in sicurezza."
   phone_verifications:
     errors:
       phone_required: "Il numero di telefono è obbligatorio"
