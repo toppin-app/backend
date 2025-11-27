@@ -11,8 +11,8 @@ es:
       code_expired: "Código expirado. Solicita uno nuevo."
       max_attempts: "Máximo de intentos alcanzado. Solicita un nuevo código."
       incorrect_code: "Código incorrecto. Te quedan %{remaining} intentos."
-      all_fields_required: "Correo electrónico, código y nueva contraseña son requeridos"
-      invalid_or_expired: "Código inválido o expirado. Solicita un nuevo código de recuperación."
+      email_and_password_required: "Correo electrónico y nueva contraseña son requeridos"
+      not_verified: "Debes verificar el código antes de restablecer la contraseña"
       reset_error: "Error al restablecer la contraseña. Inténtalo de nuevo."
     success:
       code_sent: "Código de recuperación enviado a tu correo electrónico"

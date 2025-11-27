@@ -11,8 +11,8 @@ de:
       code_expired: "Code abgelaufen. Fordern Sie einen neuen an."
       max_attempts: "Maximale Anzahl von Versuchen erreicht. Fordern Sie einen neuen Code an."
       incorrect_code: "Falscher Code. Sie haben noch %{remaining} Versuche."
-      all_fields_required: "E-Mail, Code und neues Passwort sind erforderlich"
-      invalid_or_expired: "Ungültiger oder abgelaufener Code. Fordern Sie einen neuen Wiederherstellungscode an."
+      email_and_password_required: "E-Mail und neues Passwort sind erforderlich"
+      not_verified: "Sie müssen den Code verifizieren, bevor Sie das Passwort zurücksetzen"
       reset_error: "Fehler beim Zurücksetzen des Passworts. Bitte versuchen Sie es erneut."
     success:
       code_sent: "Wiederherstellungscode an Ihre E-Mail gesendet"

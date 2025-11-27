@@ -11,8 +11,8 @@ fr:
       code_expired: "Code expiré. Demandez-en un nouveau."
       max_attempts: "Nombre maximum de tentatives atteint. Demandez un nouveau code."
       incorrect_code: "Code incorrect. Il vous reste %{remaining} tentatives."
-      all_fields_required: "L'email, le code et le nouveau mot de passe sont obligatoires"
-      invalid_or_expired: "Code invalide ou expiré. Demandez un nouveau code de récupération."
+      email_and_password_required: "L'email et le nouveau mot de passe sont obligatoires"
+      not_verified: "Vous devez vérifier le code avant de réinitialiser le mot de passe"
       reset_error: "Erreur lors de la réinitialisation du mot de passe. Veuillez réessayer."
     success:
       code_sent: "Code de récupération envoyé à votre email"

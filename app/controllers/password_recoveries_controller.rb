@@ -110,24 +110,23 @@ class PasswordRecoveriesController < ApplicationController
   end
 
   # POST /password_recoveries/reset_password
-  # Params: { email: "user@example.com", code: "123456", new_password: "NewPass123!", language: "ES" }
+  # Params: { email: "user@example.com", new_password: "NewPass123!", language: "ES" }
   def reset_password
     email = params[:email]
-    code = params[:code]
     new_password = params[:new_password]
 
     # Validaciones
-    unless email.present? && code.present? && new_password.present?
+    unless email.present? && new_password.present?
       render json: { 
         status: 400, 
-        error: t('password_recoveries.errors.all_fields_required') 
+        error: t('password_recoveries.errors.email_and_password_required') 
       }, status: :bad_request
       return
     end
 
     # Buscar la recuperación verificada más reciente
     recovery = PasswordRecovery.for_email(email)
-                               .where(verified: true, recovery_code: code)
+                               .where(verified: true)
                                .where('expires_at > ?', Time.current)
                                .order(created_at: :desc)
                                .first
@@ -135,8 +134,8 @@ class PasswordRecoveriesController < ApplicationController
     unless recovery
       render json: { 
         status: 403, 
-        error: t('password_recoveries.errors.invalid_or_expired'),
-        code: 'INVALID_RECOVERY_CODE'
+        error: t('password_recoveries.errors.not_verified'),
+        code: 'NOT_VERIFIED'
       }, status: :forbidden
       return
     end
@@ -157,7 +156,7 @@ class PasswordRecoveriesController < ApplicationController
       user.password_confirmation = new_password
       
       if user.save
-        # Marcar la recuperación como usada eliminándola o invalidándola
+        # Marcar la recuperación como usada eliminándola
         recovery.destroy
 
         render json: {

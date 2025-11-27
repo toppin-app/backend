@@ -42,8 +42,8 @@ en:
       code_expired: "Code expired. Request a new one."
       max_attempts: "Maximum attempts reached. Request a new code."
       incorrect_code: "Incorrect code. You have %{remaining} attempts left."
-      all_fields_required: "Email, code and new password are required"
-      invalid_or_expired: "Invalid or expired code. Request a new recovery code."
+      email_and_password_required: "Email and new password are required"
+      not_verified: "You must verify the code before resetting the password"
       reset_error: "Error resetting password. Please try again."
     success:
       code_sent: "Recovery code sent to your email"
