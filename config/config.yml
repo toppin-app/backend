@@ -1,7 +1,7 @@
 defaults: &defaults
   app_name: "Toppin APP"
   default_meta_title: "Toppin Admin Panel"
-  copyright: "Toppin Global S.L. © %{year}. All rights reserved."
+  copyright: "Toppin Global S.L 2025. All rights reserved."
 
 development:
   <<: *defaults
