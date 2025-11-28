@@ -248,35 +248,193 @@ class PasswordRecoveriesController < ApplicationController
 
   # Generar HTML del email
   def generate_recovery_email_html(vars)
+    logo_url = "https://#{ENV['MAILJET_DEFAULT_URL_HOST'] || 'toppin.es'}/logo-html.png"
+    
     <<-HTML
       <!DOCTYPE html>
-      <html>
+      <html lang="#{I18n.locale}">
       <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>#{I18n.t('password_recoveries.email.subject')}</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .code-box { background: white; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }
-          .code { font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }
-          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+          }
+          .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+          }
+          .header {
+            background: #FFFFFF;
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 3px solid #FF6B9D;
+          }
+          .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #FF6B9D 0%, #C239B3 100%);
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+            overflow: hidden;
+          }
+          .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          .header h1 {
+            color: #FF6B9D;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+          }
+          .content {
+            padding: 40px 30px;
+            color: #333333;
+            line-height: 1.6;
+          }
+          .greeting {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333333;
+            margin-bottom: 20px;
+          }
+          .message {
+            font-size: 16px;
+            color: #555555;
+            margin-bottom: 30px;
+          }
+          .code-box {
+            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8F0 100%);
+            border: 3px solid #FF6B9D;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.1);
+          }
+          .code-label {
+            font-size: 14px;
+            color: #999999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+          }
+          .code {
+            font-size: 42px;
+            font-weight: 800;
+            color: #FF6B9D;
+            letter-spacing: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(255, 107, 157, 0.2);
+          }
+          .validity-warning {
+            background-color: #FFF5F8;
+            border-left: 4px solid #FF6B9D;
+            padding: 15px 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+          }
+          .validity-warning p {
+            margin: 0;
+            color: #666666;
+            font-size: 15px;
+          }
+          .validity-warning strong {
+            color: #FF6B9D;
+            font-weight: 600;
+          }
+          .security-note {
+            background-color: #F8F8F8;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666666;
+            text-align: center;
+          }
+          .security-note .icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+          }
+          .footer {
+            background-color: #F8F8F8;
+            padding: 30px;
+            text-align: center;
+            color: #999999;
+            font-size: 13px;
+            border-top: 1px solid #EEEEEE;
+          }
+          .footer a {
+            color: #FF6B9D;
+            text-decoration: none;
+          }
+          @media only screen and (max-width: 600px) {
+            .content {
+              padding: 30px 20px;
+            }
+            .code {
+              font-size: 36px;
+              letter-spacing: 6px;
+            }
+            .header h1 {
+              font-size: 24px;
+            }
+          }
         </style>
       </head>
       <body>
-        <div class="container">
+        <div class="email-container">
+          <!-- Header con logo -->
           <div class="header">
-            <h1>🔐 Toppin</h1>
+            <div class="logo">
+              <img src="#{logo_url}" alt="Toppin Logo">
+            </div>
+            <h1>🔐 #{I18n.t('password_recoveries.email.subject')}</h1>
           </div>
+
+          <!-- Contenido principal -->
           <div class="content">
-            <p><strong>#{vars['greeting']} #{vars['name']},</strong></p>
-            <p>#{vars['message']}</p>
+            <p class="greeting">#{vars['greeting']} #{vars['name']},</p>
+            
+            <p class="message">#{vars['message']}</p>
+
+            <!-- Caja del código -->
             <div class="code-box">
-              <p style="margin: 0; color: #666;">#{I18n.t('password_recoveries.email.your_code')}</p>
+              <div class="code-label">#{I18n.t('password_recoveries.email.your_code')}</div>
               <div class="code">#{vars['code']}</div>
             </div>
-            <p><strong>⏰ #{vars['validity']}</strong></p>
-            <p style="color: #666; font-size: 14px;">#{vars['footer']}</p>
+
+            <!-- Advertencia de validez -->
+            <div class="validity-warning">
+              <p><strong>⏰ #{vars['validity']}</strong></p>
+            </div>
+
+            <!-- Nota de seguridad -->
+            <div class="security-note">
+              <div class="icon">🔒</div>
+              <p>#{vars['footer']}</p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="footer">
+            <p>
+              © #{Time.current.year} Toppin. Todos los derechos reservados.<br>
+              Este es un correo automático, por favor no respondas a este mensaje.
+            </p>
           </div>
         </div>
       </body>
