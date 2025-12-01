@@ -52,6 +52,13 @@
     <div class="col-md-6">
       <small><b>Mostrar:</b></small>
 
+      <span style="margin-left: 5%;"> 
+        <%= check_box_tag :include_deleted, '1', @include_deleted, 
+            onclick: "this.form.submit();", 
+            id: 'include_deleted_checkbox' %>
+        <%= label_tag :include_deleted, 'Incluir usuarios eliminados', style: 'font-weight: normal; margin-left: 5px;' %>
+      </span>
+
       <span style="margin-left: 5%;"> <small><%= link_to users_path, method: 'get' do %><i class="fa fa-times"
             aria-hidden="true"></i> Eliminar filtros<%end%></small></span>
     </div>
@@ -86,7 +93,7 @@
 
   <tbody>
     <% @users.each do |user| %>
-    <tr>
+    <tr <%= 'style=background-color:#ffe6e6;'.html_safe if user.deleted_account %>>
       <td>
         <% if user.user_media.any? %>
            <%= image_tag user.user_media.first.file.thumb.url, style: 'height: 50px;' if user.user_media.first.file.url and !user.bundled %>
@@ -96,6 +103,9 @@
       <td>
         <% if user.admin? %>
           <i class="fa fa-check"></i>
+        <% end %>
+        <% if user.deleted_account %>
+          <i class="fa fa-trash text-danger" title="Usuario eliminado"></i>
         <% end %>
         <%= user.id %></td>
       <td> <%= link_to user.name, show_user_path(id: user.id) %> </td>

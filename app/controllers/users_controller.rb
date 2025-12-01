@@ -28,8 +28,12 @@ class UsersController < ApplicationController
                     @search = ""
               end
 
-          @q = User.all.ransack(params[:q])
+          # Filtrar usuarios según si se quiere incluir eliminados o no
+          base_users = params[:include_deleted] == '1' ? User.all : User.active_accounts
+          
+          @q = base_users.ransack(params[:q])
           @users = @q.result.order("created_at DESC").paginate(:page => params[:page], :per_page => 15)
+          @include_deleted = params[:include_deleted] == '1'
   end
 
   # GET /users/1
