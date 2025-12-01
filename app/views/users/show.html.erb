@@ -202,12 +202,12 @@
     <hr>
 
     <div style="background: #eee; padding: 5px; display: flex; justify-content: space-between; align-items: center;">
-      <span><b><i class="fa fa-heart"></i> Likes recibidos (<%= @user.incoming_likes.count %>)</b></span>
-      <% if @user.incoming_likes.any? %>
+      <span><b><i class="fa fa-heart"></i> Likes recibidos (<%= @likes.total_entries %>)</b></span>
+      <% if @likes.any? %>
         <div>
           <%= link_to match_all_likes_path(user_id: @user.id), 
               method: :post,
-              data: { confirm: "¿Estás seguro de que quieres hacer match con TODOS los likes (#{@user.incoming_likes.count})?" },
+              data: { confirm: "¿Estás seguro de que quieres hacer match con TODOS los likes (#{@likes.total_entries})?" },
               class: 'btn btn-success btn-sm',
               style: 'margin-right: 5px;' do %>
             <i class="fas fa-check-double"></i> Match con todos
@@ -215,7 +215,7 @@
           
           <%= link_to reject_all_likes_path(user_id: @user.id), 
               method: :post,
-              data: { confirm: "¿Estás seguro de que quieres rechazar TODOS los likes (#{@user.incoming_likes.count})?" },
+              data: { confirm: "¿Estás seguro de que quieres rechazar TODOS los likes (#{@likes.total_entries})?" },
               class: 'btn btn-danger btn-sm' do %>
             <i class="fas fa-times-circle"></i> Rechazar todos
           <% end %>
