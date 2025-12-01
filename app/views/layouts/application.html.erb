@@ -443,18 +443,16 @@ $( document ).ready(function() {
     }
 
 
+    // Función para enviar mensajes - DESACTIVADA por privacidad
+    // Los administradores solo pueden ver los mensajes, no escribirlos
+    /*
     function sendMessage(message){
-
       twilioClient.getConversationBySid(currentSid).then(conv => {
-
         conv.sendMessage(message, { isRead: false }).then(msg => {
            console.log("message",msg)
         })
-
       })
-
     }
-
 
     $("#message").on('keypress',function(e) {
       if(e.which == 13) {
@@ -462,6 +460,7 @@ $( document ).ready(function() {
           $("#message").val('')
       }
     });
+    */
 
 
     $(".chat").click(function(e) {
