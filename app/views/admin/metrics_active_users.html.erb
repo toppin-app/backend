@@ -75,7 +75,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('turbolinks:load', function() {
+  // Solo ejecutar si estamos en la página correcta
+  if (!document.getElementById('dailyUsersChart')) return;
+  
+  console.log('Iniciando gráficos de usuarios activos...');
+  
   // Gráfico de usuarios por día
   const dailyData = <%= raw @daily_data.to_json %>;
   console.log('Daily data:', dailyData);
@@ -156,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
-});
+}, { once: true }); // Ejecutar solo una vez
 </script>
 
 <style>

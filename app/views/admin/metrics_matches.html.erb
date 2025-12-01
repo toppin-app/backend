@@ -5,6 +5,12 @@
       <%= link_to admin_metrics_path, class: "btn btn-secondary mb-3" do %>
         <i class="fas fa-arrow-left"></i> Volver a Métricas
       <% end %>
+      
+      <!-- DEBUG -->
+      <div class="alert alert-info">
+        <strong>Debug:</strong> Datos diarios: <%= @daily_matches.size %> registros | 
+        Datos mensuales: <%= @monthly_matches.size %> registros
+      </div>
     </div>
   </div>
 
@@ -75,7 +81,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Usar turbolinks:load en lugar de DOMContentLoaded
+document.addEventListener('turbolinks:load', function() {
+  // Solo ejecutar si estamos en la página correcta
+  if (!document.getElementById('dailyMatchesChart')) return;
+  
+  console.log('Iniciando gráficos de matches...');
+  
   // Gráfico diario
   const dailyData = <%= raw @daily_matches.to_json %>;
   console.log('Daily matches:', dailyData);
@@ -164,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
-});
+}, { once: true }); // Ejecutar solo una vez para evitar duplicados
 </script>
 
 <style>
