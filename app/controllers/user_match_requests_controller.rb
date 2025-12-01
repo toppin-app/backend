@@ -49,13 +49,16 @@ class UserMatchRequestsController < ApplicationController
             umr.is_superlike = params[:is_superlike]
          end
          umr.save # Guardamos el match.
-         # Como tenemos match, creamos conversación
-         twilio = TwilioController.new
-         conversation_sid = twilio.create_conversation(current_user.id, params[:target_user])
-         if umr.is_sugar_sweet
-           twilio.send_message_to_conversation(conversation_sid, current_user.id, params[:message])
-         end
-         umr.update(twilio_conversation_sid: conversation_sid)
+         
+         # Crear conversación de Twilio en background
+         CreateTwilioConversationJob.perform_later(
+           umr.id, 
+           current_user.id, 
+           params[:target_user],
+           send_message: umr.is_sugar_sweet,
+           message: params[:message]
+         )
+         
          current_user.recalculate_ranking
          # Mandamos la push al usuario del match.
          match_user = User.find(umr.user_id)    
@@ -162,10 +165,15 @@ class UserMatchRequestsController < ApplicationController
                   is_superlike: params[:is_superlike]
                 )
                 
-                # Crear conversación de Twilio
-                twilio = TwilioController.new
-                conversation_sid = twilio.create_conversation(current_user.id, params[:target_user])
-                umr.update(twilio_conversation_sid: conversation_sid)
+                # Crear conversación de Twilio en background
+                CreateTwilioConversationJob.perform_later(
+                  umr.id,
+                  current_user.id,
+                  params[:target_user],
+                  send_message: false,
+                  message: nil
+                )
+                
                 current_user.recalculate_ranking
                 
                 # Notificar push al otro usuario del match
@@ -348,17 +356,21 @@ class UserMatchRequestsController < ApplicationController
             logger.info "IS SUGAR SWEET"
              current_user.use_superlike
              umr.update(match_date: DateTime.now)
-               Thread.new do
-                    twilio = TwilioController.new
-                    conversation_sid = twilio.create_conversation(current_user.id, params[:target_user])
-                    twilio.send_message_to_conversation(conversation_sid, current_user.id, params[:message])
-                    umr.update(twilio_conversation_sid: conversation_sid)
-                    logger.info "IS SUGAR SWEET TWILIO IS "+conversation_sid.to_s
-                    # Mandamos la push al usuario del match.
-                    if target_user.push_match?
-                       Device.sendIndividualPush(umr.target_user,"¡Wow! ¡Te han dado un Sugar Sweet!", params[:message], "sugar_sweet", nil, "push_likes")
-                    end
-                end # thread
+             
+             # Crear conversación y enviar mensaje en background
+             CreateTwilioConversationJob.perform_later(
+               umr.id,
+               current_user.id,
+               params[:target_user],
+               send_message: true,
+               message: params[:message]
+             )
+             
+             logger.info "IS SUGAR SWEET - Job encolado"
+             # Mandamos la push al usuario del match.
+             if target_user.push_match?
+                Device.sendIndividualPush(umr.target_user,"¡Wow! ¡Te han dado un Sugar Sweet!", params[:message], "sugar_sweet", nil, "push_likes")
+             end
           end # sugar
       end
       if umr.is_match # Si es un match, renderizamos la vista show, porque en jbuilder tenemos los datos de los usuarios.
@@ -440,22 +452,24 @@ class UserMatchRequestsController < ApplicationController
       umr.target_user_ranking = umr.target.ranking
       umr.match_date = DateTime.now
       umr.save
-      twilio = TwilioController.new
-      conversation_sid = twilio.create_conversation(current_user.id, umr.user_id)
-      if conversation_sid
-        render json: conversation_sid.to_json
-            # Generamos la conversación y enviamos el primer mensaje
-            Thread.new do
-                # Enviamos el primer mensaje
-                twilio.send_message_to_conversation(conversation_sid, current_user.id, params[:message])
-                umr.update(twilio_conversation_sid: conversation_sid)
-                current_user.recalculate_ranking
-                # Mandamos la push al usuario del match.
-                if umr.user.push_match?
-                    Device.sendIndividualPush(umr.user_id,"Nuevo match"," ¡Tu supersweet ha dado resultado!", "match", nil, "push_match")
-                end
-            end
+      
+      # Crear conversación y enviar mensaje en background
+      CreateTwilioConversationJob.perform_later(
+        umr.id,
+        current_user.id,
+        umr.user_id,
+        send_message: true,
+        message: params[:message]
+      )
+      
+      current_user.recalculate_ranking
+      
+      # Mandamos la push al usuario del match
+      if umr.user.push_match?
+        Device.sendIndividualPush(umr.user_id,"Nuevo match"," ¡Tu supersweet ha dado resultado!", "match", nil, "push_match")
       end
+      
+      render json: { status: 200, message: "Match creado, conversación en proceso" }.to_json
     else
       render json: { status: 400, error: "Error sending message"}, status: 400
     end
