@@ -52,7 +52,7 @@
           <h5 class="mb-0"><i class="fas fa-chart-line"></i> Matches Creados por Día (Últimos 30 días)</h5>
         </div>
         <div class="card-body">
-          <canvas id="dailyMatchesChart" style="max-height: 400px;"></canvas>
+          <canvas id="dailyMatchesChart" height="100"></canvas>
         </div>
       </div>
     </div>
@@ -66,7 +66,7 @@
           <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Matches por Mes (Últimos 6 meses)</h5>
         </div>
         <div class="card-body">
-          <canvas id="monthlyMatchesChart" style="max-height: 350px;"></canvas>
+          <canvas id="monthlyMatchesChart" height="90"></canvas>
         </div>
       </div>
     </div>
@@ -75,8 +75,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
   // Gráfico diario
   const dailyData = <%= raw @daily_matches.to_json %>;
+  console.log('Daily matches:', dailyData);
+  
   const dailyLabels = dailyData.map(d => d.date);
   const dailyCounts = dailyData.map(d => d.count);
 
@@ -91,12 +94,14 @@
         backgroundColor: 'rgba(220, 53, 69, 0.1)',
         tension: 0.4,
         fill: true,
-        borderWidth: 2
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5
       }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: {
           display: true,
@@ -116,6 +121,8 @@
 
   // Gráfico mensual
   const monthlyData = <%= raw @monthly_matches.to_json %>;
+  console.log('Monthly matches:', monthlyData);
+  
   const monthlyLabels = monthlyData.map(d => d.month);
   const monthlyCounts = monthlyData.map(d => d.count);
 
@@ -140,7 +147,7 @@
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: {
           display: true,
@@ -157,6 +164,7 @@
       }
     }
   });
+});
 </script>
 
 <style>

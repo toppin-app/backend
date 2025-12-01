@@ -52,7 +52,7 @@
           <h5 class="mb-0"><i class="fas fa-chart-line"></i> Usuarios Activos por Día (Últimos 30 días)</h5>
         </div>
         <div class="card-body">
-          <canvas id="dailyUsersChart" style="max-height: 400px;"></canvas>
+          <canvas id="dailyUsersChart" height="100"></canvas>
         </div>
       </div>
     </div>
@@ -66,7 +66,7 @@
           <h5 class="mb-0"><i class="fas fa-clock"></i> Actividad por Hora (Hoy)</h5>
         </div>
         <div class="card-body">
-          <canvas id="hourlyUsersChart" style="max-height: 300px;"></canvas>
+          <canvas id="hourlyUsersChart" height="80"></canvas>
         </div>
       </div>
     </div>
@@ -75,8 +75,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
   // Gráfico de usuarios por día
   const dailyData = <%= raw @daily_data.to_json %>;
+  console.log('Daily data:', dailyData);
+  
   const dailyLabels = dailyData.map(d => d.date);
   const dailyCounts = dailyData.map(d => d.count);
 
@@ -90,12 +93,14 @@
         borderColor: '#007bff',
         backgroundColor: 'rgba(0, 123, 255, 0.1)',
         tension: 0.4,
-        fill: true
+        fill: true,
+        pointRadius: 3,
+        pointHoverRadius: 5
       }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: {
           display: true,
@@ -115,6 +120,8 @@
 
   // Gráfico de usuarios por hora
   const hourlyData = <%= raw @hourly_data.to_json %>;
+  console.log('Hourly data:', hourlyData);
+  
   const hourlyLabels = hourlyData.map(d => d.hour);
   const hourlyCounts = hourlyData.map(d => d.count);
 
@@ -132,7 +139,7 @@
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: {
           display: true,
@@ -149,6 +156,7 @@
       }
     }
   });
+});
 </script>
 
 <style>

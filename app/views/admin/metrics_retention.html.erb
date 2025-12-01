@@ -88,7 +88,7 @@
           <h5 class="mb-0"><i class="fas fa-chart-line"></i> Tendencia de Retención</h5>
         </div>
         <div class="card-body">
-          <canvas id="retentionTrendChart" style="max-height: 300px;"></canvas>
+          <canvas id="retentionTrendChart" height="80"></canvas>
         </div>
       </div>
     </div>
@@ -98,7 +98,7 @@
           <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Usuarios Registrados vs Retenidos</h5>
         </div>
         <div class="card-body">
-          <canvas id="cohortComparisonChart" style="max-height: 300px;"></canvas>
+          <canvas id="cohortComparisonChart" height="80"></canvas>
         </div>
       </div>
     </div>
@@ -107,7 +107,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
   const cohortData = <%= raw @cohort_data.to_json %>;
+  console.log('Cohort data:', cohortData);
+  
   const cohortLabels = cohortData.map(d => d.month);
   const retentionRates = cohortData.map(d => d.retention_rate);
   const registeredCounts = cohortData.map(d => d.registered);
@@ -125,12 +128,14 @@
         backgroundColor: 'rgba(40, 167, 69, 0.1)',
         tension: 0.4,
         fill: true,
-        borderWidth: 2
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
       }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: {
           display: true,
@@ -175,7 +180,7 @@
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: {
           display: true,
@@ -192,6 +197,7 @@
       }
     }
   });
+});
 </script>
 
 <style>

@@ -31,8 +31,9 @@ class AdminController < ApplicationController
     
     # Datos para los últimos 30 días
     @daily_data = (0..29).map do |days_ago|
-      date = days_ago.days.ago.to_date
-      count = User.where('DATE(last_sign_in_at) = ?', date).count
+      date = days_ago.days.ago.beginning_of_day
+      next_date = date + 1.day
+      count = User.where(last_sign_in_at: date...next_date).count
       {
         date: date.strftime('%d/%m'),
         count: count
@@ -43,7 +44,7 @@ class AdminController < ApplicationController
     @hourly_data = (0..23).map do |hour|
       start_time = Time.current.beginning_of_day + hour.hours
       end_time = start_time + 1.hour
-      count = User.where(last_sign_in_at: start_time..end_time).count
+      count = User.where(last_sign_in_at: start_time...end_time).count
       {
         hour: "#{hour}:00",
         count: count
@@ -63,8 +64,9 @@ class AdminController < ApplicationController
     
     # Matches por día (últimos 30 días)
     @daily_matches = (0..29).map do |days_ago|
-      date = days_ago.days.ago.to_date
-      count = UserMatchRequest.where(is_match: true).where('DATE(match_date) = ?', date).count
+      date = days_ago.days.ago.beginning_of_day
+      next_date = date + 1.day
+      count = UserMatchRequest.where(is_match: true).where(match_date: date...next_date).count
       {
         date: date.strftime('%d/%m'),
         count: count
