@@ -108,7 +108,22 @@
           <i class="fa fa-trash text-danger" title="Usuario eliminado"></i>
         <% end %>
         <%= user.id %></td>
-      <td> <%= link_to user.name, show_user_path(id: user.id) %> </td>
+      <td> 
+        <%= link_to user.name, show_user_path(id: user.id) %>
+        <% if user.current_subscription_name == 'supreme' %>
+          <span class="badge badge-warning" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-weight: bold;">
+            <i class="fa fa-crown"></i> SUPREME
+          </span>
+        <% elsif user.current_subscription_name == 'premium' %>
+          <span class="badge badge-info" style="background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;">
+            <i class="fa fa-star"></i> PREMIUM
+          </span>
+        <% else %>
+          <span class="badge badge-secondary" style="background-color: #6c757d; color: #fff;">
+            <i class="fa fa-user"></i> GRATIS
+          </span>
+        <% end %>
+      </td>
       <td><%= user.email %></td>
       <td><%= user.living_in %></td>
       <td>
