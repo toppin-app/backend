@@ -1,0 +1,162 @@
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="h3 mb-3"><i class="fas fa-users"></i> <%= @title %></h1>
+      <%= link_to admin_metrics_path, class: "btn btn-secondary mb-3" do %>
+        <i class="fas fa-arrow-left"></i> Volver a Métricas
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Resumen rápido -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card border-success text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Hoy</h6>
+          <h2 class="text-success"><%= number_with_delimiter(@users_today) %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card border-info text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Esta Semana</h6>
+          <h2 class="text-info"><%= number_with_delimiter(@users_week) %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card border-primary text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Este Mes</h6>
+          <h2 class="text-primary"><%= number_with_delimiter(@users_month) %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card border-secondary text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Total Registrados</h6>
+          <h2 class="text-secondary"><%= number_with_delimiter(@total_users) %></h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de usuarios activos por día (últimos 30 días) -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-line"></i> Usuarios Activos por Día (Últimos 30 días)</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="dailyUsersChart" style="max-height: 400px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de actividad por hora del día -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-clock"></i> Actividad por Hora (Hoy)</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="hourlyUsersChart" style="max-height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+  // Gráfico de usuarios por día
+  const dailyData = <%= raw @daily_data.to_json %>;
+  const dailyLabels = dailyData.map(d => d.date);
+  const dailyCounts = dailyData.map(d => d.count);
+
+  const dailyChart = new Chart(document.getElementById('dailyUsersChart'), {
+    type: 'line',
+    data: {
+      labels: dailyLabels,
+      datasets: [{
+        label: 'Usuarios Activos',
+        data: dailyCounts,
+        borderColor: '#007bff',
+        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      }
+    }
+  });
+
+  // Gráfico de usuarios por hora
+  const hourlyData = <%= raw @hourly_data.to_json %>;
+  const hourlyLabels = hourlyData.map(d => d.hour);
+  const hourlyCounts = hourlyData.map(d => d.count);
+
+  const hourlyChart = new Chart(document.getElementById('hourlyUsersChart'), {
+    type: 'bar',
+    data: {
+      labels: hourlyLabels,
+      datasets: [{
+        label: 'Conexiones',
+        data: hourlyCounts,
+        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+        borderColor: '#28a745',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .border-success { border-left: 4px solid #28a745 !important; }
+  .border-info { border-left: 4px solid #17a2b8 !important; }
+  .border-primary { border-left: 4px solid #007bff !important; }
+  .border-secondary { border-left: 4px solid #6c757d !important; }
+</style>

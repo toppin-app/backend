@@ -1,0 +1,170 @@
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="h3 mb-3"><i class="fas fa-heart"></i> <%= @title %></h1>
+      <%= link_to admin_metrics_path, class: "btn btn-secondary mb-3" do %>
+        <i class="fas fa-arrow-left"></i> Volver a Métricas
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Resumen rápido -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card border-danger text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Hoy</h6>
+          <h2 class="text-danger"><i class="fas fa-heart"></i> <%= number_with_delimiter(@matches_today) %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card border-warning text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Esta Semana</h6>
+          <h2 class="text-warning"><i class="fas fa-heartbeat"></i> <%= number_with_delimiter(@matches_week) %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card border-primary text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Total</h6>
+          <h2 class="text-primary"><%= number_with_delimiter(@total_matches) %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card border-info text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Promedio Diario</h6>
+          <h2 class="text-info"><%= @average_daily %></h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de matches por día (últimos 30 días) -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-line"></i> Matches Creados por Día (Últimos 30 días)</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="dailyMatchesChart" style="max-height: 400px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico mensual (últimos 6 meses) -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Matches por Mes (Últimos 6 meses)</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="monthlyMatchesChart" style="max-height: 350px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+  // Gráfico diario
+  const dailyData = <%= raw @daily_matches.to_json %>;
+  const dailyLabels = dailyData.map(d => d.date);
+  const dailyCounts = dailyData.map(d => d.count);
+
+  const dailyChart = new Chart(document.getElementById('dailyMatchesChart'), {
+    type: 'line',
+    data: {
+      labels: dailyLabels,
+      datasets: [{
+        label: 'Matches',
+        data: dailyCounts,
+        borderColor: '#dc3545',
+        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+        tension: 0.4,
+        fill: true,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      }
+    }
+  });
+
+  // Gráfico mensual
+  const monthlyData = <%= raw @monthly_matches.to_json %>;
+  const monthlyLabels = monthlyData.map(d => d.month);
+  const monthlyCounts = monthlyData.map(d => d.count);
+
+  const monthlyChart = new Chart(document.getElementById('monthlyMatchesChart'), {
+    type: 'bar',
+    data: {
+      labels: monthlyLabels,
+      datasets: [{
+        label: 'Matches',
+        data: monthlyCounts,
+        backgroundColor: [
+          'rgba(255, 193, 7, 0.7)',
+          'rgba(255, 193, 7, 0.7)',
+          'rgba(255, 193, 7, 0.7)',
+          'rgba(255, 193, 7, 0.7)',
+          'rgba(255, 193, 7, 0.7)',
+          'rgba(220, 53, 69, 0.7)'
+        ],
+        borderColor: '#ffc107',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .border-danger { border-left: 4px solid #dc3545 !important; }
+  .border-warning { border-left: 4px solid #ffc107 !important; }
+  .border-primary { border-left: 4px solid #007bff !important; }
+  .border-info { border-left: 4px solid #17a2b8 !important; }
+</style>

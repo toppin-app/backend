@@ -39,6 +39,9 @@ Rails.application.routes.draw do
   
   # Admin - Métricas
   get '/admin/metrics', to: 'admin#metrics', as: :admin_metrics
+  get '/admin/metrics/active_users', to: 'admin#metrics_active_users', as: :admin_metrics_active_users
+  get '/admin/metrics/matches', to: 'admin#metrics_matches', as: :admin_metrics_matches
+  get '/admin/metrics/retention', to: 'admin#metrics_retention', as: :admin_metrics_retention
   
   # Admin - Panel de pruebas de emails
   namespace :admin do

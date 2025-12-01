@@ -25,6 +25,104 @@ class AdminController < ApplicationController
     @retention_data = calculate_retention_rate
   end
 
+  def metrics_active_users
+    check_admin
+    @title = "Usuarios Activos - Detalle"
+    
+    # Datos para los últimos 30 días
+    @daily_data = (0..29).map do |days_ago|
+      date = days_ago.days.ago.to_date
+      count = User.where('DATE(last_sign_in_at) = ?', date).count
+      {
+        date: date.strftime('%d/%m'),
+        count: count
+      }
+    end.reverse
+    
+    # Datos por hora del día de hoy
+    @hourly_data = (0..23).map do |hour|
+      start_time = Time.current.beginning_of_day + hour.hours
+      end_time = start_time + 1.hour
+      count = User.where(last_sign_in_at: start_time..end_time).count
+      {
+        hour: "#{hour}:00",
+        count: count
+      }
+    end
+    
+    # Total de usuarios registrados
+    @total_users = User.count
+    @users_today = User.where('last_sign_in_at >= ?', 24.hours.ago).count
+    @users_week = User.where('last_sign_in_at >= ?', 7.days.ago).count
+    @users_month = User.where('last_sign_in_at >= ?', 30.days.ago).count
+  end
+
+  def metrics_matches
+    check_admin
+    @title = "Matches - Detalle"
+    
+    # Matches por día (últimos 30 días)
+    @daily_matches = (0..29).map do |days_ago|
+      date = days_ago.days.ago.to_date
+      count = UserMatchRequest.where(is_match: true).where('DATE(match_date) = ?', date).count
+      {
+        date: date.strftime('%d/%m'),
+        count: count
+      }
+    end.reverse
+    
+    # Comparativa mensual (últimos 6 meses)
+    @monthly_matches = (0..5).map do |months_ago|
+      start_date = months_ago.months.ago.beginning_of_month
+      end_date = months_ago.months.ago.end_of_month
+      count = UserMatchRequest.where(is_match: true).where(match_date: start_date..end_date).count
+      {
+        month: start_date.strftime('%b %Y'),
+        count: count
+      }
+    end.reverse
+    
+    # Estadísticas adicionales
+    @total_matches = UserMatchRequest.where(is_match: true).count
+    @matches_today = UserMatchRequest.where(is_match: true).where('match_date >= ?', 24.hours.ago).count
+    @matches_week = UserMatchRequest.where(is_match: true).where('match_date >= ?', 7.days.ago).count
+    @average_daily = @total_matches > 0 ? (@total_matches.to_f / User.maximum(:id)).round(2) : 0
+  end
+
+  def metrics_retention
+    check_admin
+    @title = "Retención de Usuarios - Detalle"
+    
+    # Retención por cohortes (últimos 6 meses)
+    @cohort_data = (1..6).map do |months_ago|
+      # Usuarios registrados en ese mes
+      start_date = months_ago.months.ago.beginning_of_month
+      end_date = months_ago.months.ago.end_of_month
+      
+      registered = User.where(created_at: start_date..end_date).count
+      
+      # Cuántos siguen activos
+      still_active = User.where(created_at: start_date..end_date)
+                         .where('last_sign_in_at >= ?', 7.days.ago).count
+      
+      retention = registered > 0 ? ((still_active.to_f / registered) * 100).round(2) : 0
+      
+      {
+        month: start_date.strftime('%b %Y'),
+        registered: registered,
+        retained: still_active,
+        retention_rate: retention
+      }
+    end.reverse
+    
+    # Retención general
+    @retention_data = calculate_retention_rate
+    
+    # Usuarios inactivos (no se han conectado en más de 30 días)
+    @inactive_users = User.where('last_sign_in_at < ? OR last_sign_in_at IS NULL', 30.days.ago).count
+    @total_users = User.count
+  end
+
 
   def test_conversation
     twilio = TwilioController.new

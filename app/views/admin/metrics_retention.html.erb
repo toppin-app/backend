@@ -1,0 +1,207 @@
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="h3 mb-3"><i class="fas fa-chart-pie"></i> <%= @title %></h1>
+      <%= link_to admin_metrics_path, class: "btn btn-secondary mb-3" do %>
+        <i class="fas fa-arrow-left"></i> Volver a Métricas
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Resumen rápido -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card border-primary text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Tasa de Retención Actual</h6>
+          <h1 class="<%= @retention_data[:retention_rate] >= 40 ? 'text-success' : (@retention_data[:retention_rate] >= 20 ? 'text-warning' : 'text-danger') %>">
+            <%= @retention_data[:retention_rate] %>%
+          </h1>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card border-success text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Total Usuarios</h6>
+          <h2 class="text-success"><%= number_with_delimiter(@total_users) %></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card border-warning text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Usuarios Inactivos (+30 días)</h6>
+          <h2 class="text-warning"><%= number_with_delimiter(@inactive_users) %></h2>
+          <small class="text-muted">
+            <%= (@total_users > 0 ? ((@inactive_users.to_f / @total_users) * 100).round(1) : 0) %>% del total
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Análisis de cohortes -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-users-cog"></i> Análisis de Cohortes por Mes</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Mes de Registro</th>
+                  <th class="text-center">Usuarios Registrados</th>
+                  <th class="text-center">Aún Activos</th>
+                  <th class="text-center">Tasa de Retención</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @cohort_data.each do |cohort| %>
+                  <tr>
+                    <td><strong><%= cohort[:month] %></strong></td>
+                    <td class="text-center"><%= number_with_delimiter(cohort[:registered]) %></td>
+                    <td class="text-center"><%= number_with_delimiter(cohort[:retained]) %></td>
+                    <td class="text-center">
+                      <span class="badge <%= cohort[:retention_rate] >= 40 ? 'badge-success' : (cohort[:retention_rate] >= 20 ? 'badge-warning' : 'badge-danger') %> p-2">
+                        <%= cohort[:retention_rate] %>%
+                      </span>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráficos de retención -->
+  <div class="row mb-4">
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-line"></i> Tendencia de Retención</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="retentionTrendChart" style="max-height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Usuarios Registrados vs Retenidos</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="cohortComparisonChart" style="max-height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+  const cohortData = <%= raw @cohort_data.to_json %>;
+  const cohortLabels = cohortData.map(d => d.month);
+  const retentionRates = cohortData.map(d => d.retention_rate);
+  const registeredCounts = cohortData.map(d => d.registered);
+  const retainedCounts = cohortData.map(d => d.retained);
+
+  // Gráfico de tendencia de retención
+  const retentionChart = new Chart(document.getElementById('retentionTrendChart'), {
+    type: 'line',
+    data: {
+      labels: cohortLabels,
+      datasets: [{
+        label: 'Tasa de Retención (%)',
+        data: retentionRates,
+        borderColor: '#28a745',
+        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+        tension: 0.4,
+        fill: true,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: function(value) {
+              return value + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Gráfico de comparación
+  const comparisonChart = new Chart(document.getElementById('cohortComparisonChart'), {
+    type: 'bar',
+    data: {
+      labels: cohortLabels,
+      datasets: [
+        {
+          label: 'Registrados',
+          data: registeredCounts,
+          backgroundColor: 'rgba(0, 123, 255, 0.7)',
+          borderColor: '#007bff',
+          borderWidth: 1
+        },
+        {
+          label: 'Retenidos',
+          data: retainedCounts,
+          backgroundColor: 'rgba(40, 167, 69, 0.7)',
+          borderColor: '#28a745',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .border-primary { border-left: 4px solid #007bff !important; }
+  .border-success { border-left: 4px solid #28a745 !important; }
+  .border-warning { border-left: 4px solid #ffc107 !important; }
+  .badge {
+    font-size: 14px;
+  }
+</style>

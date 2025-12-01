@@ -12,37 +12,46 @@
       <h4 class="mb-3"><i class="fas fa-users"></i> Usuarios Activos</h4>
     </div>
     <div class="col-md-4 mb-3">
-      <div class="card border-success">
-        <div class="card-body text-center">
-          <h6 class="card-subtitle mb-2 text-muted">Hoy (últimas 24h)</h6>
-          <h2 class="card-title text-success mb-0">
-            <i class="fas fa-user-clock"></i> <%= number_with_delimiter(@active_users_today) %>
-          </h2>
-          <p class="card-text small mt-2">usuarios conectados</p>
+      <%= link_to admin_metrics_active_users_path, class: "text-decoration-none" do %>
+        <div class="card border-success clickable-card">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Hoy (últimas 24h)</h6>
+            <h2 class="card-title text-success mb-0">
+              <i class="fas fa-user-clock"></i> <%= number_with_delimiter(@active_users_today) %>
+            </h2>
+            <p class="card-text small mt-2">usuarios conectados</p>
+            <small class="text-primary"><i class="fas fa-chart-bar"></i> Ver gráficos</small>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
     <div class="col-md-4 mb-3">
-      <div class="card border-info">
-        <div class="card-body text-center">
-          <h6 class="card-subtitle mb-2 text-muted">Esta Semana (últimos 7 días)</h6>
-          <h2 class="card-title text-info mb-0">
-            <i class="fas fa-users"></i> <%= number_with_delimiter(@active_users_week) %>
-          </h2>
-          <p class="card-text small mt-2">usuarios activos</p>
+      <%= link_to admin_metrics_active_users_path, class: "text-decoration-none" do %>
+        <div class="card border-info clickable-card">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Esta Semana (últimos 7 días)</h6>
+            <h2 class="card-title text-info mb-0">
+              <i class="fas fa-users"></i> <%= number_with_delimiter(@active_users_week) %>
+            </h2>
+            <p class="card-text small mt-2">usuarios activos</p>
+            <small class="text-primary"><i class="fas fa-chart-bar"></i> Ver gráficos</small>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
     <div class="col-md-4 mb-3">
-      <div class="card border-primary">
-        <div class="card-body text-center">
-          <h6 class="card-subtitle mb-2 text-muted">Este Mes (últimos 30 días)</h6>
-          <h2 class="card-title text-primary mb-0">
-            <i class="fas fa-users"></i> <%= number_with_delimiter(@active_users_month) %>
-          </h2>
-          <p class="card-text small mt-2">usuarios activos</p>
+      <%= link_to admin_metrics_active_users_path, class: "text-decoration-none" do %>
+        <div class="card border-primary clickable-card">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Este Mes (últimos 30 días)</h6>
+            <h2 class="card-title text-primary mb-0">
+              <i class="fas fa-users"></i> <%= number_with_delimiter(@active_users_month) %>
+            </h2>
+            <p class="card-text small mt-2">usuarios activos</p>
+            <small class="text-primary"><i class="fas fa-chart-bar"></i> Ver gráficos</small>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
 
@@ -52,48 +61,57 @@
       <h4 class="mb-3"><i class="fas fa-heart"></i> Matches Creados</h4>
     </div>
     <div class="col-md-4 mb-3">
-      <div class="card border-danger">
-        <div class="card-body text-center">
-          <h6 class="card-subtitle mb-2 text-muted">Hoy (últimas 24h)</h6>
-          <h2 class="card-title text-danger mb-0">
-            <i class="fas fa-heart"></i> <%= number_with_delimiter(@matches_today) %>
-          </h2>
-          <p class="card-text small mt-2">matches nuevos</p>
+      <%= link_to admin_metrics_matches_path, class: "text-decoration-none" do %>
+        <div class="card border-danger clickable-card">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Hoy (últimas 24h)</h6>
+            <h2 class="card-title text-danger mb-0">
+              <i class="fas fa-heart"></i> <%= number_with_delimiter(@matches_today) %>
+            </h2>
+            <p class="card-text small mt-2">matches nuevos</p>
+            <small class="text-primary"><i class="fas fa-chart-line"></i> Ver gráficos</small>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
     <div class="col-md-4 mb-3">
-      <div class="card border-warning">
-        <div class="card-body text-center">
-          <h6 class="card-subtitle mb-2 text-muted">Esta Semana (últimos 7 días)</h6>
-          <h2 class="card-title text-warning mb-0">
-            <i class="fas fa-heartbeat"></i> <%= number_with_delimiter(@matches_week) %>
-          </h2>
-          <p class="card-text small mt-2">matches totales</p>
+      <%= link_to admin_metrics_matches_path, class: "text-decoration-none" do %>
+        <div class="card border-warning clickable-card">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Esta Semana (últimos 7 días)</h6>
+            <h2 class="card-title text-warning mb-0">
+              <i class="fas fa-heartbeat"></i> <%= number_with_delimiter(@matches_week) %>
+            </h2>
+            <p class="card-text small mt-2">matches totales</p>
+            <small class="text-primary"><i class="fas fa-chart-line"></i> Ver gráficos</small>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
     <div class="col-md-4 mb-3">
-      <div class="card border-secondary">
-        <div class="card-body text-center">
-          <h6 class="card-subtitle mb-2 text-muted">Comparativa Mensual</h6>
-          <h2 class="card-title mb-0">
-            <span class="text-success"><%= number_with_delimiter(@matches_this_month) %></span>
-            <small class="text-muted">vs</small>
-            <span class="text-secondary"><%= number_with_delimiter(@matches_last_month) %></span>
-          </h2>
-          <p class="card-text small mt-2">
-            <% growth = @matches_last_month > 0 ? (((@matches_this_month - @matches_last_month).to_f / @matches_last_month) * 100).round(1) : 0 %>
-            <% if growth > 0 %>
-              <i class="fas fa-arrow-up text-success"></i> +<%= growth %>% respecto al mes anterior
-            <% elsif growth < 0 %>
-              <i class="fas fa-arrow-down text-danger"></i> <%= growth %>% respecto al mes anterior
-            <% else %>
-              <i class="fas fa-minus text-secondary"></i> Sin cambios
-            <% end %>
-          </p>
+      <%= link_to admin_metrics_matches_path, class: "text-decoration-none" do %>
+        <div class="card border-secondary clickable-card">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Comparativa Mensual</h6>
+            <h2 class="card-title mb-0">
+              <span class="text-success"><%= number_with_delimiter(@matches_this_month) %></span>
+              <small class="text-muted">vs</small>
+              <span class="text-secondary"><%= number_with_delimiter(@matches_last_month) %></span>
+            </h2>
+            <p class="card-text small mt-2">
+              <% growth = @matches_last_month > 0 ? (((@matches_this_month - @matches_last_month).to_f / @matches_last_month) * 100).round(1) : 0 %>
+              <% if growth > 0 %>
+                <i class="fas fa-arrow-up text-success"></i> +<%= growth %>% respecto al mes anterior
+              <% elsif growth < 0 %>
+                <i class="fas fa-arrow-down text-danger"></i> <%= growth %>% respecto al mes anterior
+              <% else %>
+                <i class="fas fa-minus text-secondary"></i> Sin cambios
+              <% end %>
+            </p>
+            <small class="text-primary"><i class="fas fa-chart-line"></i> Ver gráficos</small>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
 
@@ -103,40 +121,48 @@
       <h4 class="mb-3"><i class="fas fa-chart-pie"></i> Tasa de Retención de Usuarios</h4>
     </div>
     <div class="col-md-6 mb-3">
-      <div class="card">
-        <div class="card-body">
-          <h6 class="card-subtitle mb-3 text-muted">Retención a 30 días</h6>
-          <div class="row">
-            <div class="col-6 text-center border-right">
-              <p class="text-muted mb-1">Registrados hace 30-37 días</p>
-              <h3 class="text-primary"><%= number_with_delimiter(@retention_data[:users_registered_30_days_ago]) %></h3>
+      <%= link_to admin_metrics_retention_path, class: "text-decoration-none" do %>
+        <div class="card clickable-card">
+          <div class="card-body">
+            <h6 class="card-subtitle mb-3 text-muted">Retención a 30 días</h6>
+            <div class="row">
+              <div class="col-6 text-center border-right">
+                <p class="text-muted mb-1">Registrados hace 30-37 días</p>
+                <h3 class="text-primary"><%= number_with_delimiter(@retention_data[:users_registered_30_days_ago]) %></h3>
+              </div>
+              <div class="col-6 text-center">
+                <p class="text-muted mb-1">Aún Activos</p>
+                <h3 class="text-success"><%= number_with_delimiter(@retention_data[:still_active]) %></h3>
+              </div>
             </div>
-            <div class="col-6 text-center">
-              <p class="text-muted mb-1">Aún Activos</p>
-              <h3 class="text-success"><%= number_with_delimiter(@retention_data[:still_active]) %></h3>
+            <div class="text-center mt-3">
+              <small class="text-primary"><i class="fas fa-chart-area"></i> Ver análisis detallado</small>
             </div>
           </div>
         </div>
-      </div>
+      <% end %>
     </div>
     <div class="col-md-6 mb-3">
-      <div class="card <%= @retention_data[:retention_rate] >= 40 ? 'border-success' : (@retention_data[:retention_rate] >= 20 ? 'border-warning' : 'border-danger') %>">
-        <div class="card-body text-center">
-          <h6 class="card-subtitle mb-2 text-muted">Tasa de Retención</h6>
-          <h1 class="card-title mb-0 <%= @retention_data[:retention_rate] >= 40 ? 'text-success' : (@retention_data[:retention_rate] >= 20 ? 'text-warning' : 'text-danger') %>">
-            <%= @retention_data[:retention_rate] %>%
-          </h1>
-          <p class="card-text small mt-3">
-            <% if @retention_data[:retention_rate] >= 40 %>
-              <i class="fas fa-check-circle text-success"></i> Excelente retención
-            <% elsif @retention_data[:retention_rate] >= 20 %>
-              <i class="fas fa-exclamation-circle text-warning"></i> Retención moderada
-            <% else %>
-              <i class="fas fa-times-circle text-danger"></i> Mejorar estrategias de retención
-            <% end %>
-          </p>
+      <%= link_to admin_metrics_retention_path, class: "text-decoration-none" do %>
+        <div class="card <%= @retention_data[:retention_rate] >= 40 ? 'border-success' : (@retention_data[:retention_rate] >= 20 ? 'border-warning' : 'border-danger') %> clickable-card">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Tasa de Retención</h6>
+            <h1 class="card-title mb-0 <%= @retention_data[:retention_rate] >= 40 ? 'text-success' : (@retention_data[:retention_rate] >= 20 ? 'text-warning' : 'text-danger') %>">
+              <%= @retention_data[:retention_rate] %>%
+            </h1>
+            <p class="card-text small mt-3">
+              <% if @retention_data[:retention_rate] >= 40 %>
+                <i class="fas fa-check-circle text-success"></i> Excelente retención
+              <% elsif @retention_data[:retention_rate] >= 20 %>
+                <i class="fas fa-exclamation-circle text-warning"></i> Retención moderada
+              <% else %>
+                <i class="fas fa-times-circle text-danger"></i> Mejorar estrategias de retención
+              <% end %>
+            </p>
+            <small class="text-primary"><i class="fas fa-chart-area"></i> Ver cohortes</small>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
 
@@ -162,6 +188,15 @@
   .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  .clickable-card {
+    cursor: pointer;
+  }
+  
+  .clickable-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
   }
   
   .card-title {
