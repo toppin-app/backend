@@ -8,76 +8,51 @@ class UserMatchRequestsController < ApplicationController
   end
   # Solicitud de match / dislike
   def send_match
-      # Si estás oculto no puedes dar likes ni superlikes.
-      target_user = User.find(params[:target_user])
+      # Optimización: Cargar target_user y umr en una sola query
+      target_user_id = params[:target_user].to_i
+      target_user = User.find(target_user_id)
       
       # Buscar si existe un match_request previo EN CUALQUIER DIRECCIÓN
-      umr = UserMatchRequest.match_between(current_user.id, params[:target_user])
+      umr = UserMatchRequest.match_between(current_user.id, target_user_id)
       
-      logger.info "UMR INICIAL"
-      logger.info umr.inspect
-      logger.info "current_user.id: #{current_user.id}, target_user: #{params[:target_user]}"
-      
-      # Si es superlike, vamos a ver si puede usarlo antes de nada.
-      if (params[:is_superlike] === true or params[:is_sugar_sweet] === true) and current_user.superlike_available == 0 
-            logger.info "Error 1"
+      # Optimización: Validar superlike antes de continuar
+      if (params[:is_superlike] === true || params[:is_sugar_sweet] === true) && current_user.superlike_available == 0 
             render json: { status: 422, error: "Error usando supersweet"}, status: 422
             return
       end
       
       # CASO 1: Ellos me dieron like LIMPIO (sin que yo tenga registro previo) y YO les doy like = MATCH
-      if umr and umr.target_user == current_user.id and umr.user_id == params[:target_user].to_i and !umr.is_match and !umr.is_rejected and (params[:is_sugar_sweet] === true or params[:is_like] === true or params[:is_superlike] === true)
+      if umr && umr.target_user == current_user.id && umr.user_id == target_user_id && !umr.is_match && !umr.is_rejected && (params[:is_sugar_sweet] === true || params[:is_like] === true || params[:is_superlike] === true)
          # Verificar que YO NO tenga un registro previo donde YO soy el user_id
-         my_previous_record = UserMatchRequest.find_by(user_id: current_user.id, target_user: params[:target_user])
+         my_previous_record = UserMatchRequest.find_by(user_id: current_user.id, target_user: target_user_id)
          
-         if my_previous_record
-           # YO ya tenía un registro (di like o dislike antes), NO entrar en este bloque
-           # Dejar que caiga al else para procesar mi registro
-           logger.info "CASO 1 SKIP: Tengo registro previo, procesando en else"
-         else
-           # NO tengo registro previo, es la primera vez que interactúo
-           logger.info "CASO 1: Ellos me dieron like, yo respondo con like = MATCH (sin registro previo)"
-           logger.info umr.inspect
-         umr.is_match = true
-         umr.user_ranking = current_user.ranking
-         umr.target_user_ranking = target_user.ranking
-         umr.match_date = DateTime.now
-         # Si es un superlike o sugar, lo descontamos.
-         if params[:is_superlike] === true or params[:is_sugar_sweet] === true
-            current_user.use_superlike
-            umr.is_sugar_sweet = params[:is_sugar_sweet]
-            umr.is_superlike = params[:is_superlike]
-         end
-         umr.save # Guardamos el match.
-         
-         # Crear conversación de Twilio en background
-         CreateTwilioConversationJob.perform_later(
-           umr.id, 
-           current_user.id, 
-           params[:target_user],
-           send_message: umr.is_sugar_sweet,
-           message: params[:message]
-         )
-         
-         current_user.recalculate_ranking
-         # Mandamos la push al usuario del match.
-         match_user = User.find(umr.user_id)    
-           devices = Device.where(user_id: match_user.id)
-           notification = NotificationLocalizer.for(user: match_user, type: :match)
-           devices.each do |device|
-             if device.token.present?
-               FirebasePushService.new.send_notification(
-                 token: device.token,
-                 title: notification[:title],
-                 body: notification[:body],
-                 data: { action: "match", user_id: umr.user_id.to_s },
-                 sound: "match.mp3",
-                 channel_id: "sms-channel",
-                 category: "match"
-               )
-             end
+         unless my_previous_record
+           # NO tengo registro previo, es la primera vez que interactúo - ¡ES MATCH!
+           umr.is_match = true
+           umr.user_ranking = current_user.ranking
+           umr.target_user_ranking = target_user.ranking
+           umr.match_date = DateTime.now
+           
+           # Si es un superlike o sugar, lo descontamos
+           if params[:is_superlike] === true || params[:is_sugar_sweet] === true
+              current_user.use_superlike
+              umr.is_sugar_sweet = params[:is_sugar_sweet]
+              umr.is_superlike = params[:is_superlike]
            end
-         end # if my_previous_record
+           umr.save!
+           
+           # 🚀 OPTIMIZACIÓN: Mover todo el trabajo pesado a background jobs
+           CreateTwilioConversationJob.perform_later(
+             umr.id, 
+             current_user.id, 
+             target_user_id,
+             send_message: umr.is_sugar_sweet,
+             message: params[:message]
+           )
+           
+           RecalculateRankingJob.perform_later(current_user.id)
+           SendMatchNotificationJob.perform_later(umr.id)
+         end
       
         
       ## CASO 2: Todos los demás casos (tengo registro previo, no hay registro, etc)
@@ -97,13 +72,9 @@ class UserMatchRequestsController < ApplicationController
           logger.info "UMR FOUND:"
           logger.info umr.inspect
           logger.info "current_user.id: #{current_user.id}"
-          logger.info "umr.target_user: #{umr&.target_user}"
-          logger.info "umr.user_id: #{umr&.user_id}"
-          
           # Si existe un registro pero YO soy el target_user (ellos me dieron swipe primero)
           # entonces voy a ACTUALIZAR ese registro con mi respuesta
           if umr && umr.target_user == current_user.id
-            logger.info "update umr (responding to their swipe)"
             # Actualizar el registro existente con mi respuesta
             umr.update!(
               is_like: params[:is_like], 
@@ -122,26 +93,17 @@ class UserMatchRequestsController < ApplicationController
           elsif umr && umr.user_id == current_user.id
             # Permitir cambiar de opinión (de dislike a like o viceversa)
             
-            logger.info "update umr (updating my previous swipe)"
-            
             # Verificar si estoy cambiando de dislike a like
             changing_to_like = !umr.is_like && params[:is_like] == true
             # Verificar si estoy cambiando de like a dislike (deshaciendo match)
             changing_to_dislike = umr.is_like && params[:is_like] == false
-            
-            logger.info "DETECCIÓN DE CAMBIOS:"
-            logger.info "  umr.is_like: #{umr.is_like}"
-            logger.info "  params[:is_like]: #{params[:is_like].inspect} (clase: #{params[:is_like].class})"
-            logger.info "  changing_to_like: #{changing_to_like}"
-            logger.info "  changing_to_dislike: #{changing_to_dislike}"
-            logger.info "  umr.is_match: #{umr.is_match}"
             
             # Si estoy cambiando a like, verificar si ellos ya me dieron like para hacer match
             if changing_to_like
               # Buscar si la otra persona ya me dio like
               # IMPORTANTE: Puede estar en CUALQUIER DIRECCIÓN del registro
               their_like = UserMatchRequest.find_by(
-                user_id: params[:target_user],
+                user_id: target_user_id,
                 target_user: current_user.id,
                 is_like: true
               )
@@ -152,8 +114,6 @@ class UserMatchRequestsController < ApplicationController
               
               if their_like || was_previous_match
                 # ¡ES UN MATCH! Ambos se dieron like
-                logger.info "¡MATCH! Cambié de dislike a like y ellos ya me habían dado like"
-                logger.info "their_like existe: #{their_like.present?}, was_previous_match: #{was_previous_match}"
                 umr.update!(
                   is_like: true,
                   is_rejected: false,
@@ -169,29 +129,14 @@ class UserMatchRequestsController < ApplicationController
                 CreateTwilioConversationJob.perform_later(
                   umr.id,
                   current_user.id,
-                  params[:target_user],
+                  target_user_id,
                   send_message: false,
                   message: nil
                 )
                 
-                current_user.recalculate_ranking
-                
-                # Notificar push al otro usuario del match
-                devices = Device.where(user_id: target_user.id)
-                notification = NotificationLocalizer.for(user: target_user, type: :match)
-                devices.each do |device|
-                  if device.token.present?
-                    FirebasePushService.new.send_notification(
-                      token: device.token,
-                      title: notification[:title],
-                      body: notification[:body],
-                      data: { action: "match", user_id: current_user.id.to_s },
-                      sound: "match.mp3",
-                      channel_id: "sms-channel",
-                      category: "match"
-                    )
-                  end
-                end
+                # Recalcular ranking y notificar en background
+                RecalculateRankingJob.perform_later(current_user.id)
+                SendMatchNotificationJob.perform_later(umr.id)
               else
                 # No hay match, solo actualizar el swipe
                 umr.update!(
@@ -306,71 +251,41 @@ class UserMatchRequestsController < ApplicationController
               notify_my_boost_action(current_user, target_user, umr) if current_user.high_visibility
             end
           end
-          logger.info "umr is now"
-          logger.info umr.inspect
 
           # Si está dando un like y no es premium ni mujer, se lo descontamos.
-          if umr.is_like and !current_user.is_premium and !umr.is_superlike and !umr.user.female?
+          if umr.is_like && !current_user.is_premium && !umr.is_superlike && !umr.user.female?
             current_user.update(likes_left: current_user.likes_left-1, last_like_given: DateTime.now)
           end
           
-          if umr.is_like and !umr.is_superlike
-            target_user = User.find(umr.target_user)
-            devices = Device.where(user_id: target_user.id)
-            notification = NotificationLocalizer.for(user: target_user, type: :like)
-            devices.each do |device|
-              if device.token.present?
-                FirebasePushService.new.send_notification(
-                  token: device.token,
-                  title: notification[:title],
-                  body: notification[:body],
-                  data: { action: "match", user_id: umr.user_id.to_s },
-                  #sound: "match.mp3",
-                  channel_id: "sms-channel"
-                )
-              end
-            end
+          # Notificar like regular (no superlike) en background
+          if umr.is_like && !umr.is_superlike
+            SendLikeNotificationJob.perform_later(umr.id)
           end
-          # Si es un superlike, lo usamos y notificamos.
+          
+          # Si es un superlike, lo usamos y notificamos
           if umr.is_superlike
-             current_user.use_superlike
-              target_user = User.find(umr.target_user)
-              devices = Device.where(user_id: target_user.id)
-              notification = NotificationLocalizer.for(user: umr.user, type: :super_like)
-              if target_user.push_likes?
-                 #Device.sendIndividualPush(umr.target_user,"Nuevo super sweet"," Alguien te ha dado un super sweet en Toppin :-)", "superlike", nil, "push_likes")
-              devices.each do |device|
-              if device.token.present?
-                FirebasePushService.new.send_notification(
-                  token: device.token,
-                  title: notification[:title],
-                  body: notification[:body],
-                  data: { action: "like", user_id: umr.user_id.to_s }
-                )
-              end
-            end
-              end
+            current_user.use_superlike
+            SendSuperlikeNotificationJob.perform_later(umr.id) if target_user.push_likes?
           end
-          # Si es un superlike, lo usamos y notificamos.
+          
+          # Si es un sugar sweet
           if umr.is_sugar_sweet
-            logger.info "IS SUGAR SWEET"
-             current_user.use_superlike
-             umr.update(match_date: DateTime.now)
+            current_user.use_superlike
+            umr.update(match_date: DateTime.now)
              
-             # Crear conversación y enviar mensaje en background
-             CreateTwilioConversationJob.perform_later(
-               umr.id,
-               current_user.id,
-               params[:target_user],
-               send_message: true,
-               message: params[:message]
-             )
+            # Crear conversación y enviar mensaje en background
+            CreateTwilioConversationJob.perform_later(
+              umr.id,
+              current_user.id,
+              target_user_id,
+              send_message: true,
+              message: params[:message]
+            )
              
-             logger.info "IS SUGAR SWEET - Job encolado"
-             # Mandamos la push al usuario del match.
-             if target_user.push_match?
-                Device.sendIndividualPush(umr.target_user,"¡Wow! ¡Te han dado un Sugar Sweet!", params[:message], "sugar_sweet", nil, "push_likes")
-             end
+            # Mandamos la push al usuario del match
+            if target_user.push_match?
+              Device.sendIndividualPush(target_user_id, "¡Wow! ¡Te han dado un Sugar Sweet!", params[:message], "sugar_sweet", nil, "push_likes")
+            end
           end # sugar
       end
       if umr.is_match # Si es un match, renderizamos la vista show, porque en jbuilder tenemos los datos de los usuarios.
