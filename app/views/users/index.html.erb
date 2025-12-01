@@ -33,8 +33,33 @@
         <%= f.date_field :created_at_lteq, class: 'form-control', placeholder: "Fin", style: 'height: 40px' %>
       </div>
     </div>
+  </div>
 
+  <hr>
 
+  <!-- Filtros de ubicación -->
+  <div class="row" style="margin-bottom: 15px;">
+    <div class="col-md-6">
+      <small><b>Filtrar por ubicación:</b></small>
+      <div style="display: flex; gap: 10px; margin-top: 5px;">
+        <div style="flex: 1;">
+          <%= f.select :location_country_eq, 
+              options_for_select([['Todos los países', '']] + @countries.map { |c| [c, c] }, params.dig(:q, :location_country_eq)), 
+              {}, 
+              { class: 'form-control', style: 'height: 40px;', onchange: 'this.form.submit();' } %>
+        </div>
+        <div style="flex: 1;">
+          <%= f.select :location_city_eq, 
+              options_for_select([['Todas las ciudades', '']] + @cities.map { |c| [c, c] }, params.dig(:q, :location_city_eq)), 
+              {}, 
+              { class: 'form-control', style: 'height: 40px;', onchange: 'this.form.submit();' } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <!-- Espacio reservado para más filtros si es necesario -->
+    </div>
   </div>
 
   <hr>
@@ -125,7 +150,19 @@
         <% end %>
       </td>
       <td><%= user.email %></td>
-      <td><%= user.living_in %></td>
+      <td>
+        <% if user.location_country.present? || user.location_city.present? %>
+          <i class="fa fa-map-marker-alt text-primary"></i>
+          <strong><%= user.location_country %></strong>
+          <% if user.location_city.present? %>
+            <br><small class="text-muted"><%= user.location_city %></small>
+          <% end %>
+        <% elsif user.living_in.present? %>
+          <%= user.living_in %>
+        <% else %>
+          <span class="text-muted"><i>Sin ubicación</i></span>
+        <% end %>
+      </td>
       <td>
         <%= user.gender_t %><br>
         <%= user.user_age %> años</td>

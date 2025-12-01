@@ -34,6 +34,10 @@ class UsersController < ApplicationController
           @q = base_users.ransack(params[:q])
           @users = @q.result.order("created_at DESC").paginate(:page => params[:page], :per_page => 15)
           @include_deleted = params[:include_deleted] == '1'
+          
+          # Obtener lista única de países y ciudades para los filtros
+          @countries = User.active_accounts.where.not(location_country: [nil, '']).distinct.pluck(:location_country).sort
+          @cities = User.active_accounts.where.not(location_city: [nil, '']).distinct.pluck(:location_city).sort
   end
 
   # GET /users/1
