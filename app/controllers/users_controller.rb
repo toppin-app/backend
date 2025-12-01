@@ -55,7 +55,7 @@ class UsersController < ApplicationController
     @matches = @user.matches.order(created_at: :desc).paginate(page: params[:matches_page], per_page: 10)
     
     # Paginación para likes recibidos
-    @likes = @user.incoming_likes.order(id: :desc).paginate(page: params[:likes_page], per_page: 10)
+    @likes = @user.incoming_likes.order(id: :desc).paginate(page: params[:likes_page], per_page: 5)
     
     # Paginación para likes dados
     @sent_likes = @user.sent_likes.order(id: :desc).paginate(page: params[:sent_likes_page], per_page: 5)
