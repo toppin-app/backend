@@ -67,17 +67,18 @@ class AdminController < ApplicationController
   private
   
   def calculate_retention_rate
-    # Usuarios que se registraron hace 30 días
-    users_30_days_ago = User.where('created_at <= ? AND created_at >= ?', 30.days.ago, 31.days.ago).count
+    # Usuarios que se registraron hace entre 30 y 37 días (una semana de margen)
+    # Esto nos da una muestra más amplia y estable
+    users_registered = User.where('created_at >= ? AND created_at <= ?', 37.days.ago, 30.days.ago).count
     
     # De esos usuarios, cuántos siguen activos (se conectaron en los últimos 7 días)
-    retained_users = User.where('created_at <= ? AND created_at >= ?', 30.days.ago, 31.days.ago)
+    retained_users = User.where('created_at >= ? AND created_at <= ?', 37.days.ago, 30.days.ago)
                          .where('last_sign_in_at >= ?', 7.days.ago).count
     
-    retention_rate = users_30_days_ago > 0 ? ((retained_users.to_f / users_30_days_ago) * 100).round(2) : 0
+    retention_rate = users_registered > 0 ? ((retained_users.to_f / users_registered) * 100).round(2) : 0
     
     {
-      users_registered_30_days_ago: users_30_days_ago,
+      users_registered_30_days_ago: users_registered,
       still_active: retained_users,
       retention_rate: retention_rate
     }
