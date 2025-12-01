@@ -37,6 +37,9 @@ Rails.application.routes.draw do
 
   get '/test' => 'admin#index'
   
+  # Admin - Métricas
+  get '/admin/metrics', to: 'admin#metrics', as: :admin_metrics
+  
   # Admin - Panel de pruebas de emails
   namespace :admin do
     get 'mailer_test', to: 'mailer_test#index'

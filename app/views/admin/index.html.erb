@@ -1,2 +1,63 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12 text-center">
+      <h1 class="mb-4"><i class="fas fa-tachometer-alt"></i> Panel de Administración</h1>
+    </div>
+  </div>
+  
+  <div class="row justify-content-center">
+    <div class="col-md-4 mb-3">
+      <%= link_to admin_metrics_path, class: "text-decoration-none" do %>
+        <div class="card border-primary text-center h-100">
+          <div class="card-body">
+            <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+            <h4 class="card-title">Ver Métricas</h4>
+            <p class="card-text text-muted">
+              Usuarios activos, matches y retención
+            </p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+      <%= link_to users_path, class: "text-decoration-none" do %>
+        <div class="card border-success text-center h-100">
+          <div class="card-body">
+            <i class="fas fa-users fa-3x text-success mb-3"></i>
+            <h4 class="card-title">Gestionar Usuarios</h4>
+            <p class="card-text text-muted">
+              Ver y administrar todos los usuarios
+            </p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+      <%= link_to complaints_path, class: "text-decoration-none" do %>
+        <div class="card border-warning text-center h-100">
+          <div class="card-body">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h4 class="card-title">Reportes</h4>
+            <p class="card-text text-muted">
+              Gestionar denuncias y complaints
+            </p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
 
-<p class="alert alert-info">Las estadísticas no están disponibles en este momento </p>
+<style>
+  .card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+</style>
