@@ -12,7 +12,7 @@ class TwilioController < ApplicationController
 		set_account
 
 
-		message = @client.conversations
+		message = @client.conversations.v1
         .conversations(params[:ChannelSid]).fetch
 
 
@@ -118,7 +118,7 @@ class TwilioController < ApplicationController
 		if user
 
 		   begin
-		      user_twilio = @client.conversations.users.create(identity: id)
+		      user_twilio = @client.conversations.v1.users.create(identity: id)
 		      user.update(twilio_sid: user_twilio.sid)
 		   rescue
 		    	logger.info "ERROR creating user twilio"
@@ -141,13 +141,13 @@ class TwilioController < ApplicationController
 
 		 begin # La conversacion existe.
 
-		    conversation = @client.conversations
+		    conversation = @client.conversations.v1
                        .conversations(unique_name)
                        .fetch
 
 		 rescue # Conversacion no encontrada, creamos. 
 
-		  conversation = @client.conversations
+		  conversation = @client.conversations.v1
 		   .conversations
 		   .create(
 		      unique_name: unique_name
@@ -158,7 +158,7 @@ class TwilioController < ApplicationController
 
 		 begin
 		# # Agregamos los dos usuarios a la conversación
-		 @client.conversations
+		 @client.conversations.v1
                       .conversations(conversation.sid)
                       .participants
                       .create(
@@ -170,7 +170,7 @@ class TwilioController < ApplicationController
 
 
        begin               
-		 @client.conversations
+		 @client.conversations.v1
                       .conversations(conversation.sid)
                       .participants
                       .create(
@@ -188,7 +188,7 @@ class TwilioController < ApplicationController
 
 	def add_participant_to_conversation(conversation_sid, user_id)
       set_account
-		@client.conversations
+		@client.conversations.v1
         .conversations(conversation_sid)
         .participants
         .create(
@@ -203,7 +203,7 @@ class TwilioController < ApplicationController
 	def send_message_to_conversation(sid, user_id, message)
 		 set_account
 
-		 message = @client.conversations
+		 message = @client.conversations.v1
                   .conversations(sid)
                   .messages
                   .create(author: user_id, body: message)
@@ -218,7 +218,7 @@ class TwilioController < ApplicationController
 	# Elimina una conversación
 	def destroy_conversation(sid)
 		set_account
-		@client.conversations.conversations(sid)
+		@client.conversations.v1.conversations(sid)
                      .delete
 	end
 
@@ -227,8 +227,8 @@ class TwilioController < ApplicationController
 	def destroy_conversations
 		set_account
 		
-		@client.conversations.conversations.list(limit: 200).each do |conv|
-			@client.conversations.conversations(conv.sid)
+		@client.conversations.v1.conversations.list(limit: 200).each do |conv|
+			@client.conversations.v1.conversations(conv.sid)
                      .delete
 		end
 
@@ -276,7 +276,7 @@ class TwilioController < ApplicationController
 
       @client = Twilio::REST::Client.new(@account_sid, auth_token)
 
-		configuration = @client.conversations
+		configuration = @client.conversations.v1
                        .services(ENV['TWILIO_SERVICE_SID'])
                        .configuration
                        .update(reachability_enabled: true)
