@@ -1,0 +1,35 @@
+<table class="table">
+  <thead>
+    <th></th>
+    <th>Usuario</th>
+    <th>Fecha</th>
+    <th>Estado</th>
+  </thead>
+
+  <% @sent_dislikes.each do |match_request| %>
+  <tr>
+    <td>
+      <% if match_request.target && match_request.target.profile_picture_thumb.present? %>
+        <%= image_tag match_request.target.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' %>
+      <% end %>
+    </td>
+    <td>
+      <%= link_to match_request.target.name, show_user_path(id: match_request.target.id) if match_request.target %>
+    </td>
+    <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
+    <td>
+      <% if UserMatchRequest.exists?(user_id: match_request.target_user, target_user: @user.id, is_rejected: true) %>
+        <span class="badge badge-secondary">Mutuo</span>
+      <% elsif UserMatchRequest.exists?(user_id: match_request.target_user, target_user: @user.id, is_like: true) %>
+        <span class="badge badge-warning">Oportunidad perdida</span>
+      <% else %>
+        <span class="badge badge-danger">Rechazado</span>
+      <% end %>
+    </td>
+  </tr>
+  <% end %>
+</table>
+
+<div class="text-center">
+  <%= will_paginate @sent_dislikes, param_name: 'sent_dislikes_page', previous_label: '← Anterior', next_label: 'Siguiente →' %>
+</div>

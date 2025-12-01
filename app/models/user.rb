@@ -544,6 +544,11 @@ end
      return UserMatchRequest.where(user_id: self.id, is_like: true)
   end
 
+  # Dislikes enviados por el usuario (rechazos).
+  def sent_dislikes
+     return UserMatchRequest.where(user_id: self.id, is_rejected: true, is_like: false)
+  end
+
 
   # Nos devuelve los matches de un usuario
   def matches

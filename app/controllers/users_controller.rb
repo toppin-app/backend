@@ -50,9 +50,18 @@ class UsersController < ApplicationController
     end
 
     @title = "Mostrando usuario"
-    @matches = @user.matches
-    @likes = @user.incoming_likes.order(id: :desc)
+    
+    # Paginación para matches
+    @matches = @user.matches.order(created_at: :desc).paginate(page: params[:matches_page], per_page: 10)
+    
+    # Paginación para likes recibidos
+    @likes = @user.incoming_likes.order(id: :desc).paginate(page: params[:likes_page], per_page: 10)
+    
+    # Paginación para likes dados
     @sent_likes = @user.sent_likes.order(id: :desc).paginate(page: params[:sent_likes_page], per_page: 5)
+    
+    # Paginación para dislikes dados
+    @sent_dislikes = @user.sent_dislikes.order(id: :desc).paginate(page: params[:sent_dislikes_page], per_page: 5)
     
     # Calcular total gastado en Stripe (succeeded purchases)
     @completed_purchases = @user.purchases_stripes.where(status: 'succeeded')
@@ -77,7 +86,18 @@ class UsersController < ApplicationController
 
     respond_to do |format|
       format.html # renderiza la vista normal
-      format.js { render partial: 'sent_likes', layout: false } # Para paginación AJAX
+      format.js do 
+        # Renderizar el partial correcto según el parámetro
+        if params[:sent_likes_page]
+          render partial: 'sent_likes', layout: false
+        elsif params[:sent_dislikes_page]
+          render partial: 'sent_dislikes', layout: false
+        elsif params[:matches_page]
+          render partial: 'matches', layout: false
+        elsif params[:likes_page]
+          render partial: 'likes', layout: false
+        end
+      end
       format.json do
         render json: @user.as_json(
           methods: [:user_age, :user_media_url, :favorite_languages],

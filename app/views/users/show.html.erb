@@ -183,11 +183,11 @@
 
 <div class="card">
   <div class="card-header bg-dark" style="display: flex; justify-content: space-between; align-items: center;">
-    <span><b>Matches (<%= @matches.count %>)</b></span>
-    <% if @matches.any? %>
+    <span><b>Matches (<%= @user.matches.count %>)</b></span>
+    <% if @user.matches.any? %>
       <%= link_to clear_all_matches_path(user_id: @user.id), 
           method: :post,
-          data: { confirm: "¿Estás seguro de que quieres eliminar TODOS los matches (#{@matches.count}) de este usuario? Esta acción no se puede deshacer y se eliminarán todas las conversaciones de Twilio." },
+          data: { confirm: "¿Estás seguro de que quieres eliminar TODOS los matches (#{@user.matches.count}) de este usuario? Esta acción no se puede deshacer y se eliminarán todas las conversaciones de Twilio." },
           class: 'btn btn-danger btn-sm',
           style: 'margin-left: auto;' do %>
         <i class="fas fa-trash-alt"></i> Limpiar todos
@@ -195,72 +195,19 @@
     <% end %>
   </div>
   <div class="card-body">
-
-    <table class="table">
-
-      <thead>
-        <th></th>
-        <th>Usuario</th>
-        <th>Es superlike</th>
-        <th>Ranking</th>
-        <th>Fecha match</th>
-        <th> </th>
-      </thead>
-
-
-     <% @matches.each do |match_request| %>
-      <tr>
-        <td>
-          <% if match_request.target && match_request.target.id != @user.id && match_request.target.profile_picture_thumb.present? %>
-          <%= image_tag match_request.target.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' %>
-            <% end %>
-
-          <% if match_request.user && match_request.user.id != @user.id && match_request.user.profile_picture_thumb.present? %>
-          <%= image_tag match_request.user.profile_picture_thumb, class: 'img-thumbnail', style: 'height: 70px;' %>
-            <% end %>
-          </td>
-        <td>
-          <%= link_to match_request.target.name, show_user_path(id: match_request.target.id) if match_request.target and match_request.target.id != @user.id %>
-          <%= link_to match_request.user.name, show_user_path(id: match_request.user.id) if match_request.user and match_request.user.id != @user.id %>
-        </td>
-        <td><%= true_false(match_request.is_superlike) %></td>
-        <td><%= match_request.target_user_ranking %></td>
-        <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
-        <td>
-          <button class="btn btn-sm btn-primary chat disabled"
-            id="<%= match_request.twilio_conversation_sid %>"
-            data-sid="<%= match_request.twilio_conversation_sid %>">
-            <i class="fas fa-comments"></i>
-            Ver Chat
-          </button>
-          
-          <% 
-            # Determinar el target_user_id correcto
-            other_user_id = match_request.target.id != @user.id ? match_request.target.id : match_request.user.id
-          %>
-          
-          <%= link_to unmatch_path(user_id: @user.id, target_user: other_user_id), 
-              method: :post,
-              data: { confirm: '¿Estás seguro de que quieres deshacer este match? Se eliminará la conversación de Twilio.' },
-              class: 'btn btn-sm btn-danger' do %>
-            <i class="fas fa-times"></i> Deshacer
-          <% end %>
-        </td>
-      </tr>
-     <% end %>
-
-
-    </table>
+    <div id="matches-container">
+      <%= render 'matches' %>
+    </div>
 
     <hr>
 
     <div style="background: #eee; padding: 5px; display: flex; justify-content: space-between; align-items: center;">
-      <span><b><i class="fa fa-heart"></i> Likes (<%= @likes.count %>)</b></span>
-      <% if @likes.any? %>
+      <span><b><i class="fa fa-heart"></i> Likes recibidos (<%= @user.incoming_likes.count %>)</b></span>
+      <% if @user.incoming_likes.any? %>
         <div>
           <%= link_to match_all_likes_path(user_id: @user.id), 
               method: :post,
-              data: { confirm: "¿Estás seguro de que quieres hacer match con TODOS los likes (#{@likes.count})?" },
+              data: { confirm: "¿Estás seguro de que quieres hacer match con TODOS los likes (#{@user.incoming_likes.count})?" },
               class: 'btn btn-success btn-sm',
               style: 'margin-right: 5px;' do %>
             <i class="fas fa-check-double"></i> Match con todos
@@ -268,7 +215,7 @@
           
           <%= link_to reject_all_likes_path(user_id: @user.id), 
               method: :post,
-              data: { confirm: "¿Estás seguro de que quieres rechazar TODOS los likes (#{@likes.count})?" },
+              data: { confirm: "¿Estás seguro de que quieres rechazar TODOS los likes (#{@user.incoming_likes.count})?" },
               class: 'btn btn-danger btn-sm' do %>
             <i class="fas fa-times-circle"></i> Rechazar todos
           <% end %>
@@ -276,42 +223,9 @@
       <% end %>
     </div>
 
-
-    <table class="table">
-
-      <thead>
-        <th></th>
-        <th>Usuario</th>
-        <th>Es superlike</th>
-        <th>Fecha</th>
-        <th> </th>
-      </thead>
-
-
-     <% @likes.each do |match_request| %>
-      <tr>
-        <td></td>
-        <td>
-          <%= match_request.target.name if match_request.target.id != @user.id %>
-          <%= match_request.user.name if match_request.user.id != @user.id %>
-        </td>
-        <td><%= true_false(match_request.is_superlike) %></td>
-        <td><%= match_request.target_user_ranking %></td>
-        <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
-        <td>
-          <%= link_to 'Hacer match', create_match_path(id: match_request.id), class: 'btn btn-success btn-sm text-white' %>
-          
-          <%= link_to reject_incoming_like_path(user_id: @user.id, like_id: match_request.id), 
-              method: :post,
-              data: { confirm: '¿Estás seguro de que quieres rechazar este like?' },
-              class: 'btn btn-danger btn-sm',
-              style: 'margin-left: 5px;' do %>
-            <i class="fas fa-times"></i>
-          <% end %>
-        </td>
-     <% end %>
-
-    </table>
+    <div id="likes-container">
+      <%= render 'likes' %>
+    </div>
 
     <hr>
 
@@ -319,6 +233,13 @@
 
     <div id="sent-likes-container">
       <%= render 'sent_likes' %>
+    </div>
+
+    <hr>
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-ban text-danger"></i> Dislikes dados (<%= @sent_dislikes.total_entries %>)</b></p>
+
+    <div id="sent-dislikes-container">
+      <%= render 'sent_dislikes' %>
     </div>
 
     <hr>
@@ -439,68 +360,85 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Paginación AJAX para "Likes dados"
+  // Paginación AJAX para todas las secciones
   document.addEventListener('click', function(e) {
-    const paginationLink = e.target.closest('#sent-likes-container .pagination a');
-    if (paginationLink) {
-      e.preventDefault();
-      
-      const url = paginationLink.href;
-      
-      // Mostrar loading
-      const container = document.getElementById('sent-likes-container');
-      const originalOpacity = container.style.opacity;
-      container.style.opacity = '0.5';
-      container.style.pointerEvents = 'none';
-      
-      fetch(url, {
-        headers: {
-          'Accept': 'text/html'
-        }
-      })
-      .then(response => response.text())
-      .then(html => {
-        // Crear un elemento temporal para parsear el HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        // Extraer solo el contenido del container de sent-likes
-        const newContent = doc.querySelector('#sent-likes-container');
-        if (newContent) {
-          container.innerHTML = newContent.innerHTML;
-        } else {
-          // Si no encuentra el container, busca el partial directamente
-          const table = doc.querySelector('table');
-          const pagination = doc.querySelector('.pagination');
-          if (table) {
-            container.innerHTML = '';
-            container.appendChild(table.cloneNode(true));
-            if (pagination) {
-              const paginationDiv = document.createElement('div');
-              paginationDiv.className = 'text-center';
-              paginationDiv.appendChild(pagination.cloneNode(true));
-              container.appendChild(paginationDiv);
-            }
-          }
-        }
-        
-        container.style.opacity = '1';
-        container.style.pointerEvents = 'auto';
-        
-        // Scroll suave a la sección
-        const header = container.previousElementSibling;
-        if (header) {
-          header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        container.style.opacity = originalOpacity || '1';
-        container.style.pointerEvents = 'auto';
-        alert('Error al cargar la página');
-      });
+    // Definir las secciones con paginación
+    const sections = [
+      { selector: '#matches-container .pagination a', containerId: 'matches-container' },
+      { selector: '#likes-container .pagination a', containerId: 'likes-container' },
+      { selector: '#sent-likes-container .pagination a', containerId: 'sent-likes-container' },
+      { selector: '#sent-dislikes-container .pagination a', containerId: 'sent-dislikes-container' }
+    ];
+
+    // Buscar si se hizo click en algún link de paginación
+    for (const section of sections) {
+      const paginationLink = e.target.closest(section.selector);
+      if (paginationLink) {
+        e.preventDefault();
+        handlePagination(paginationLink.href, section.containerId);
+        break;
+      }
     }
   });
+
+  // Función genérica para manejar paginación AJAX
+  function handlePagination(url, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Mostrar loading
+    const originalOpacity = container.style.opacity;
+    container.style.opacity = '0.5';
+    container.style.pointerEvents = 'none';
+    
+    fetch(url, {
+      headers: {
+        'Accept': 'text/html',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      // Crear un elemento temporal para parsear el HTML
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Extraer solo el contenido del container
+      const newContent = doc.querySelector(`#${containerId}`);
+      if (newContent) {
+        container.innerHTML = newContent.innerHTML;
+      } else {
+        // Si no encuentra el container, busca el partial directamente
+        const table = doc.querySelector('table');
+        const pagination = doc.querySelector('.pagination');
+        if (table) {
+          container.innerHTML = '';
+          container.appendChild(table.cloneNode(true));
+          if (pagination) {
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'text-center';
+            paginationDiv.appendChild(pagination.cloneNode(true));
+            container.appendChild(paginationDiv);
+          }
+        }
+      }
+      
+      container.style.opacity = '1';
+      container.style.pointerEvents = 'auto';
+        
+      // Scroll suave a la sección
+      const header = container.previousElementSibling;
+      if (header) {
+        header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      container.style.opacity = '1';
+      container.style.pointerEvents = 'auto';
+      alert('Error al cargar la página');
+    });
+  }
 });
 </script>
 

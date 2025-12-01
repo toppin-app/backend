@@ -1,0 +1,37 @@
+<table class="table">
+  <thead>
+    <th></th>
+    <th>Usuario</th>
+    <th>Es superlike</th>
+    <th>Fecha</th>
+    <th> </th>
+  </thead>
+
+  <% @likes.each do |match_request| %>
+  <tr>
+    <td></td>
+    <td>
+      <%= match_request.target.name if match_request.target.id != @user.id %>
+      <%= match_request.user.name if match_request.user.id != @user.id %>
+    </td>
+    <td><%= true_false(match_request.is_superlike) %></td>
+    <td><%= match_request.target_user_ranking %></td>
+    <td><%= match_request.created_at.strftime("%d-%m-%Y a las %H:%M") %></td>
+    <td>
+      <%= link_to 'Hacer match', create_match_path(id: match_request.id), class: 'btn btn-success btn-sm text-white' %>
+      
+      <%= link_to reject_incoming_like_path(user_id: @user.id, like_id: match_request.id), 
+          method: :post,
+          data: { confirm: '¿Estás seguro de que quieres rechazar este like?' },
+          class: 'btn btn-danger btn-sm',
+          style: 'margin-left: 5px;' do %>
+        <i class="fas fa-times"></i>
+      <% end %>
+    </td>
+  </tr>
+  <% end %>
+</table>
+
+<div class="text-center">
+  <%= will_paginate @likes, param_name: 'likes_page', previous_label: '← Anterior', next_label: 'Siguiente →' %>
+</div>
