@@ -198,6 +198,35 @@ class UsersController < ApplicationController
           end
         end
 
+        # Procesar user_main_interests (4 intereses principales)
+        main_interests_data = []
+        4.times do |i|
+          interest_id = params["main_interest_#{i}_id"]
+          percentage = params["main_interest_#{i}_percentage"]
+          
+          if interest_id.present? && percentage.present?
+            main_interests_data << { interest_id: interest_id.to_i, percentage: percentage.to_i }
+          end
+        end
+
+        if main_interests_data.size == 4
+          total_percentage = main_interests_data.sum { |mi| mi[:percentage] }
+          
+          if total_percentage == 100
+            main_interests_data.each do |mi_data|
+              UserMainInterest.create!(
+                user_id: @user.id,
+                interest_id: mi_data[:interest_id],
+                percentage: mi_data[:percentage]
+              )
+            end
+          else
+            flash[:alert] = "Los porcentajes de los intereses principales deben sumar 100% (total: #{total_percentage}%)"
+          end
+        elsif main_interests_data.size > 0
+          flash[:alert] = "Debes seleccionar exactamente 4 intereses principales (seleccionados: #{main_interests_data.size})"
+        end
+
         # Procesar preferencias de filtro de distancia
         if params[:distance_range]
           user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
@@ -321,6 +350,12 @@ def update
         user_filter_pref.update(gender_preferences: value)
       end
 
+      # Procesar filter_gender desde el formulario del panel
+      if params[:filter_gender]
+        user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
+        user_filter_pref.update(gender_preferences: params[:filter_gender])
+      end
+
       if params[:user_interests]
         params[:user_interests].each do |iv|
           next if iv.blank?
@@ -328,6 +363,7 @@ def update
         end
       end
 
+      # Procesar user_main_interests desde la app móvil (formato JSON)
       if params[:user_main_interests]
         incoming = params[:user_main_interests]
         if !incoming.is_a?(Array) || incoming.size != 4
@@ -341,6 +377,39 @@ def update
           umi_record = UserMainInterest.find_or_initialize_by(user_id: @user.id, interest_id: umi[:interest_id])
           umi_record.percentage = umi[:percentage]
           umi_record.save
+        end
+      else
+        # Procesar user_main_interests desde el formulario del panel
+        main_interests_data = []
+        4.times do |i|
+          interest_id = params["main_interest_#{i}_id"]
+          percentage = params["main_interest_#{i}_percentage"]
+          
+          if interest_id.present? && percentage.present?
+            main_interests_data << { interest_id: interest_id.to_i, percentage: percentage.to_i }
+          end
+        end
+
+        if main_interests_data.size == 4
+          total_percentage = main_interests_data.sum { |mi| mi[:percentage] }
+          
+          if total_percentage == 100
+            # Eliminar los intereses principales actuales
+            @user.user_main_interests.destroy_all
+            
+            # Crear los nuevos intereses principales
+            main_interests_data.each do |mi_data|
+              UserMainInterest.create!(
+                user_id: @user.id,
+                interest_id: mi_data[:interest_id],
+                percentage: mi_data[:percentage]
+              )
+            end
+          else
+            flash[:alert] = "Los porcentajes de los intereses principales deben sumar 100% (total: #{total_percentage}%)"
+          end
+        elsif main_interests_data.size > 0
+          flash[:alert] = "Debes seleccionar exactamente 4 intereses principales (seleccionados: #{main_interests_data.size})"
         end
       end
 
