@@ -44,6 +44,104 @@
     <%= f.text_field :living_in, autofocus: true, value: @user.living_in, class: 'form-control' %>
   </div>
 
+  <hr>
+
+  <h5>📍 Geolocalización <small class="text-muted">(Para que aparezca en swipes)</small></h5>
+  
+  <div class="card card-body" style="margin-bottom: 20px;">
+    <p><small><i>Establece la ubicación GPS del usuario. Esto es necesario para que aparezca en los swipes de otros usuarios.</i></small></p>
+    
+    <div class="alert alert-info" style="padding: 10px; margin-bottom: 15px;">
+      <strong>Ubicaciones rápidas:</strong> 
+      <a href="#" onclick="setValenciaLocation(); return false;" class="badge badge-primary">Valencia</a>
+      <a href="#" onclick="setMadridLocation(); return false;" class="badge badge-primary">Madrid</a>
+      <a href="#" onclick="setBarcelonaLocation(); return false;" class="badge badge-primary">Barcelona</a>
+      <a href="#" onclick="setSevillaLocation(); return false;" class="badge badge-primary">Sevilla</a>
+      <a href="#" onclick="setBilbaoLocation(); return false;" class="badge badge-primary">Bilbao</a>
+      <a href="#" onclick="setMalagaLocation(); return false;" class="badge badge-primary">Málaga</a>
+    </div>
+    
+    <div class="row">
+      <div class="col-md-6">
+        <div class="field">
+          <label><strong>Latitud</strong></label>
+          <%= f.text_field :lat, value: @user.lat, class: 'form-control', placeholder: 'Ej: 39.4699', id: 'user_lat' %>
+          <small class="form-text text-muted">Puedes obtenerla en <a href="https://www.google.com/maps" target="_blank">Google Maps</a> haciendo clic derecho</small>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="field">
+          <label><strong>Longitud</strong></label>
+          <%= f.text_field :lng, value: @user.lng, class: 'form-control', placeholder: 'Ej: -0.3763', id: 'user_lng' %>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 15px;">
+      <div class="col-md-6">
+        <div class="field">
+          <label><strong>Ciudad</strong></label>
+          <%= f.text_field :location_city, value: @user.location_city, class: 'form-control', placeholder: 'Ej: Valencia', id: 'user_location_city' %>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="field">
+          <label><strong>País</strong></label>
+          <%= f.text_field :location_country, value: @user.location_country, class: 'form-control', placeholder: 'Ej: España', id: 'user_location_country' %>
+        </div>
+      </div>
+    </div>
+
+    <% if @user.lat.present? && @user.lng.present? %>
+      <div style="margin-top: 15px;">
+        <strong>Vista previa del mapa:</strong>
+        <iframe
+          width="100%" 
+          height="250" 
+          style="border:0; border-radius: 5px; margin-top: 10px;"
+          loading="lazy"
+          allowfullscreen
+          src="https://www.google.com/maps?q=<%= @user.lat %>,<%= @user.lng %>&hl=es&z=13&output=embed">
+        </iframe>
+      </div>
+    <% end %>
+
+    <script>
+      function setLocation(lat, lng, city, country) {
+        document.getElementById('user_lat').value = lat;
+        document.getElementById('user_lng').value = lng;
+        document.getElementById('user_location_city').value = city;
+        document.getElementById('user_location_country').value = country;
+      }
+      
+      function setValenciaLocation() {
+        setLocation('39.4699', '-0.3763', 'Valencia', 'España');
+      }
+      
+      function setMadridLocation() {
+        setLocation('40.4168', '-3.7038', 'Madrid', 'España');
+      }
+      
+      function setBarcelonaLocation() {
+        setLocation('41.3851', '2.1734', 'Barcelona', 'España');
+      }
+      
+      function setSevillaLocation() {
+        setLocation('37.3891', '-5.9845', 'Sevilla', 'España');
+      }
+      
+      function setBilbaoLocation() {
+        setLocation('43.2630', '-2.9350', 'Bilbao', 'España');
+      }
+      
+      function setMalagaLocation() {
+        setLocation('36.7213', '-4.4214', 'Málaga', 'España');
+      }
+    </script>
+  </div>
+
+  <hr>
+
 
   <div class="field">
      <%= f.label "Descripción" %>
