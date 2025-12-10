@@ -3,45 +3,6 @@ class User < ApplicationRecord
   geocoded_by :locality, latitude: :lat, longitude: :lng
 
   attr_accessor :unlocked
-  
-  # Mapa de códigos de idioma a nombres legibles
-  LANGUAGE_NAMES = {
-    'ES' => 'Español',
-    'EN' => 'Inglés',
-    'ZH' => 'Chino Mandarín',
-    'HI' => 'Hindi',
-    'AR' => 'Árabe',
-    'PT' => 'Portugués',
-    'BN' => 'Bengalí',
-    'RU' => 'Ruso',
-    'JA' => 'Japonés',
-    'PA' => 'Panyabí',
-    'DE' => 'Alemán',
-    'FR' => 'Francés',
-    'IT' => 'Italiano',
-    'TR' => 'Turco',
-    'KO' => 'Coreano',
-    'VI' => 'Vietnamita',
-    'TA' => 'Tamil',
-    'UR' => 'Urdu',
-    'PL' => 'Polaco',
-    'UK' => 'Ucraniano',
-    'RO' => 'Rumano',
-    'NL' => 'Holandés',
-    'EL' => 'Griego',
-    'CS' => 'Checo',
-    'SV' => 'Sueco',
-    'HU' => 'Húngaro',
-    'TH' => 'Tailandés',
-    'HE' => 'Hebreo',
-    'ID' => 'Indonesio',
-    'MS' => 'Malayo',
-    'FI' => 'Finlandés',
-    'NO' => 'Noruego',
-    'DA' => 'Danés',
-    'CA' => 'Catalán',
-    'EU' => 'Euskera'
-  }.freeze
 
   # relations
   has_many :user_match_requests, dependent: :destroy
@@ -321,9 +282,9 @@ def favorite_languages
   raw = self[:favorite_languages]
   return [] if raw.blank?
 
-  # Si ya es un array, devuélvelo limpio con los códigos en mayúscula
+  # Si ya es un array, devuélvelo limpio
   if raw.is_a?(Array)
-    return raw.map(&:to_s).map(&:strip).map(&:upcase).reject(&:blank?)
+    return raw.map(&:to_s).map(&:strip).reject(&:blank?)
   end
 
   # Si es un string, dividir por comas
@@ -332,23 +293,18 @@ def favorite_languages
     begin
       parsed = JSON.parse(raw)
       if parsed.is_a?(Array)
-        return parsed.map(&:to_s).map(&:strip).map(&:upcase).reject(&:blank?)
+        return parsed.map(&:to_s).map(&:strip).reject(&:blank?)
       end
     rescue JSON::ParserError
       # No es JSON válido, continuar con split
     end
     
     # Dividir por comas como fallback
-    return raw.split(',').map(&:strip).map(&:upcase).reject(&:blank?)
+    return raw.split(',').map(&:strip).reject(&:blank?)
   end
 
   # Default: array vacío
   []
-end
-
-# Método para obtener nombres legibles de idiomas (para panel admin)
-def favorite_languages_names
-  favorite_languages.map { |code| LANGUAGE_NAMES[code] || code }
 end
 
   def location_name
