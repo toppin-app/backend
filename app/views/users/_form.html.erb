@@ -551,7 +551,71 @@
       </div>
    </div>
 
+    <hr>
 
+    <h5>🌍 Idiomas Favoritos</h5>
+    
+    <% 
+      # Obtener los idiomas favoritos actuales del usuario
+      current_favorite_languages = @edit && @user.favorite_languages.present? ? @user.favorite_languages : []
+    %>
+    
+    <% if @edit && current_favorite_languages.any? %>
+      <div style="padding: 10px; margin-bottom: 10px; background-color: #f8f9fa; border-radius: 5px;">
+        <strong>Idiomas favoritos actuales:</strong><br>
+        <% current_favorite_languages.each do |lang| %>
+          <span class="badge badge-info" style="margin: 3px; font-size: 14px; padding: 8px;">
+            <%= case lang.upcase
+                when 'ES' then '🇪🇸 Español'
+                when 'EN' then '🇬🇧 English'
+                when 'IT' then '🇮🇹 Italiano'
+                when 'FR' then '🇫🇷 Français'
+                when 'DE' then '🇩🇪 Deutsch'
+                else lang
+                end %>
+          </span>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="card card-body" style="margin-bottom: 20px;">
+      <p><small><i>Selecciona los idiomas que el usuario habla o le gustaría practicar. Puedes seleccionar múltiples idiomas.</i></small></p>
+      
+      <div class="form-check" style="margin-bottom: 10px;">
+        <%= check_box_tag 'user[favorite_languages][]', 'ES', current_favorite_languages.include?('ES'), 
+            id: 'favorite_language_es', class: 'form-check-input' %>
+        <%= label_tag 'favorite_language_es', '🇪🇸 Español', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
+      </div>
+      
+      <div class="form-check" style="margin-bottom: 10px;">
+        <%= check_box_tag 'user[favorite_languages][]', 'EN', current_favorite_languages.include?('EN'), 
+            id: 'favorite_language_en', class: 'form-check-input' %>
+        <%= label_tag 'favorite_language_en', '🇬🇧 English', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
+      </div>
+      
+      <div class="form-check" style="margin-bottom: 10px;">
+        <%= check_box_tag 'user[favorite_languages][]', 'IT', current_favorite_languages.include?('IT'), 
+            id: 'favorite_language_it', class: 'form-check-input' %>
+        <%= label_tag 'favorite_language_it', '🇮🇹 Italiano', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
+      </div>
+      
+      <div class="form-check" style="margin-bottom: 10px;">
+        <%= check_box_tag 'user[favorite_languages][]', 'FR', current_favorite_languages.include?('FR'), 
+            id: 'favorite_language_fr', class: 'form-check-input' %>
+        <%= label_tag 'favorite_language_fr', '🇫🇷 Français', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
+      </div>
+      
+      <div class="form-check" style="margin-bottom: 10px;">
+        <%= check_box_tag 'user[favorite_languages][]', 'DE', current_favorite_languages.include?('DE'), 
+            id: 'favorite_language_de', class: 'form-check-input' %>
+        <%= label_tag 'favorite_language_de', '🇩🇪 Deutsch', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
+      </div>
+      
+      <!-- Hidden field para permitir deseleccionar todos los idiomas -->
+      <%= hidden_field_tag 'user[favorite_languages][]', '' %>
+    </div>
+
+    <hr>
 
   <div class="field">
     <%= f.label "Contraseña" %>   <% if @edit %> <i>(Para mantener la contraseña actual mantener en blanco este campo)</i><br /> <% end %>
