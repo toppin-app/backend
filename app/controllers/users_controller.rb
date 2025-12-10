@@ -210,18 +210,12 @@ class UsersController < ApplicationController
         end
 
         if main_interests_data.size == 4
-          total_percentage = main_interests_data.sum { |mi| mi[:percentage] }
-          
-          if total_percentage == 100
-            main_interests_data.each do |mi_data|
-              UserMainInterest.create!(
-                user_id: @user.id,
-                interest_id: mi_data[:interest_id],
-                percentage: mi_data[:percentage]
-              )
-            end
-          else
-            flash[:alert] = "Los porcentajes de los intereses principales deben sumar 100% (total: #{total_percentage}%)"
+          main_interests_data.each do |mi_data|
+            UserMainInterest.create!(
+              user_id: @user.id,
+              interest_id: mi_data[:interest_id],
+              percentage: mi_data[:percentage]
+            )
           end
         elsif main_interests_data.size > 0
           flash[:alert] = "Debes seleccionar exactamente 4 intereses principales (seleccionados: #{main_interests_data.size})"
@@ -391,22 +385,16 @@ def update
         end
 
         if main_interests_data.size == 4
-          total_percentage = main_interests_data.sum { |mi| mi[:percentage] }
+          # Eliminar los intereses principales actuales
+          @user.user_main_interests.destroy_all
           
-          if total_percentage == 100
-            # Eliminar los intereses principales actuales
-            @user.user_main_interests.destroy_all
-            
-            # Crear los nuevos intereses principales
-            main_interests_data.each do |mi_data|
-              UserMainInterest.create!(
-                user_id: @user.id,
-                interest_id: mi_data[:interest_id],
-                percentage: mi_data[:percentage]
-              )
-            end
-          else
-            flash[:alert] = "Los porcentajes de los intereses principales deben sumar 100% (total: #{total_percentage}%)"
+          # Crear los nuevos intereses principales
+          main_interests_data.each do |mi_data|
+            UserMainInterest.create!(
+              user_id: @user.id,
+              interest_id: mi_data[:interest_id],
+              percentage: mi_data[:percentage]
+            )
           end
         elsif main_interests_data.size > 0
           flash[:alert] = "Debes seleccionar exactamente 4 intereses principales (seleccionados: #{main_interests_data.size})"

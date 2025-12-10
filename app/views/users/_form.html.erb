@@ -132,7 +132,7 @@
     <% end %>
 
     <div class="card card-body" style="margin-bottom: 20px;">
-      <p><small><i>Selecciona exactamente 4 intereses principales con sus porcentajes (deben sumar 100%)</i></small></p>
+      <p><small><i>Selecciona exactamente 4 intereses principales. Cada interés tiene un porcentaje de afinidad (0-100%)</i></small></p>
       
       <div id="main-interests-container">
         <% 
@@ -141,52 +141,26 @@
             current_main = existing_main[i]
         %>
           <div class="row" style="margin-bottom: 10px;">
-            <div class="col-md-8">
+            <div class="col-md-1" style="padding-top: 8px;">
+              <strong>#<%= i + 1 %></strong>
+            </div>
+            <div class="col-md-7">
               <%= select_tag "main_interest_#{i}_id", 
                   options_from_collection_for_select(Interest.all.order(:name), :id, :name, current_main&.interest_id), 
                   { include_blank: "Selecciona un interés", class: 'form-control' } %>
             </div>
             <div class="col-md-4">
-              <%= number_field_tag "main_interest_#{i}_percentage", current_main&.percentage, 
-                  { placeholder: "% (ej: 25)", class: 'form-control', min: 0, max: 100 } %>
+              <div class="input-group">
+                <%= number_field_tag "main_interest_#{i}_percentage", current_main&.percentage, 
+                    { placeholder: "0-100", class: 'form-control', min: 0, max: 100 } %>
+                <div class="input-group-append">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
             </div>
           </div>
         <% end %>
       </div>
-      
-      <script>
-        // Calcular suma de porcentajes en tiempo real
-        document.addEventListener('DOMContentLoaded', function() {
-          const percentageInputs = document.querySelectorAll('input[name^="main_interest_"][name$="_percentage"]');
-          const container = document.getElementById('main-interests-container');
-          
-          if (!document.getElementById('percentage-total')) {
-            const totalDiv = document.createElement('div');
-            totalDiv.id = 'percentage-total';
-            totalDiv.className = 'alert alert-info mt-2';
-            totalDiv.style.fontSize = '14px';
-            container.appendChild(totalDiv);
-          }
-          
-          function updateTotal() {
-            let total = 0;
-            percentageInputs.forEach(input => {
-              const value = parseInt(input.value) || 0;
-              total += value;
-            });
-            
-            const totalDiv = document.getElementById('percentage-total');
-            totalDiv.innerHTML = `<strong>Total:</strong> ${total}% ${total === 100 ? '✓' : '(debe ser 100%)'}`;
-            totalDiv.className = total === 100 ? 'alert alert-success mt-2' : 'alert alert-warning mt-2';
-          }
-          
-          percentageInputs.forEach(input => {
-            input.addEventListener('input', updateTotal);
-          });
-          
-          updateTotal();
-        });
-      </script>
     </div>
 
     <hr>
