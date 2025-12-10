@@ -3,6 +3,45 @@ class User < ApplicationRecord
   geocoded_by :locality, latitude: :lat, longitude: :lng
 
   attr_accessor :unlocked
+  
+  # Mapa de códigos de idioma a nombres legibles
+  LANGUAGE_NAMES = {
+    'ES' => 'Español',
+    'EN' => 'Inglés',
+    'ZH' => 'Chino Mandarín',
+    'HI' => 'Hindi',
+    'AR' => 'Árabe',
+    'PT' => 'Portugués',
+    'BN' => 'Bengalí',
+    'RU' => 'Ruso',
+    'JA' => 'Japonés',
+    'PA' => 'Panyabí',
+    'DE' => 'Alemán',
+    'FR' => 'Francés',
+    'IT' => 'Italiano',
+    'TR' => 'Turco',
+    'KO' => 'Coreano',
+    'VI' => 'Vietnamita',
+    'TA' => 'Tamil',
+    'UR' => 'Urdu',
+    'PL' => 'Polaco',
+    'UK' => 'Ucraniano',
+    'RO' => 'Rumano',
+    'NL' => 'Holandés',
+    'EL' => 'Griego',
+    'CS' => 'Checo',
+    'SV' => 'Sueco',
+    'HU' => 'Húngaro',
+    'TH' => 'Tailandés',
+    'HE' => 'Hebreo',
+    'ID' => 'Indonesio',
+    'MS' => 'Malayo',
+    'FI' => 'Finlandés',
+    'NO' => 'Noruego',
+    'DA' => 'Danés',
+    'CA' => 'Catalán',
+    'EU' => 'Euskera'
+  }.freeze
 
   # relations
   has_many :user_match_requests, dependent: :destroy
@@ -309,44 +348,6 @@ end
 
 # Método para obtener nombres legibles de idiomas (para panel admin)
 def favorite_languages_names
-  LANGUAGE_NAMES ||= {
-    'ES' => 'Español',
-    'EN' => 'Inglés',
-    'ZH' => 'Chino Mandarín',
-    'HI' => 'Hindi',
-    'AR' => 'Árabe',
-    'PT' => 'Portugués',
-    'BN' => 'Bengalí',
-    'RU' => 'Ruso',
-    'JA' => 'Japonés',
-    'PA' => 'Panyabí',
-    'DE' => 'Alemán',
-    'FR' => 'Francés',
-    'IT' => 'Italiano',
-    'TR' => 'Turco',
-    'KO' => 'Coreano',
-    'VI' => 'Vietnamita',
-    'TA' => 'Tamil',
-    'UR' => 'Urdu',
-    'PL' => 'Polaco',
-    'UK' => 'Ucraniano',
-    'RO' => 'Rumano',
-    'NL' => 'Holandés',
-    'EL' => 'Griego',
-    'CS' => 'Checo',
-    'SV' => 'Sueco',
-    'HU' => 'Húngaro',
-    'TH' => 'Tailandés',
-    'HE' => 'Hebreo',
-    'ID' => 'Indonesio',
-    'MS' => 'Malayo',
-    'FI' => 'Finlandés',
-    'NO' => 'Noruego',
-    'DA' => 'Danés',
-    'CA' => 'Catalán',
-    'EU' => 'Euskera'
-  }.freeze
-  
   favorite_languages.map { |code| LANGUAGE_NAMES[code] || code }
 end
 
