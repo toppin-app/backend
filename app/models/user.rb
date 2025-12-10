@@ -278,33 +278,72 @@ def favorite_languages_array
   end
 end
 
+# Mapa de códigos de idioma a nombres
+LANGUAGE_NAMES = {
+  'ES' => 'Español',
+  'EN' => 'Inglés',
+  'ZH' => 'Chino Mandarín',
+  'HI' => 'Hindi',
+  'AR' => 'Árabe',
+  'PT' => 'Portugués',
+  'BN' => 'Bengalí',
+  'RU' => 'Ruso',
+  'JA' => 'Japonés',
+  'PA' => 'Panyabí',
+  'DE' => 'Alemán',
+  'FR' => 'Francés',
+  'IT' => 'Italiano',
+  'TR' => 'Turco',
+  'KO' => 'Coreano',
+  'VI' => 'Vietnamita',
+  'TA' => 'Tamil',
+  'UR' => 'Urdu',
+  'PL' => 'Polaco',
+  'UK' => 'Ucraniano',
+  'RO' => 'Rumano',
+  'NL' => 'Holandés',
+  'EL' => 'Griego',
+  'CS' => 'Checo',
+  'SV' => 'Sueco',
+  'HU' => 'Húngaro',
+  'TH' => 'Tailandés',
+  'HE' => 'Hebreo',
+  'ID' => 'Indonesio',
+  'MS' => 'Malayo',
+  'FI' => 'Finlandés',
+  'NO' => 'Noruego',
+  'DA' => 'Danés',
+  'CA' => 'Catalán',
+  'EU' => 'Euskera'
+}.freeze
+
 def favorite_languages
   raw = self[:favorite_languages]
   return [] if raw.blank?
 
-  # Si ya es un array, devuélvelo limpio
+  # Obtener los códigos de idioma
+  codes = []
+  
+  # Si ya es un array, úsalo directamente
   if raw.is_a?(Array)
-    return raw.map(&:to_s).map(&:strip).reject(&:blank?)
-  end
-
-  # Si es un string, dividir por comas
-  if raw.is_a?(String)
+    codes = raw.map(&:to_s).map(&:strip).reject(&:blank?)
+  elsif raw.is_a?(String)
     # Primero intentar parsear como JSON
     begin
       parsed = JSON.parse(raw)
       if parsed.is_a?(Array)
-        return parsed.map(&:to_s).map(&:strip).reject(&:blank?)
+        codes = parsed.map(&:to_s).map(&:strip).reject(&:blank?)
       end
     rescue JSON::ParserError
-      # No es JSON válido, continuar con split
+      # No es JSON válido, dividir por comas
+      codes = raw.split(',').map(&:strip).reject(&:blank?)
     end
-    
-    # Dividir por comas como fallback
-    return raw.split(',').map(&:strip).reject(&:blank?)
   end
 
-  # Default: array vacío
-  []
+  # Convertir códigos a nombres
+  codes.map do |code|
+    LANGUAGE_NAMES[code.upcase] || code
+  end
 end
 
   def location_name
