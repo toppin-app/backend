@@ -551,7 +551,79 @@
       </div>
    </div>
 
+    <hr>
 
+    <h5>🌍 Idiomas que habla</h5>
+    
+    <% 
+      # Obtener los idiomas favoritos actuales del usuario (son números)
+      current_favorite_languages = @edit && @user.favorite_languages.present? ? @user.favorite_languages : []
+      
+      # Mapeo de números a idiomas
+      language_options = {
+        1 => "Abjasio", 2 => "Afar", 3 => "Afrikáans", 4 => "Akan", 5 => "Albanés", 
+        6 => "Amárico", 7 => "Árabe", 8 => "Aragonés", 9 => "Armenio", 10 => "Asamés",
+        11 => "Avar", 12 => "Avéstico", 13 => "Aimara", 14 => "Azerí", 15 => "Bambara",
+        16 => "Baskir", 17 => "Euskera", 18 => "Bielorruso", 19 => "Bengalí", 20 => "Bihari",
+        21 => "Bislama", 22 => "Bosnio", 23 => "Bretón", 24 => "Búlgaro", 25 => "Birmano",
+        26 => "Catalán", 27 => "Chamorro", 28 => "Checheno", 29 => "Chichewa", 30 => "Chino",
+        31 => "Chuvasio", 32 => "Córnico", 33 => "Corso", 34 => "Cree", 35 => "Croata",
+        36 => "Checo", 37 => "Danés", 38 => "Maldivo", 39 => "Neerlandés", 40 => "Dzongkha",
+        41 => "Inglés", 42 => "Esperanto", 43 => "Estonio", 44 => "Ewé", 45 => "Feroés",
+        46 => "Fiyiano", 47 => "Finés", 48 => "Francés", 49 => "Fula", 50 => "Gallego",
+        51 => "Georgiano", 52 => "Alemán", 53 => "Griego", 54 => "Guaraní", 55 => "Guyaratí",
+        56 => "Haitiano", 57 => "Hausa", 58 => "Hebreo", 59 => "Herero", 60 => "Hindi",
+        61 => "Hiri Motu", 62 => "Húngaro", 63 => "Interlingua", 64 => "Indonesio", 65 => "Interlingue",
+        66 => "Irlandés", 67 => "Igbo", 68 => "Inupiaq", 69 => "Ido", 70 => "Islandés",
+        71 => "Italiano", 72 => "Inuktitut", 73 => "Japonés", 74 => "Javanés", 75 => "Groenlandés",
+        76 => "Canarés", 77 => "Kanuri", 78 => "Cachemir", 79 => "Kazajo", 80 => "Jemer",
+        81 => "Kikuyu", 82 => "Kinyarwanda", 83 => "Kirguís", 84 => "Komi", 85 => "Kongo",
+        86 => "Coreano", 87 => "Kurdo", 88 => "Kuanyama", 89 => "Latín", 90 => "Luxemburgués",
+        91 => "Ganda", 92 => "Limburgués", 93 => "Lingala", 94 => "Lao", 95 => "Lituano",
+        96 => "Luba-Katanga", 97 => "Letón", 98 => "Manés", 99 => "Macedonio", 100 => "Malgache",
+        101 => "Malayo", 102 => "Malabar", 103 => "Maltés", 104 => "Maorí", 105 => "Maratí",
+        106 => "Marshalés", 107 => "Mongol", 108 => "Nauruano", 109 => "Navajo", 110 => "Ndebele del norte",
+        111 => "Nepalí", 112 => "Ndonga", 113 => "Noruego Bokmål", 114 => "Noruego Nynorsk", 115 => "Noruego",
+        116 => "Yi de Sichuán", 117 => "Ndebele del sur", 118 => "Occitano", 119 => "Ojibwa", 120 => "Eslavo eclesiástico",
+        121 => "Oromo", 122 => "Oriya", 123 => "Osetio", 124 => "Punyabí", 125 => "Pali",
+        126 => "Persa", 127 => "Polaco", 128 => "Pastún", 129 => "Portugués", 130 => "Quechua",
+        131 => "Romanche", 132 => "Kirundi", 133 => "Rumano", 134 => "Ruso", 135 => "Sánscrito",
+        136 => "Sardo", 137 => "Sindhi", 138 => "Sami septentrional", 139 => "Samoano", 140 => "Sango",
+        141 => "Serbio", 142 => "Gaélico escocés", 143 => "Shona", 144 => "Cingalés", 145 => "Eslovaco",
+        146 => "Esloveno", 147 => "Somalí", 148 => "Sesoto", 149 => "Español", 150 => "Sundanés",
+        151 => "Suajili", 152 => "Suazi", 153 => "Sueco", 154 => "Tamil", 155 => "Telugú",
+        156 => "Tayiko", 157 => "Tailandés", 158 => "Tigriña", 159 => "Tibetano", 160 => "Turcomano",
+        161 => "Tagalo", 162 => "Tswana", 163 => "Tongano", 164 => "Turco", 165 => "Tsonga",
+        166 => "Tártaro", 167 => "Twi", 168 => "Tahitiano", 169 => "Uigur", 170 => "Ucraniano",
+        171 => "Urdu", 172 => "Uzbeko", 173 => "Venda", 174 => "Vietnamita", 175 => "Volapük",
+        176 => "Valón", 177 => "Galés", 178 => "Wólof", 179 => "Frisón occidental", 180 => "Xhosa",
+        181 => "Yidis", 182 => "Yoruba", 183 => "Zhuang", 184 => "Zulú", 185 => "Valenciano"
+      }
+    %>
+    
+    <% if @edit && current_favorite_languages.any? %>
+      <div style="padding: 10px; margin-bottom: 10px; background-color: #f8f9fa; border-radius: 5px;">
+        <strong>Idiomas seleccionados:</strong><br>
+        <% current_favorite_languages.each do |lang_id| %>
+          <span class="badge badge-info" style="margin: 3px; font-size: 14px; padding: 8px;">
+            <%= language_options[lang_id.to_i] || "ID: #{lang_id}" %>
+          </span>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="card card-body" style="margin-bottom: 20px;">
+      <p><small><i>Selecciona los idiomas que el usuario habla. Puedes seleccionar múltiples idiomas.</i></small></p>
+      
+      <%= select_tag 'user[favorite_languages][]', 
+          options_for_select(language_options.sort_by { |k, v| v }.map { |k, v| [v, k] }, current_favorite_languages.map(&:to_i)),
+          { multiple: true, class: 'form-control selectpicker', "data-live-search" => "true", style: "height: 300px;" } %>
+      
+      <!-- Hidden field para permitir deseleccionar todos los idiomas -->
+      <%= hidden_field_tag 'user[favorite_languages][]', '' %>
+    </div>
+
+    <hr>
 
   <div class="field">
     <%= f.label "Contraseña" %>   <% if @edit %> <i>(Para mantener la contraseña actual mantener en blanco este campo)</i><br /> <% end %>
