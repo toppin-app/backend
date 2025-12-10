@@ -214,7 +214,7 @@
                 <br><img src="https://image.tmdb.org/t/p/w92<%= movie.poster_path %>" style="max-width: 60px; margin-top: 5px; border-radius: 3px;">
               <% end %>
             </span>
-            <%= link_to '🗑️ Eliminar', tmdb_user_datum_path(movie.id), method: :delete, data: { confirm: '¿Eliminar película?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
+            <%= link_to '🗑️ Eliminar', "/tmdb_user_data/#{movie.id}", method: :delete, data: { confirm: '¿Eliminar película?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
           </div>
         <% end %>
       </div>
@@ -271,7 +271,7 @@
                 <br><img src="https://image.tmdb.org/t/p/w92<%= series.poster_path %>" style="max-width: 60px; margin-top: 5px; border-radius: 3px;">
               <% end %>
             </span>
-            <%= link_to '🗑️ Eliminar', tmdb_user_series_datum_path(series.id), method: :delete, data: { confirm: '¿Eliminar serie?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
+            <%= link_to '🗑️ Eliminar', "/tmdb_user_series_data/#{series.id}", method: :delete, data: { confirm: '¿Eliminar serie?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
           </div>
         <% end %>
       </div>
