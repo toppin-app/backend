@@ -201,6 +201,122 @@
 
     <hr>
 
+    <h5>🎬 Películas Favoritas (TMDB)</h5>
+
+    <% if @edit && @user.tmdb_user_data.any? %>
+      <div style="padding: 10px; margin-bottom: 10px; background-color: #f8f9fa; border-radius: 5px;">
+        <strong>Películas actuales:</strong><br>
+        <% @user.tmdb_user_data.each do |movie| %>
+          <div style="display: inline-block; margin: 5px;">
+            <span class="badge badge-success" style="font-size: 14px; padding: 8px; display: block;">
+              <%= movie.title %>
+              <% if movie.poster_path.present? %>
+                <br><small>ID: <%= movie.tmdb_id %></small>
+              <% end %>
+            </span>
+            <%= link_to '🗑️ Eliminar', tmdb_user_datum_path(movie), method: :delete, data: { confirm: '¿Eliminar película?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="card card-body" style="margin-bottom: 20px;">
+      <div class="alert alert-info" style="padding: 10px; margin-bottom: 15px;">
+        <i class="fa fa-lightbulb"></i> <strong>¿Cómo encontrar el ID de TMDB?</strong>
+        <ol style="margin: 5px 0 0 20px; font-size: 13px;">
+          <li>Ve a <a href="https://www.themoviedb.org/" target="_blank">themoviedb.org</a></li>
+          <li>Busca la película que quieres añadir</li>
+          <li>El ID está en la URL: themoviedb.org/movie/<strong>ID</strong>/nombre-pelicula</li>
+          <li>El poster_path lo encuentras en la página de la película, termina en .jpg</li>
+        </ol>
+      </div>
+      
+      <p><small><i>Añade hasta 3 películas. Deja los campos vacíos si no quieres añadir todas.</i></small></p>
+      
+      <div id="movies-container">
+        <% 3.times do |i| %>
+          <div class="row" style="margin-bottom: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
+            <div class="col-md-12" style="margin-bottom: 5px;"><strong>Película #<%= i + 1 %></strong></div>
+            <div class="col-md-2">
+              <label><small>TMDB ID</small></label>
+              <%= number_field_tag "movie_#{i}_tmdb_id", nil, 
+                  { placeholder: "Ej: 550", class: 'form-control', min: 1 } %>
+            </div>
+            <div class="col-md-5">
+              <label><small>Título</small></label>
+              <%= text_field_tag "movie_#{i}_title", nil, 
+                  { placeholder: "Ej: Fight Club", class: 'form-control' } %>
+            </div>
+            <div class="col-md-5">
+              <label><small>Poster Path</small></label>
+              <%= text_field_tag "movie_#{i}_poster_path", nil, 
+                  { placeholder: "Ej: /pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", class: 'form-control' } %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <hr>
+
+    <h5>📺 Series Favoritas (TMDB)</h5>
+
+    <% if @edit && @user.tmdb_user_series_data.any? %>
+      <div style="padding: 10px; margin-bottom: 10px; background-color: #f8f9fa; border-radius: 5px;">
+        <strong>Series actuales:</strong><br>
+        <% @user.tmdb_user_series_data.each do |series| %>
+          <div style="display: inline-block; margin: 5px;">
+            <span class="badge badge-info" style="font-size: 14px; padding: 8px; display: block;">
+              <%= series.title %>
+              <% if series.poster_path.present? %>
+                <br><small>ID: <%= series.tmdb_id %></small>
+              <% end %>
+            </span>
+            <%= link_to '🗑️ Eliminar', tmdb_user_series_datum_path(series), method: :delete, data: { confirm: '¿Eliminar serie?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="card card-body" style="margin-bottom: 20px;">
+      <div class="alert alert-info" style="padding: 10px; margin-bottom: 15px;">
+        <i class="fa fa-lightbulb"></i> <strong>¿Cómo encontrar el ID de TMDB para series?</strong>
+        <ol style="margin: 5px 0 0 20px; font-size: 13px;">
+          <li>Ve a <a href="https://www.themoviedb.org/" target="_blank">themoviedb.org</a></li>
+          <li>Busca la serie que quieres añadir</li>
+          <li>El ID está en la URL: themoviedb.org/tv/<strong>ID</strong>/nombre-serie</li>
+          <li>El poster_path lo encuentras en la página de la serie</li>
+        </ol>
+      </div>
+      
+      <p><small><i>Añade hasta 3 series. Deja los campos vacíos si no quieres añadir todas.</i></small></p>
+      
+      <div id="series-container">
+        <% 3.times do |i| %>
+          <div class="row" style="margin-bottom: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
+            <div class="col-md-12" style="margin-bottom: 5px;"><strong>Serie #<%= i + 1 %></strong></div>
+            <div class="col-md-2">
+              <label><small>TMDB ID</small></label>
+              <%= number_field_tag "series_#{i}_tmdb_id", nil, 
+                  { placeholder: "Ej: 1396", class: 'form-control', min: 1 } %>
+            </div>
+            <div class="col-md-5">
+              <label><small>Título</small></label>
+              <%= text_field_tag "series_#{i}_title", nil, 
+                  { placeholder: "Ej: Breaking Bad", class: 'form-control' } %>
+            </div>
+            <div class="col-md-5">
+              <label><small>Poster Path</small></label>
+              <%= text_field_tag "series_#{i}_poster_path", nil, 
+                  { placeholder: "Ej: /ggFHVNu6YYI5L9pCfOacjizRGt.jpg", class: 'form-control' } %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <hr>
+
     <h5>Preferencias de Búsqueda</h5>
 
     <div class="card card-body" style="margin-bottom: 20px;">

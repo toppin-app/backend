@@ -221,6 +221,40 @@ class UsersController < ApplicationController
           flash[:alert] = "Debes seleccionar exactamente 4 intereses principales (seleccionados: #{main_interests_data.size})"
         end
 
+        # Procesar películas de TMDB
+        3.times do |i|
+          tmdb_id = params["movie_#{i}_tmdb_id"]
+          title = params["movie_#{i}_title"]
+          poster_path = params["movie_#{i}_poster_path"]
+          
+          if tmdb_id.present? && title.present?
+            TmdbUserDatum.create!(
+              user_id: @user.id,
+              tmdb_id: tmdb_id,
+              title: title,
+              poster_path: poster_path,
+              media_type: 'movie'
+            )
+          end
+        end
+
+        # Procesar series de TMDB
+        3.times do |i|
+          tmdb_id = params["series_#{i}_tmdb_id"]
+          title = params["series_#{i}_title"]
+          poster_path = params["series_#{i}_poster_path"]
+          
+          if tmdb_id.present? && title.present?
+            TmdbUserSeriesDatum.create!(
+              user_id: @user.id,
+              tmdb_id: tmdb_id,
+              title: title,
+              poster_path: poster_path,
+              media_type: 'tv'
+            )
+          end
+        end
+
         # Procesar preferencias de filtro de distancia
         if params[:distance_range]
           user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
@@ -398,6 +432,48 @@ def update
           end
         elsif main_interests_data.size > 0
           flash[:alert] = "Debes seleccionar exactamente 4 intereses principales (seleccionados: #{main_interests_data.size})"
+        end
+      end
+
+      # Procesar películas de TMDB desde el formulario del panel
+      3.times do |i|
+        tmdb_id = params["movie_#{i}_tmdb_id"]
+        title = params["movie_#{i}_title"]
+        poster_path = params["movie_#{i}_poster_path"]
+        
+        if tmdb_id.present? && title.present?
+          # Evitar duplicados
+          existing = @user.tmdb_user_data.find_by(tmdb_id: tmdb_id)
+          unless existing
+            TmdbUserDatum.create!(
+              user_id: @user.id,
+              tmdb_id: tmdb_id,
+              title: title,
+              poster_path: poster_path,
+              media_type: 'movie'
+            )
+          end
+        end
+      end
+
+      # Procesar series de TMDB desde el formulario del panel
+      3.times do |i|
+        tmdb_id = params["series_#{i}_tmdb_id"]
+        title = params["series_#{i}_title"]
+        poster_path = params["series_#{i}_poster_path"]
+        
+        if tmdb_id.present? && title.present?
+          # Evitar duplicados
+          existing = @user.tmdb_user_series_data.find_by(tmdb_id: tmdb_id)
+          unless existing
+            TmdbUserSeriesDatum.create!(
+              user_id: @user.id,
+              tmdb_id: tmdb_id,
+              title: title,
+              poster_path: poster_path,
+              media_type: 'tv'
+            )
+          end
         end
       end
 
