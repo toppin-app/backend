@@ -278,72 +278,76 @@ def favorite_languages_array
   end
 end
 
-# Mapa de códigos de idioma a nombres
-LANGUAGE_NAMES = {
-  'ES' => 'Español',
-  'EN' => 'Inglés',
-  'ZH' => 'Chino Mandarín',
-  'HI' => 'Hindi',
-  'AR' => 'Árabe',
-  'PT' => 'Portugués',
-  'BN' => 'Bengalí',
-  'RU' => 'Ruso',
-  'JA' => 'Japonés',
-  'PA' => 'Panyabí',
-  'DE' => 'Alemán',
-  'FR' => 'Francés',
-  'IT' => 'Italiano',
-  'TR' => 'Turco',
-  'KO' => 'Coreano',
-  'VI' => 'Vietnamita',
-  'TA' => 'Tamil',
-  'UR' => 'Urdu',
-  'PL' => 'Polaco',
-  'UK' => 'Ucraniano',
-  'RO' => 'Rumano',
-  'NL' => 'Holandés',
-  'EL' => 'Griego',
-  'CS' => 'Checo',
-  'SV' => 'Sueco',
-  'HU' => 'Húngaro',
-  'TH' => 'Tailandés',
-  'HE' => 'Hebreo',
-  'ID' => 'Indonesio',
-  'MS' => 'Malayo',
-  'FI' => 'Finlandés',
-  'NO' => 'Noruego',
-  'DA' => 'Danés',
-  'CA' => 'Catalán',
-  'EU' => 'Euskera'
-}.freeze
-
 def favorite_languages
   raw = self[:favorite_languages]
   return [] if raw.blank?
 
-  # Obtener los códigos de idioma
-  codes = []
-  
-  # Si ya es un array, úsalo directamente
+  # Si ya es un array, devuélvelo limpio con los códigos en mayúscula
   if raw.is_a?(Array)
-    codes = raw.map(&:to_s).map(&:strip).reject(&:blank?)
-  elsif raw.is_a?(String)
+    return raw.map(&:to_s).map(&:strip).map(&:upcase).reject(&:blank?)
+  end
+
+  # Si es un string, dividir por comas
+  if raw.is_a?(String)
     # Primero intentar parsear como JSON
     begin
       parsed = JSON.parse(raw)
       if parsed.is_a?(Array)
-        codes = parsed.map(&:to_s).map(&:strip).reject(&:blank?)
+        return parsed.map(&:to_s).map(&:strip).map(&:upcase).reject(&:blank?)
       end
     rescue JSON::ParserError
-      # No es JSON válido, dividir por comas
-      codes = raw.split(',').map(&:strip).reject(&:blank?)
+      # No es JSON válido, continuar con split
     end
+    
+    # Dividir por comas como fallback
+    return raw.split(',').map(&:strip).map(&:upcase).reject(&:blank?)
   end
 
-  # Convertir códigos a nombres
-  codes.map do |code|
-    LANGUAGE_NAMES[code.upcase] || code
-  end
+  # Default: array vacío
+  []
+end
+
+# Método para obtener nombres legibles de idiomas (para panel admin)
+def favorite_languages_names
+  LANGUAGE_NAMES ||= {
+    'ES' => 'Español',
+    'EN' => 'Inglés',
+    'ZH' => 'Chino Mandarín',
+    'HI' => 'Hindi',
+    'AR' => 'Árabe',
+    'PT' => 'Portugués',
+    'BN' => 'Bengalí',
+    'RU' => 'Ruso',
+    'JA' => 'Japonés',
+    'PA' => 'Panyabí',
+    'DE' => 'Alemán',
+    'FR' => 'Francés',
+    'IT' => 'Italiano',
+    'TR' => 'Turco',
+    'KO' => 'Coreano',
+    'VI' => 'Vietnamita',
+    'TA' => 'Tamil',
+    'UR' => 'Urdu',
+    'PL' => 'Polaco',
+    'UK' => 'Ucraniano',
+    'RO' => 'Rumano',
+    'NL' => 'Holandés',
+    'EL' => 'Griego',
+    'CS' => 'Checo',
+    'SV' => 'Sueco',
+    'HU' => 'Húngaro',
+    'TH' => 'Tailandés',
+    'HE' => 'Hebreo',
+    'ID' => 'Indonesio',
+    'MS' => 'Malayo',
+    'FI' => 'Finlandés',
+    'NO' => 'Noruego',
+    'DA' => 'Danés',
+    'CA' => 'Catalán',
+    'EU' => 'Euskera'
+  }.freeze
+  
+  favorite_languages.map { |code| LANGUAGE_NAMES[code] || code }
 end
 
   def location_name
