@@ -553,26 +553,59 @@
 
     <hr>
 
-    <h5>🌍 Idiomas Favoritos</h5>
+    <h5>🌍 Idiomas que habla</h5>
     
     <% 
       # Obtener los idiomas favoritos actuales del usuario
       current_favorite_languages = @edit && @user.favorite_languages.present? ? @user.favorite_languages : []
+      
+      # Lista de idiomas más hablados del mundo
+      available_languages = [
+        { code: 'ES', name: 'Español', flag: '🇪🇸' },
+        { code: 'EN', name: 'Inglés', flag: '🇬🇧' },
+        { code: 'ZH', name: 'Chino Mandarín', flag: '🇨🇳' },
+        { code: 'HI', name: 'Hindi', flag: '🇮🇳' },
+        { code: 'AR', name: 'Árabe', flag: '🇸🇦' },
+        { code: 'PT', name: 'Portugués', flag: '🇵🇹' },
+        { code: 'BN', name: 'Bengalí', flag: '🇧🇩' },
+        { code: 'RU', name: 'Ruso', flag: '🇷🇺' },
+        { code: 'JA', name: 'Japonés', flag: '🇯🇵' },
+        { code: 'PA', name: 'Panyabí', flag: '🇵🇰' },
+        { code: 'DE', name: 'Alemán', flag: '🇩🇪' },
+        { code: 'FR', name: 'Francés', flag: '🇫🇷' },
+        { code: 'IT', name: 'Italiano', flag: '🇮🇹' },
+        { code: 'TR', name: 'Turco', flag: '🇹🇷' },
+        { code: 'KO', name: 'Coreano', flag: '🇰🇷' },
+        { code: 'VI', name: 'Vietnamita', flag: '🇻🇳' },
+        { code: 'TA', name: 'Tamil', flag: '🇮🇳' },
+        { code: 'UR', name: 'Urdu', flag: '🇵🇰' },
+        { code: 'PL', name: 'Polaco', flag: '🇵🇱' },
+        { code: 'UK', name: 'Ucraniano', flag: '🇺🇦' },
+        { code: 'RO', name: 'Rumano', flag: '🇷🇴' },
+        { code: 'NL', name: 'Holandés', flag: '🇳🇱' },
+        { code: 'EL', name: 'Griego', flag: '🇬🇷' },
+        { code: 'CS', name: 'Checo', flag: '🇨🇿' },
+        { code: 'SV', name: 'Sueco', flag: '🇸🇪' },
+        { code: 'HU', name: 'Húngaro', flag: '🇭🇺' },
+        { code: 'TH', name: 'Tailandés', flag: '🇹🇭' },
+        { code: 'HE', name: 'Hebreo', flag: '🇮🇱' },
+        { code: 'ID', name: 'Indonesio', flag: '🇮🇩' },
+        { code: 'MS', name: 'Malayo', flag: '🇲🇾' },
+        { code: 'FI', name: 'Finlandés', flag: '🇫🇮' },
+        { code: 'NO', name: 'Noruego', flag: '🇳🇴' },
+        { code: 'DA', name: 'Danés', flag: '🇩🇰' },
+        { code: 'CA', name: 'Catalán', flag: '🏴' },
+        { code: 'EU', name: 'Euskera', flag: '🏴' }
+      ]
     %>
     
     <% if @edit && current_favorite_languages.any? %>
       <div style="padding: 10px; margin-bottom: 10px; background-color: #f8f9fa; border-radius: 5px;">
-        <strong>Idiomas favoritos actuales:</strong><br>
-        <% current_favorite_languages.each do |lang| %>
+        <strong>Idiomas seleccionados:</strong><br>
+        <% current_favorite_languages.each do |lang_code| %>
+          <% lang_info = available_languages.find { |l| l[:code] == lang_code.upcase } %>
           <span class="badge badge-info" style="margin: 3px; font-size: 14px; padding: 8px;">
-            <%= case lang.upcase
-                when 'ES' then '🇪🇸 Español'
-                when 'EN' then '🇬🇧 English'
-                when 'IT' then '🇮🇹 Italiano'
-                when 'FR' then '🇫🇷 Français'
-                when 'DE' then '🇩🇪 Deutsch'
-                else lang
-                end %>
+            <%= lang_info ? "#{lang_info[:flag]} #{lang_info[:name]}" : lang_code %>
           </span>
         <% end %>
       </div>
@@ -581,34 +614,21 @@
     <div class="card card-body" style="margin-bottom: 20px;">
       <p><small><i>Selecciona los idiomas que el usuario habla o le gustaría practicar. Puedes seleccionar múltiples idiomas.</i></small></p>
       
-      <div class="form-check" style="margin-bottom: 10px;">
-        <%= check_box_tag 'user[favorite_languages][]', 'ES', current_favorite_languages.include?('ES'), 
-            id: 'favorite_language_es', class: 'form-check-input' %>
-        <%= label_tag 'favorite_language_es', '🇪🇸 Español', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
-      </div>
-      
-      <div class="form-check" style="margin-bottom: 10px;">
-        <%= check_box_tag 'user[favorite_languages][]', 'EN', current_favorite_languages.include?('EN'), 
-            id: 'favorite_language_en', class: 'form-check-input' %>
-        <%= label_tag 'favorite_language_en', '🇬🇧 English', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
-      </div>
-      
-      <div class="form-check" style="margin-bottom: 10px;">
-        <%= check_box_tag 'user[favorite_languages][]', 'IT', current_favorite_languages.include?('IT'), 
-            id: 'favorite_language_it', class: 'form-check-input' %>
-        <%= label_tag 'favorite_language_it', '🇮🇹 Italiano', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
-      </div>
-      
-      <div class="form-check" style="margin-bottom: 10px;">
-        <%= check_box_tag 'user[favorite_languages][]', 'FR', current_favorite_languages.include?('FR'), 
-            id: 'favorite_language_fr', class: 'form-check-input' %>
-        <%= label_tag 'favorite_language_fr', '🇫🇷 Français', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
-      </div>
-      
-      <div class="form-check" style="margin-bottom: 10px;">
-        <%= check_box_tag 'user[favorite_languages][]', 'DE', current_favorite_languages.include?('DE'), 
-            id: 'favorite_language_de', class: 'form-check-input' %>
-        <%= label_tag 'favorite_language_de', '🇩🇪 Deutsch', class: 'form-check-label', style: 'font-size: 16px; cursor: pointer;' %>
+      <div class="row">
+        <% available_languages.each_with_index do |lang, index| %>
+          <div class="col-md-4 col-sm-6" style="margin-bottom: 10px;">
+            <div class="form-check">
+              <%= check_box_tag 'user[favorite_languages][]', lang[:code], 
+                  current_favorite_languages.map(&:upcase).include?(lang[:code]), 
+                  id: "favorite_language_#{lang[:code].downcase}", 
+                  class: 'form-check-input' %>
+              <%= label_tag "favorite_language_#{lang[:code].downcase}", 
+                  "#{lang[:flag]} #{lang[:name]}", 
+                  class: 'form-check-label', 
+                  style: 'font-size: 15px; cursor: pointer; user-select: none;' %>
+            </div>
+          </div>
+        <% end %>
       </div>
       
       <!-- Hidden field para permitir deseleccionar todos los idiomas -->
