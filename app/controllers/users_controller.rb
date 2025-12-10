@@ -152,8 +152,64 @@ class UsersController < ApplicationController
   # POST /users.json
   def create
     @user = User.new(user_params)
+    
+    # Validar desnudez en las imágenes antes de guardar (si se proporcionan)
+    if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
+      params[:user][:images].each do |image|
+        if image.is_a?(ActionDispatch::Http::UploadedFile) && detect_nudity(image)
+          respond_to do |format|
+            format.html { 
+              flash[:alert] = "Una o más imágenes contienen desnudos y no pueden subirse."
+              render :new 
+            }
+            format.json { 
+              render json: { status: 400, message: "Una o más imágenes contienen desnudos y no pueden subirse." }, status: :bad_request 
+            }
+          end
+          return
+        end
+      end
+    end
+    
     respond_to do |format|
       if @user.save
+        # Procesar imágenes después de crear el usuario
+        if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
+          params[:user][:images].each do |image|
+            if image.is_a?(ActionDispatch::Http::UploadedFile)
+              UserMedium.create!(file: image, user_id: @user.id)
+            end
+          end
+        end
+
+        # Procesar info_item_values
+        if params[:info_item_values]
+          params[:info_item_values].each do |iv|
+            next if iv.blank?
+            @user.user_info_item_values.create(info_item_value_id: iv)
+          end
+        end
+
+        # Procesar user_interests
+        if params[:user_interests]
+          params[:user_interests].each do |iv|
+            next if iv.blank?
+            @user.user_interests.create(interest_id: iv)
+          end
+        end
+
+        # Procesar preferencias de filtro de distancia
+        if params[:distance_range]
+          user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
+          user_filter_pref.update(distance_range: params[:distance_range])
+        end
+
+        # Procesar preferencias de género
+        if params[:filter_gender]
+          user_filter_pref = @user.user_filter_preference || @user.create_user_filter_preference
+          user_filter_pref.update(gender_preferences: params[:filter_gender])
+        end
+
         format.html { redirect_to users_url, notice: 'User was successfully created.' }
         format.json { render :show, status: :created, location: @user }
       else
