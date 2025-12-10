@@ -243,6 +243,8 @@ Rails.application.routes.draw do
   post '/app_version', to: 'app_versions#show'
 
   get '/tmdb/token', to: 'tmdb#token'
+  get '/tmdb/search_movies', to: 'tmdb#search_movies'
+  get '/tmdb/search_series', to: 'tmdb#search_series'
     # Rutas para videollamadas
   post '/video_calls', to: 'video_calls#create'                  # Iniciar llamada
   post '/video_calls/accept', to: 'video_calls#accept'          # Aceptar llamada

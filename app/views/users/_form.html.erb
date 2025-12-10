@@ -201,7 +201,7 @@
 
     <hr>
 
-    <h5>🎬 Películas Favoritas (TMDB)</h5>
+    <h5>🎬 Películas Favoritas</h5>
 
     <% if @edit && @user.tmdb_user_data.any? %>
       <div style="padding: 10px; margin-bottom: 10px; background-color: #f8f9fa; border-radius: 5px;">
@@ -211,7 +211,7 @@
             <span class="badge badge-success" style="font-size: 14px; padding: 8px; display: block;">
               <%= movie.title %>
               <% if movie.poster_path.present? %>
-                <br><small>ID: <%= movie.tmdb_id %></small>
+                <br><img src="https://image.tmdb.org/t/p/w92<%= movie.poster_path %>" style="max-width: 60px; margin-top: 5px; border-radius: 3px;">
               <% end %>
             </span>
             <%= link_to '🗑️ Eliminar', tmdb_user_datum_path(movie), method: :delete, data: { confirm: '¿Eliminar película?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
@@ -221,37 +221,36 @@
     <% end %>
 
     <div class="card card-body" style="margin-bottom: 20px;">
-      <div class="alert alert-info" style="padding: 10px; margin-bottom: 15px;">
-        <i class="fa fa-lightbulb"></i> <strong>¿Cómo encontrar el ID de TMDB?</strong>
-        <ol style="margin: 5px 0 0 20px; font-size: 13px;">
-          <li>Ve a <a href="https://www.themoviedb.org/" target="_blank">themoviedb.org</a></li>
-          <li>Busca la película que quieres añadir</li>
-          <li>El ID está en la URL: themoviedb.org/movie/<strong>ID</strong>/nombre-pelicula</li>
-          <li>El poster_path lo encuentras en la página de la película, termina en .jpg</li>
-        </ol>
-      </div>
-      
-      <p><small><i>Añade hasta 3 películas. Deja los campos vacíos si no quieres añadir todas.</i></small></p>
+      <p><small><i>Busca películas por título. Selecciona hasta 3 películas.</i></small></p>
       
       <div id="movies-container">
         <% 3.times do |i| %>
-          <div class="row" style="margin-bottom: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
-            <div class="col-md-12" style="margin-bottom: 5px;"><strong>Película #<%= i + 1 %></strong></div>
-            <div class="col-md-2">
-              <label><small>TMDB ID</small></label>
-              <%= number_field_tag "movie_#{i}_tmdb_id", nil, 
-                  { placeholder: "Ej: 550", class: 'form-control', min: 1 } %>
+          <div class="movie-search-item" style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 5px; position: relative;">
+            <strong style="display: block; margin-bottom: 10px;">Película #<%= i + 1 %></strong>
+            
+            <input type="text" 
+                   id="movie_search_<%= i %>" 
+                   class="form-control movie-search-input" 
+                   placeholder="Escribe el título de la película..."
+                   autocomplete="off"
+                   style="margin-bottom: 10px;">
+            
+            <div id="movie_results_<%= i %>" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; overflow-y: auto; width: calc(100% - 30px);"></div>
+            
+            <div id="movie_selected_<%= i %>" class="selected-movie" style="display: none; padding: 10px; background: white; border: 1px solid #28a745; border-radius: 4px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img id="movie_poster_preview_<%= i %>" src="" style="max-width: 50px; border-radius: 3px;">
+                <div style="flex: 1;">
+                  <strong id="movie_title_display_<%= i %>"></strong>
+                  <br><small id="movie_year_display_<%= i %>"></small>
+                </div>
+                <button type="button" onclick="clearMovie(<%= i %>)" class="btn btn-sm btn-danger">✕</button>
+              </div>
             </div>
-            <div class="col-md-5">
-              <label><small>Título</small></label>
-              <%= text_field_tag "movie_#{i}_title", nil, 
-                  { placeholder: "Ej: Fight Club", class: 'form-control' } %>
-            </div>
-            <div class="col-md-5">
-              <label><small>Poster Path</small></label>
-              <%= text_field_tag "movie_#{i}_poster_path", nil, 
-                  { placeholder: "Ej: /pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", class: 'form-control' } %>
-            </div>
+            
+            <%= hidden_field_tag "movie_#{i}_tmdb_id", nil, id: "movie_#{i}_tmdb_id" %>
+            <%= hidden_field_tag "movie_#{i}_title", nil, id: "movie_#{i}_title" %>
+            <%= hidden_field_tag "movie_#{i}_poster_path", nil, id: "movie_#{i}_poster_path" %>
           </div>
         <% end %>
       </div>
@@ -259,7 +258,7 @@
 
     <hr>
 
-    <h5>📺 Series Favoritas (TMDB)</h5>
+    <h5>📺 Series Favoritas</h5>
 
     <% if @edit && @user.tmdb_user_series_data.any? %>
       <div style="padding: 10px; margin-bottom: 10px; background-color: #f8f9fa; border-radius: 5px;">
@@ -269,7 +268,7 @@
             <span class="badge badge-info" style="font-size: 14px; padding: 8px; display: block;">
               <%= series.title %>
               <% if series.poster_path.present? %>
-                <br><small>ID: <%= series.tmdb_id %></small>
+                <br><img src="https://image.tmdb.org/t/p/w92<%= series.poster_path %>" style="max-width: 60px; margin-top: 5px; border-radius: 3px;">
               <% end %>
             </span>
             <%= link_to '🗑️ Eliminar', tmdb_user_series_datum_path(series), method: :delete, data: { confirm: '¿Eliminar serie?' }, class: 'btn btn-sm btn-danger', style: 'margin-top: 5px;' %>
@@ -279,41 +278,193 @@
     <% end %>
 
     <div class="card card-body" style="margin-bottom: 20px;">
-      <div class="alert alert-info" style="padding: 10px; margin-bottom: 15px;">
-        <i class="fa fa-lightbulb"></i> <strong>¿Cómo encontrar el ID de TMDB para series?</strong>
-        <ol style="margin: 5px 0 0 20px; font-size: 13px;">
-          <li>Ve a <a href="https://www.themoviedb.org/" target="_blank">themoviedb.org</a></li>
-          <li>Busca la serie que quieres añadir</li>
-          <li>El ID está en la URL: themoviedb.org/tv/<strong>ID</strong>/nombre-serie</li>
-          <li>El poster_path lo encuentras en la página de la serie</li>
-        </ol>
-      </div>
-      
-      <p><small><i>Añade hasta 3 series. Deja los campos vacíos si no quieres añadir todas.</i></small></p>
+      <p><small><i>Busca series por título. Selecciona hasta 3 series.</i></small></p>
       
       <div id="series-container">
         <% 3.times do |i| %>
-          <div class="row" style="margin-bottom: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;">
-            <div class="col-md-12" style="margin-bottom: 5px;"><strong>Serie #<%= i + 1 %></strong></div>
-            <div class="col-md-2">
-              <label><small>TMDB ID</small></label>
-              <%= number_field_tag "series_#{i}_tmdb_id", nil, 
-                  { placeholder: "Ej: 1396", class: 'form-control', min: 1 } %>
+          <div class="series-search-item" style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 5px; position: relative;">
+            <strong style="display: block; margin-bottom: 10px;">Serie #<%= i + 1 %></strong>
+            
+            <input type="text" 
+                   id="series_search_<%= i %>" 
+                   class="form-control series-search-input" 
+                   placeholder="Escribe el título de la serie..."
+                   autocomplete="off"
+                   style="margin-bottom: 10px;">
+            
+            <div id="series_results_<%= i %>" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; overflow-y: auto; width: calc(100% - 30px);"></div>
+            
+            <div id="series_selected_<%= i %>" class="selected-series" style="display: none; padding: 10px; background: white; border: 1px solid #17a2b8; border-radius: 4px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img id="series_poster_preview_<%= i %>" src="" style="max-width: 50px; border-radius: 3px;">
+                <div style="flex: 1;">
+                  <strong id="series_title_display_<%= i %>"></strong>
+                  <br><small id="series_year_display_<%= i %>"></small>
+                </div>
+                <button type="button" onclick="clearSeries(<%= i %>)" class="btn btn-sm btn-danger">✕</button>
+              </div>
             </div>
-            <div class="col-md-5">
-              <label><small>Título</small></label>
-              <%= text_field_tag "series_#{i}_title", nil, 
-                  { placeholder: "Ej: Breaking Bad", class: 'form-control' } %>
-            </div>
-            <div class="col-md-5">
-              <label><small>Poster Path</small></label>
-              <%= text_field_tag "series_#{i}_poster_path", nil, 
-                  { placeholder: "Ej: /ggFHVNu6YYI5L9pCfOacjizRGt.jpg", class: 'form-control' } %>
-            </div>
+            
+            <%= hidden_field_tag "series_#{i}_tmdb_id", nil, id: "series_#{i}_tmdb_id" %>
+            <%= hidden_field_tag "series_#{i}_title", nil, id: "series_#{i}_title" %>
+            <%= hidden_field_tag "series_#{i}_poster_path", nil, id: "series_#{i}_poster_path" %>
           </div>
         <% end %>
       </div>
     </div>
+
+    <script>
+      let movieSearchTimeout;
+      let seriesSearchTimeout;
+
+      // Búsqueda de películas
+      document.querySelectorAll('.movie-search-input').forEach((input, index) => {
+        input.addEventListener('input', function() {
+          clearTimeout(movieSearchTimeout);
+          const query = this.value.trim();
+          const resultsDiv = document.getElementById(`movie_results_${index}`);
+          
+          if (query.length < 2) {
+            resultsDiv.style.display = 'none';
+            return;
+          }
+          
+          movieSearchTimeout = setTimeout(() => {
+            fetch(`/tmdb/search_movies?query=${encodeURIComponent(query)}`)
+              .then(response => response.json())
+              .then(data => {
+                if (data.length === 0) {
+                  resultsDiv.innerHTML = '<div style="padding: 10px;">No se encontraron películas</div>';
+                  resultsDiv.style.display = 'block';
+                  return;
+                }
+                
+                resultsDiv.innerHTML = data.map(movie => `
+                  <div class="search-result-item" 
+                       onclick="selectMovie(${index}, ${movie.id}, '${movie.title.replace(/'/g, "\\'")}', '${movie.poster_path || ''}', '${movie.release_date || ''}')"
+                       style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px;">
+                    ${movie.poster_path ? `<img src="https://image.tmdb.org/t/p/w92${movie.poster_path}" style="max-width: 40px; border-radius: 3px;">` : '<div style="width: 40px; height: 60px; background: #ddd; border-radius: 3px;"></div>'}
+                    <div>
+                      <strong>${movie.title}</strong>
+                      <br><small>${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</small>
+                    </div>
+                  </div>
+                `).join('');
+                resultsDiv.style.display = 'block';
+              })
+              .catch(err => console.error('Error:', err));
+          }, 500);
+        });
+      });
+
+      // Búsqueda de series
+      document.querySelectorAll('.series-search-input').forEach((input, index) => {
+        input.addEventListener('input', function() {
+          clearTimeout(seriesSearchTimeout);
+          const query = this.value.trim();
+          const resultsDiv = document.getElementById(`series_results_${index}`);
+          
+          if (query.length < 2) {
+            resultsDiv.style.display = 'none';
+            return;
+          }
+          
+          seriesSearchTimeout = setTimeout(() => {
+            fetch(`/tmdb/search_series?query=${encodeURIComponent(query)}`)
+              .then(response => response.json())
+              .then(data => {
+                if (data.length === 0) {
+                  resultsDiv.innerHTML = '<div style="padding: 10px;">No se encontraron series</div>';
+                  resultsDiv.style.display = 'block';
+                  return;
+                }
+                
+                resultsDiv.innerHTML = data.map(series => `
+                  <div class="search-result-item" 
+                       onclick="selectSeries(${index}, ${series.id}, '${series.title.replace(/'/g, "\\'")}', '${series.poster_path || ''}', '${series.first_air_date || ''}')"
+                       style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px;">
+                    ${series.poster_path ? `<img src="https://image.tmdb.org/t/p/w92${series.poster_path}" style="max-width: 40px; border-radius: 3px;">` : '<div style="width: 40px; height: 60px; background: #ddd; border-radius: 3px;"></div>'}
+                    <div>
+                      <strong>${series.title}</strong>
+                      <br><small>${series.first_air_date ? series.first_air_date.substring(0, 4) : 'N/A'}</small>
+                    </div>
+                  </div>
+                `).join('');
+                resultsDiv.style.display = 'block';
+              })
+              .catch(err => console.error('Error:', err));
+          }, 500);
+        });
+      });
+
+      function selectMovie(index, id, title, posterPath, releaseDate) {
+        document.getElementById(`movie_${index}_tmdb_id`).value = id;
+        document.getElementById(`movie_${index}_title`).value = title;
+        document.getElementById(`movie_${index}_poster_path`).value = posterPath;
+        
+        document.getElementById(`movie_title_display_${index}`).textContent = title;
+        document.getElementById(`movie_year_display_${index}`).textContent = releaseDate ? releaseDate.substring(0, 4) : '';
+        
+        if (posterPath) {
+          document.getElementById(`movie_poster_preview_${index}`).src = `https://image.tmdb.org/t/p/w92${posterPath}`;
+          document.getElementById(`movie_poster_preview_${index}`).style.display = 'block';
+        } else {
+          document.getElementById(`movie_poster_preview_${index}`).style.display = 'none';
+        }
+        
+        document.getElementById(`movie_search_${index}`).style.display = 'none';
+        document.getElementById(`movie_results_${index}`).style.display = 'none';
+        document.getElementById(`movie_selected_${index}`).style.display = 'block';
+      }
+
+      function selectSeries(index, id, title, posterPath, firstAirDate) {
+        document.getElementById(`series_${index}_tmdb_id`).value = id;
+        document.getElementById(`series_${index}_title`).value = title;
+        document.getElementById(`series_${index}_poster_path`).value = posterPath;
+        
+        document.getElementById(`series_title_display_${index}`).textContent = title;
+        document.getElementById(`series_year_display_${index}`).textContent = firstAirDate ? firstAirDate.substring(0, 4) : '';
+        
+        if (posterPath) {
+          document.getElementById(`series_poster_preview_${index}`).src = `https://image.tmdb.org/t/p/w92${posterPath}`;
+          document.getElementById(`series_poster_preview_${index}`).style.display = 'block';
+        } else {
+          document.getElementById(`series_poster_preview_${index}`).style.display = 'none';
+        }
+        
+        document.getElementById(`series_search_${index}`).style.display = 'none';
+        document.getElementById(`series_results_${index}`).style.display = 'none';
+        document.getElementById(`series_selected_${index}`).style.display = 'block';
+      }
+
+      function clearMovie(index) {
+        document.getElementById(`movie_${index}_tmdb_id`).value = '';
+        document.getElementById(`movie_${index}_title`).value = '';
+        document.getElementById(`movie_${index}_poster_path`).value = '';
+        document.getElementById(`movie_search_${index}`).value = '';
+        document.getElementById(`movie_search_${index}`).style.display = 'block';
+        document.getElementById(`movie_selected_${index}`).style.display = 'none';
+      }
+
+      function clearSeries(index) {
+        document.getElementById(`series_${index}_tmdb_id`).value = '';
+        document.getElementById(`series_${index}_title`).value = '';
+        document.getElementById(`series_${index}_poster_path`).value = '';
+        document.getElementById(`series_search_${index}`).value = '';
+        document.getElementById(`series_search_${index}`).style.display = 'block';
+        document.getElementById(`series_selected_${index}`).style.display = 'none';
+      }
+
+      // Cerrar resultados al hacer click fuera
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.movie-search-item')) {
+          document.querySelectorAll('[id^="movie_results_"]').forEach(div => div.style.display = 'none');
+        }
+        if (!e.target.closest('.series-search-item')) {
+          document.querySelectorAll('[id^="series_results_"]').forEach(div => div.style.display = 'none');
+        }
+      });
+    </script>
 
     <hr>
 
