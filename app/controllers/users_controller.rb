@@ -71,9 +71,13 @@ class UsersController < ApplicationController
     generate_access_token(@user.id)
 
     if @user.user_filter_preference
-      @interests = Interest.where(id: (JSON.parse @user.user_filter_preference&.interests).values[0])
-      @categories = InfoItemValue.where(id: (JSON.parse @user.user_filter_preference&.categories).values[0])
-      
+      pref = @user.user_filter_preference
+      interest_ids = safe_extract_ids(pref&.interests)
+      category_ids = safe_extract_ids(pref&.categories)
+
+      @interests = Interest.where(id: interest_ids)
+      @categories = InfoItemValue.where(id: category_ids)
+
       @gender_preferences = UserFilterPreference.find_by(user_id: current_user.id)
     else
       @interests = []
@@ -2582,6 +2586,24 @@ end
 end
 
   private
+    # Safely parse stored JSON (hash or array) and return array of IDs
+    def safe_extract_ids(value)
+      return [] if value.blank?
+      begin
+        parsed = JSON.parse(value)
+      rescue JSON::ParserError, TypeError
+        return []
+      end
+
+      case parsed
+      when Array
+        parsed
+      when Hash
+        parsed.values.first || []
+      else
+        []
+      end
+    end
     # Use callbacks to share common setup or constraints between actions.
     def set_user
       @user = User.find(params[:id])
