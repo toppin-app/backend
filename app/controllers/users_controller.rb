@@ -1943,14 +1943,14 @@ end
 
 
     # Filtro final, SOLO este, no vuelvas a filtrar por discarded_users después
-    @users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests)
+    @users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :spotify_user_data)
             .where(id: user_ids)
             .where.not(id: users_to_exclude)
             .sort_by {|m| user_ids.index(m.id)}
     logger.info "USERS FINAL"
     
     if !@users.any? or @users.count < 30
-      @users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests)
+      @users = User.includes(:user_info_item_values, :user_interests, :user_media, :user_main_interests, :spotify_user_data)
                .where(id: user_ids)
                .where.not(id: current_user_id)
                .sort_by {|m| user_ids.index(m.id)}
@@ -1965,7 +1965,8 @@ render json: {
       :user_info_item_values,
       :user_main_interests,
       :tmdb_user_data,
-      :tmdb_user_series_data # <-- añade esto
+      :tmdb_user_series_data,
+      :spotify_user_data
     ]
   )}
 
