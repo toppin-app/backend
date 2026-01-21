@@ -295,22 +295,19 @@ class UserMatchRequestsController < ApplicationController
       else
         # Nos toca sugarplay
         if current_user.next_sugar_play == 0
-          umr = current_user.incoming_likes
-          # Si tenemos algún like
-          if umr.any?
-              umr = umr.shuffle
-              result = {
-                sugar_play: umr.first.user_id 
-              }
-              render json: result.to_json
+          incoming = current_user.incoming_likes
+          
+          if incoming.any?
+            suggested_user_id = incoming.shuffle.first.user_id
+            current_user.update(next_sugar_play: 120)
+            render json: { sugar_play: suggested_user_id }
           else
-            render json: "OK1".as_json
+            current_user.update(next_sugar_play: 120)
+            render json: { sugar_play: nil, message: "No incoming likes available" }
           end
-          current_user.update(next_sugar_play: 120)
-          logger.info result.inspect
         else
-          current_user.update(next_sugar_play: current_user.next_sugar_play-1)
-          render json: "OK2".as_json
+          current_user.update(next_sugar_play: current_user.next_sugar_play - 1)
+          render json: { sugar_play: false, next_in: current_user.next_sugar_play }
         end
       end
   end

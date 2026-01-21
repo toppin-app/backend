@@ -641,4 +641,14 @@ end
   def username
     self.user_name
   end
+
+  # Devuelve los likes recibidos que aún no tienen match
+  def incoming_likes
+    UserMatchRequest.where(
+      target_user: self.id,
+      is_match: false,
+      is_like: true,
+      is_rejected: false
+    )
+  end
 end
