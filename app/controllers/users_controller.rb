@@ -374,7 +374,14 @@ def update
     end
 
   respond_to do |format|
-    if @user.update(user_params)
+    # Decidir si actualizar con o sin contraseña
+    update_success = if params[:user][:password].blank?
+                       @user.update_without_password(user_params.except(:password, :password_confirmation))
+                     else
+                       @user.update(user_params)
+                     end
+
+    if update_success
 
       # 2️⃣ Subir imágenes solo si no hay desnudez
       if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
