@@ -23,15 +23,15 @@ COPY Gemfile Gemfile.lock ./
 # Installs the Gem File.
 RUN bundle install
 
-# Installs the webpacker for generate manifiest file.
-RUN rails webpacker:install
-
 # We copy all the files from the current directory to our
 # /app directory
 # Pay close attention to the dot (.)
 # The first one will select ALL The files of the current directory,
 # The second dot will copy it to the WORKDIR!
 COPY . .
+
+# Installs JavaScript dependencies
+RUN yarn install --check-files
 
 EXPOSE 3000
 CMD ["rails", "server", "-b", "0.0.0.0", "-p", "3000"]
