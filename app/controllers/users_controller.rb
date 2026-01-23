@@ -163,7 +163,7 @@ class UsersController < ApplicationController
     @title = "Editando usuario"
     @images = @user.user_media
     @edit = true
-    @route = "/update_user"
+    @route = update_user_path
   end
 
   # POST /users
