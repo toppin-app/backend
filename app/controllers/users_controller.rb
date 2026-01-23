@@ -297,6 +297,9 @@ class UsersController < ApplicationController
   # PATCH/PUT /users/1
   # PATCH/PUT /users/1.json
 def update
+  # Verificar si se está cambiando la contraseña ANTES de eliminar del hash
+  changing_password = params[:user] && params[:user][:password].present?
+  
   # Eliminar password y password_confirmation si están vacíos
   if params[:user]
     if params[:user][:password].to_s.blank?
@@ -374,11 +377,11 @@ def update
     end
 
   respond_to do |format|
-    # Decidir si actualizar con o sin contraseña
-    update_success = if params[:user][:password].blank?
-                       @user.update_without_password(user_params.except(:password, :password_confirmation))
-                     else
+    # Decidir si actualizar con o sin contraseña basado en la variable guardada
+    update_success = if changing_password
                        @user.update(user_params)
+                     else
+                       @user.update_without_password(user_params)
                      end
 
     if update_success
