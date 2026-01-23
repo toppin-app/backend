@@ -627,7 +627,7 @@
 
   <div class="field">
     <%= f.label "Contraseña" %>   <% if @edit %> <i>(Para mantener la contraseña actual mantener en blanco este campo)</i><br /> <% end %>
-    <%= f.password_field :password, autocomplete: "new-password", class: 'form-control' %>
+    <%= f.password_field :password, autocomplete: "off", value: "", class: 'form-control' %>
     <% if @minimum_password_length %>
       <br />
       <em><%= @minimum_password_length %> caracteres mínimo</em>
@@ -636,7 +636,7 @@
 
   <div class="field">
     <%= f.label "Confirmar contraseña" %><br />
-    <%= f.password_field :password_confirmation, autocomplete: "new-password", class: 'form-control' %>
+    <%= f.password_field :password_confirmation, autocomplete: "off", value: "", class: 'form-control' %>
   </div>
 
 <!--
