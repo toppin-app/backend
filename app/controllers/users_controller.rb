@@ -31,9 +31,13 @@ class UsersController < ApplicationController
           # Filtrar usuarios según si se quiere incluir eliminados o no
           base_users = params[:include_deleted] == '1' ? User.all : User.active_accounts
           
+          # Filtrar usuarios fake si se solicita
+          base_users = base_users.fake_users if params[:only_fake_users] == '1'
+          
           @q = base_users.ransack(params[:q])
           @users = @q.result.order("id DESC").paginate(:page => params[:page], :per_page => 15)
           @include_deleted = params[:include_deleted] == '1'
+          @only_fake_users = params[:only_fake_users] == '1'
           
           # Obtener lista única de países y ciudades para los filtros
           @countries = User.active_accounts.where.not(location_country: [nil, '']).distinct.pluck(:location_country).sort

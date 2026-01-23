@@ -88,6 +88,8 @@ class User < ApplicationRecord
     # Agregar scope para excluir cuentas eliminadas
   scope :active_accounts, -> { where(deleted_account: false) }
   scope :deleted_accounts, -> { where(deleted_account: true) }
+  scope :real_users, -> { where(fake_user: false) }
+  scope :fake_users, -> { where(fake_user: true) }
   #before_update :recalculate_percentage
   after_create :create_filters
   before_destroy :destroy_match_requests
