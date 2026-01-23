@@ -71,6 +71,19 @@
         <%= true_false(@user.admin) %>
       </p>
 
+      <p>
+        <strong>Usuario Fake/Bot:</strong>
+        <% if @user.fake_user %>
+          <span class="badge badge-info" style="font-size: 1.1em; padding: 8px;">
+            <i class="fa fa-robot"></i> SÍ - Usuario Fake
+          </span>
+        <% else %>
+          <span class="badge badge-success" style="font-size: 1.1em; padding: 8px;">
+            <i class="fa fa-user"></i> NO - Usuario Real
+          </span>
+        <% end %>
+      </p>
+
 
       <% if @user.is_premium %>
       <p class="alert alert-warning">

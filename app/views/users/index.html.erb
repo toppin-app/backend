@@ -85,10 +85,17 @@
       </span>
 
       <span style="margin-left: 5%;"> 
-        <%= check_box_tag :only_fake_users, '1', @only_fake_users, 
+        <%= check_box_tag :show_real_users, '1', @show_real_users, 
             onclick: "this.form.submit();", 
-            id: 'only_fake_users_checkbox' %>
-        <%= label_tag :only_fake_users, 'Solo usuarios fake', style: 'font-weight: normal; margin-left: 5px;' %>
+            id: 'show_real_users_checkbox' %>
+        <%= label_tag :show_real_users, 'Usuarios reales', style: 'font-weight: normal; margin-left: 5px;' %>
+      </span>
+
+      <span style="margin-left: 5%;"> 
+        <%= check_box_tag :show_fake_users, '1', @show_fake_users, 
+            onclick: "this.form.submit();", 
+            id: 'show_fake_users_checkbox' %>
+        <%= label_tag :show_fake_users, 'Usuarios fake', style: 'font-weight: normal; margin-left: 5px;' %>
       </span>
 
       <span style="margin-left: 5%;"> <small><%= link_to users_path, method: 'get' do %><i class="fa fa-times"
@@ -140,7 +147,7 @@
           <i class="fa fa-trash text-danger" title="Usuario eliminado"></i>
         <% end %>
         <% if user.fake_user %>
-          <i class="fa fa-robot text-warning" title="Usuario fake/bot"></i>
+          <i class="fa fa-robot text-info" style="font-size: 1.5em;" title="Usuario fake/bot"></i>
         <% end %>
         <%= user.id %></td>
       <td> 

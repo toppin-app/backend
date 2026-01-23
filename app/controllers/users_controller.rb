@@ -31,13 +31,23 @@ class UsersController < ApplicationController
           # Filtrar usuarios según si se quiere incluir eliminados o no
           base_users = params[:include_deleted] == '1' ? User.all : User.active_accounts
           
-          # Filtrar usuarios fake si se solicita
-          base_users = base_users.fake_users if params[:only_fake_users] == '1'
+          # Filtrar por tipo de usuario (real/fake)
+          show_real = params[:show_real_users] == '1'
+          show_fake = params[:show_fake_users] == '1'
+          
+          # Si solo se marca uno, filtrar por ese tipo
+          # Si se marcan ambos o ninguno, mostrar todos
+          if show_real && !show_fake
+            base_users = base_users.real_users
+          elsif show_fake && !show_real
+            base_users = base_users.fake_users
+          end
           
           @q = base_users.ransack(params[:q])
           @users = @q.result.order("id DESC").paginate(:page => params[:page], :per_page => 15)
           @include_deleted = params[:include_deleted] == '1'
-          @only_fake_users = params[:only_fake_users] == '1'
+          @show_real_users = show_real
+          @show_fake_users = show_fake
           
           # Obtener lista única de países y ciudades para los filtros
           @countries = User.active_accounts.where.not(location_country: [nil, '']).distinct.pluck(:location_country).sort
@@ -2623,7 +2633,7 @@ end
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :location_city, :location_country, 
-        :occupation, :studies, :popularity, :favorite_languages, :language
+        :occupation, :studies, :popularity, :favorite_languages, :language, :admin, :fake_user
       )
     end
     def redis
