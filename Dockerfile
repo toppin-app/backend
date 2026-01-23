@@ -33,7 +33,7 @@ RUN bundle install
 COPY . .
 
 # Installs JavaScript dependencies
-RUN yarn install --check-files
+RUN npm install
 
 EXPOSE 3000
 CMD ["rails", "server", "-b", "0.0.0.0", "-p", "3000"]
