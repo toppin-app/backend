@@ -1,4 +1,4 @@
-class AddFakeUserToUsers < ActiveRecord::Migration[6.1]
+class AddFakeUserToUsers < ActiveRecord::Migration[6.0]
   def change
     add_column :users, :fake_user, :boolean, default: false, null: false
     
