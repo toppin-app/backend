@@ -511,9 +511,12 @@ def update
         end
       end
 
-      format.html { redirect_to show_user_path(id: @user.id), notice: 'User was successfully updated.' }
+      format.html { redirect_to show_user_path(id: @user.id), notice: 'Usuario actualizado correctamente.' }
       format.json { render 'show' }
     else
+      # Construir mensaje de error detallado
+      error_fields = @user.errors.keys.map { |field| field.to_s.humanize }.join(', ')
+      flash.now[:alert] = "No se pudo actualizar el usuario. Errores en: #{error_fields}"
       format.html { render :edit }
       format.json { render json: @user.errors, status: :unprocessable_entity }
     end
