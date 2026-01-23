@@ -5,7 +5,7 @@ class AddFakeUserToUsers < ActiveRecord::Migration[6.1]
     # Marcar como fake_user a todos los usuarios que tengan @toppin o .toppin@ en el email
     reversible do |dir|
       dir.up do
-        User.where("email LIKE '%@toppin%' OR email LIKE '%.toppin@%'").update_all(fake_user: true)
+        execute "UPDATE users SET fake_user = true WHERE email LIKE '%@toppin%' OR email LIKE '%.toppin@%'"
       end
     end
   end
