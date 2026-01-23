@@ -51,14 +51,16 @@
   <div class="card card-body" style="margin-bottom: 20px;">
     <p><small><i>Establece la ubicación GPS del usuario. Esto es necesario para que aparezca en los swipes de otros usuarios.</i></small></p>
     
-    <div class="alert alert-info" style="padding: 10px; margin-bottom: 15px;">
-      <strong>Ubicaciones rápidas:</strong> 
-      <a href="#" onclick="setValenciaLocation(); return false;" class="badge badge-primary">Valencia</a>
-      <a href="#" onclick="setMadridLocation(); return false;" class="badge badge-primary">Madrid</a>
-      <a href="#" onclick="setBarcelonaLocation(); return false;" class="badge badge-primary">Barcelona</a>
-      <a href="#" onclick="setSevillaLocation(); return false;" class="badge badge-primary">Sevilla</a>
-      <a href="#" onclick="setBilbaoLocation(); return false;" class="badge badge-primary">Bilbao</a>
-      <a href="#" onclick="setMalagaLocation(); return false;" class="badge badge-primary">Málaga</a>
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <strong style="color: white; display: block; margin-bottom: 10px; font-size: 14px;">🌍 Ubicaciones rápidas:</strong> 
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <a href="#" onclick="setValenciaLocation(); return false;" class="btn btn-sm btn-light" style="font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📍 Valencia</a>
+        <a href="#" onclick="setMadridLocation(); return false;" class="btn btn-sm btn-light" style="font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📍 Madrid</a>
+        <a href="#" onclick="setBarcelonaLocation(); return false;" class="btn btn-sm btn-light" style="font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📍 Barcelona</a>
+        <a href="#" onclick="setSevillaLocation(); return false;" class="btn btn-sm btn-light" style="font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📍 Sevilla</a>
+        <a href="#" onclick="setBilbaoLocation(); return false;" class="btn btn-sm btn-light" style="font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📍 Bilbao</a>
+        <a href="#" onclick="setMalagaLocation(); return false;" class="btn btn-sm btn-light" style="font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📍 Málaga</a>
+      </div>
     </div>
     
     <div class="row">
