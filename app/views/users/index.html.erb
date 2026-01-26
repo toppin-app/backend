@@ -1,3 +1,38 @@
+<style>
+  /* Cursor pointer para elementos interactivos */
+  .form-check-label,
+  .form-check-input,
+  .btn,
+  a {
+    cursor: pointer;
+  }
+  
+  /* Hover effects para checkboxes */
+  .form-check-label:hover {
+    color: #667eea;
+    font-weight: 500;
+  }
+  
+  /* Hover para botones */
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+  }
+  
+  /* Hover para sort links */
+  .sort_link:hover {
+    color: #667eea !important;
+    text-decoration: underline;
+  }
+  
+  /* Hover para selects y inputs */
+  .form-control:hover,
+  .form-select:hover {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+  }
+</style>
 
 <div style="margin-bottom: 20px;">
   <%= button_to new_user_path, method: 'get', class: 'btn btn-success' do %>
