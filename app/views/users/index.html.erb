@@ -1,36 +1,99 @@
 <style>
-  /* Cursor pointer para elementos interactivos */
-  .form-check-label,
-  .form-check-input,
-  .btn,
-  a {
+  /* Cursores pointer para elementos interactivos */
+  .form-check-label, 
+  .form-check-input, 
+  .btn, 
+  a, 
+  .form-select, 
+  input[type="date"] {
     cursor: pointer;
   }
   
-  /* Hover effects para checkboxes */
+  /* Hover para los labels de los checkboxes */
   .form-check-label:hover {
     color: #667eea;
     font-weight: 500;
+    transform: scale(1.02);
   }
   
-  /* Hover para botones */
+  /* Hover para los checkboxes (switches) */
+  .form-check-input:hover {
+    border-color: #667eea !important;
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.4) !important;
+  }
+  
+  /* Hover para inputs de fecha */
+  input[type="date"]:hover {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.2) !important;
+    transform: translateY(-1px);
+  }
+  
+  input[type="date"]:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
+  }
+  
+  /* Hover para selects */
+  .form-select {
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+  }
+  
+  .form-select:hover {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.2) !important;
+    transform: translateY(-2px);
+    background-color: #f8f9ff;
+  }
+  
+  .form-select:focus {
+    border-color: #764ba2 !important;
+    box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.3) !important;
+    background-color: #fff;
+  }
+  
+  /* Hover para botón de ordenar */
+  .sort_link.btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    border: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .sort_link.btn:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+  }
+  
+  .sort_link.btn:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  }
+  
+  /* Hover para botón de limpiar filtros */
+  .btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    color: white !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.4);
+  }
+  
+  /* Hover para botones generales */
   .btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transition: all 0.2s ease;
   }
   
-  /* Hover para sort links */
-  .sort_link:hover {
-    color: #667eea !important;
-    text-decoration: underline;
-  }
-  
-  /* Hover para selects y inputs */
-  .form-control:hover,
-  .form-select:hover {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+  /* Transiciones suaves para todos los elementos */
+  .form-check-label,
+  .form-check-input,
+  .btn,
+  input[type="date"],
+  .form-select {
+    transition: all 0.3s ease;
   }
 </style>
 
