@@ -44,7 +44,8 @@ class UsersController < ApplicationController
           end
           
           @q = base_users.ransack(params[:q])
-          @users = @q.result.order("id DESC").paginate(:page => params[:page], :per_page => 15)
+          per_page = params[:per_page].present? ? params[:per_page].to_i : 15
+          @users = @q.result.order("id DESC").paginate(:page => params[:page], :per_page => per_page)
           @include_deleted = params[:include_deleted] == '1'
           @show_real_users = show_real
           @show_fake_users = show_fake

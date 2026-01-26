@@ -381,9 +381,21 @@
     </div>
   </div>
 
-  <!-- Botón limpiar filtros -->
+  <!-- Selector de items por página -->
   <div class="row mb-3">
-    <div class="col-md-12 text-end">
+    <div class="col-md-6">
+      <label class="form-label"><i class="fa fa-list"></i> <strong>Usuarios por página</strong></label>
+      <div class="d-flex align-items-center" style="gap: 10px;">
+        <%= select_tag :per_page,
+            options_for_select([["15 usuarios", 15], ["25 usuarios", 25], ["50 usuarios", 50], ["100 usuarios", 100]], params[:per_page] || 15),
+            class: 'form-select',
+            style: 'max-width: 200px;',
+            onchange: 'this.form.submit();' %>
+      </div>
+    </div>
+    
+    <div class="col-md-6 text-end">
+      <label class="form-label" style="visibility: hidden;">Espacio</label>
       <%= link_to users_path, method: 'get', class: 'btn btn-outline-danger' do %>
         <i class="fa fa-times"></i> Limpiar todos los filtros
       <% end %>
