@@ -1,56 +1,84 @@
 <style>
-  /* Cursores pointer para elementos interactivos */
+  /* Cursores pointer para elementos interactivos - Con !important para forzar el estilo */
   .form-check-label, 
   .form-check-input, 
+  .form-check,
   .btn, 
   a, 
-  .form-select, 
+  select.form-select, 
   input[type="date"] {
-    cursor: pointer;
+    cursor: pointer !important;
   }
   
   /* Hover para los labels de los checkboxes */
   .form-check-label:hover {
-    color: #667eea;
+    color: #667eea !important;
     font-weight: 500;
     transform: scale(1.02);
   }
   
   /* Hover para los checkboxes (switches) */
   .form-check-input:hover {
+    cursor: pointer !important;
     border-color: #667eea !important;
     box-shadow: 0 0 8px rgba(102, 126, 234, 0.4) !important;
   }
   
   /* Hover para inputs de fecha */
+  input[type="date"] {
+    cursor: pointer !important;
+    border-width: 2px;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  
   input[type="date"]:hover {
+    cursor: pointer !important;
     border-color: #667eea !important;
     box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.2) !important;
     transform: translateY(-1px);
   }
   
   input[type="date"]:focus {
+    cursor: pointer !important;
     border-color: #667eea !important;
     box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
   }
   
-  /* Hover para selects */
-  .form-select {
+  /* Estilos mejorados para selects */
+  select.form-select {
+    cursor: pointer !important;
     border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px 40px 10px 12px;
+    font-size: 15px;
+    font-weight: 500;
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
     transition: all 0.3s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
   }
   
-  .form-select:hover {
+  select.form-select:hover {
+    cursor: pointer !important;
     border-color: #667eea !important;
-    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25) !important;
     transform: translateY(-2px);
     background-color: #f8f9ff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235568d3' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   }
   
-  .form-select:focus {
+  select.form-select:focus {
+    cursor: pointer !important;
     border-color: #764ba2 !important;
-    box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.3) !important;
+    box-shadow: 0 0 0 0.3rem rgba(118, 75, 162, 0.3) !important;
     background-color: #fff;
+    outline: none;
   }
   
   /* Hover para botón de ordenar */
@@ -60,9 +88,11 @@
     border: none;
     font-weight: 500;
     transition: all 0.3s ease;
+    cursor: pointer !important;
   }
   
   .sort_link.btn:hover {
+    cursor: pointer !important;
     background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
@@ -74,7 +104,12 @@
   }
   
   /* Hover para botón de limpiar filtros */
+  .btn-outline-danger {
+    cursor: pointer !important;
+  }
+  
   .btn-outline-danger:hover {
+    cursor: pointer !important;
     background-color: #dc3545 !important;
     color: white !important;
     transform: translateY(-2px);
@@ -82,7 +117,12 @@
   }
   
   /* Hover para botones generales */
+  .btn {
+    cursor: pointer !important;
+  }
+  
   .btn:hover {
+    cursor: pointer !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   }
@@ -92,7 +132,7 @@
   .form-check-input,
   .btn,
   input[type="date"],
-  .form-select {
+  select.form-select {
     transition: all 0.3s ease;
   }
 </style>
