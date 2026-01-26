@@ -1,106 +1,108 @@
 
-<div>
-  <%= button_to new_user_path, method: 'get', class: 'btn btn-success btn-sm' do %>
-  <i class="fa fa-plus"></i> Nuevo usuario
+<div style="margin-bottom: 20px;">
+  <%= button_to new_user_path, method: 'get', class: 'btn btn-success' do %>
+    <i class="fa fa-plus"></i> Nuevo usuario
   <% end %>
 </div>
-<br>
 
-
-<div class="card">
-<div class="card-body">
+<div class="card shadow-sm">
+  <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <h5 class="mb-0"><i class="fa fa-filter"></i> Filtros de búsqueda</h5>
+  </div>
+  <div class="card-body">
 
   <%= search_form_for @q, url: users_path do |f| %>
 
-  <div class="row">
-    <div class="col col-md-6">
-      <div class="input-group-prepend" style="display: flex; align-items: center">
-        <%= f.search_field :email_or_name_cont, value: @search, class: 'form-control', placeholder: "Email o nombre del usuario", style: 'width: 90%; height: 40px' %>
-        <%= submit_tag("Buscar", class: 'btn btn-outline-primary', style: 'margin-left: 10px') %>
+  <!-- Búsqueda principal -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label class="form-label"><i class="fa fa-search"></i> <strong>Buscar usuario</strong></label>
+      <div class="input-group">
+        <%= f.search_field :email_or_name_cont, value: @search, class: 'form-control', placeholder: "Email o nombre del usuario" %>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa fa-search"></i> Buscar
+        </button>
       </div>
     </div>
 
-    <div class="col col-md-6 text-right" style="display: flex; align-items: center; height: 40px">
-      <div class="col col-md-4 text-right">
-        <small><b> Rango fechas: </b> </small>
-      </div>
-
-      <div class="col col-md-4">
-        <%= f.date_field :created_at_gteq, class: 'form-control', placeholder: "Inicio", style: 'height: 40px' %>
-      </div>
-
-      <div class="col col-md-4">
-        <%= f.date_field :created_at_lteq, class: 'form-control', placeholder: "Fin", style: 'height: 40px' %>
+    <div class="col-md-6">
+      <label class="form-label"><i class="fa fa-calendar"></i> <strong>Fecha de registro en la app</strong></label>
+      <div class="row">
+        <div class="col-6">
+          <%= f.date_field :created_at_gteq, class: 'form-control', placeholder: "Desde" %>
+        </div>
+        <div class="col-6">
+          <%= f.date_field :created_at_lteq, class: 'form-control', placeholder: "Hasta" %>
+        </div>
       </div>
     </div>
   </div>
 
-  <hr>
-
   <!-- Filtros de ubicación -->
-  <div class="row" style="margin-bottom: 15px;">
+  <div class="row mb-3">
     <div class="col-md-6">
-      <small><b>Filtrar por ubicación:</b></small>
-      <div style="display: flex; gap: 10px; margin-top: 5px;">
-        <div style="flex: 1;">
+      <label class="form-label"><i class="fa fa-map-marker-alt"></i> <strong>Ubicación</strong></label>
+      <div class="row">
+        <div class="col-6">
           <%= f.select :location_country_eq, 
               options_for_select([['Todos los países', '']] + @countries.map { |c| [c, c] }, params.dig(:q, :location_country_eq)), 
               {}, 
-              { class: 'form-control', style: 'height: 40px;', onchange: 'this.form.submit();' } %>
+              { class: 'form-select', onchange: 'this.form.submit();' } %>
         </div>
-        <div style="flex: 1;">
+        <div class="col-6">
           <%= f.select :location_city_eq, 
               options_for_select([['Todas las ciudades', '']] + @cities.map { |c| [c, c] }, params.dig(:q, :location_city_eq)), 
               {}, 
-              { class: 'form-control', style: 'height: 40px;', onchange: 'this.form.submit();' } %>
+              { class: 'form-select', onchange: 'this.form.submit();' } %>
         </div>
       </div>
     </div>
 
     <div class="col-md-6">
-      <!-- Espacio reservado para más filtros si es necesario -->
+      <label class="form-label"><i class="fa fa-sort"></i> <strong>Ordenar por</strong></label>
+      <div>
+        <%= sort_link(@q, :created_at, '<i class="fa fa-calendar"></i> Fecha de registro'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+      </div>
     </div>
   </div>
 
-  <hr>
+  <!-- Filtros de tipo de usuario -->
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <label class="form-label"><i class="fa fa-filter"></i> <strong>Filtros adicionales</strong></label>
+      <div class="d-flex flex-wrap gap-3" style="gap: 15px;">
+        <div class="form-check form-switch">
+          <%= check_box_tag :include_deleted, '1', @include_deleted, 
+              onclick: "this.form.submit();", 
+              class: 'form-check-input',
+              id: 'include_deleted_checkbox' %>
+          <%= label_tag :include_deleted, '🗑️ Incluir eliminados', class: 'form-check-label' %>
+        </div>
 
+        <div class="form-check form-switch">
+          <%= check_box_tag :show_real_users, '1', @show_real_users, 
+              onclick: "this.form.submit();", 
+              class: 'form-check-input',
+              id: 'show_real_users_checkbox' %>
+          <%= label_tag :show_real_users, '👤 Usuarios reales', class: 'form-check-label' %>
+        </div>
 
-  <div class="row">
-    <div class="col-md-6">
-      <small><b>Ordenar por:</b></small>
+        <div class="form-check form-switch">
+          <%= check_box_tag :show_fake_users, '1', @show_fake_users, 
+              onclick: "this.form.submit();", 
+              class: 'form-check-input',
+              id: 'show_fake_users_checkbox' %>
+          <%= label_tag :show_fake_users, '🤖 Usuarios fake', class: 'form-check-label' %>
+        </div>
 
-      <span
-        style="margin-left: 5%;"><small><%= sort_link(@q, :created_at, '<i class="fa fa-calendar"></i> Fecha'.html_safe) %></small></span>
+        <div class="ms-auto">
+          <%= link_to users_path, method: 'get', class: 'btn btn-outline-danger btn-sm' do %>
+            <i class="fa fa-times"></i> Limpiar filtros
+          <% end %>
+        </div>
+      </div>
     </div>
-
-
-    <div class="col-md-6">
-      <small><b>Mostrar:</b></small>
-
-      <span style="margin-left: 5%;"> 
-        <%= check_box_tag :include_deleted, '1', @include_deleted, 
-            onclick: "this.form.submit();", 
-            id: 'include_deleted_checkbox' %>
-        <%= label_tag :include_deleted, 'Incluir usuarios eliminados', style: 'font-weight: normal; margin-left: 5px;' %>
-      </span>
-
-      <span style="margin-left: 5%;"> 
-        <%= check_box_tag :show_real_users, '1', @show_real_users, 
-            onclick: "this.form.submit();", 
-            id: 'show_real_users_checkbox' %>
-        <%= label_tag :show_real_users, 'Usuarios reales', style: 'font-weight: normal; margin-left: 5px;' %>
-      </span>
-
-      <span style="margin-left: 5%;"> 
-        <%= check_box_tag :show_fake_users, '1', @show_fake_users, 
-            onclick: "this.form.submit();", 
-            id: 'show_fake_users_checkbox' %>
-        <%= label_tag :show_fake_users, 'Usuarios fake', style: 'font-weight: normal; margin-left: 5px;' %>
-      </span>
-
-      <span style="margin-left: 5%;"> <small><%= link_to users_path, method: 'get' do %><i class="fa fa-times"
-            aria-hidden="true"></i> Eliminar filtros<%end%></small></span>
-    </div>
+  </div>
 
 
   </div>
