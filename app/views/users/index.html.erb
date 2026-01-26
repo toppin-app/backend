@@ -491,46 +491,49 @@
 </table>
 </div>
 
-<!-- Selector de usuarios por página -->
-<div class="d-flex align-items-center justify-content-center" style="margin-top: 20px; gap: 10px;">
-  <label class="mb-0" style="font-weight: 500;"><i class="fa fa-list"></i> Mostrar:</label>
-  <%= form_tag users_path, method: :get, id: 'per_page_form', style: 'display: inline-flex; align-items: center; gap: 8px;' do %>
-    <%# Preservar parámetros de búsqueda solo si es un Hash %>
-    <% if params[:q].present? && params[:q].is_a?(Hash) %>
-      <% params[:q].each do |key, value| %>
-        <%= hidden_field_tag "q[#{key}]", value %>
+<!-- Contenedor de paginación -->
+<div class="card card-body" style="margin-top: 20px; padding: 15px;">
+  <!-- Selector de usuarios por página -->
+  <div class="d-flex align-items-center" style="gap: 10px; margin-bottom: 15px;">
+    <label class="mb-0" style="font-weight: 500;"><i class="fa fa-list"></i> Mostrar:</label>
+    <%= form_tag users_path, method: :get, id: 'per_page_form', style: 'display: inline-flex; align-items: center; gap: 8px;' do %>
+      <%# Preservar parámetros de búsqueda solo si es un Hash %>
+      <% if params[:q].present? && params[:q].is_a?(Hash) %>
+        <% params[:q].each do |key, value| %>
+          <%= hidden_field_tag "q[#{key}]", value %>
+        <% end %>
       <% end %>
+      <%= hidden_field_tag :include_deleted, params[:include_deleted] if params[:include_deleted] %>
+      <%= hidden_field_tag :show_real_users, params[:show_real_users] if params[:show_real_users] %>
+      <%= hidden_field_tag :show_fake_users, params[:show_fake_users] if params[:show_fake_users] %>
+      
+      <%= select_tag :per_page,
+          options_for_select([["15", 15], ["25", 25], ["50", 50], ["100", 100], ["Personalizado", "custom"]], params[:per_page] == 'custom' ? 'custom' : (params[:per_page] || 15)),
+          class: 'form-select',
+          style: 'width: auto; min-width: 120px;',
+          id: 'per_page_select',
+          onchange: 'handlePerPageChange(this.value);' %>
+      
+      <%= number_field_tag :custom_per_page,
+          params[:custom_per_page],
+          class: 'form-control',
+          placeholder: 'Cantidad',
+          min: 1,
+          max: 500,
+          style: "width: 100px; #{params[:per_page] == 'custom' ? '' : 'display: none;'}",
+          id: 'custom_per_page_input' %>
+      
+      <button type="submit" class="btn btn-primary btn-sm" style="#{params[:per_page] == 'custom' ? '' : 'display: none;'}" id="apply_custom_btn">
+        <i class="fa fa-check"></i> Aplicar
+      </button>
     <% end %>
-    <%= hidden_field_tag :include_deleted, params[:include_deleted] if params[:include_deleted] %>
-    <%= hidden_field_tag :show_real_users, params[:show_real_users] if params[:show_real_users] %>
-    <%= hidden_field_tag :show_fake_users, params[:show_fake_users] if params[:show_fake_users] %>
-    
-    <%= select_tag :per_page,
-        options_for_select([["15", 15], ["25", 25], ["50", 50], ["100", 100], ["Personalizado", "custom"]], params[:per_page] == 'custom' ? 'custom' : (params[:per_page] || 15)),
-        class: 'form-select',
-        style: 'width: auto; min-width: 120px;',
-        id: 'per_page_select',
-        onchange: 'handlePerPageChange(this.value);' %>
-    
-    <%= number_field_tag :custom_per_page,
-        params[:custom_per_page],
-        class: 'form-control',
-        placeholder: 'Cantidad',
-        min: 1,
-        max: 500,
-        style: "width: 100px; #{params[:per_page] == 'custom' ? '' : 'display: none;'}",
-        id: 'custom_per_page_input' %>
-    
-    <button type="submit" class="btn btn-primary btn-sm" style="#{params[:per_page] == 'custom' ? '' : 'display: none;'}" id="apply_custom_btn">
-      <i class="fa fa-check"></i> Aplicar
-    </button>
-  <% end %>
-  <span class="text-muted" style="font-size: 14px;">usuarios por página</span>
-</div>
+    <span class="text-muted" style="font-size: 14px;">usuarios por página</span>
+  </div>
 
-<!-- Paginación -->
-<div class="digg_pagination" style="margin-top: 15px;">
-  <%= will_paginate @users, :container => false %>
+  <!-- Paginación -->
+  <div class="digg_pagination">
+    <%= will_paginate @users, :container => false %>
+  </div>
 </div>
 
 <script>
