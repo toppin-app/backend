@@ -496,7 +496,12 @@
   <div class="d-flex align-items-center" style="gap: 10px;">
     <label class="mb-0" style="font-weight: 500;"><i class="fa fa-list"></i> Mostrar:</label>
     <%= form_tag users_path, method: :get, id: 'per_page_form', style: 'display: inline-flex; align-items: center; gap: 8px;' do %>
-      <%= hidden_field_tag :q, params[:q].to_json if params[:q] %>
+      <%# Preservar parámetros de búsqueda %>
+      <% if params[:q].present? %>
+        <% params[:q].each do |key, value| %>
+          <%= hidden_field_tag "q[#{key}]", value %>
+        <% end %>
+      <% end %>
       <%= hidden_field_tag :include_deleted, params[:include_deleted] if params[:include_deleted] %>
       <%= hidden_field_tag :show_real_users, params[:show_real_users] if params[:show_real_users] %>
       <%= hidden_field_tag :show_fake_users, params[:show_fake_users] if params[:show_fake_users] %>
