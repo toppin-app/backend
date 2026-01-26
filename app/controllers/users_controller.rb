@@ -44,7 +44,15 @@ class UsersController < ApplicationController
           end
           
           @q = base_users.ransack(params[:q])
-          per_page = params[:per_page].present? ? params[:per_page].to_i : 15
+          
+          # Manejar usuarios por página: personalizado o predefinido
+          if params[:per_page] == 'custom' && params[:custom_per_page].present?
+            per_page = [params[:custom_per_page].to_i, 500].min # Máximo 500
+            per_page = [per_page, 1].max # Mínimo 1
+          else
+            per_page = params[:per_page].present? ? params[:per_page].to_i : 15
+          end
+          
           @users = @q.result.order("id DESC").paginate(:page => params[:page], :per_page => per_page)
           @include_deleted = params[:include_deleted] == '1'
           @show_real_users = show_real
