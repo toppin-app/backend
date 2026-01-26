@@ -496,8 +496,8 @@
   <div class="d-flex align-items-center" style="gap: 10px;">
     <label class="mb-0" style="font-weight: 500;"><i class="fa fa-list"></i> Mostrar:</label>
     <%= form_tag users_path, method: :get, id: 'per_page_form', style: 'display: inline-flex; align-items: center; gap: 8px;' do %>
-      <%# Preservar parámetros de búsqueda %>
-      <% if params[:q].present? %>
+      <%# Preservar parámetros de búsqueda solo si es un Hash %>
+      <% if params[:q].present? && params[:q].is_a?(Hash) %>
         <% params[:q].each do |key, value| %>
           <%= hidden_field_tag "q[#{key}]", value %>
         <% end %>

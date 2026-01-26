@@ -22,11 +22,16 @@ class UsersController < ApplicationController
   def index
           @title = "Lista de usuarios"
 
-              if !params[:q].nil?
-                    @search = params[:q][:email_or_name_cont]
-                  else
-                    @search = ""
-              end
+          # Asegurarse de que params[:q] sea un hash
+          if params[:q].is_a?(String)
+            params[:q] = nil
+          end
+
+          if !params[:q].nil? && params[:q].is_a?(Hash)
+                @search = params[:q][:email_or_name_cont]
+              else
+                @search = ""
+          end
 
           # Filtrar usuarios según si se quiere incluir eliminados o no
           base_users = params[:include_deleted] == '1' ? User.all : User.active_accounts
