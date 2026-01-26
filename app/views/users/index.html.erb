@@ -29,10 +29,12 @@
       <label class="form-label"><i class="fa fa-calendar"></i> <strong>Fecha de registro en la app</strong></label>
       <div class="row">
         <div class="col-6">
-          <%= f.date_field :created_at_gteq, class: 'form-control', placeholder: "Desde" %>
+          <label class="form-label" style="font-size: 12px; margin-bottom: 5px;">Desde</label>
+          <%= f.date_field :created_at_gteq, class: 'form-control' %>
         </div>
         <div class="col-6">
-          <%= f.date_field :created_at_lteq, class: 'form-control', placeholder: "Hasta" %>
+          <label class="form-label" style="font-size: 12px; margin-bottom: 5px;">Hasta</label>
+          <%= f.date_field :created_at_lteq, class: 'form-control' %>
         </div>
       </div>
     </div>
@@ -70,37 +72,43 @@
   <div class="row mb-3">
     <div class="col-md-12">
       <label class="form-label"><i class="fa fa-filter"></i> <strong>Filtros adicionales</strong></label>
-      <div class="d-flex flex-wrap gap-3" style="gap: 15px;">
-        <div class="form-check form-switch">
+      <div class="d-flex flex-wrap align-items-center" style="gap: 20px;">
+        <div class="form-check form-switch d-flex align-items-center" style="margin: 0;">
           <%= check_box_tag :include_deleted, '1', @include_deleted, 
               onclick: "this.form.submit();", 
               class: 'form-check-input',
+              style: 'margin-top: 0;',
               id: 'include_deleted_checkbox' %>
-          <%= label_tag :include_deleted, '🗑️ Incluir eliminados', class: 'form-check-label' %>
+          <%= label_tag :include_deleted, '🗑️ Incluir eliminados', class: 'form-check-label', style: 'margin-left: 8px; margin-bottom: 0;' %>
         </div>
 
-        <div class="form-check form-switch">
+        <div class="form-check form-switch d-flex align-items-center" style="margin: 0;">
           <%= check_box_tag :show_real_users, '1', @show_real_users, 
               onclick: "this.form.submit();", 
               class: 'form-check-input',
+              style: 'margin-top: 0;',
               id: 'show_real_users_checkbox' %>
-          <%= label_tag :show_real_users, '👤 Usuarios reales', class: 'form-check-label' %>
+          <%= label_tag :show_real_users, '👤 Usuarios reales', class: 'form-check-label', style: 'margin-left: 8px; margin-bottom: 0;' %>
         </div>
 
-        <div class="form-check form-switch">
+        <div class="form-check form-switch d-flex align-items-center" style="margin: 0;">
           <%= check_box_tag :show_fake_users, '1', @show_fake_users, 
               onclick: "this.form.submit();", 
               class: 'form-check-input',
+              style: 'margin-top: 0;',
               id: 'show_fake_users_checkbox' %>
-          <%= label_tag :show_fake_users, '🤖 Usuarios fake', class: 'form-check-label' %>
-        </div>
-
-        <div class="ms-auto">
-          <%= link_to users_path, method: 'get', class: 'btn btn-outline-danger btn-sm' do %>
-            <i class="fa fa-times"></i> Limpiar filtros
-          <% end %>
+          <%= label_tag :show_fake_users, '🤖 Usuarios fake', class: 'form-check-label', style: 'margin-left: 8px; margin-bottom: 0;' %>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Botón limpiar filtros -->
+  <div class="row mb-3">
+    <div class="col-md-12 text-end">
+      <%= link_to users_path, method: 'get', class: 'btn btn-outline-danger' do %>
+        <i class="fa fa-times"></i> Limpiar todos los filtros
+      <% end %>
     </div>
   </div>
 
