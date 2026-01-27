@@ -61,32 +61,45 @@ class AdminUtilitiesController < ApplicationController
               progress[:skipped] = skipped
               Rails.cache.write('location_population_progress', progress)
               
-              # Hacer geocoding reverso
-              url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{user.lat}&lon=#{user.lng}"
-              response = HTTParty.get(url, headers: { "User-Agent" => "ToppinApp/1.0" })
+              # Hacer geocoding reverso con retry automático en caso de rate limit
+              max_retries = 3
+              attempt = 0
+              success = false
               
-              if response.code == 429
-                # Rate limit - esperar más tiempo
-                Rails.logger.warn "⚠️ Rate limit en Nominatim, esperando 5 segundos..."
-                sleep 5
-                retry
-              elsif response.success? && response['address']
-                address = response['address']
+              while attempt < max_retries && !success
+                url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{user.lat}&lon=#{user.lng}"
+                response = HTTParty.get(url, headers: { "User-Agent" => "ToppinApp/1.0" })
                 
-                city = address['city'] || address['town'] || address['village'] || address['hamlet'] || 
-                       address['municipality'] || address['county']
-                country = address['country']
-                
-                if city.present? || country.present?
-                  user.update_columns(
-                    location_city: city || user.location_city,
-                    location_country: country || user.location_country
-                  )
-                  processed += 1
+                if response.code == 429
+                  # Rate limit - esperar más tiempo
+                  Rails.logger.warn "⚠️ Rate limit en Nominatim (intento #{attempt + 1}/#{max_retries}), esperando 5 segundos..."
+                  sleep 5
+                  attempt += 1
+                elsif response.success? && response['address']
+                  address = response['address']
+                  
+                  city = address['city'] || address['town'] || address['village'] || address['hamlet'] || 
+                         address['municipality'] || address['county']
+                  country = address['country']
+                  
+                  if city.present? || country.present?
+                    user.update_columns(
+                      location_city: city || user.location_city,
+                      location_country: country || user.location_country
+                    )
+                    processed += 1
+                  else
+                    skipped += 1
+                  end
+                  success = true
                 else
-                  skipped += 1
+                  errors += 1
+                  success = true
                 end
-              else
+              end
+              
+              # Si llegamos al max de retries, contar como error
+              if !success
                 errors += 1
               end
               
