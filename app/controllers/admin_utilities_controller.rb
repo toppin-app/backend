@@ -39,76 +39,85 @@ class AdminUtilitiesController < ApplicationController
 
     # Ejecutar en un thread para no bloquear la petición
     Thread.new do
-      begin
-        # Buscar usuarios
-        users = User.where.not(lat: [nil, '']).where.not(lng: [nil, ''])
-                    .where("location_country IS NULL OR location_country = '' OR location_city IS NULL OR location_city = ''")
-        
-        total = users.count
-        progress[:total] = total
-        Rails.cache.write('location_population_progress', progress)
-        
-        processed = 0
-        errors = 0
-        skipped = 0
-        
-        users.find_each.with_index do |user, index|
-          begin
-            progress[:current_user] = { id: user.id, name: user.name, index: index + 1 }
-            Rails.cache.write('location_population_progress', progress)
-            
-            # Hacer geocoding reverso
-            url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{user.lat}&lon=#{user.lng}"
-            response = HTTParty.get(url, headers: { "User-Agent" => "ToppinApp/1.0" })
-            
-            if response.success? && response['address']
-              address = response['address']
+      ActiveRecord::Base.connection_pool.with_connection do
+        begin
+          # Buscar usuarios
+          users = User.where.not(lat: [nil, '']).where.not(lng: [nil, ''])
+                      .where("location_country IS NULL OR location_country = '' OR location_city IS NULL OR location_city = ''")
+          
+          total = users.count
+          progress[:total] = total
+          Rails.cache.write('location_population_progress', progress)
+          
+          processed = 0
+          errors = 0
+          skipped = 0
+          
+          users.find_each.with_index do |user, index|
+            begin
+              progress[:current_user] = { id: user.id, name: user.name, index: index + 1 }
+              progress[:processed] = processed
+              progress[:errors] = errors
+              progress[:skipped] = skipped
+              Rails.cache.write('location_population_progress', progress)
               
-              city = address['city'] || address['town'] || address['village'] || address['hamlet'] || 
-                     address['municipality'] || address['county']
-              country = address['country']
+              # Hacer geocoding reverso
+              url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{user.lat}&lon=#{user.lng}"
+              response = HTTParty.get(url, headers: { "User-Agent" => "ToppinApp/1.0" })
               
-              if city.present? || country.present?
-                user.update_columns(
-                  location_city: city || user.location_city,
-                  location_country: country || user.location_country
-                )
-                processed += 1
+              if response.code == 429
+                # Rate limit - esperar más tiempo
+                Rails.logger.warn "⚠️ Rate limit en Nominatim, esperando 5 segundos..."
+                sleep 5
+                retry
+              elsif response.success? && response['address']
+                address = response['address']
+                
+                city = address['city'] || address['town'] || address['village'] || address['hamlet'] || 
+                       address['municipality'] || address['county']
+                country = address['country']
+                
+                if city.present? || country.present?
+                  user.update_columns(
+                    location_city: city || user.location_city,
+                    location_country: country || user.location_country
+                  )
+                  processed += 1
+                else
+                  skipped += 1
+                end
               else
-                skipped += 1
+                errors += 1
               end
-            else
+              
+              # Respetar límites de Nominatim (1 req/sec)
+              sleep 1
+              
+            rescue => e
               errors += 1
+              progress[:errors] = errors
+              Rails.cache.write('location_population_progress', progress)
+              Rails.logger.error "Error procesando usuario #{user.id}: #{e.message}"
             end
-            
-            # Actualizar progreso
-            progress[:processed] = processed
-            progress[:errors] = errors
-            progress[:skipped] = skipped
-            Rails.cache.write('location_population_progress', progress)
-            
-            # Respetar límites de Nominatim
-            sleep 1
-            
-          rescue => e
-            errors += 1
-            progress[:errors] = errors
-            Rails.cache.write('location_population_progress', progress)
           end
+          
+          # Marcar como completado
+          progress[:status] = 'completed'
+          progress[:completed_at] = Time.current
+          progress[:current_user] = nil
+          progress[:processed] = processed
+          progress[:errors] = errors
+          progress[:skipped] = skipped
+          Rails.cache.write('location_population_progress', progress)
+          
+        rescue => e
+          progress[:status] = 'error'
+          progress[:error_message] = e.message
+          Rails.cache.write('location_population_progress', progress)
+          Rails.logger.error "Error en populate_locations thread: #{e.message}\n#{e.backtrace.join("\n")}"
+        ensure
+          Rails.cache.delete('location_population_running')
         end
-        
-        # Marcar como completado
-        progress[:status] = 'completed'
-        progress[:completed_at] = Time.current
-        progress[:current_user] = nil
-        Rails.cache.write('location_population_progress', progress)
-        
-      rescue => e
-        progress[:status] = 'error'
-        progress[:error_message] = e.message
-        Rails.cache.write('location_population_progress', progress)
-      ensure
-        Rails.cache.delete('location_population_running')
       end
     end
 
