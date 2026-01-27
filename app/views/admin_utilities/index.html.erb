@@ -1,95 +1,95 @@
 <style>
   body {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #f8f9fa;
   }
   
   .utilities-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 40px 30px;
-    border-radius: 16px;
-    margin-bottom: 30px;
-    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    padding: 20px 25px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
   }
   
   .utilities-header h1 {
-    font-size: 32px;
-    font-weight: 700;
-    margin: 0 0 10px 0;
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
+  }
+  
+  .utilities-header h1 i {
+    font-size: 20px;
   }
   
   .utilities-header p {
     margin: 0;
     opacity: 0.9;
-    font-size: 16px;
+    font-size: 13px;
+  }
+  
+  .utilities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
   }
   
   .utility-card {
     background: white;
-    border-radius: 16px;
-    padding: 30px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(102, 126, 234, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-left: 3px solid #667eea;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
-  }
-  
-  .utility-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
   
   .utility-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
   
   .utility-card h3 {
     color: #2d3748;
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
   
   .utility-card h3 i {
     color: #667eea;
-    font-size: 28px;
+    font-size: 18px;
   }
   
   .utility-card > p {
     color: #718096;
-    line-height: 1.7;
-    margin-bottom: 20px;
-    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    font-size: 13px;
   }
   
   .info-badge {
-    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    background: #e0f2fe;
     border: 1px solid #7dd3fc;
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin: 16px 0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 10px 0;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    font-size: 12px;
   }
   
   .info-badge i {
     color: #0369a1;
-    font-size: 24px;
+    font-size: 14px;
   }
   
   .info-badge strong {
@@ -97,19 +97,20 @@
   }
   
   .warning-badge {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    background: #fef3c7;
     border: 1px solid #fbbf24;
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin: 16px 0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 10px 0;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    font-size: 12px;
   }
   
   .warning-badge i {
     color: #d97706;
-    font-size: 24px;
+    font-size: 14px;
   }
   
   .warning-badge strong {
@@ -120,21 +121,25 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     color: white;
-    padding: 16px 40px;
-    font-size: 18px;
+    padding: 10px 20px;
+    font-size: 14px;
     font-weight: 600;
-    border-radius: 12px;
+    border-radius: 6px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+  }
+  
+  .btn-start i {
+    font-size: 13px;
   }
   
   .btn-start:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
   
   .btn-start:disabled {
@@ -145,34 +150,34 @@
   .status-running {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    gap: 6px;
+    background: #fef3c7;
     color: #78350f;
-    padding: 8px 16px;
-    border-radius: 20px;
+    padding: 6px 12px;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 14px;
-    margin-left: 12px;
+    font-size: 12px;
+    margin-left: 10px;
   }
   
   .progress-container {
     display: none;
-    margin-top: 30px;
-    padding: 30px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 16px;
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 8px;
     border: 1px solid #e2e8f0;
   }
   
   .progress-container.active {
     display: block;
-    animation: slideIn 0.4s ease;
+    animation: slideIn 0.3s ease;
   }
   
   @keyframes slideIn {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;
@@ -183,14 +188,14 @@
   .spinner-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
   }
   
   .spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid rgba(102, 126, 234, 0.1);
-    border-top: 4px solid #667eea;
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(102, 126, 234, 0.1);
+    border-top: 3px solid #667eea;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -203,22 +208,22 @@
   .status-title {
     text-align: center;
     color: #2d3748;
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 24px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
   }
   
   .progress-wrapper {
     position: relative;
-    margin-bottom: 24px;
+    margin-bottom: 15px;
   }
   
   .progress {
-    height: 40px;
+    height: 28px;
     background: #e2e8f0;
-    border-radius: 20px;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
   }
   
   .progress-bar {
@@ -228,58 +233,57 @@
     align-items: center;
     justify-content: center;
     transition: width 0.4s ease;
-    font-weight: 700;
-    font-size: 16px;
+    font-weight: 600;
+    font-size: 13px;
     color: white;
-    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.4);
   }
   
   .current-user-info {
     text-align: center;
-    padding: 16px;
+    padding: 10px;
     background: white;
-    border-radius: 12px;
-    margin-bottom: 24px;
+    border-radius: 6px;
+    margin-bottom: 15px;
     color: #4a5568;
-    font-size: 15px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    font-size: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
   
   .current-user-info i {
     color: #667eea;
-    margin-right: 8px;
+    margin-right: 6px;
   }
   
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
     margin-top: 0;
   }
   
   .stat-box {
     background: white;
-    padding: 24px;
-    border-radius: 12px;
+    padding: 12px;
+    border-radius: 6px;
     text-align: center;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
     border: 1px solid #e2e8f0;
   }
   
   .stat-box:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
   
   .stat-number {
-    font-size: 36px;
-    font-weight: 800;
+    font-size: 24px;
+    font-weight: 700;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
   
   .stat-number.text-success {
@@ -301,7 +305,7 @@
   }
   
   .stat-label {
-    font-size: 12px;
+    font-size: 10px;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -310,51 +314,62 @@
   
   .completed-message {
     display: none;
-    margin-top: 24px;
-    animation: slideIn 0.4s ease;
+    margin-top: 15px;
+    animation: slideIn 0.3s ease;
   }
   
   .success-alert {
     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
     border: 2px solid #34d399;
-    border-radius: 16px;
-    padding: 32px;
+    border-radius: 8px;
+    padding: 20px;
     text-align: center;
   }
   
   .success-alert i {
     color: #059669;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
   
   .success-alert h5 {
     color: #065f46;
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
   }
   
   .success-alert p {
     color: #047857;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
+    font-size: 13px;
   }
   
   .btn-reload {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     border: none;
     color: white;
-    padding: 14px 32px;
-    font-size: 16px;
+    padding: 10px 20px;
+    font-size: 13px;
     font-weight: 600;
-    border-radius: 10px;
+    border-radius: 6px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     cursor: pointer;
   }
   
   .btn-reload:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
+  }
+  
+  @media (max-width: 768px) {
+    .utilities-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 </style>
 
@@ -367,96 +382,99 @@
     <p>Herramientas administrativas para mantenimiento del sistema</p>
   </div>
 
-  <!-- Utilidad: Poblar Ubicaciones -->
-  <div class="utility-card">
-    <h3><i class="fas fa-map-marker-alt"></i> Poblar Ubicaciones desde Coordenadas</h3>
-    <p>
-      Esta herramienta busca usuarios que tienen coordenadas (latitud/longitud) pero no tienen 
-      los campos de ubicación (ciudad y país) poblados. Hace geocoding reverso para obtener 
-      la información de ubicación y la guarda en la base de datos.
-    </p>
-    
-    <div class="info-badge">
-      <i class="fas fa-info-circle"></i> 
-      <div>
-        <strong>Usuarios pendientes:</strong> <%= @users_needing_location %> usuarios necesitan actualización
-      </div>
-    </div>
-
-    <% if @users_needing_location > 0 %>
-      <div class="warning-badge">
-        <i class="fas fa-clock"></i>
+  <div class="utilities-grid">
+    <!-- Utilidad: Poblar Ubicaciones -->
+    <div class="utility-card">
+      <h3><i class="fas fa-map-marker-alt"></i> Poblar Ubicaciones</h3>
+      <p>
+        Geocoding reverso para usuarios con coordenadas pero sin ciudad/país.
+      </p>
+      
+      <div class="info-badge">
+        <i class="fas fa-info-circle"></i> 
         <div>
-          <strong>Tiempo estimado:</strong> ~<%= @users_needing_location %> segundos 
-          (1 segundo por usuario debido a límites de la API)
+          <strong>Usuarios pendientes:</strong> <%= @users_needing_location %> usuarios
         </div>
       </div>
-    <% end %>
 
-    <button id="startPopulateBtn" class="btn-start" onclick="startPopulateLocations()" 
-            <%= 'disabled' if @users_needing_location == 0 || (@current_progress && @current_progress[:status] == 'running') %>>
-      <i class="fas fa-rocket"></i> Iniciar Proceso
-    </button>
+      <% if @users_needing_location > 0 %>
+        <div class="warning-badge">
+          <i class="fas fa-clock"></i>
+          <div>
+            <strong>Tiempo estimado:</strong> ~<%= @users_needing_location %> segundos
+          </div>
+        </div>
+      <% end %>
 
-    <% if @current_progress && @current_progress[:status] == 'running' %>
-      <span class="status-running">
-        <i class="fas fa-spinner fa-spin"></i> Proceso en ejecución
-      </span>
-    <% end %>
+      <button id="startPopulateBtn" class="btn-start" onclick="startPopulateLocations()" 
+              <%= 'disabled' if @users_needing_location == 0 || (@current_progress && @current_progress[:status] == 'running') %>>
+        <i class="fas fa-rocket"></i> Iniciar
+      </button>
 
-    <!-- Contenedor de Progreso -->
-    <div id="progressContainer" class="progress-container <%= 'active' if @current_progress && @current_progress[:status] == 'running' %>">
-      <div class="spinner-container">
-        <div id="loadingSpinner" class="spinner"></div>
-      </div>
-      
-      <h4 class="status-title">
-        <span id="statusText">Procesando ubicaciones...</span>
-      </h4>
+      <% if @current_progress && @current_progress[:status] == 'running' %>
+        <span class="status-running">
+          <i class="fas fa-spinner fa-spin"></i> En ejecución
+        </span>
+      <% end %>
 
-      <div id="currentUserInfo" class="current-user-info">
-        <i class="fas fa-user-circle"></i> <span id="currentUserText">Iniciando...</span>
-      </div>
+      <!-- Contenedor de Progreso -->
+      <div id="progressContainer" class="progress-container <%= 'active' if @current_progress && @current_progress[:status] == 'running' %>">
+        <div class="spinner-container">
+          <div id="loadingSpinner" class="spinner"></div>
+        </div>
+        
+        <h4 class="status-title">
+          <span id="statusText">Procesando...</span>
+        </h4>
 
-      <div class="progress-wrapper">
-        <div class="progress">
-          <div id="progressBar" class="progress-bar" 
-               role="progressbar" style="width: 0%">
-            <span id="progressText">0%</span>
+        <div id="currentUserInfo" class="current-user-info">
+          <i class="fas fa-user-circle"></i> <span id="currentUserText">Iniciando...</span>
+        </div>
+
+        <div class="progress-wrapper">
+          <div class="progress">
+            <div id="progressBar" class="progress-bar" 
+                 role="progressbar" style="width: 0%">
+              <span id="progressText">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-number" id="statTotal">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number text-success" id="statProcessed">0</div>
+            <div class="stat-label">Procesados</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number text-warning" id="statSkipped">0</div>
+            <div class="stat-label">Sin datos</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number text-danger" id="statErrors">0</div>
+            <div class="stat-label">Errores</div>
+          </div>
+        </div>
+
+        <div id="completedMessage" class="completed-message">
+          <div class="success-alert">
+            <i class="fas fa-check-circle fa-3x"></i>
+            <h5>¡Completado!</h5>
+            <p>Ubicaciones actualizadas correctamente.</p>
+            <button class="btn-reload" onclick="window.location.reload()">
+              <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
           </div>
         </div>
       </div>
-
-      <div class="stats-grid">
-        <div class="stat-box">
-          <div class="stat-number" id="statTotal">0</div>
-          <div class="stat-label">Total</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-number text-success" id="statProcessed">0</div>
-          <div class="stat-label">Procesados</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-number text-warning" id="statSkipped">0</div>
-          <div class="stat-label">Sin datos</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-number text-danger" id="statErrors">0</div>
-          <div class="stat-label">Errores</div>
-        </div>
-      </div>
-
-      <div id="completedMessage" class="completed-message">
-        <div class="success-alert">
-          <i class="fas fa-check-circle fa-4x"></i>
-          <h5>¡Proceso Completado Exitosamente!</h5>
-          <p>Las ubicaciones han sido actualizadas correctamente en la base de datos.</p>
-          <button class="btn-reload" onclick="window.location.reload()">
-            <i class="fas fa-sync-alt"></i> Actualizar Página
-          </button>
-        </div>
-      </div>
     </div>
+    <!-- Fin de Utilidad: Poblar Ubicaciones -->
+    
+    <!-- Aquí se pueden agregar más utilidades en el futuro -->
+    
   </div>
 </div>
 
@@ -531,7 +549,7 @@ function updateProgress(progress) {
 
 function showCompleted(progress) {
   document.getElementById('loadingSpinner').style.display = 'none';
-  document.getElementById('statusText').textContent = '✓ Completado Exitosamente';
+  document.getElementById('statusText').textContent = '✓ Completado';
   document.getElementById('currentUserInfo').style.display = 'none';
   document.getElementById('completedMessage').style.display = 'block';
 }
