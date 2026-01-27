@@ -417,59 +417,42 @@
         </span>
       <% end %>
 
-      <!-- Contenedor de Progreso -->
-      <div id="progressContainer" class="progress-container <%= 'active' if @current_progress && @current_progress[:status] == 'running' %>">
+      <!-- Contenedor de Proceso -->
+      <div id="processContainer" class="progress-container <%= 'active' if @current_progress && @current_progress[:status] == 'running' %>">
         <div class="spinner-container">
-          <div id="loadingSpinner" class="spinner"></div>
+          <div class="spinner"></div>
         </div>
         
-        <h4 class="status-title">
-          <span id="statusText">Procesando...</span>
-        </h4>
+        <h4 class="status-title">Procesando ubicaciones...</h4>
+        
+        <p style="text-align: center; color: #64748b; font-size: 13px; margin-top: 15px;">
+          Este proceso puede tardar varios minutos.<br>
+          Puedes cerrar esta ventana y volver más tarde.<br>
+          <strong>Tiempo estimado: ~<%= @users_needing_location %> segundos</strong>
+        </p>
 
-        <div id="currentUserInfo" class="current-user-info">
-          <i class="fas fa-user-circle"></i> <span id="currentUserText">Iniciando...</span>
-        </div>
+        <button class="btn-reload" onclick="window.location.reload()" style="margin-top: 20px;">
+          <i class="fas fa-sync-alt"></i> Verificar Estado
+        </button>
+      </div>
 
-        <div class="progress-wrapper">
-          <div class="progress">
-            <div id="progressBar" class="progress-bar" 
-                 role="progressbar" style="width: 0%">
-              <span id="progressText">0%</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-number" id="statTotal">0</div>
-            <div class="stat-label">Total</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number text-success" id="statProcessed">0</div>
-            <div class="stat-label">Procesados</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number text-warning" id="statSkipped">0</div>
-            <div class="stat-label">Sin datos</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number text-danger" id="statErrors">0</div>
-            <div class="stat-label">Errores</div>
-          </div>
-        </div>
-
-        <div id="completedMessage" class="completed-message">
+      <% if @current_progress && @current_progress[:status] == 'completed' %>
+        <div class="completed-message" style="display: block; margin-top: 15px;">
           <div class="success-alert">
             <i class="fas fa-check-circle fa-3x"></i>
-            <h5>¡Completado!</h5>
-            <p>Ubicaciones actualizadas correctamente.</p>
-            <button class="btn-reload" onclick="window.location.reload()">
-              <i class="fas fa-sync-alt"></i> Actualizar
+            <h5>¡Proceso Completado!</h5>
+            <p>
+              Total: <%= @current_progress[:total] %> | 
+              Procesados: <%= @current_progress[:processed] %> | 
+              Sin datos: <%= @current_progress[:skipped] %> | 
+              Errores: <%= @current_progress[:errors] %>
+            </p>
+            <button class="btn-reload" onclick="clearProgress()">
+              <i class="fas fa-check"></i> Aceptar
             </button>
           </div>
         </div>
-      </div>
+      <% end %>
     </div>
     <!-- Fin de Utilidad: Poblar Ubicaciones -->
     
@@ -479,8 +462,6 @@
 </div>
 
 <script>
-let pollInterval = null;
-
 function startPopulateLocations() {
   const btn = document.getElementById('startPopulateBtn');
   btn.disabled = true;
@@ -495,69 +476,25 @@ function startPopulateLocations() {
   })
   .then(response => response.json())
   .then(data => {
-    document.getElementById('progressContainer').classList.add('active');
-    startPolling();
+    document.getElementById('processContainer').classList.add('active');
+    btn.style.display = 'none';
   })
   .catch(error => {
     alert('Error al iniciar el proceso: ' + error);
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa fa-play"></i> Iniciar Proceso';
+    btn.innerHTML = '<i class="fas fa-rocket"></i> Iniciar';
   });
 }
 
-function startPolling() {
-  if (pollInterval) clearInterval(pollInterval);
-  
-  pollInterval = setInterval(() => {
-    fetch('<%= location_progress_admin_utilities_path %>')
-      .then(response => response.json())
-      .then(progress => {
-        updateProgress(progress);
-        
-        if (progress.status === 'completed' || progress.status === 'error') {
-          clearInterval(pollInterval);
-          showCompleted(progress);
-        }
-      });
-  }, 1000); // Actualizar cada segundo
-}
-
-function updateProgress(progress) {
-  if (progress.status === 'idle') return;
-  
-  const total = progress.total || 0;
-  const processed = progress.processed || 0;
-  const errors = progress.errors || 0;
-  const skipped = progress.skipped || 0;
-  
-  const percentage = total > 0 ? Math.round((processed + errors + skipped) / total * 100) : 0;
-  
-  document.getElementById('progressBar').style.width = percentage + '%';
-  document.getElementById('progressText').textContent = percentage + '%';
-  
-  document.getElementById('statTotal').textContent = total;
-  document.getElementById('statProcessed').textContent = processed;
-  document.getElementById('statSkipped').textContent = skipped;
-  document.getElementById('statErrors').textContent = errors;
-  
-  if (progress.current_user) {
-    const current = progress.current_user;
-    document.getElementById('currentUserText').textContent = 
-      `Usuario #${current.id} - ${current.name || 'Sin nombre'} (${current.index}/${total})`;
-  }
-}
-
-function showCompleted(progress) {
-  document.getElementById('loadingSpinner').style.display = 'none';
-  document.getElementById('statusText').textContent = '✓ Completado';
-  document.getElementById('currentUserInfo').style.display = 'none';
-  document.getElementById('completedMessage').style.display = 'block';
-}
-
-// Si ya hay un proceso en ejecución al cargar la página, iniciar polling
-<% if @current_progress && @current_progress[:status] == 'running' %>
-  window.addEventListener('load', () => {
-    startPolling();
+function clearProgress() {
+  fetch('<%= clear_location_progress_admin_utilities_path %>', {
+    method: 'DELETE',
+    headers: {
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(() => {
+    window.location.reload();
   });
-<% end %>
+}
 </script>
