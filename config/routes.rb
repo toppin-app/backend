@@ -74,6 +74,12 @@ Rails.application.routes.draw do
   # Rutas para deshacer swipe
   put 'users/rollback', to: 'users#rollback'
   
+  # Admin Utilities
+  get '/admin/utilities', to: 'admin_utilities#index', as: :admin_utilities
+  post '/admin/utilities/populate_locations', to: 'admin_utilities#populate_locations', as: :populate_locations_admin_utilities
+  get '/admin/utilities/location_progress', to: 'admin_utilities#location_progress', as: :location_progress_admin_utilities
+  delete '/admin/utilities/clear_location_progress', to: 'admin_utilities#clear_location_progress', as: :clear_location_progress_admin_utilities
+  
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user
   get '/new_user' => 'users#new', as: :new_user

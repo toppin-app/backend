@@ -1,0 +1,255 @@
+<style>
+  .utility-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+  }
+  
+  .utility-card h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+  }
+  
+  .progress-container {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  .progress-container.active {
+    display: block;
+  }
+  
+  .progress {
+    height: 30px;
+    border-radius: 15px;
+    overflow: hidden;
+  }
+  
+  .progress-bar {
+    transition: width 0.3s ease;
+    font-weight: 500;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+  }
+  
+  .stat-box {
+    padding: 15px;
+    background: white;
+    border-radius: 6px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #667eea;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-top: 5px;
+  }
+  
+  .spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+
+<div class="container-fluid">
+  <h1><i class="fa fa-tools"></i> <%= @title %></h1>
+  <p class="text-muted">Herramientas administrativas y de mantenimiento del sistema</p>
+
+  <hr>
+
+  <!-- Utilidad: Poblar Ubicaciones -->
+  <div class="utility-card">
+    <h3><i class="fa fa-map-marker-alt"></i> Poblar Ubicaciones desde Coordenadas</h3>
+    <p>
+      Esta herramienta busca usuarios que tienen coordenadas (latitud/longitud) pero no tienen 
+      los campos de ubicación (ciudad y país) poblados. Hace geocoding reverso para obtener 
+      la información de ubicación y la guarda en la base de datos.
+    </p>
+    
+    <div class="alert alert-info">
+      <i class="fa fa-info-circle"></i> 
+      <strong>Usuarios pendientes:</strong> <%= @users_needing_location %> usuarios necesitan actualización
+    </div>
+
+    <% if @users_needing_location > 0 %>
+      <div class="alert alert-warning">
+        <i class="fa fa-clock"></i>
+        <strong>Tiempo estimado:</strong> ~<%= @users_needing_location %> segundos 
+        (1 segundo por usuario debido a límites de la API)
+      </div>
+    <% end %>
+
+    <button id="startPopulateBtn" class="btn btn-primary btn-lg" onclick="startPopulateLocations()" 
+            <%= 'disabled' if @users_needing_location == 0 || (@current_progress && @current_progress[:status] == 'running') %>>
+      <i class="fa fa-play"></i> Iniciar Proceso
+    </button>
+
+    <% if @current_progress && @current_progress[:status] == 'running' %>
+      <span class="badge badge-warning" style="font-size: 14px; margin-left: 10px;">
+        <i class="fa fa-spinner fa-spin"></i> Proceso en ejecución
+      </span>
+    <% end %>
+
+    <!-- Contenedor de Progreso -->
+    <div id="progressContainer" class="progress-container <%= 'active' if @current_progress && @current_progress[:status] == 'running' %>">
+      <div id="loadingSpinner" class="spinner"></div>
+      
+      <h4 class="text-center mb-3">
+        <span id="statusText">Procesando ubicaciones...</span>
+      </h4>
+
+      <div class="progress mb-3">
+        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+             role="progressbar" style="width: 0%">
+          <span id="progressText">0%</span>
+        </div>
+      </div>
+
+      <div id="currentUserInfo" class="text-center mb-3" style="font-size: 14px; color: #6c757d;">
+        <i class="fa fa-user"></i> Procesando...
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-number" id="statTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number text-success" id="statProcessed">0</div>
+          <div class="stat-label">Procesados</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number text-warning" id="statSkipped">0</div>
+          <div class="stat-label">Sin datos</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number text-danger" id="statErrors">0</div>
+          <div class="stat-label">Errores</div>
+        </div>
+      </div>
+
+      <div id="completedMessage" style="display: none; margin-top: 20px;">
+        <div class="alert alert-success text-center">
+          <i class="fa fa-check-circle fa-2x mb-2"></i>
+          <h5>¡Proceso Completado!</h5>
+          <p class="mb-0">Las ubicaciones han sido actualizadas exitosamente.</p>
+          <button class="btn btn-primary mt-3" onclick="window.location.reload()">
+            <i class="fa fa-sync"></i> Actualizar Página
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let pollInterval = null;
+
+function startPopulateLocations() {
+  const btn = document.getElementById('startPopulateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Iniciando...';
+  
+  fetch('<%= populate_locations_admin_utilities_path %>', {
+    method: 'POST',
+    headers: {
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById('progressContainer').classList.add('active');
+    startPolling();
+  })
+  .catch(error => {
+    alert('Error al iniciar el proceso: ' + error);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa fa-play"></i> Iniciar Proceso';
+  });
+}
+
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  
+  pollInterval = setInterval(() => {
+    fetch('<%= location_progress_admin_utilities_path %>')
+      .then(response => response.json())
+      .then(progress => {
+        updateProgress(progress);
+        
+        if (progress.status === 'completed' || progress.status === 'error') {
+          clearInterval(pollInterval);
+          showCompleted(progress);
+        }
+      });
+  }, 1000); // Actualizar cada segundo
+}
+
+function updateProgress(progress) {
+  if (progress.status === 'idle') return;
+  
+  const total = progress.total || 0;
+  const processed = progress.processed || 0;
+  const errors = progress.errors || 0;
+  const skipped = progress.skipped || 0;
+  
+  const percentage = total > 0 ? Math.round((processed + errors + skipped) / total * 100) : 0;
+  
+  document.getElementById('progressBar').style.width = percentage + '%';
+  document.getElementById('progressText').textContent = percentage + '%';
+  
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statProcessed').textContent = processed;
+  document.getElementById('statSkipped').textContent = skipped;
+  document.getElementById('statErrors').textContent = errors;
+  
+  if (progress.current_user) {
+    const current = progress.current_user;
+    document.getElementById('currentUserInfo').innerHTML = 
+      `<i class="fa fa-user"></i> Usuario #${current.id} - ${current.name || 'Sin nombre'} (${current.index}/${total})`;
+  }
+}
+
+function showCompleted(progress) {
+  document.getElementById('loadingSpinner').style.display = 'none';
+  document.getElementById('statusText').textContent = '¡Completado!';
+  document.getElementById('progressBar').classList.remove('progress-bar-animated');
+  document.getElementById('completedMessage').style.display = 'block';
+}
+
+// Si ya hay un proceso en ejecución al cargar la página, iniciar polling
+<% if @current_progress && @current_progress[:status] == 'running' %>
+  window.addEventListener('load', () => {
+    startPolling();
+  });
+<% end %>
+</script>

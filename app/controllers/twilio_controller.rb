@@ -111,7 +111,8 @@ class TwilioController < ApplicationController
 	# Generamos el usuario en twilio
 	def generate_user_in_twilio(id)
 
-		set_account
+		# Si no se puede configurar Twilio, salir silenciosamente
+		return unless set_account
 
 		user = User.find(id)
 
@@ -120,8 +121,8 @@ class TwilioController < ApplicationController
 		   begin
 		      user_twilio = @client.conversations.v1.users.create(identity: id)
 		      user.update(twilio_sid: user_twilio.sid)
-		   rescue
-		    	logger.info "ERROR creating user twilio"
+		   rescue => e
+		    	logger.info "ERROR creating user twilio: #{e.message}"
 		   end
 		else
 
@@ -273,11 +274,16 @@ class TwilioController < ApplicationController
       # Required for conversations api
       @service_sid =  ENV['TWILIO_SERVICE_SID']
 
+      # Validar que las credenciales de Twilio estén configuradas
+      if @account_sid.blank? || auth_token.blank? || @service_sid.blank?
+        Rails.logger.warn "Twilio credentials not configured. Skipping Twilio setup."
+        return false
+      end
 
       @client = Twilio::REST::Client.new(@account_sid, auth_token)
 
 		configuration = @client.conversations.v1
-                       .services(ENV['TWILIO_SERVICE_SID'])
+                       .services(@service_sid)
                        .configuration
                        .update(reachability_enabled: true)
 		
