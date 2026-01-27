@@ -1,140 +1,430 @@
 <style>
+  body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  }
+  
+  .utilities-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px 30px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  }
+  
+  .utilities-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .utilities-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 16px;
+  }
+  
   .utility-card {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
     background: white;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .utility-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .utility-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
   }
   
   .utility-card h3 {
+    color: #2d3748;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .utility-card h3 i {
     color: #667eea;
-    margin-bottom: 15px;
+    font-size: 28px;
+  }
+  
+  .utility-card > p {
+    color: #718096;
+    line-height: 1.7;
+    margin-bottom: 20px;
+    font-size: 15px;
+  }
+  
+  .info-badge {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    border: 1px solid #7dd3fc;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .info-badge i {
+    color: #0369a1;
+    font-size: 24px;
+  }
+  
+  .info-badge strong {
+    color: #0c4a6e;
+  }
+  
+  .warning-badge {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .warning-badge i {
+    color: #d97706;
+    font-size: 24px;
+  }
+  
+  .warning-badge strong {
+    color: #78350f;
+  }
+  
+  .btn-start {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 16px 40px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .btn-start:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+  }
+  
+  .btn-start:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .status-running {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #78350f;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-left: 12px;
   }
   
   .progress-container {
     display: none;
-    margin-top: 20px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
+    margin-top: 30px;
+    padding: 30px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
   }
   
   .progress-container.active {
     display: block;
+    animation: slideIn 0.4s ease;
   }
   
-  .progress {
-    height: 30px;
-    border-radius: 15px;
-    overflow: hidden;
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
-  .progress-bar {
-    transition: width 0.3s ease;
-    font-weight: 500;
-  }
-  
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
-  }
-  
-  .stat-box {
-    padding: 15px;
-    background: white;
-    border-radius: 6px;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .stat-number {
-    font-size: 28px;
-    font-weight: bold;
-    color: #667eea;
-  }
-  
-  .stat-label {
-    font-size: 12px;
-    color: #6c757d;
-    text-transform: uppercase;
-    margin-top: 5px;
+  .spinner-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
   }
   
   .spinner {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #667eea;
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(102, 126, 234, 0.1);
+    border-top: 4px solid #667eea;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
     animation: spin 1s linear infinite;
-    margin: 0 auto 15px;
   }
   
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+  
+  .status-title {
+    text-align: center;
+    color: #2d3748;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+  
+  .progress-wrapper {
+    position: relative;
+    margin-bottom: 24px;
+  }
+  
+  .progress {
+    height: 40px;
+    background: #e2e8f0;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progress-bar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.4s ease;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.4);
+  }
+  
+  .current-user-info {
+    text-align: center;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    color: #4a5568;
+    font-size: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .current-user-info i {
+    color: #667eea;
+    margin-right: 8px;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-top: 0;
+  }
+  
+  .stat-box {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .stat-box:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  }
+  
+  .stat-number {
+    font-size: 36px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  
+  .stat-number.text-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .stat-number.text-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .stat-number.text-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  
+  .completed-message {
+    display: none;
+    margin-top: 24px;
+    animation: slideIn 0.4s ease;
+  }
+  
+  .success-alert {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 2px solid #34d399;
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+  }
+  
+  .success-alert i {
+    color: #059669;
+    margin-bottom: 16px;
+  }
+  
+  .success-alert h5 {
+    color: #065f46;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  
+  .success-alert p {
+    color: #047857;
+    margin-bottom: 20px;
+  }
+  
+  .btn-reload {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    color: white;
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    cursor: pointer;
+  }
+  
+  .btn-reload:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  }
 </style>
 
 <div class="container-fluid">
-  <h1><i class="fa fa-tools"></i> <%= @title %></h1>
-  <p class="text-muted">Herramientas administrativas y de mantenimiento del sistema</p>
-
-  <hr>
+  <div class="utilities-header">
+    <h1>
+      <i class="fas fa-tools"></i>
+      Configuración y Utilidades
+    </h1>
+    <p>Herramientas administrativas para mantenimiento del sistema</p>
+  </div>
 
   <!-- Utilidad: Poblar Ubicaciones -->
   <div class="utility-card">
-    <h3><i class="fa fa-map-marker-alt"></i> Poblar Ubicaciones desde Coordenadas</h3>
+    <h3><i class="fas fa-map-marker-alt"></i> Poblar Ubicaciones desde Coordenadas</h3>
     <p>
       Esta herramienta busca usuarios que tienen coordenadas (latitud/longitud) pero no tienen 
       los campos de ubicación (ciudad y país) poblados. Hace geocoding reverso para obtener 
       la información de ubicación y la guarda en la base de datos.
     </p>
     
-    <div class="alert alert-info">
-      <i class="fa fa-info-circle"></i> 
-      <strong>Usuarios pendientes:</strong> <%= @users_needing_location %> usuarios necesitan actualización
+    <div class="info-badge">
+      <i class="fas fa-info-circle"></i> 
+      <div>
+        <strong>Usuarios pendientes:</strong> <%= @users_needing_location %> usuarios necesitan actualización
+      </div>
     </div>
 
     <% if @users_needing_location > 0 %>
-      <div class="alert alert-warning">
-        <i class="fa fa-clock"></i>
-        <strong>Tiempo estimado:</strong> ~<%= @users_needing_location %> segundos 
-        (1 segundo por usuario debido a límites de la API)
+      <div class="warning-badge">
+        <i class="fas fa-clock"></i>
+        <div>
+          <strong>Tiempo estimado:</strong> ~<%= @users_needing_location %> segundos 
+          (1 segundo por usuario debido a límites de la API)
+        </div>
       </div>
     <% end %>
 
-    <button id="startPopulateBtn" class="btn btn-primary btn-lg" onclick="startPopulateLocations()" 
+    <button id="startPopulateBtn" class="btn-start" onclick="startPopulateLocations()" 
             <%= 'disabled' if @users_needing_location == 0 || (@current_progress && @current_progress[:status] == 'running') %>>
-      <i class="fa fa-play"></i> Iniciar Proceso
+      <i class="fas fa-rocket"></i> Iniciar Proceso
     </button>
 
     <% if @current_progress && @current_progress[:status] == 'running' %>
-      <span class="badge badge-warning" style="font-size: 14px; margin-left: 10px;">
-        <i class="fa fa-spinner fa-spin"></i> Proceso en ejecución
+      <span class="status-running">
+        <i class="fas fa-spinner fa-spin"></i> Proceso en ejecución
       </span>
     <% end %>
 
     <!-- Contenedor de Progreso -->
     <div id="progressContainer" class="progress-container <%= 'active' if @current_progress && @current_progress[:status] == 'running' %>">
-      <div id="loadingSpinner" class="spinner"></div>
+      <div class="spinner-container">
+        <div id="loadingSpinner" class="spinner"></div>
+      </div>
       
-      <h4 class="text-center mb-3">
+      <h4 class="status-title">
         <span id="statusText">Procesando ubicaciones...</span>
       </h4>
 
-      <div class="progress mb-3">
-        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
-             role="progressbar" style="width: 0%">
-          <span id="progressText">0%</span>
-        </div>
+      <div id="currentUserInfo" class="current-user-info">
+        <i class="fas fa-user-circle"></i> <span id="currentUserText">Iniciando...</span>
       </div>
 
-      <div id="currentUserInfo" class="text-center mb-3" style="font-size: 14px; color: #6c757d;">
-        <i class="fa fa-user"></i> Procesando...
+      <div class="progress-wrapper">
+        <div class="progress">
+          <div id="progressBar" class="progress-bar" 
+               role="progressbar" style="width: 0%">
+            <span id="progressText">0%</span>
+          </div>
+        </div>
       </div>
 
       <div class="stats-grid">
@@ -156,13 +446,13 @@
         </div>
       </div>
 
-      <div id="completedMessage" style="display: none; margin-top: 20px;">
-        <div class="alert alert-success text-center">
-          <i class="fa fa-check-circle fa-2x mb-2"></i>
-          <h5>¡Proceso Completado!</h5>
-          <p class="mb-0">Las ubicaciones han sido actualizadas exitosamente.</p>
-          <button class="btn btn-primary mt-3" onclick="window.location.reload()">
-            <i class="fa fa-sync"></i> Actualizar Página
+      <div id="completedMessage" class="completed-message">
+        <div class="success-alert">
+          <i class="fas fa-check-circle fa-4x"></i>
+          <h5>¡Proceso Completado Exitosamente!</h5>
+          <p>Las ubicaciones han sido actualizadas correctamente en la base de datos.</p>
+          <button class="btn-reload" onclick="window.location.reload()">
+            <i class="fas fa-sync-alt"></i> Actualizar Página
           </button>
         </div>
       </div>
@@ -176,7 +466,7 @@ let pollInterval = null;
 function startPopulateLocations() {
   const btn = document.getElementById('startPopulateBtn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Iniciando...';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
   
   fetch('<%= populate_locations_admin_utilities_path %>', {
     method: 'POST',
@@ -234,15 +524,15 @@ function updateProgress(progress) {
   
   if (progress.current_user) {
     const current = progress.current_user;
-    document.getElementById('currentUserInfo').innerHTML = 
-      `<i class="fa fa-user"></i> Usuario #${current.id} - ${current.name || 'Sin nombre'} (${current.index}/${total})`;
+    document.getElementById('currentUserText').textContent = 
+      `Usuario #${current.id} - ${current.name || 'Sin nombre'} (${current.index}/${total})`;
   }
 }
 
 function showCompleted(progress) {
   document.getElementById('loadingSpinner').style.display = 'none';
-  document.getElementById('statusText').textContent = '¡Completado!';
-  document.getElementById('progressBar').classList.remove('progress-bar-animated');
+  document.getElementById('statusText').textContent = '✓ Completado Exitosamente';
+  document.getElementById('currentUserInfo').style.display = 'none';
   document.getElementById('completedMessage').style.display = 'block';
 }
 
