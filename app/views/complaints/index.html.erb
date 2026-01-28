@@ -143,6 +143,7 @@
           <th class="col-user">Denunciado</th>
           <th class="col-reason">Razón</th>
           <th class="col-date">Fecha</th>
+          <th class="col-actions">Estado / Acción</th>
           <th class="col-actions">Acciones</th>
         </tr>
       </thead>
@@ -193,9 +194,26 @@
             </td>
             
             <td class="col-actions">
-              <%= link_to complaint, method: :delete, 
-                  data: { confirm: '¿Eliminar esta denuncia?' }, 
-                  class: 'btn btn-danger btn-action', 
+              <%= form_with model: complaint, local: true do |f| %>
+                <div class="mb-1">
+                  <%= f.select :status,
+                      options_for_select(Complaint::STATUS_OPTIONS, complaint.status),
+                      {},
+                      class: 'form-control form-control-sm' %>
+                </div>
+                <div class="mb-1">
+                  <%= f.select :action_taken,
+                      options_for_select(Complaint::ACTION_OPTIONS, complaint.action_taken),
+                      {},
+                      class: 'form-control form-control-sm' %>
+                </div>
+                <%= f.submit 'Guardar', class: 'btn btn-sm btn-outline-primary' %>
+              <% end %>
+            </td>
+            <td class="col-actions">
+              <%= link_to complaint, method: :delete,
+                  data: { confirm: '¿Eliminar esta denuncia?' },
+                  class: 'btn btn-danger btn-action',
                   title: 'Eliminar denuncia' do %>
                 <i class="fas fa-trash"></i>
               <% end %>
