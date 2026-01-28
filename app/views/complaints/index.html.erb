@@ -109,6 +109,94 @@
   }
 </style>
 
+<!-- Modales de éxito y error -->
+<div class="modal fade" id="successModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="fas fa-check-circle"></i> Acción exitosa</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="successMessage">La acción se completó correctamente.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" data-dismiss="modal" onclick="location.reload()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="errorModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Error</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="errorMessage">Hubo un error al procesar la acción.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Manejar envío de formularios de acción
+  document.querySelectorAll('.complaint-action-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      const action = form.action;
+      const actionType = formData.get('complaint[action_taken]');
+      
+      // Cerrar modal de confirmación
+      const modalId = form.closest('.modal').id;
+      $('#' + modalId).modal('hide');
+      
+      // Enviar formulario vía AJAX
+      fetch(action, {
+        method: 'PATCH',
+        body: formData,
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          let message = '';
+          if (actionType === 'user_blocked') {
+            message = 'Usuario bloqueado correctamente. La denuncia ha sido marcada como revisada.';
+          } else if (actionType === 'invalidated') {
+            message = 'Denuncia ignorada correctamente. La denuncia ha sido marcada como revisada.';
+          }
+          document.getElementById('successMessage').textContent = message;
+          $('#successModal').modal('show');
+        } else {
+          document.getElementById('errorMessage').textContent = data.error || 'Hubo un error al procesar la acción.';
+          $('#errorModal').modal('show');
+        }
+      })
+      .catch(error => {
+        document.getElementById('errorMessage').textContent = 'Error de conexión. Por favor, intenta nuevamente.';
+        $('#errorModal').modal('show');
+      });
+    });
+  });
+});
+</script>
+
 <div class="filter-section">
   <h4><i class="fas fa-exclamation-triangle"></i> Gestión de Denuncias</h4>
   
@@ -205,19 +293,20 @@
             <td class="col-actions" style="min-width: 140px;">
               <% if complaint.action_taken == 'no_action' %>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <%= form_with model: complaint, local: true do |f| %>
-                    <%= f.hidden_field :action_taken, value: 'user_blocked' %>
-                    <%= f.submit 'Bloquear usuario', 
-                        class: 'btn btn-sm btn-danger', 
-                        style: 'font-size: 11px; padding: 4px 8px; width: 100%;',
-                        data: { confirm: '¿Bloquear al usuario denunciado?' } %>
-                  <% end %>
-                  <%= form_with model: complaint, local: true do |f| %>
-                    <%= f.hidden_field :action_taken, value: 'invalidated' %>
-                    <%= f.submit 'Ignorar denuncia', 
-                        class: 'btn btn-sm btn-secondary', 
-                        style: 'font-size: 11px; padding: 4px 8px; width: 100%;' %>
-                  <% end %>
+                  <button type="button" 
+                          class="btn btn-sm btn-danger" 
+                          style="font-size: 11px; padding: 4px 8px; width: 100%;"
+                          data-toggle="modal" 
+                          data-target="#blockModal<%= complaint.id %>">
+                    Bloquear usuario
+                  </button>
+                  <button type="button" 
+                          class="btn btn-sm btn-secondary" 
+                          style="font-size: 11px; padding: 4px 8px; width: 100%;"
+                          data-toggle="modal" 
+                          data-target="#ignoreModal<%= complaint.id %>">
+                    Ignorar denuncia
+                  </button>
                 </div>
               <% else %>
                 <% if complaint.action_taken == 'user_blocked' %>
@@ -237,6 +326,59 @@
               <% end %>
             </td>
           </tr>
+          
+          <!-- Modal para bloquear usuario -->
+          <div class="modal fade" id="blockModal<%= complaint.id %>" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                  <h5 class="modal-title"><i class="fas fa-ban"></i> Confirmar bloqueo</h5>
+                  <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <p><strong>¿Estás seguro de bloquear a este usuario?</strong></p>
+                  <p>Usuario denunciado: <strong><%= complaint.reported_user&.name || 'Usuario eliminado' %></strong></p>
+                  <p>Razón: <strong><%= complaint.reason %></strong></p>
+                  <p class="text-muted"><small>Esta acción bloqueará al usuario denunciado y marcará la denuncia como revisada.</small></p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                  <%= form_with model: complaint, local: true, class: 'complaint-action-form', data: { complaint_id: complaint.id } do |f| %>
+                    <%= f.hidden_field :action_taken, value: 'user_blocked' %>
+                    <%= f.submit 'Sí, bloquear usuario', class: 'btn btn-danger' %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Modal para ignorar denuncia -->
+          <div class="modal fade" id="ignoreModal<%= complaint.id %>" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                  <h5 class="modal-title"><i class="fas fa-times-circle"></i> Confirmar ignorar</h5>
+                  <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <p><strong>¿Estás seguro de ignorar esta denuncia?</strong></p>
+                  <p>Razón: <strong><%= complaint.reason %></strong></p>
+                  <p class="text-muted"><small>Esta acción marcará la denuncia como revisada pero no tomará ninguna acción contra el usuario denunciado.</small></p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                  <%= form_with model: complaint, local: true, class: 'complaint-action-form', data: { complaint_id: complaint.id } do |f| %>
+                    <%= f.hidden_field :action_taken, value: 'invalidated' %>
+                    <%= f.submit 'Sí, ignorar denuncia', class: 'btn btn-warning' %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
           
           <!-- Modal para texto completo -->
           <% if complaint.text && complaint.text.length > 100 %>

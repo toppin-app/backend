@@ -47,11 +47,11 @@ class ComplaintsController < ApplicationController
   def update
     respond_to do |format|
       if @complaint.update(complaint_params)
-        format.html { redirect_to @complaint, notice: "Complaint was successfully updated." }
-        format.json { render :show, status: :ok, location: @complaint }
+        format.html { redirect_to complaints_url, notice: "Acción procesada correctamente." }
+        format.json { render json: { success: true, message: "Acción procesada correctamente." }, status: :ok }
       else
         format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @complaint.errors, status: :unprocessable_entity }
+        format.json { render json: { success: false, error: @complaint.errors.full_messages.join(', ') }, status: :unprocessable_entity }
       end
     end
   end
