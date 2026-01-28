@@ -128,10 +128,6 @@
       <div class="stat-value"><%= @complaints.count %></div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">Razones Únicas</div>
-      <div class="stat-value"><%= @reasons.count %></div>
-    </div>
-    <div class="stat-item">
       <div class="stat-label">Usuarios Únicos Denunciados</div>
       <div class="stat-value"><%= @complaints.map(&:to_user_id).uniq.count %></div>
     </div>
