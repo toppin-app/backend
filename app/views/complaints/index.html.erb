@@ -193,26 +193,47 @@
               <%= complaint.created_at.strftime("%H:%M") %>
             </td>
             
-            <td class="col-actions" style="min-width: 200px;">
-              <%= form_with model: complaint, local: true, class: 'complaint-status-form' do |f| %>
-                <div style="margin-bottom: 6px;">
-                  <small style="display: block; color: #666; font-weight: 500; margin-bottom: 2px;">Estado</small>
-                  <%= f.select :status,
-                      options_for_select(Complaint::STATUS_OPTIONS, complaint.status),
-                      {},
-                      class: 'form-control form-control-sm',
-                      style: 'font-size: 12px;' %>
+            <td class="col-actions" style="min-width: 220px;">
+              <div style="margin-bottom: 8px;">
+                <small style="display: block; color: #666; font-weight: 600; margin-bottom: 4px;">Estado</small>
+                <div class="btn-group btn-group-sm" role="group" style="width: 100%;">
+                  <%= form_with model: complaint, local: true, style: 'display: inline;' do |f| %>
+                    <%= f.hidden_field :status, value: 'unreviewed' %>
+                    <%= f.submit 'Sin revisar', 
+                        class: "btn btn-sm #{complaint.status == 'unreviewed' ? 'btn-warning' : 'btn-outline-warning'}", 
+                        style: 'font-size: 10px; padding: 4px 8px;' %>
+                  <% end %>
+                  <%= form_with model: complaint, local: true, style: 'display: inline;' do |f| %>
+                    <%= f.hidden_field :status, value: 'reviewed' %>
+                    <%= f.submit 'Revisado', 
+                        class: "btn btn-sm #{complaint.status == 'reviewed' ? 'btn-success' : 'btn-outline-success'}", 
+                        style: 'font-size: 10px; padding: 4px 8px;' %>
+                  <% end %>
                 </div>
-                <div style="margin-bottom: 6px;">
-                  <small style="display: block; color: #666; font-weight: 500; margin-bottom: 2px;">Acción</small>
-                  <%= f.select :action_taken,
-                      options_for_select(Complaint::ACTION_OPTIONS, complaint.action_taken),
-                      {},
-                      class: 'form-control form-control-sm',
-                      style: 'font-size: 12px;' %>
+              </div>
+              <div>
+                <small style="display: block; color: #666; font-weight: 600; margin-bottom: 4px;">Acción</small>
+                <div style="display: flex; flex-direction: column; gap: 3px;">
+                  <%= form_with model: complaint, local: true do |f| %>
+                    <%= f.hidden_field :action_taken, value: 'no_action' %>
+                    <%= f.submit 'Sin acción', 
+                        class: "btn btn-sm #{complaint.action_taken == 'no_action' ? 'btn-secondary' : 'btn-outline-secondary'}", 
+                        style: 'font-size: 10px; padding: 3px 6px; width: 100%;' %>
+                  <% end %>
+                  <%= form_with model: complaint, local: true do |f| %>
+                    <%= f.hidden_field :action_taken, value: 'user_blocked' %>
+                    <%= f.submit 'Bloqueado', 
+                        class: "btn btn-sm #{complaint.action_taken == 'user_blocked' ? 'btn-danger' : 'btn-outline-danger'}", 
+                        style: 'font-size: 10px; padding: 3px 6px; width: 100%;' %>
+                  <% end %>
+                  <%= form_with model: complaint, local: true do |f| %>
+                    <%= f.hidden_field :action_taken, value: 'invalidated' %>
+                    <%= f.submit 'Invalidada', 
+                        class: "btn btn-sm #{complaint.action_taken == 'invalidated' ? 'btn-info' : 'btn-outline-info'}", 
+                        style: 'font-size: 10px; padding: 3px 6px; width: 100%;' %>
+                  <% end %>
                 </div>
-                <%= f.submit 'Guardar', class: 'btn btn-sm btn-success btn-block', style: 'font-size: 11px; padding: 4px;' %>
-              <% end %>
+              </div>
             </td>
             <td class="col-actions">
               <%= link_to complaint, method: :delete,
