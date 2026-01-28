@@ -256,7 +256,7 @@
                   </div>
                   <hr>
                   <div class="text-center">
-                    <%= link_to 'Ver perfil completo', user_path(complaint.user), class: 'btn btn-primary', target: '_blank' %>
+                    <%= link_to 'Ver perfil completo', show_user_path(id: complaint.user_id), class: 'btn btn-primary', target: '_blank' %>
                   </div>
                 </div>
               </div>
@@ -297,11 +297,7 @@
                       <strong>Denuncias recibidas:</strong> <%= Complaint.where(to_user_id: complaint.to_user_id).count %>
                     </div>
                     <div class="text-center">
-                      <%= link_to 'Ver perfil completo', user_path(complaint.reported_user), class: 'btn btn-danger', target: '_blank' %>
-                      <%= link_to 'Bloquear usuario', block_user_path(complaint.reported_user), 
-                          method: :post, 
-                          data: { confirm: '¿Bloquear este usuario?' },
-                          class: 'btn btn-dark' %>
+                      <%= link_to 'Ver perfil completo', show_user_path(id: complaint.to_user_id), class: 'btn btn-danger', target: '_blank' %>
                     </div>
                   </div>
                 </div>
