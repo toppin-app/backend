@@ -208,6 +208,20 @@ document.addEventListener('DOMContentLoaded', function() {
           class: 'form-control form-control-sm',
           onchange: 'this.form.submit()' %>
     </div>
+    <div class="form-group mr-3">
+      <label class="mr-2">Estado:</label>
+      <%= select_tag :status, 
+          options_for_select([['Todos', ''], ['Sin revisar', 'unreviewed'], ['Revisado', 'reviewed']], params[:status]),
+          class: 'form-control form-control-sm',
+          onchange: 'this.form.submit()' %>
+    </div>
+    <div class="form-group mr-3">
+      <label class="mr-2">Acción tomada:</label>
+      <%= select_tag :action_taken, 
+          options_for_select([['Todas', ''], ['Sin acción', 'no_action'], ['Usuario bloqueado', 'user_blocked'], ['Denuncia ignorada', 'invalidated']], params[:action_taken]),
+          class: 'form-control form-control-sm',
+          onchange: 'this.form.submit()' %>
+    </div>
   <% end %>
   
   <div class="stats-row">
@@ -306,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                   </div>
                 <% else %>
-                  <span class="badge badge-secondary"><i class="fas fa-times-circle"></i> Denuncia ignorada</span>
+                  <span class="badge badge-secondary"><i class="fas fa-eye-slash"></i> Denuncia ignorada</span>
                 <% end %>
               <% elsif complaint.action_taken == 'no_action' %>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -329,15 +343,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 <% if complaint.action_taken == 'user_blocked' %>
                   <span class="badge badge-danger"><i class="fas fa-ban"></i> Usuario bloqueado</span>
                 <% elsif complaint.action_taken == 'invalidated' %>
-                  <span class="badge badge-secondary"><i class="fas fa-times-circle"></i> Denuncia ignorada</span>
+                  <span class="badge badge-secondary"><i class="fas fa-eye-slash"></i> Denuncia ignorada</span>
                 <% end %>
               <% end %>
             </td>
             
-            <td class="col-actions">
+            <td class="col-actions" style="text-align: center;">
               <%= link_to complaint, method: :delete,
                   data: { confirm: '¿Eliminar esta denuncia?' },
-                  class: 'btn btn-danger btn-action',
+                  class: 'btn btn-sm btn-danger',
+                  style: 'font-size: 11px; padding: 4px 8px;',
                   title: 'Eliminar denuncia' do %>
                 <i class="fas fa-trash"></i>
               <% end %>

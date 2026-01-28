@@ -8,6 +8,12 @@ class ComplaintsController < ApplicationController
     # Filtrar por razón si se especifica
     @complaints = @complaints.by_reason(params[:reason]) if params[:reason].present?
     
+    # Filtrar por estado si se especifica
+    @complaints = @complaints.where(status: params[:status]) if params[:status].present?
+    
+    # Filtrar por acción tomada si se especifica
+    @complaints = @complaints.where(action_taken: params[:action_taken]) if params[:action_taken].present?
+    
     # Obtener lista de razones únicas para el filtro
     @reasons = Complaint.distinct.pluck(:reason).compact.sort
     
