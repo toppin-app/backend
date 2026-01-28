@@ -8,7 +8,7 @@ class Complaint < ApplicationRecord
   ].freeze
 
   ACTION_OPTIONS = [
-    ['Sin acción', 'none'],
+    ['Sin acción', 'no_action'],
     ['Usuario bloqueado', 'user_blocked'],
     ['Denuncia invalidada', 'invalidated']
   ].freeze
@@ -19,7 +19,7 @@ class Complaint < ApplicationRecord
   }
 
   enum action_taken: {
-    none: 'none',
+    no_action: 'no_action',
     user_blocked: 'user_blocked',
     invalidated: 'invalidated'
   }
