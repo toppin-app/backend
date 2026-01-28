@@ -246,7 +246,7 @@
                       <p><strong>Género:</strong> <%= complaint.user.gender || 'No especificado' %></p>
                     </div>
                     <div class="col-md-6">
-                      <p><strong>Edad:</strong> <%= complaint.user.age || 'No disponible' %></p>
+                      <p><strong>Edad:</strong> <%= complaint.user.birthday.present? ? ((Date.today - complaint.user.birthday.to_date) / 365.25).to_i : 'No disponible' %></p>
                       <p><strong>Ciudad:</strong> <%= complaint.user.locality || 'No disponible' %></p>
                       <p><strong>Fecha de registro:</strong> <%= complaint.user.created_at.strftime("%d-%m-%Y") %></p>
                       <p><strong>Verificado:</strong> <%= complaint.user.verified ? '✓ Sí' : '✗ No' %></p>
@@ -283,7 +283,7 @@
                         <p><strong>Género:</strong> <%= complaint.reported_user.gender || 'No especificado' %></p>
                       </div>
                       <div class="col-md-6">
-                        <p><strong>Edad:</strong> <%= complaint.reported_user.age || 'No disponible' %></p>
+                        <p><strong>Edad:</strong> <%= complaint.reported_user.birthday.present? ? ((Date.today - complaint.reported_user.birthday.to_date) / 365.25).to_i : 'No disponible' %></p>
                         <p><strong>Ciudad:</strong> <%= complaint.reported_user.locality || 'No disponible' %></p>
                         <p><strong>Fecha de registro:</strong> <%= complaint.reported_user.created_at.strftime("%d-%m-%Y") %></p>
                         <p><strong>Verificado:</strong> <%= complaint.reported_user.verified ? '✓ Sí' : '✗ No' %></p>
