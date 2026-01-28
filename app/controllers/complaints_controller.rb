@@ -3,7 +3,14 @@ class ComplaintsController < ApplicationController
 
   # GET /complaints or /complaints.json
   def index
-    @complaints = Complaint.all
+    @complaints = Complaint.includes(:user, :reported_user).recent
+    
+    # Filtrar por razón si se especifica
+    @complaints = @complaints.by_reason(params[:reason]) if params[:reason].present?
+    
+    # Obtener lista de razones únicas para el filtro
+    @reasons = Complaint.distinct.pluck(:reason).compact.sort
+    
     @title = "Denuncias"
   end
 
