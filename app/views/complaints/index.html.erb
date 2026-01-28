@@ -146,7 +146,6 @@
           <th class="col-user">Denunciante</th>
           <th class="col-user">Denunciado</th>
           <th class="col-reason">Razón</th>
-          <th class="col-text">Descripción</th>
           <th class="col-date">Fecha</th>
           <th class="col-actions">Acciones</th>
         </tr>
@@ -179,14 +178,16 @@
               <span class="badge reason-badge badge-warning">
                 <%= complaint.reason %>
               </span>
-            </td>
-            
-            <td class="col-text">
-              <%= truncate(complaint.text, length: 100) %>
-              <% if complaint.text && complaint.text.length > 100 %>
-                <a href="#" data-toggle="modal" data-target="#textModal<%= complaint.id %>" class="text-primary">
-                  <small>ver más</small>
-                </a>
+              <% if complaint.text.present? %>
+                <br>
+                <small class="text-muted" style="display: block; margin-top: 5px;">
+                  <%= truncate(complaint.text, length: 80) %>
+                  <% if complaint.text.length > 80 %>
+                    <a href="#" data-toggle="modal" data-target="#textModal<%= complaint.id %>" class="text-primary">
+                      ver más
+                    </a>
+                  <% end %>
+                </small>
               <% end %>
             </td>
             
