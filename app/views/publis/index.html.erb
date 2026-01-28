@@ -26,7 +26,9 @@
   }
   
   .publis-table .col-date {
-    min-width: 130px;
+    min-width: 100px;
+    white-space: normal;
+    text-align: center;
   }
   
   .publis-table .col-weekdays {
@@ -75,8 +77,6 @@
       <th class="col-date">Inicio</th>
       <th class="col-date">Fin</th>
       <th class="col-weekdays">Días semana</th>
-      <th class="col-time">H. inicio</th>
-      <th class="col-time">H. fin</th>
       <th class="col-link">Link</th>
       <th class="col-bool">Cancelable</th>
       <th class="col-swipes">Swipes</th>
@@ -94,11 +94,15 @@
           <%= "<i class='fa fa-video' style='font-size: 40px;'></i>".html_safe if publi.video? %>
         </td>
         <td class="col-title"><%= publi.title %></td>
-        <td class="col-date"><%= publi.start_date.strftime("%d-%m-%Y %H:%M") %></td>
-        <td class="col-date"><%= publi.end_date.strftime("%d-%m-%Y %H:%M") %></td>
+        <td class="col-date">
+          <%= publi.start_date.strftime("%d-%m-%Y") %><br>
+          <%= publi.start_time.strftime("%H:%M") %>
+        </td>
+        <td class="col-date">
+          <%= publi.end_date.strftime("%d-%m-%Y") %><br>
+          <%= publi.end_time.strftime("%H:%M") %>
+        </td>
         <td class="col-weekdays"><%= publi.weekdays %></td>
-        <td class="col-time"><%= publi.start_time.strftime("%H:%M") %></td>
-        <td class="col-time"><%= publi.end_time.strftime("%H:%M") %></td>
         <td class="col-link"><%= publi.link %></td>
         <td class="col-bool"><%= true_false(publi.cancellable) %></td>
         <td class="col-swipes"><%= publi.repeat_swipes %></td>
