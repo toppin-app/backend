@@ -231,8 +231,8 @@
           <div class="modal fade" id="userModal<%= complaint.user_id %>" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document">
               <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                  <h5 class="modal-title text-white"><i class="fas fa-user"></i> Perfil del Denunciante</h5>
+                <div class="modal-header bg-primary text-white">
+                  <h5 class="modal-title"><i class="fas fa-user"></i> Perfil del Denunciante</h5>
                   <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
                   </button>
@@ -257,7 +257,7 @@
                   </div>
                   <hr>
                   <div class="text-center">
-                    <%= link_to 'Ver perfil completo', show_user_path(id: complaint.user_id), class: 'btn btn-outline-primary btn-lg', target: '_blank' %>
+                    <%= link_to 'Ver perfil completo', show_user_path(id: complaint.user_id), class: 'btn btn-dark', target: '_blank' %>
                   </div>
                 </div>
               </div>
@@ -269,8 +269,8 @@
             <div class="modal fade" id="reportedUserModal<%= complaint.to_user_id %>" tabindex="-1" role="dialog">
               <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
-                  <div class="modal-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none;">
-                    <h5 class="modal-title text-white"><i class="fas fa-user-slash"></i> Perfil del Denunciado</h5>
+                  <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-slash"></i> Perfil del Denunciado</h5>
                     <button type="button" class="close text-white" data-dismiss="modal">
                       <span>&times;</span>
                     </button>
@@ -294,11 +294,11 @@
                       </div>
                     </div>
                     <hr>
-                    <div class="alert alert-warning" style="border-left: 4px solid #f5576c;">
-                      <strong><i class="fas fa-exclamation-triangle"></i> Denuncias recibidas:</strong> <%= Complaint.where(to_user_id: complaint.to_user_id).count %>
+                    <div class="alert alert-warning">
+                      <strong>Denuncias recibidas:</strong> <%= Complaint.where(to_user_id: complaint.to_user_id).count %>
                     </div>
                     <div class="text-center">
-                      <%= link_to 'Ver perfil completo', show_user_path(id: complaint.to_user_id), class: 'btn btn-outline-danger btn-lg', target: '_blank' %>
+                      <%= link_to 'Ver perfil completo', show_user_path(id: complaint.to_user_id), class: 'btn btn-dark', target: '_blank' %>
                     </div>
                   </div>
                 </div>
