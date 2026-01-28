@@ -176,12 +176,7 @@
             </td>
             
             <td class="col-reason">
-              <% 
-                colors = ['warning', 'danger', 'info', 'secondary']
-                color_index = complaint.reason.sum % colors.length
-                badge_color = colors[color_index]
-              %>
-              <span class="badge reason-badge badge-<%= badge_color %>">
+              <span class="badge reason-badge badge-warning">
                 <%= complaint.reason %>
               </span>
             </td>
