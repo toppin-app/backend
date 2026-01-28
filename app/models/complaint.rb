@@ -2,21 +2,11 @@ class Complaint < ApplicationRecord
   belongs_to :user
   belongs_to :reported_user, class_name: 'User', foreign_key: 'to_user_id'
 
-  STATUS_OPTIONS = [
-    ['Sin revisar', 'unreviewed'],
-    ['Revisado', 'reviewed']
-  ].freeze
-
   ACTION_OPTIONS = [
     ['Sin acción', 'no_action'],
     ['Usuario bloqueado', 'user_blocked'],
-    ['Denuncia invalidada', 'invalidated']
+    ['Denuncia ignorada', 'invalidated']
   ].freeze
-
-  enum status: {
-    unreviewed: 'unreviewed',
-    reviewed: 'reviewed'
-  }
 
   enum action_taken: {
     no_action: 'no_action',
@@ -24,7 +14,16 @@ class Complaint < ApplicationRecord
     invalidated: 'invalidated'
   }
   
+  # El estado se calcula automáticamente basado en la acción
+  before_save :update_status
+  
   # Scopes para filtrar por estado
   scope :recent, -> { order(created_at: :desc) }
   scope :by_reason, ->(reason) { where(reason: reason) if reason.present? }
+  
+  private
+  
+  def update_status
+    self.status = action_taken == 'no_action' ? 'unreviewed' : 'reviewed'
+  end
 end
