@@ -193,21 +193,25 @@
               <%= complaint.created_at.strftime("%H:%M") %>
             </td>
             
-            <td class="col-actions">
-              <%= form_with model: complaint, local: true do |f| %>
-                <div class="mb-1">
+            <td class="col-actions" style="min-width: 200px;">
+              <%= form_with model: complaint, local: true, class: 'complaint-status-form' do |f| %>
+                <div style="margin-bottom: 6px;">
+                  <small style="display: block; color: #666; font-weight: 500; margin-bottom: 2px;">Estado</small>
                   <%= f.select :status,
                       options_for_select(Complaint::STATUS_OPTIONS, complaint.status),
                       {},
-                      class: 'form-control form-control-sm' %>
+                      class: 'form-control form-control-sm',
+                      style: 'font-size: 12px;' %>
                 </div>
-                <div class="mb-1">
+                <div style="margin-bottom: 6px;">
+                  <small style="display: block; color: #666; font-weight: 500; margin-bottom: 2px;">Acción</small>
                   <%= f.select :action_taken,
                       options_for_select(Complaint::ACTION_OPTIONS, complaint.action_taken),
                       {},
-                      class: 'form-control form-control-sm' %>
+                      class: 'form-control form-control-sm',
+                      style: 'font-size: 12px;' %>
                 </div>
-                <%= f.submit 'Guardar', class: 'btn btn-sm btn-outline-primary' %>
+                <%= f.submit 'Guardar', class: 'btn btn-sm btn-success btn-block', style: 'font-size: 11px; padding: 4px;' %>
               <% end %>
             </td>
             <td class="col-actions">
