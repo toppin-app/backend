@@ -244,7 +244,17 @@
                     </div>
                     <div class="col-md-6">
                       <p><strong>Edad:</strong> <%= complaint.user.birthday.present? ? ((Date.today - complaint.user.birthday.to_date) / 365.25).to_i : 'No disponible' %></p>
-                      <p><strong>Ciudad:</strong> <%= complaint.user.locality || 'No disponible' %></p>
+                      <p><strong>Ubicación:</strong>
+                        <% if complaint.user.location_country.present? || complaint.user.location_city.present? %>
+                          <%= [complaint.user.location_city, complaint.user.location_country].compact.join(', ') %>
+                        <% elsif complaint.user.living_in.present? %>
+                          <%= complaint.user.living_in %>
+                        <% elsif complaint.user.locality.present? %>
+                          <%= complaint.user.locality %>
+                        <% else %>
+                          No disponible
+                        <% end %>
+                      </p>
                       <p><strong>Fecha de registro:</strong> <%= complaint.user.created_at.strftime("%d-%m-%Y") %></p>
                       <p><strong>Verificado:</strong> <%= complaint.user.verified ? '✓ Sí' : '✗ No' %></p>
                       <p><strong>Bloqueado:</strong> <%= complaint.user.blocked ? '✓ Sí' : '✗ No' %></p>
@@ -282,7 +292,17 @@
                       </div>
                       <div class="col-md-6">
                         <p><strong>Edad:</strong> <%= complaint.reported_user.birthday.present? ? ((Date.today - complaint.reported_user.birthday.to_date) / 365.25).to_i : 'No disponible' %></p>
-                        <p><strong>Ciudad:</strong> <%= complaint.reported_user.locality || 'No disponible' %></p>
+                        <p><strong>Ubicación:</strong>
+                          <% if complaint.reported_user.location_country.present? || complaint.reported_user.location_city.present? %>
+                            <%= [complaint.reported_user.location_city, complaint.reported_user.location_country].compact.join(', ') %>
+                          <% elsif complaint.reported_user.living_in.present? %>
+                            <%= complaint.reported_user.living_in %>
+                          <% elsif complaint.reported_user.locality.present? %>
+                            <%= complaint.reported_user.locality %>
+                          <% else %>
+                            No disponible
+                          <% end %>
+                        </p>
                         <p><strong>Fecha de registro:</strong> <%= complaint.reported_user.created_at.strftime("%d-%m-%Y") %></p>
                         <p><strong>Verificado:</strong> <%= complaint.reported_user.verified ? '✓ Sí' : '✗ No' %></p>
                         <p><strong>Bloqueado:</strong> <%= complaint.reported_user.blocked ? '✓ Sí' : '✗ No' %></p>
