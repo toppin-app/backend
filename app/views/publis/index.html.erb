@@ -4,45 +4,122 @@
 
 <hr>
 
+<style>
+  .publis-table {
+    font-size: 13px;
+  }
+  
+  .publis-table td, .publis-table th {
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  
+  .publis-table .col-image {
+    width: 80px;
+    text-align: center;
+  }
+  
+  .publis-table .col-title {
+    min-width: 150px;
+    max-width: 200px;
+    white-space: normal;
+  }
+  
+  .publis-table .col-date {
+    min-width: 130px;
+  }
+  
+  .publis-table .col-weekdays {
+    min-width: 100px;
+    white-space: normal;
+  }
+  
+  .publis-table .col-time {
+    width: 70px;
+  }
+  
+  .publis-table .col-link {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .publis-table .col-bool {
+    width: 80px;
+    text-align: center;
+  }
+  
+  .publis-table .col-swipes {
+    width: 60px;
+    text-align: center;
+  }
+  
+  .publis-table .col-actions {
+    width: 40px;
+    text-align: center;
+  }
+  
+  .btn-action {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+</style>
+
 <div class="card card-body">
-<table class="table table-striped">
+<div class="table-responsive">
+<table class="table table-striped table-sm publis-table">
   <thead>
     <tr>
-      <th></th>
-      <th>Título</th>
-      <th>Inicio</th>
-      <th>Fin</th>
-      <th>Días de la semana</th>
-      <th>Hora inicio</th>
-      <th>Hora fin</th>
-      <th>Link</th>
-      <th>Cancelable</th>
-      <th>Cada X swipes</th>
-      <th colspan="3"></th>
+      <th class="col-image"></th>
+      <th class="col-title">Título</th>
+      <th class="col-date">Inicio</th>
+      <th class="col-date">Fin</th>
+      <th class="col-weekdays">Días semana</th>
+      <th class="col-time">H. inicio</th>
+      <th class="col-time">H. fin</th>
+      <th class="col-link">Link</th>
+      <th class="col-bool">Cancelable</th>
+      <th class="col-swipes">Swipes</th>
+      <th class="col-actions"></th>
+      <th class="col-actions"></th>
+      <th class="col-actions"></th>
     </tr>
   </thead>
 
   <tbody>
     <% @publis.each do |publi| %>
       <tr>
-        <td><%= image_tag publi.image.thumb.url, style: 'height: 60px;' if publi.image? %>
-          
+        <td class="col-image">
+          <%= image_tag publi.image.thumb.url, style: 'height: 60px;' if publi.image? %>
           <%= "<i class='fa fa-video' style='font-size: 40px;'></i>".html_safe if publi.video? %>
         </td>
-        <td><%= publi.title %></td>
-        <td><%= publi.start_date.strftime("%d-%m-%Y %H:%M") %></td>
-        <td><%= publi.end_date.strftime("%d-%m-%Y %H:%M") %></td>
-        <td><%= publi.weekdays %></td>
-        <td><%= publi.start_time.strftime("%H:%M") %></td>
-        <td><%= publi.end_time.strftime("%H:%M") %></td>
-        <td><%= publi.link %></td>
-        <td><%= true_false(publi.cancellable) %></td>
-        <td><%= publi.repeat_swipes %></td>
-        <td><%= link_to 'Ver', publi %></td>
-        <td><%= link_to 'Editar', edit_publi_path(publi), :"data-turbolinks" => false  %></td>
-        <td><%= link_to 'Eliminar', publi, method: :delete, data: { confirm: '¿Eliminar esta publi?' } %></td>
+        <td class="col-title"><%= publi.title %></td>
+        <td class="col-date"><%= publi.start_date.strftime("%d-%m-%Y %H:%M") %></td>
+        <td class="col-date"><%= publi.end_date.strftime("%d-%m-%Y %H:%M") %></td>
+        <td class="col-weekdays"><%= publi.weekdays %></td>
+        <td class="col-time"><%= publi.start_time.strftime("%H:%M") %></td>
+        <td class="col-time"><%= publi.end_time.strftime("%H:%M") %></td>
+        <td class="col-link"><%= publi.link %></td>
+        <td class="col-bool"><%= true_false(publi.cancellable) %></td>
+        <td class="col-swipes"><%= publi.repeat_swipes %></td>
+        <td class="col-actions">
+          <%= link_to publi, class: 'btn btn-info btn-action', title: 'Ver' do %>
+            <i class="fas fa-eye"></i>
+          <% end %>
+        </td>
+        <td class="col-actions">
+          <%= link_to edit_publi_path(publi), class: 'btn btn-warning btn-action', title: 'Editar', :"data-turbolinks" => false do %>
+            <i class="fas fa-edit"></i>
+          <% end %>
+        </td>
+        <td class="col-actions">
+          <%= link_to publi, method: :delete, data: { confirm: '¿Eliminar esta publi?' }, class: 'btn btn-danger btn-action', title: 'Eliminar' do %>
+            <i class="fas fa-trash"></i>
+          <% end %>
+        </td>
       </tr>
     <% end %>
   </tbody>
 </table>
+</div>
 </div>
