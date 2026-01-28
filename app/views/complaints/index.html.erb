@@ -291,7 +291,11 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             
             <td class="col-actions" style="min-width: 140px;">
-              <% if complaint.action_taken == 'no_action' %>
+              <% if complaint.reported_user.blank? %>
+                <span class="badge badge-light text-muted">
+                  <i class="fas fa-user-slash"></i> Usuario eliminado
+                </span>
+              <% elsif complaint.action_taken == 'no_action' %>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                   <button type="button" 
                           class="btn btn-sm btn-danger" 
