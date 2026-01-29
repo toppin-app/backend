@@ -34,11 +34,16 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   include Devise::JWT::RevocationStrategies::JTIMatcher
   devise :database_authenticatable, :registerable, :trackable,
-         :recoverable, :rememberable, :validatable, :jwt_authenticatable, jwt_revocation_strategy: self
+         :recoverable, :rememberable, :jwt_authenticatable, jwt_revocation_strategy: self
 
   # Desactivar validación de email de Devise para usar nuestra validación personalizada
   def email_required?
     false
+  end
+  
+  # Desactivar validación de unicidad de Devise (usamos la nuestra)
+  def self.validates_uniqueness_of(*attr_names)
+    super unless attr_names.include?(:email)
   end
 
   # Permitir detección de cambios en email
@@ -51,13 +56,24 @@ class User < ApplicationRecord
   end
 
   # Validación personalizada para permitir emails duplicados si la cuenta anterior está eliminada
-  validates :email, presence: true
+  validates :email, presence: true, on: :create
   validates :email, format: { with: Devise.email_regexp }, allow_blank: true
-  validates :email, uniqueness: { 
-    conditions: -> { where(deleted_account: false) },
-    case_sensitive: false,
-    message: "ya está en uso por otra cuenta activa"
-  }, if: :email_changed?
+  
+  # Validación de unicidad que excluye el registro actual y cuentas eliminadas
+  validate :email_unique_among_active_accounts, if: :email_changed?
+  
+  def email_unique_among_active_accounts
+    return if email.blank?
+    
+    existing = User.where(deleted_account: false)
+                   .where("LOWER(email) = ?", email.downcase)
+                   .where.not(id: self.id)
+                   .first
+    
+    if existing
+      errors.add(:email, "ya está en uso por otra cuenta activa")
+    end
+  end
   
   # Sobrescribir método de Devise para permitir emails de cuentas eliminadas
   def self.find_for_database_authentication(warden_conditions)
