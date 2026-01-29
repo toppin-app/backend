@@ -383,6 +383,25 @@
   </div>
 
   <div class="utilities-grid">
+    <!-- Utilidad: Test de Emails -->
+    <div class="utility-card">
+      <h3><i class="fas fa-envelope"></i> Test de Emails</h3>
+      <p>
+        Prueba el sistema de envío de emails con Mailjet. Envía emails de prueba para verificar la configuración.
+      </p>
+      
+      <div class="info-badge">
+        <i class="fas fa-info-circle"></i> 
+        <div>
+          <strong>Servicio:</strong> Mailjet
+        </div>
+      </div>
+
+      <%= link_to admin_mailer_test_path, class: 'btn-start' do %>
+        <i class="fas fa-paper-plane"></i> Abrir Test de Emails
+      <% end %>
+    </div>
+
     <!-- Utilidad: Poblar Ubicaciones -->
     <div class="utility-card">
       <h3><i class="fas fa-map-marker-alt"></i> Poblar Ubicaciones</h3>
