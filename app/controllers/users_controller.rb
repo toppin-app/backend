@@ -397,12 +397,22 @@ def update
     end
 
   respond_to do |format|
-    # Decidir si actualizar con o sin contraseña basado en la variable guardada
-    update_success = if changing_password
-                       @user.update(user_params)
-                     else
-                       @user.update_without_password(user_params)
-                     end
+    begin
+      # Decidir si actualizar con o sin contraseña basado en la variable guardada
+      update_success = if changing_password
+                         @user.update(user_params)
+                       else
+                         @user.update_without_password(user_params)
+                       end
+    rescue ActiveRecord::RecordNotUnique => e
+      # Capturar error de email duplicado
+      if e.message.include?('email_and_deleted_account')
+        @user.errors.add(:email, "ya está en uso por otra cuenta activa. No se puede usar el mismo email para múltiples cuentas activas.")
+        update_success = false
+      else
+        raise e
+      end
+    end
 
     if update_success
 

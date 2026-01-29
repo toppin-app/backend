@@ -41,12 +41,13 @@ class User < ApplicationRecord
     false
   end
 
+  # Permitir detección de cambios en email
   def email_changed?
-    false
+    changed.include?('email')
   end
 
   def will_save_change_to_email?
-    false
+    will_save_change_to_attribute?('email')
   end
 
   # Validación personalizada para permitir emails duplicados si la cuenta anterior está eliminada
@@ -56,7 +57,7 @@ class User < ApplicationRecord
     conditions: -> { where(deleted_account: false) },
     case_sensitive: false,
     message: "ya está en uso por otra cuenta activa"
-  }, if: :email_changed?
+  }
   
   # Sobrescribir método de Devise para permitir emails de cuentas eliminadas
   def self.find_for_database_authentication(warden_conditions)
