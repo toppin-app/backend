@@ -1,6 +1,6 @@
 class Complaint < ApplicationRecord
   belongs_to :user
-  belongs_to :reported_user, class_name: 'User', foreign_key: 'to_user_id'
+  belongs_to :reported_user, class_name: 'User', foreign_key: 'to_user_id', optional: true
 
   ACTION_OPTIONS = [
     ['Sin acción', 'no_action'],
