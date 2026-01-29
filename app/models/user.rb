@@ -57,7 +57,7 @@ class User < ApplicationRecord
     conditions: -> { where(deleted_account: false) },
     case_sensitive: false,
     message: "ya está en uso por otra cuenta activa"
-  }
+  }, if: :email_changed?
   
   # Sobrescribir método de Devise para permitir emails de cuentas eliminadas
   def self.find_for_database_authentication(warden_conditions)
