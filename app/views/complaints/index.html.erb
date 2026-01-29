@@ -265,12 +265,21 @@ document.addEventListener('DOMContentLoaded', function() {
             <td class="col-user">
               <% if complaint.reported_user.present? %>
                 <div class="user-card" data-toggle="modal" data-target="#reportedUserModal<%= complaint.to_user_id %>" title="Ver perfil completo">
-                  <div class="user-name"><i class="fas fa-user-slash text-danger"></i> <%= complaint.reported_user.name %></div>
+                  <div class="user-name">
+                    <i class="fas fa-user-slash text-danger"></i> <%= complaint.reported_user.name %>
+                    <% if complaint.reported_user.blocked? %>
+                      <span class="badge badge-danger ml-1" style="font-size: 10px;">
+                        <i class="fas fa-ban"></i> BLOQUEADO
+                      </span>
+                    <% end %>
+                  </div>
                   <div class="user-email"><i class="fas fa-envelope"></i> <%= complaint.reported_user.email %></div>
                   <div class="user-id">ID: <%= complaint.to_user_id %></div>
                 </div>
               <% else %>
-                <span class="text-muted">Usuario eliminado</span>
+                <span class="badge badge-secondary" style="font-size: 12px;">
+                  <i class="fas fa-trash"></i> Usuario eliminado
+                </span>
               <% end %>
             </td>
             
