@@ -84,6 +84,19 @@
         <% end %>
       </p>
 
+      <p>
+        <strong>Estado del usuario:</strong>
+        <% if @user.blocked %>
+          <span class="badge badge-danger" style="font-size: 1.1em; padding: 8px;">
+            <i class="fa fa-ban"></i> BLOQUEADO
+          </span>
+        <% else %>
+          <span class="badge badge-success" style="font-size: 1.1em; padding: 8px;">
+            <i class="fa fa-check"></i> ACTIVO
+          </span>
+        <% end %>
+      </p>
+
 
       <% if @user.is_premium %>
       <p class="alert alert-warning">

@@ -48,6 +48,11 @@ class UsersController < ApplicationController
             base_users = base_users.fake_users
           end
           
+          # Filtrar por usuarios bloqueados
+          if params[:show_blocked_users] == '1'
+            base_users = base_users.where(blocked: true)
+          end
+          
           @q = base_users.ransack(params[:q])
           
           # Manejar usuarios por página: personalizado o predefinido
@@ -62,6 +67,7 @@ class UsersController < ApplicationController
           @include_deleted = params[:include_deleted] == '1'
           @show_real_users = show_real
           @show_fake_users = show_fake
+          @show_blocked_users = params[:show_blocked_users] == '1'
           
           # Obtener lista única de países y ciudades para los filtros
           @countries = User.active_accounts.where.not(location_country: [nil, '']).distinct.pluck(:location_country).sort

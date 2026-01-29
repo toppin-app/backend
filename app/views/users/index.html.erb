@@ -377,6 +377,15 @@
               id: 'show_fake_users_checkbox' %>
           <%= label_tag :show_fake_users, '🤖 Usuarios fake', class: 'form-check-label', style: 'margin-left: 8px; margin-bottom: 0;' %>
         </div>
+
+        <div class="form-check form-switch d-flex align-items-center" style="margin: 0;">
+          <%= check_box_tag :show_blocked_users, '1', @show_blocked_users, 
+              onclick: "this.form.submit();", 
+              class: 'form-check-input',
+              style: 'margin-top: 0;',
+              id: 'show_blocked_users_checkbox' %>
+          <%= label_tag :show_blocked_users, '🚫 Solo bloqueados', class: 'form-check-label', style: 'margin-left: 8px; margin-bottom: 0;' %>
+        </div>
       </div>
     </div>
   </div>
@@ -436,6 +445,9 @@
         <% end %>
         <% if user.fake_user %>
           <i class="fa fa-robot text-info" style="font-size: 1.5em;" title="Usuario fake/bot"></i>
+        <% end %>
+        <% if user.blocked %>
+          <i class="fa fa-ban text-danger" style="font-size: 1.2em;" title="Usuario bloqueado"></i>
         <% end %>
         <%= user.id %></td>
       <td> 
