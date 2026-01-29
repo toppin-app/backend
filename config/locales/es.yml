@@ -62,3 +62,12 @@ es:
     boost_expired:
       title: "Tu power sweet ha caducado"
       body: "Tu power sweet ha caducado, pero puedes volver a activarlo en cualquier momento"
+  activerecord:
+    errors:
+      models:
+        complaint:
+          attributes:
+            reported_user:
+              required: "El usuario denunciado ya no existe en el sistema"
+            base:
+              reported_user_required: "No se puede procesar esta denuncia"
