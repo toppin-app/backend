@@ -468,4 +468,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<%= link_to 'Atrás', users_path %>
+<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
+  <%= link_to edit_user_path(id: @user.id), class: 'btn btn-warning mr-2' do %>
+    <i class="fas fa-edit"></i> Editar usuario
+  <% end %>
+  <%= link_to users_path, class: 'btn btn-secondary' do %>
+    <i class="fas fa-arrow-left"></i> Atrás
+  <% end %>
+</div>
