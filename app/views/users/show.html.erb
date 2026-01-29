@@ -1,3 +1,12 @@
+<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #dee2e6;">
+  <%= link_to edit_user_path(id: @user.id), class: 'btn btn-warning mr-2' do %>
+    <i class="fas fa-edit"></i> Editar usuario
+  <% end %>
+  <%= link_to users_path, class: 'btn btn-secondary' do %>
+    <i class="fas fa-arrow-left"></i> Atrás
+  <% end %>
+</div>
+
 <div class="row">
   <div class="col">
      <div class="card card-body">
@@ -467,12 +476,3 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-
-<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
-  <%= link_to edit_user_path(id: @user.id), class: 'btn btn-warning mr-2' do %>
-    <i class="fas fa-edit"></i> Editar usuario
-  <% end %>
-  <%= link_to users_path, class: 'btn btn-secondary' do %>
-    <i class="fas fa-arrow-left"></i> Atrás
-  <% end %>
-</div>
