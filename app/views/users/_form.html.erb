@@ -537,8 +537,12 @@
     <% if @edit %>
       <div style="padding: 10px;">
         <% @user.user_interests.each do |i| %>
-          <span class="badge badge-warning" style="margin: 3px;"><%= i.interest.interest_category.name %>: <%= i.interest.name %>
-
+          <span class="badge badge-warning" style="margin: 3px;">
+            <% if i.interest.interest_category.present? %>
+              <%= i.interest.interest_category.name %>: <%= i.interest.name %>
+            <% else %>
+              <%= i.interest.name %>
+            <% end %>
             -- <%= link_to 'Eliminar', i, method: :delete, data: { confirm: '¿Eliminar?' } %>
           </span>
         <% end %>
