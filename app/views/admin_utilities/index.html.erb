@@ -120,7 +120,7 @@
   .btn-start {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
-    color: white;
+    color: white !important;
     padding: 10px 20px;
     font-size: 14px;
     font-weight: 600;
@@ -131,15 +131,19 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    text-decoration: none;
   }
   
   .btn-start i {
     font-size: 13px;
+    color: white !important;
   }
   
   .btn-start:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white !important;
+    text-decoration: none;
   }
   
   .btn-start:disabled {
