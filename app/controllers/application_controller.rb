@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
      respond_to :json, :html
      before_action :set_titles, :save_last_connection
      before_action :authenticate_user!
+     before_action :check_if_user_blocked
      before_action :log_request_params
      after_action :log_response_body
 
@@ -18,6 +19,29 @@ class ApplicationController < ActionController::Base
           sign_out current_user
           redirect_to root_path
         end
+  end
+
+  def check_if_user_blocked
+    return unless current_user
+    
+    if current_user.blocked?
+      error_response = {
+        error: "Usuario bloqueado",
+        blocked: true
+      }
+      
+      # Agregar block_reason_key si existe
+      if current_user.block_reason_key.present?
+        error_response[:block_reason_key] = current_user.block_reason_key
+      end
+      
+      sign_out current_user
+      
+      respond_to do |format|
+        format.html { redirect_to root_path, alert: "Tu cuenta ha sido bloqueada." }
+        format.json { render json: error_response, status: :forbidden }
+      end
+    end
   end
 
 

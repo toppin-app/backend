@@ -1,5 +1,6 @@
 class Users::SessionsController < Devise::SessionsController
     prepend_before_action :require_no_authentication, only: [:new, :create]
+    skip_before_action :check_if_user_blocked
     #skip_before_action :verify_authenticity_token, :only => [:create, :new]
 
 
@@ -26,7 +27,27 @@ class Users::SessionsController < Devise::SessionsController
 
       Rails.logger.info "Login params: #{user_params.inspect}"
 
-      if @user && !@user.blocked && @user.valid_password?(user_params[:password])
+      if @user && @user.valid_password?(user_params[:password])
+        # Verificar si el usuario está bloqueado
+        if @user.blocked
+          error_response = {
+            error: "Usuario bloqueado",
+            blocked: true,
+            status: 403
+          }
+          
+          # Agregar block_reason_key si existe
+          if @user.block_reason_key.present?
+            error_response[:block_reason_key] = @user.block_reason_key
+          end
+          
+          respond_to do |format|
+            format.html { redirect_to new_user_session_path, alert: "Tu cuenta ha sido bloqueada." }
+            format.json { render json: error_response, status: :forbidden }
+          end
+          return
+        end
+        
         set_flash_message!(:notice, :signed_in)
         sign_in(@user)
 

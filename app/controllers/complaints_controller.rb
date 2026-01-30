@@ -54,6 +54,7 @@ class ComplaintsController < ApplicationController
     respond_to do |format|
       if @complaint.update(complaint_params)
         # Si la acción es bloquear usuario, marcar al usuario como bloqueado
+        # El block_reason_key se guarda automáticamente via after_save callback en Complaint
         if @complaint.action_taken == 'user_blocked' && @complaint.reported_user.present?
           @complaint.reported_user.update(blocked: true)
         end

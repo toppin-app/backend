@@ -2686,7 +2686,7 @@ end
     # Only allow a list of trusted parameters
     def user_params
       params.require(:user).permit(
-        :id, :email, :name, :password, :password_confirmation, :user_name, :blocked,
+        :id, :email, :name, :password, :password_confirmation, :user_name, :blocked, :block_reason_key,
         :current_subscription_id, :show_publi, :current_subscription_name, :verified,
         :verification_file, :push_token, :device_id, :device_platform, :description,
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,

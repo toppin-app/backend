@@ -44,6 +44,7 @@ class Complaint < ApplicationRecord
   
   # El estado se calcula automáticamente basado en la acción
   before_save :update_status
+  after_save :update_user_block_reason
   
   # Scopes para filtrar por estado
   scope :recent, -> { order(created_at: :desc) }
@@ -53,5 +54,11 @@ class Complaint < ApplicationRecord
   
   def update_status
     self.status = action_taken == 'no_action' ? 'unreviewed' : 'reviewed'
+  end
+  
+  def update_user_block_reason
+    if action_taken == 'user_blocked' && reported_user.present? && reason_key.present?
+      reported_user.update_column(:block_reason_key, reason_key)
+    end
   end
 end
