@@ -1,6 +1,5 @@
 class Users::SessionsController < Devise::SessionsController
     prepend_before_action :require_no_authentication, only: [:new, :create]
-    skip_before_action :check_if_user_blocked
     skip_before_action :save_last_connection
     #skip_before_action :verify_authenticity_token, :only => [:create, :new]
 
