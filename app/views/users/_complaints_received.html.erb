@@ -1,0 +1,53 @@
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Denunciado por</th>
+      <th>Razón</th>
+      <th>Estado</th>
+      <th>Acción tomada</th>
+      <th>Fecha</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if @complaints_received.any? %>
+      <% @complaints_received.each do |complaint| %>
+        <tr>
+          <td><%= complaint.id %></td>
+          <td>
+            <%= link_to complaint.user.name, show_user_path(id: complaint.user_id), target: '_blank' %>
+            <br><small class="text-muted">ID: <%= complaint.user_id %></small>
+          </td>
+          <td><%= complaint.reason %></td>
+          <td>
+            <% if complaint.status == 'reviewed' %>
+              <span class="badge badge-success">Revisada</span>
+            <% else %>
+              <span class="badge badge-warning">Sin revisar</span>
+            <% end %>
+          </td>
+          <td>
+            <% if complaint.action_taken == 'user_blocked' %>
+              <span class="badge badge-danger">Usuario bloqueado</span>
+            <% elsif complaint.action_taken == 'invalidated' %>
+              <span class="badge badge-secondary">Ignorada</span>
+            <% else %>
+              <span class="badge badge-light">Sin acción</span>
+            <% end %>
+          </td>
+          <td><%= complaint.created_at.strftime("%d/%m/%Y %H:%M") %></td>
+        </tr>
+      <% end %>
+    <% else %>
+      <tr>
+        <td colspan="6" class="text-center text-muted">No hay denuncias recibidas</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @complaints_received.total_pages > 1 %>
+  <div class="text-center">
+    <%= will_paginate @complaints_received, param_name: 'complaints_received_page', inner_window: 2, outer_window: 0 %>
+  </div>
+<% end %>

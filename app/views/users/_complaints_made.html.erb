@@ -1,0 +1,57 @@
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Usuario denunciado</th>
+      <th>Razón</th>
+      <th>Estado</th>
+      <th>Acción tomada</th>
+      <th>Fecha</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if @complaints_made.any? %>
+      <% @complaints_made.each do |complaint| %>
+        <tr>
+          <td><%= complaint.id %></td>
+          <td>
+            <% if complaint.reported_user.present? %>
+              <%= link_to complaint.reported_user.name, show_user_path(id: complaint.to_user_id), target: '_blank' %>
+              <br><small class="text-muted">ID: <%= complaint.to_user_id %></small>
+            <% else %>
+              <span class="text-danger">Usuario eliminado</span>
+            <% end %>
+          </td>
+          <td><%= complaint.reason %></td>
+          <td>
+            <% if complaint.status == 'reviewed' %>
+              <span class="badge badge-success">Revisada</span>
+            <% else %>
+              <span class="badge badge-warning">Sin revisar</span>
+            <% end %>
+          </td>
+          <td>
+            <% if complaint.action_taken == 'user_blocked' %>
+              <span class="badge badge-danger">Usuario bloqueado</span>
+            <% elsif complaint.action_taken == 'invalidated' %>
+              <span class="badge badge-secondary">Ignorada</span>
+            <% else %>
+              <span class="badge badge-light">Sin acción</span>
+            <% end %>
+          </td>
+          <td><%= complaint.created_at.strftime("%d/%m/%Y %H:%M") %></td>
+        </tr>
+      <% end %>
+    <% else %>
+      <tr>
+        <td colspan="6" class="text-center text-muted">No hay denuncias hechas</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @complaints_made.total_pages > 1 %>
+  <div class="text-center">
+    <%= will_paginate @complaints_made, param_name: 'complaints_made_page', inner_window: 2, outer_window: 0 %>
+  </div>
+<% end %>

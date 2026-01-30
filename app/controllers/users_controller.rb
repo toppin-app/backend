@@ -97,6 +97,12 @@ class UsersController < ApplicationController
     # Paginación para dislikes dados
     @sent_dislikes = @user.sent_dislikes.order(id: :desc).paginate(page: params[:sent_dislikes_page], per_page: 5)
     
+    # Paginación para denuncias hechas
+    @complaints_made = @user.complaints.recent.paginate(page: params[:complaints_made_page], per_page: 10)
+    
+    # Paginación para denuncias recibidas
+    @complaints_received = @user.received_complaints.recent.paginate(page: params[:complaints_received_page], per_page: 10)
+    
     # Calcular total gastado en Stripe (succeeded purchases)
     @completed_purchases = @user.purchases_stripes.where(status: 'succeeded')
     @total_spent = @completed_purchases.sum(:prize).to_f / 100.0
@@ -134,6 +140,10 @@ class UsersController < ApplicationController
           render partial: 'matches', layout: false
         elsif params[:likes_page]
           render partial: 'likes', layout: false
+        elsif params[:complaints_made_page]
+          render partial: 'complaints_made', layout: false
+        elsif params[:complaints_received_page]
+          render partial: 'complaints_received', layout: false
         end
       end
       format.json do

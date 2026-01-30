@@ -278,6 +278,20 @@
     </div>
 
     <hr>
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-exclamation-triangle text-warning"></i> Denuncias hechas (<%= @complaints_made.total_entries %>)</b></p>
+
+    <div id="complaints-made-container">
+      <%= render 'complaints_made' %>
+    </div>
+
+    <hr>
+    <p style="background:  #eee; padding:5px;"><b><i class="fa fa-flag text-danger"></i> Denuncias recibidas (<%= @complaints_received.total_entries %>)</b></p>
+
+    <div id="complaints-received-container">
+      <%= render 'complaints_received' %>
+    </div>
+
+    <hr>
     <p style="background:  #eee; padding:5px;"><b><i class="fa fa-heart"></i> Dar un like</b></p>
 
     <%= form_with url: "/create_like",local: true do |form| %>
@@ -402,7 +416,9 @@ document.addEventListener('DOMContentLoaded', function() {
       { selector: '#matches-container .pagination a', containerId: 'matches-container' },
       { selector: '#likes-container .pagination a', containerId: 'likes-container' },
       { selector: '#sent-likes-container .pagination a', containerId: 'sent-likes-container' },
-      { selector: '#sent-dislikes-container .pagination a', containerId: 'sent-dislikes-container' }
+      { selector: '#sent-dislikes-container .pagination a', containerId: 'sent-dislikes-container' },
+      { selector: '#complaints-made-container .pagination a', containerId: 'complaints-made-container' },
+      { selector: '#complaints-received-container .pagination a', containerId: 'complaints-received-container' }
     ];
 
     // Buscar si se hizo click en algún link de paginación

@@ -21,6 +21,8 @@ class User < ApplicationRecord
   has_many :spotify_user_data, dependent: :destroy
   has_many :tmdb_user_data, class_name: 'TmdbUserDatum', foreign_key: :user_id, dependent: :destroy
   has_many :tmdb_user_series_data, class_name: 'TmdbUserSeriesDatum', foreign_key: :user_id, dependent: :destroy
+  has_many :complaints, dependent: :destroy
+  has_many :received_complaints, class_name: 'Complaint', foreign_key: 'to_user_id', dependent: :destroy
   mount_base64_uploader :verification_image, ImageUploader
   # Model enums
   enum gender: { female: 0, male: 1, non_binary: 2, couple: 3 }
