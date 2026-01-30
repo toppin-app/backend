@@ -2,8 +2,9 @@ class ApplicationController < ActionController::Base
 
      protect_from_forgery with: :null_session, unless: -> { request.format.json? }
      respond_to :json, :html
-     before_action :set_titles, :save_last_connection
+     before_action :set_titles
      before_action :authenticate_user!
+     before_action :save_last_connection
      before_action :check_if_user_blocked
      before_action :log_request_params
      after_action :log_response_body
