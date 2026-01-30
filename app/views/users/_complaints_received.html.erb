@@ -3,6 +3,7 @@
     <tr>
       <th>ID</th>
       <th>Denunciado por</th>
+      <th>Tipo</th>
       <th>Razón</th>
       <th>Estado</th>
       <th>Acción tomada</th>
@@ -18,6 +19,7 @@
             <%= link_to complaint.user.name, show_user_path(id: complaint.user_id), target: '_blank' %>
             <br><small class="text-muted">ID: <%= complaint.user_id %></small>
           </td>
+          <td><small class="text-muted"><%= complaint.reason_key ? Complaint::REASON_KEY_LABELS[complaint.reason_key] : '-' %></small></td>
           <td><%= complaint.reason %></td>
           <td>
             <% if complaint.status == 'reviewed' %>
@@ -40,7 +42,7 @@
       <% end %>
     <% else %>
       <tr>
-        <td colspan="6" class="text-center text-muted">No hay denuncias recibidas</td>
+        <td colspan="7" class="text-center text-muted">No hay denuncias recibidas</td>
       </tr>
     <% end %>
   </tbody>

@@ -3,6 +3,7 @@
     <tr>
       <th>ID</th>
       <th>Usuario denunciado</th>
+      <th>Tipo</th>
       <th>Razón</th>
       <th>Estado</th>
       <th>Acción tomada</th>
@@ -22,6 +23,7 @@
               <span class="text-danger">Usuario eliminado</span>
             <% end %>
           </td>
+          <td><small class="text-muted"><%= complaint.reason_key ? Complaint::REASON_KEY_LABELS[complaint.reason_key] : '-' %></small></td>
           <td><%= complaint.reason %></td>
           <td>
             <% if complaint.status == 'reviewed' %>
@@ -44,7 +46,7 @@
       <% end %>
     <% else %>
       <tr>
-        <td colspan="6" class="text-center text-muted">No hay denuncias hechas</td>
+        <td colspan="7" class="text-center text-muted">No hay denuncias hechas</td>
       </tr>
     <% end %>
   </tbody>

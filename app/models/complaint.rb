@@ -2,6 +2,25 @@ class Complaint < ApplicationRecord
   belongs_to :user
   belongs_to :reported_user, class_name: 'User', foreign_key: 'to_user_id', optional: true
 
+  # Constantes de reason_key (sincronizadas con la app móvil)
+  REASON_KEYS = {
+    inappropriate_content: 'inappropriate_content',
+    spam: 'spam',
+    fake_profile: 'fake_profile',
+    harassment: 'harassment',
+    underage: 'underage',
+    other: 'other'
+  }.freeze
+
+  REASON_KEY_LABELS = {
+    'inappropriate_content' => 'Contenido inapropiado',
+    'spam' => 'Spam',
+    'fake_profile' => 'Perfil falso',
+    'harassment' => 'Acoso',
+    'underage' => 'Menor de edad',
+    'other' => 'Otro'
+  }.freeze
+
   # Validación: solo requerir reported_user si la acción es bloquearlo
   validate :validate_reported_user_for_action
   
