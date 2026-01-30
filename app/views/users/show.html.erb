@@ -358,7 +358,21 @@
           <%= render 'complaints_received' %>
         </div>
       </div>
-    </div>    btn.addEventListener('click', function() {
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  let currentSid = null;
+  const fichaUserId = <%= @user.id %>; // <-- El id del usuario de la ficha
+
+  // Inicializa los botones de chat
+  document.querySelectorAll('.btn.chat').forEach(function(btn) {
+    btn.classList.remove('disabled');
+    btn.addEventListener('click', function() {
       // Obtener nombre de usuario
       const row = btn.closest('tr');
       let userName = '';
