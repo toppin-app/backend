@@ -41,12 +41,7 @@
     </table>
   </div>
   
-  <%= will_paginate @blocked_users, param_name: 'blocked_users_page', params: { anchor: 'blocked-users-container' }, 
-      renderer: BootstrapPagination::Rails, 
-      inner_window: 2, 
-      outer_window: 0,
-      previous_label: '←',
-      next_label: '→' %>
+  <%= will_paginate @blocked_users, param_name: 'blocked_users_page', previous_label: '← Anterior', next_label: 'Siguiente →' %>
   
   <script>
     // AJAX para paginación de usuarios bloqueados
