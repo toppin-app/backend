@@ -397,12 +397,28 @@ class UserMatchRequestsController < ApplicationController
   end
   # Devuelve usuarios a los que les gustas, pero tú no les has dado like de momento.
   def get_user_likes
-    @user_match_requests = UserMatchRequest.where(target_user: current_user.id, is_match: false, is_like: true, is_rejected: false).order(id: :desc).limit(99)
+    # Excluir usuarios bloqueados y usuarios que me han bloqueado
+    blocked_ids = current_user.blocks.pluck(:blocked_user_id)
+    blocked_by_ids = Block.where(blocked_user_id: current_user.id).pluck(:user_id)
+    excluded_ids = (blocked_ids + blocked_by_ids).uniq
+    
+    @user_match_requests = UserMatchRequest.where(target_user: current_user.id, is_match: false, is_like: true, is_rejected: false)
+      .where.not(user_id: excluded_ids)
+      .order(id: :desc)
+      .limit(99)
     render 'index'
   end
   # Devuelve usuarios a los que has dado o te han dado un superlike
   def get_user_superlikes
-    @user_match_requests = current_user.given_received_requests.where(is_match: false, is_superlike: true, is_rejected: false).order(id: :desc)
+    blocked_ids = current_user.blocks.pluck(:blocked_user_id)
+    blocked_by_ids = Block.where(blocked_user_id: current_user.id).pluck(:user_id)
+    excluded_ids = (blocked_ids + blocked_by_ids).uniq
+    
+    @user_match_requests = current_user.given_received_requests
+      .where(is_match: false, is_superlike: true, is_rejected: false)
+      .where.not(user_id: excluded_ids)
+      .where.not(target_user: excluded_ids)
+      .order(id: :desc)
     render 'index'
   end
   # GET /user_match_requests/1 or /user_match_requests/1.json

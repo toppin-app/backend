@@ -1859,9 +1859,13 @@ end
     # Aplicamos el filtro para excluir a todos estos usuarios de la lista.
     users = users.where.not(id: users_to_exclude)
 
-    # IDs de usuarios bloqueados por el usuario actual (complaints)
-    blocked_user_ids = Complaint.where(user_id: current_user_id).pluck(:to_user_id)
+    # IDs de usuarios bloqueados por el usuario actual
+    blocked_user_ids = Block.where(user_id: current_user_id).pluck(:blocked_user_id)
     users_to_exclude += blocked_user_ids
+    
+    # IDs de usuarios que me han bloqueado (no debería verlos tampoco)
+    blocked_by_ids = Block.where(blocked_user_id: current_user_id).pluck(:user_id)
+    users_to_exclude += blocked_by_ids
     
     # Agregar usuarios con cuentas eliminadas
     users_to_exclude += deleted_user_ids

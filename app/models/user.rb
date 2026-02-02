@@ -575,18 +575,46 @@ end
 
   # Nos devuelve los matches de un usuario
   def matches
-     #self.sent_matches+self.received_matches
-     UserMatchRequest.where("user_id = ? or target_user = ?", self.id, self.id).where("is_match IS TRUE OR is_sugar_sweet IS TRUE or is_superlike IS TRUE").where(is_rejected: false).order(id: :desc).eager_load(:user)
+    # Excluir usuarios bloqueados y usuarios que me han bloqueado
+    blocked_ids = blocks.pluck(:blocked_user_id)
+    blocked_by_ids = Block.where(blocked_user_id: id).pluck(:user_id)
+    excluded_ids = (blocked_ids + blocked_by_ids).uniq
+    
+    UserMatchRequest.where("user_id = ? or target_user = ?", self.id, self.id)
+      .where("is_match IS TRUE OR is_sugar_sweet IS TRUE or is_superlike IS TRUE")
+      .where(is_rejected: false)
+      .where.not(user_id: excluded_ids)
+      .where.not(target_user: excluded_ids)
+      .order(id: :desc)
+      .eager_load(:user)
   end
 
   # Matches del usuario cuando ha iniciado el mismo.
   def sent_matches
-    UserMatchRequest.where(user_id: id).where("is_match IS TRUE OR is_sugar_sweet IS TRUE or is_superlike IS TRUE").where(is_rejected: false).order(id: :desc).eager_load(:user)
+    blocked_ids = blocks.pluck(:blocked_user_id)
+    blocked_by_ids = Block.where(blocked_user_id: id).pluck(:user_id)
+    excluded_ids = (blocked_ids + blocked_by_ids).uniq
+    
+    UserMatchRequest.where(user_id: id)
+      .where("is_match IS TRUE OR is_sugar_sweet IS TRUE or is_superlike IS TRUE")
+      .where(is_rejected: false)
+      .where.not(target_user: excluded_ids)
+      .order(id: :desc)
+      .eager_load(:user)
   end
 
   # Matches del usuario cuando lo ha iniciado el otro usuario.
   def received_matches
-    UserMatchRequest.where(target_user: id).where("is_match IS TRUE OR is_sugar_sweet IS TRUE or is_superlike IS TRUE").where(is_rejected: false).order(id: :desc).eager_load(:user)
+    blocked_ids = blocks.pluck(:blocked_user_id)
+    blocked_by_ids = Block.where(blocked_user_id: id).pluck(:user_id)
+    excluded_ids = (blocked_ids + blocked_by_ids).uniq
+    
+    UserMatchRequest.where(target_user: id)
+      .where("is_match IS TRUE OR is_sugar_sweet IS TRUE or is_superlike IS TRUE")
+      .where(is_rejected: false)
+      .where.not(user_id: excluded_ids)
+      .order(id: :desc)
+      .eager_load(:user)
   end
 
 
