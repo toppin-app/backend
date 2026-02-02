@@ -103,6 +103,12 @@ class UsersController < ApplicationController
     # Paginación para denuncias recibidas
     @complaints_received = @user.received_complaints.recent.paginate(page: params[:complaints_received_page], per_page: 10)
     
+    # Paginación para usuarios bloqueados por este usuario
+    @blocked_users = @user.blocks.includes(:blocked_user).order(created_at: :desc).paginate(page: params[:blocked_users_page], per_page: 10)
+    
+    # Paginación para usuarios que han bloqueado a este usuario
+    @blocked_by_users = Block.where(blocked_user_id: @user.id).includes(:user).order(created_at: :desc).paginate(page: params[:blocked_by_users_page], per_page: 10)
+    
     # Calcular total gastado en Stripe (succeeded purchases)
     @completed_purchases = @user.purchases_stripes.where(status: 'succeeded')
     @total_spent = @completed_purchases.sum(:prize).to_f / 100.0

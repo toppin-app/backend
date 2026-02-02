@@ -1,0 +1,81 @@
+<% if @blocked_users.any? %>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th>ID</th>
+          <th>Usuario bloqueado</th>
+          <th>Email</th>
+          <th>Bloqueado el</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @blocked_users.each do |block| %>
+          <tr>
+            <td><%= block.blocked_user_id %></td>
+            <td>
+              <% if block.blocked_user.present? %>
+                <%= link_to block.blocked_user.user_name, user_path(block.blocked_user), class: 'text-primary' %>
+              <% else %>
+                <span class="text-muted">Usuario eliminado</span>
+              <% end %>
+            </td>
+            <td>
+              <% if block.blocked_user.present? %>
+                <%= block.blocked_user.email %>
+              <% else %>
+                -
+              <% end %>
+            </td>
+            <td><%= block.created_at.strftime("%d/%m/%Y %H:%M") %></td>
+            <td>
+              <% if block.blocked_user.present? %>
+                <%= link_to 'Ver perfil', user_path(block.blocked_user), class: 'btn btn-sm btn-info text-white', target: '_blank' %>
+                <%= link_to 'Desbloquear', block_path(block), method: :delete, data: { confirm: '¿Desbloquear a este usuario?' }, class: 'btn btn-sm btn-danger text-white' %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  
+  <%= will_paginate @blocked_users, param_name: 'blocked_users_page', params: { anchor: 'blocked-users-container' }, 
+      renderer: BootstrapPagination::Rails, 
+      inner_window: 2, 
+      outer_window: 0,
+      previous_label: '←',
+      next_label: '→' %>
+  
+  <script>
+    // AJAX para paginación de usuarios bloqueados
+    document.addEventListener('DOMContentLoaded', function() {
+      const blockedContainer = document.getElementById('blocked-users-container');
+      if (blockedContainer) {
+        blockedContainer.addEventListener('click', function(e) {
+          if (e.target.closest('.pagination a')) {
+            e.preventDefault();
+            const link = e.target.closest('a');
+            fetch(link.href, {
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            })
+            .then(response => response.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const newContent = doc.getElementById('blocked-users-container');
+              if (newContent) {
+                blockedContainer.innerHTML = newContent.innerHTML;
+              }
+            });
+          }
+        });
+      }
+    });
+  </script>
+<% else %>
+  <p class="text-muted">No ha bloqueado a ningún usuario.</p>
+<% end %>

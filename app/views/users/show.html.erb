@@ -346,6 +346,24 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="card-header bg-warning text-dark"><b><i class="fa fa-ban"></i> Usuarios bloqueados (<%= @blocked_users.total_entries %>)</b></div>
+      <div class="card-body">
+        <div id="blocked-users-container">
+          <%= render 'blocked_users' %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-secondary text-white"><b><i class="fa fa-user-slash"></i> Bloqueado por (<%= @blocked_by_users.total_entries %>)</b></div>
+      <div class="card-body">
+        <div id="blocked-by-users-container">
+          <%= render 'blocked_by_users' %>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 

@@ -11,6 +11,7 @@ Rails.application.routes.draw do
 
   resources :publis
   resources :complaints
+  resources :blocks, only: [:destroy]
   resources :purchases
   resources :user_match_requests
   resources :user_personal_questions
