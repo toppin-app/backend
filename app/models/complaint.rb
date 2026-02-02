@@ -45,6 +45,7 @@ class Complaint < ApplicationRecord
   # El estado se calcula automáticamente basado en la acción
   before_save :update_status
   after_save :update_user_block_reason
+  after_create :block_reported_user_if_requested
   
   # Scopes para filtrar por estado
   scope :recent, -> { order(created_at: :desc) }
@@ -59,6 +60,16 @@ class Complaint < ApplicationRecord
   def update_user_block_reason
     if action_taken == 'user_blocked' && reported_user.present? && reason_key.present?
       reported_user.update_column(:block_reason_key, reason_key)
+    end
+  end
+  
+  # Bloquear al usuario denunciado si se solicitó al crear la denuncia
+  def block_reported_user_if_requested
+    if block_user && reported_user.present?
+      # Crear bloqueo solo si no existe ya
+      unless user.blocks.exists?(blocked_user_id: reported_user.id)
+        user.blocks.create(blocked_user_id: reported_user.id)
+      end
     end
   end
 end
