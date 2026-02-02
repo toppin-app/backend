@@ -9,6 +9,6 @@ class BlocksController < ApplicationController
     
     @block.destroy
     
-    redirect_to user_path(user), notice: 'Usuario desbloqueado correctamente.'
+    redirect_to show_user_path(user), notice: 'Usuario desbloqueado correctamente.'
   end
 end
