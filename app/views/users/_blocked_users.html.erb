@@ -16,7 +16,7 @@
             <td><%= block.blocked_user_id %></td>
             <td>
               <% if block.blocked_user.present? %>
-                <%= link_to block.blocked_user.user_name, user_path(block.blocked_user), class: 'text-primary' %>
+                <%= link_to block.blocked_user.user_name, show_user_path(block.blocked_user), class: 'text-primary' %>
               <% else %>
                 <span class="text-muted">Usuario eliminado</span>
               <% end %>
@@ -31,7 +31,7 @@
             <td><%= block.created_at.strftime("%d/%m/%Y %H:%M") %></td>
             <td>
               <% if block.blocked_user.present? %>
-                <%= link_to 'Ver perfil', user_path(block.blocked_user), class: 'btn btn-sm btn-info text-white', target: '_blank' %>
+                <%= link_to 'Ver perfil', show_user_path(block.blocked_user), class: 'btn btn-sm btn-info text-white', target: '_blank' %>
                 <%= link_to 'Desbloquear', block_path(block), method: :delete, data: { confirm: '¿Desbloquear a este usuario?' }, class: 'btn btn-sm btn-danger text-white' %>
               <% end %>
             </td>
