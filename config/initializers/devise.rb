@@ -278,7 +278,7 @@ Devise.setup do |config|
   # change the failure app, you can configure them inside the config.warden block.
   #
   config.warden do |manager|
-    manager.after_set_user do |user, auth, opts|
+    manager.after_authentication do |user, auth, opts|
       if user.blocked && !user.admin?
         auth.logout
         throw :warden, message: "Tu cuenta ha sido bloqueada. Contacta con soporte."
