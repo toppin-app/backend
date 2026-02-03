@@ -119,8 +119,6 @@ Rails.application.routes.draw do
 
   # Update usuario desde la app
   put '/users/:id' => 'users#update'
-  get 'users/available_publis', to: 'users#available_publis'
-  put 'users/mark_publi_viewed', to: 'users#mark_publi_viewed'
 
   # Eliminar cuenta usuario
   post '/delete_account' => 'users#delete_account'
@@ -274,9 +272,6 @@ Rails.application.routes.draw do
   # Rutas para token spoti
   get '/spotify/token', to: 'spotify#token'
 
-  # Rutas para publicidad
-  get 'users/available_publis', to: 'users#available_publis'
-  put 'users/mark_publi_viewed', to: 'users#mark_publi_viewed'
   # Rutas TMDB User Data
   get    '/tmdb_user_data',              to: 'tmdb_user_data#index'
   get    '/tmdb_user_data/:id',          to: 'tmdb_user_data#show'
