@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
      respond_to :json, :html
      before_action :set_titles
      before_action :authenticate_user!
+     before_action :check_if_user_blocked
      before_action :save_last_connection
      before_action :log_request_params
      after_action :log_response_body
@@ -19,6 +20,17 @@ class ApplicationController < ActionController::Base
           sign_out current_user
           redirect_to root_path
         end
+  end
+
+  def check_if_user_blocked
+    if current_user && current_user.blocked
+      sign_out current_user
+      if request.format.json?
+        render json: { error: 'Tu cuenta ha sido bloqueada. Contacta con soporte.', blocked: true }, status: :unauthorized
+      else
+        redirect_to new_user_session_path, alert: 'Tu cuenta ha sido bloqueada. Contacta con soporte.'
+      end
+    end
   end
 
 
