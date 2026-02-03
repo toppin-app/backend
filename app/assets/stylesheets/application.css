@@ -14,53 +14,87 @@
  *= require_self
  */
 .digg_pagination {
-  background: white;
+  background: transparent;
   cursor: default;
-  margin-bottom: 15px;
+  margin: 25px 0;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
 
-  /* self-clearing method: */ }
-  .digg_pagination a, .digg_pagination span, .digg_pagination em {
-    padding: 0.2em 0.5em;
-    display: block;
-    float: left;
-    margin-right: 1px; }
-  .digg_pagination .disabled {
-    color: #999999;
-    border: 1px solid #dddddd; }
-  .digg_pagination .current {
-    font-style: normal;
-    font-weight: bold;
-    background: #2e6ab1;
-    color: white;
-    border: 1px solid #2e6ab1; }
-  .digg_pagination a {
-    text-decoration: none;
-    color: #105cb6;
-    border: 1px solid #9aafe5; }
-    .digg_pagination a:hover, .digg_pagination a:focus {
-      color: #000033;
-      border-color: #000033; }
-  .digg_pagination .page_info {
-    background: #2e6ab1;
-    color: white;
-    padding: 0.4em 0.6em;
-    width: 22em;
-    margin-bottom: 0.3em;
-    text-align: center; }
-    .digg_pagination .page_info b {
-      color: #000033;
-      background: #6aa6ed;
-      padding: 0.1em 0.25em; }
-  .digg_pagination:after {
-    content: ".";
-    display: block;
-    height: 0;
-    clear: both;
-    visibility: hidden; }
-  * html .digg_pagination {
-    height: 1%; }
-  *:first-child + html .digg_pagination {
-    overflow: hidden; }
+.digg_pagination a, 
+.digg_pagination span, 
+.digg_pagination em {
+  padding: 10px 16px;
+  display: inline-block;
+  margin: 0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.digg_pagination .disabled {
+  color: #adb5bd;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  cursor: not-allowed;
+}
+
+.digg_pagination .current {
+  font-style: normal;
+  font-weight: 600;
+  background: #0d6efd;
+  color: white;
+  border: 1px solid #0d6efd;
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.digg_pagination a {
+  text-decoration: none;
+  color: #0d6efd;
+  background-color: white;
+  border: 1px solid #dee2e6;
+}
+
+.digg_pagination a:hover, 
+.digg_pagination a:focus {
+  color: white;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(13, 110, 253, 0.2);
+}
+
+.digg_pagination .previous_page,
+.digg_pagination .next_page {
+  font-weight: 600;
+  padding: 10px 20px;
+}
+
+.digg_pagination .previous_page.disabled,
+.digg_pagination .next_page.disabled {
+  opacity: 0.5;
+}
+
+.digg_pagination .page_info {
+  background: #f8f9fa;
+  color: #495057;
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin: 0 10px;
+  font-size: 14px;
+  border: 1px solid #dee2e6;
+}
+
+.digg_pagination .page_info b {
+  color: #0d6efd;
+  font-weight: 600;
+}
 
 .blink_me {
   animation: blinker 1s linear infinite;

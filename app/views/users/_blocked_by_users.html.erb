@@ -40,7 +40,9 @@
     </table>
   </div>
   
-  <%= will_paginate @blocked_by_users, param_name: 'blocked_by_users_page', previous_label: '← Anterior', next_label: 'Siguiente →' %>
+  <div class="d-flex justify-content-center mt-4">
+    <%= will_paginate @blocked_by_users, param_name: 'blocked_by_users_page', previous_label: '← Anterior', next_label: 'Siguiente →' %>
+  </div>
   
   <script>
     // AJAX para paginación de bloqueado por
