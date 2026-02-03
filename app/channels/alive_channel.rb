@@ -16,8 +16,11 @@ class AliveChannel < ApplicationCable::Channel
   def alive_channel
     Rails.logger.info("[AliveChannel] Enviando lista de matches conectados")
     user_ids = redis.smembers("online_users").map(&:to_i)
+    
+    # Solo procesar usuarios que están conectados
+    return if user_ids.empty?
 
-    User.find_each do |user|
+    User.where(id: user_ids).find_each do |user|
       match_requests = UserMatchRequest.where("(user_id = :id OR target_user = :id) AND is_match = true", id: user.id)
       match_user_ids = match_requests.map { |mr| mr.user_id == user.id ? mr.target_user : mr.user_id }
       matches = User.where(id: match_user_ids)
