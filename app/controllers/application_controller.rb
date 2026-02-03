@@ -23,15 +23,16 @@ class ApplicationController < ActionController::Base
   end
 
   def check_if_user_blocked
-    if current_user && current_user.blocked && !current_user.admin?
-      sign_out current_user
+    return unless current_user
+    return if current_user.admin?
+    
+    if current_user.blocked
       if request.format.json?
         render json: { error: 'Tu cuenta ha sido bloqueada. Contacta con soporte.', blocked: true }, status: :unauthorized
-        return
       else
         redirect_to new_user_session_path, alert: 'Tu cuenta ha sido bloqueada. Contacta con soporte.'
-        return
       end
+      sign_out current_user
     end
   end
 
