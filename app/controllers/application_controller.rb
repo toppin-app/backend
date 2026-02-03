@@ -4,7 +4,6 @@ class ApplicationController < ActionController::Base
      respond_to :json, :html
      before_action :set_titles
      before_action :authenticate_user!
-     before_action :check_if_user_blocked
      before_action :save_last_connection
      before_action :log_request_params
      after_action :log_response_body

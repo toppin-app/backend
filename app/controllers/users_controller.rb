@@ -1,6 +1,7 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
   before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes, :sync_stripe_purchases]
+  before_action :check_if_user_blocked, only: [:user_swipes, :get_user_consumables, :user_interactions]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet]
 
