@@ -49,7 +49,7 @@
 </table>
 
 <% if @complaints_received.total_pages > 1 %>
-  <div class="d-flex justify-content-center mt-4">
-    <%= will_paginate @complaints_received, param_name: 'complaints_received_page', inner_window: 2, outer_window: 0, previous_label: '← Anterior', next_label: 'Siguiente →' %>
+  <div class="text-center">
+    <%= will_paginate @complaints_received, param_name: 'complaints_received_page', inner_window: 2, outer_window: 0 %>
   </div>
 <% end %>

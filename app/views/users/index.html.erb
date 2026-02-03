@@ -540,8 +540,8 @@
 </div>
 
 <!-- Paginación -->
-<div class="d-flex justify-content-center my-4">
-  <%= will_paginate @users, previous_label: '← Anterior', next_label: 'Siguiente →' %>
+<div class="digg_pagination" style="margin-top: 15px; padding-bottom: 10px;">
+  <%= will_paginate @users, :container => false %>
 </div>
 
 </div>
