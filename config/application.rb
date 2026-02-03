@@ -25,6 +25,10 @@ module RailsToppin
         # Add to middleware stack
         config.middleware.use ElasticsearchRequestLogger
       end
+      
+      # Load blocked user check middleware
+      require_relative '../app/middleware/check_blocked_user'
+      config.middleware.use CheckBlockedUser
     end
 
     # Settings in config/environments/* take precedence over those specified here.
