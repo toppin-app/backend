@@ -26,12 +26,16 @@
 
 .digg_pagination a, 
 .digg_pagination span, 
-.digg_pagination em,
+.digg_pagination em {
+  padding: 8px 12px;
+  font-size: 15px;
+}
+
 .pagination a,
 .pagination span,
 .pagination em {
-  padding: 8px 12px;
-  font-size: 15px;
+  padding: 6px 10px;
+  font-size: 13px;
 }
 
 .digg_pagination .disabled,
@@ -69,8 +73,9 @@
 .digg_pagination a:focus,
 .pagination a:hover,
 .pagination a:focus {
-  color: #000033;
-  border-color: #000033;
+  color: white;
+  background-color: #2e6ab1;
+  border-color: #2e6ab1;
 }
 
 .digg_pagination .page_info,
