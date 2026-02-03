@@ -13,24 +13,33 @@
  *= require_tree .
  *= require_self
  */
-.digg_pagination {
+.digg_pagination,
+.pagination {
   background: white;
   cursor: default;
   margin-bottom: 15px;
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
 .digg_pagination a, 
 .digg_pagination span, 
-.digg_pagination em {
+.digg_pagination em,
+.pagination a,
+.pagination span,
+.pagination em {
   padding: 8px 12px;
   font-size: 15px;
 }
 
-.digg_pagination .disabled {
+.digg_pagination .disabled,
+.pagination .disabled,
+.digg_pagination .previous_page.disabled,
+.pagination .previous_page.disabled,
+.digg_pagination .next_page.disabled,
+.pagination .next_page.disabled {
   color: #cccccc;
   background-color: #f5f5f5;
   border: 1px solid #e0e0e0;
@@ -38,7 +47,8 @@
   cursor: not-allowed;
 }
 
-.digg_pagination .current {
+.digg_pagination .current,
+.pagination .current {
   font-style: normal;
   font-weight: bold;
   background: #2e6ab1;
@@ -48,19 +58,23 @@
   transform: scale(1.05);
 }
 
-.digg_pagination a {
+.digg_pagination a,
+.pagination a {
   text-decoration: none;
   color: #105cb6;
   border: 1px solid #9aafe5;
 }
 
 .digg_pagination a:hover, 
-.digg_pagination a:focus {
+.digg_pagination a:focus,
+.pagination a:hover,
+.pagination a:focus {
   color: #000033;
   border-color: #000033;
 }
 
-.digg_pagination .page_info {
+.digg_pagination .page_info,
+.pagination .page_info {
   background: #2e6ab1;
   color: white;
   padding: 0.4em 0.6em;
@@ -68,7 +82,8 @@
   text-align: center;
 }
 
-.digg_pagination .page_info b {
+.digg_pagination .page_info b,
+.pagination .page_info b {
   color: #000033;
   background: #6aa6ed;
   padding: 0.1em 0.25em;
