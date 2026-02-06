@@ -2,32 +2,46 @@
   <div class="col-md-8">
     <div class="card">
       <div class="card-body">
-        <p><strong>Título:</strong></p>
-        <h4 class="card-title"><%= @banner.title %></h4>
+        <div class="mb-4">
+          <p class="mb-2"><strong>Título:</strong></p>
+          <h4 class="card-title mb-0"><%= @banner.title %></h4>
+        </div>
         
-        <p><strong>Descripción:</strong></p>
-        <p><%= @banner.description %></p>
+        <div class="mb-4">
+          <p class="mb-2"><strong>Descripción:</strong></p>
+          <p class="mb-0"><%= @banner.description %></p>
+        </div>
 
-        <p><strong>URL:</strong></p>
-        <p><%= link_to @banner.url, @banner.url, target: '_blank' if @banner.url.present? %></p>
+        <div class="mb-4">
+          <p class="mb-2"><strong>URL:</strong></p>
+          <p class="mb-0"><%= link_to @banner.url, @banner.url, target: '_blank' if @banner.url.present? %></p>
+        </div>
 
-        <p><strong>Estado:</strong></p>
-        <p>
-          <% if @banner.active? %>
-            <span class="badge badge-success">Activo</span>
-          <% else %>
-            <span class="badge badge-secondary">Inactivo</span>
-          <% end %>
-        </p>
+        <div class="mb-4">
+          <p class="mb-2"><strong>Estado:</strong></p>
+          <p class="mb-0">
+            <% if @banner.active? %>
+              <span class="badge badge-success">Activo</span>
+            <% else %>
+              <span class="badge badge-secondary">Inactivo</span>
+            <% end %>
+          </p>
+        </div>
 
-        <p><strong>Fecha de inicio:</strong></p>
-        <p><%= @banner.start_date&.strftime("%d-%m-%Y %H:%M") || "Sin límite" %></p>
+        <div class="mb-4">
+          <p class="mb-2"><strong>Fecha de inicio:</strong></p>
+          <p class="mb-0"><%= @banner.start_date&.strftime("%d-%m-%Y %H:%M") || "Sin límite" %></p>
+        </div>
 
-        <p><strong>Fecha de fin:</strong></p>
-        <p><%= @banner.end_date&.strftime("%d-%m-%Y %H:%M") || "Sin límite" %></p>
+        <div class="mb-4">
+          <p class="mb-2"><strong>Fecha de fin:</strong></p>
+          <p class="mb-0"><%= @banner.end_date&.strftime("%d-%m-%Y %H:%M") || "Sin límite" %></p>
+        </div>
 
-        <p><strong>Total de visualizaciones:</strong></p>
-        <p><%= @banner.banner_users.count %></p>
+        <div class="mb-0">
+          <p class="mb-2"><strong>Total de visualizaciones:</strong></p>
+          <p class="mb-0"><%= @banner.banner_users.count %></p>
+        </div>
       </div>
     </div>
   </div>
