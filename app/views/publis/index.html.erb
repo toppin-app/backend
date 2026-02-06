@@ -107,17 +107,17 @@
         <td class="col-bool"><%= true_false(publi.cancellable) %></td>
         <td class="col-swipes"><%= publi.repeat_swipes %></td>
         <td class="col-actions">
-          <%= link_to publi, class: 'btn btn-info btn-action', title: 'Ver' do %>
+          <%= link_to publi, class: 'btn btn-info btn-action text-white', title: 'Ver', style: 'color: white !important;' do %>
             <i class="fas fa-eye"></i>
           <% end %>
         </td>
         <td class="col-actions">
-          <%= link_to edit_publi_path(publi), class: 'btn btn-warning btn-action', title: 'Editar', :"data-turbolinks" => false do %>
+          <%= link_to edit_publi_path(publi), class: 'btn btn-primary btn-action text-white', title: 'Editar', style: 'color: white !important;', :"data-turbolinks" => false do %>
             <i class="fas fa-edit"></i>
           <% end %>
         </td>
         <td class="col-actions">
-          <%= link_to publi, method: :delete, data: { confirm: '¿Eliminar esta publi?' }, class: 'btn btn-danger btn-action', title: 'Eliminar' do %>
+          <%= link_to publi, method: :delete, data: { confirm: '¿Eliminar esta publi?' }, class: 'btn btn-danger btn-action text-white', title: 'Eliminar', style: 'color: white !important;' do %>
             <i class="fas fa-trash"></i>
           <% end %>
         </td>
