@@ -14,52 +14,52 @@
     <div class="card-body">
       <div class="row">
         <div class="col-md-6">
-          <div class="form-group">
-            <%= form.label :title, 'Título *' %>
+          <div class="mb-3">
+            <%= form.label :title, 'Título *', class: 'form-label' %>
             <%= form.text_field :title, class: 'form-control', required: true %>
           </div>
 
-          <div class="form-group">
-            <%= form.label :description, 'Descripción' %>
+          <div class="mb-3">
+            <%= form.label :description, 'Descripción', class: 'form-label' %>
             <%= form.text_area :description, class: 'form-control', rows: 3 %>
           </div>
 
-          <div class="form-group">
-            <%= form.label :image, 'Imagen del banner *' %>
-            <%= form.file_field :image, class: 'form-control-file', accept: 'image/*', required: banner.new_record? %>
+          <div class="mb-3">
+            <%= form.label :image, 'Imagen del banner *', class: 'form-label' %>
+            <%= form.file_field :image, class: 'form-control', accept: 'image/*', required: banner.new_record? %>
             <small class="form-text text-muted">Formatos aceptados: JPG, PNG, GIF</small>
           </div>
 
-          <div class="form-group">
-            <%= form.label :url, 'URL de destino *' %>
+          <div class="mb-3">
+            <%= form.label :url, 'URL de destino *', class: 'form-label' %>
             <%= form.url_field :url, class: 'form-control', required: true, placeholder: 'https://ejemplo.com' %>
             <small class="form-text text-muted">URL a la que redirigirá cuando se haga click</small>
           </div>
         </div>
 
         <div class="col-md-6">
-          <div class="form-group">
+          <div class="mb-3">
             <div class="form-check">
               <%= form.check_box :active, class: 'form-check-input' %>
               <%= form.label :active, 'Banner activo', class: 'form-check-label' %>
             </div>
           </div>
 
-          <div class="form-group">
-            <%= form.label :start_date, 'Fecha de inicio' %>
+          <div class="mb-3">
+            <%= form.label :start_date, 'Fecha de inicio', class: 'form-label' %>
             <%= form.datetime_local_field :start_date, class: 'form-control' %>
             <small class="form-text text-muted">Dejar vacío para sin límite de inicio</small>
           </div>
 
-          <div class="form-group">
-            <%= form.label :end_date, 'Fecha de fin' %>
+          <div class="mb-3">
+            <%= form.label :end_date, 'Fecha de fin', class: 'form-label' %>
             <%= form.datetime_local_field :end_date, class: 'form-control' %>
             <small class="form-text text-muted">Dejar vacío para sin límite de fin</small>
           </div>
 
           <% if banner.image? %>
-            <div class="form-group">
-              <label>Vista previa actual:</label><br>
+            <div class="mb-3">
+              <label class="form-label">Vista previa actual:</label><br>
               <%= image_tag banner.image.thumb.url, class: 'img-thumbnail', style: 'max-height: 150px;' %>
             </div>
           <% end %>
