@@ -14,9 +14,9 @@
     <div class="card-body">
       <div class="row">
         <div class="col-md-6">
-          <div class="mb-3">
-            <%= form.label :title, 'Título *', class: 'form-label' %>
-            <%= form.text_field :title, class: 'form-control', required: true %>
+          <div class="mb-3" style="display: block; visibility: visible;">
+            <%= form.label :title, 'Título *', class: 'form-label', style: 'display: block; font-weight: bold; margin-bottom: 8px;' %>
+            <%= form.text_field :title, class: 'form-control', required: true, style: 'display: block; width: 100%;' %>
           </div>
 
           <div class="mb-3">
