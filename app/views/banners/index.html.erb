@@ -43,9 +43,9 @@
         <td><%= banner.start_date&.strftime("%d-%m-%Y %H:%M") %></td>
         <td><%= banner.end_date&.strftime("%d-%m-%Y %H:%M") %></td>
         <td><%= banner.banner_users.count %></td>
-        <td><%= link_to 'Ver', banner, class: 'btn btn-sm btn-info' %></td>
-        <td><%= link_to 'Editar', edit_banner_path(banner), :"data-turbolinks" => false, class: 'btn btn-sm btn-warning'  %></td>
-        <td><%= link_to 'Eliminar', banner, method: :delete, data: { confirm: '¿Eliminar este banner?' }, class: 'btn btn-sm btn-danger' %></td>
+        <td><%= link_to 'Ver', banner, class: 'btn btn-sm btn-info text-white' %></td>
+        <td><%= link_to 'Editar', edit_banner_path(banner), :"data-turbolinks" => false, class: 'btn btn-sm btn-warning text-white'  %></td>
+        <td><%= link_to 'Eliminar', banner, method: :delete, data: { confirm: '¿Eliminar este banner?' }, class: 'btn btn-sm btn-danger text-white' %></td>
       </tr>
     <% end %>
   </tbody>
