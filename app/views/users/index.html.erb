@@ -360,10 +360,8 @@
       <div class="d-flex flex-wrap" style="gap: 8px;">
         <%= sort_link(@q, :created_at, '<i class="fa fa-calendar"></i> Fecha de registro'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
         <%= sort_link(@q, :name, '<i class="fa fa-font"></i> Nombre'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+        <%= sort_link(@q, :email, '<i class="fa fa-envelope"></i> Email'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
         <%= sort_link(@q, :ranking, '<i class="fa fa-trophy"></i> Ranking'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
-        <%= sort_link(@q, :popularity, '<i class="fa fa-star"></i> Popularidad'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
-        <%= sort_link(@q, :matches_number, '<i class="fa fa-heart"></i> Matches'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
-        <%= sort_link(@q, :last_connection, '<i class="fa fa-clock"></i> Última conexión'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
       </div>
     </div>
   </div>
