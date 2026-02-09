@@ -83,19 +83,36 @@
   
   /* Hover para botón de ordenar */
   .sort_link.btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white !important;
-    border: none;
+    border: 1px solid #667eea;
     font-weight: 500;
     transition: all 0.3s ease;
     cursor: pointer !important;
+    padding: 6px 12px;
+    font-size: 13px;
   }
   
-  .sort_link.btn:hover {
+  .sort_link.btn-outline-secondary {
+    color: #495057 !important;
+    background-color: white;
+    border-color: #ced4da;
+  }
+  
+  .sort_link.btn-outline-secondary:hover {
     cursor: pointer !important;
-    background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-color: #667eea !important;
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  }
+  
+  /* Botón de ordenamiento activo */
+  .sort_link.btn-outline-secondary.asc,
+  .sort_link.btn-outline-secondary.desc {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-color: #667eea !important;
   }
   
   .sort_link.btn:active {
@@ -340,8 +357,13 @@
 
     <div class="col-md-6">
       <label class="form-label"><i class="fa fa-sort"></i> <strong>Ordenar por</strong></label>
-      <div>
+      <div class="d-flex flex-wrap" style="gap: 8px;">
         <%= sort_link(@q, :created_at, '<i class="fa fa-calendar"></i> Fecha de registro'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+        <%= sort_link(@q, :name, '<i class="fa fa-font"></i> Nombre'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+        <%= sort_link(@q, :ranking, '<i class="fa fa-trophy"></i> Ranking'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+        <%= sort_link(@q, :popularity, '<i class="fa fa-star"></i> Popularidad'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+        <%= sort_link(@q, :matches_number, '<i class="fa fa-heart"></i> Matches'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+        <%= sort_link(@q, :last_connection, '<i class="fa fa-clock"></i> Última conexión'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
       </div>
     </div>
   </div>

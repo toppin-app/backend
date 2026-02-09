@@ -63,7 +63,16 @@ class UsersController < ApplicationController
             per_page = params[:per_page].present? ? params[:per_page].to_i : 15
           end
           
-          @users = @q.result.order("id DESC").paginate(:page => params[:page], :per_page => per_page)
+          # Aplicar ordenamiento: si hay un sort de Ransack, usarlo; si no, ordenar por ID descendente
+          sorted_users = @q.result
+          if params[:q].present? && params[:q][:s].present?
+            # Ransack maneja el ordenamiento
+            @users = sorted_users.paginate(:page => params[:page], :per_page => per_page)
+          else
+            # Ordenamiento por defecto
+            @users = sorted_users.order("id DESC").paginate(:page => params[:page], :per_page => per_page)
+          end
+          
           @include_deleted = params[:include_deleted] == '1'
           @show_real_users = show_real
           @show_fake_users = show_fake
