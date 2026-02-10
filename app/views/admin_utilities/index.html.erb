@@ -727,19 +727,28 @@ function hideLoading() {
 }
 
 // Escuchar eventos AJAX de Rails
-document.addEventListener('ajax:before', function(event) {
-  // Verificar si es una eliminación
-  if (event.target.matches('[data-method="delete"]') || event.target.id === 'bulkDeleteForm') {
-    showLoading();
-  }
-});
+document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('ajax:beforeSend', function(event) {
+    // Verificar si es una eliminación
+    const target = event.target;
+    if (target.matches('[data-remote="true"]') && target.matches('[data-method="delete"]')) {
+      showLoading();
+    } else if (target.id === 'bulkDeleteForm') {
+      showLoading();
+    }
+  });
 
-document.addEventListener('ajax:complete', function(event) {
-  hideLoading();
-});
+  document.addEventListener('ajax:success', function(event) {
+    hideLoading();
+  });
 
-document.addEventListener('ajax:error', function(event) {
-  hideLoading();
-  alert('Error al eliminar usuario(s). Por favor, intenta de nuevo.');
+  document.addEventListener('ajax:complete', function(event) {
+    hideLoading();
+  });
+
+  document.addEventListener('ajax:error', function(event) {
+    hideLoading();
+    alert('Error al eliminar usuario(s). Por favor, intenta de nuevo.');
+  });
 });
 </script>
