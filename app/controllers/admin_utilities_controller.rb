@@ -217,8 +217,35 @@ class AdminUtilitiesController < ApplicationController
       user_ids.each do |user_id|
         user = User.find_by(id: user_id)
         if user
-          user.destroy
-          deleted_count += 1
+          begin
+            user.destroy
+            deleted_count += 1
+          rescue ActiveRecord::StatementInvalid => e
+            # Manejar errores de tablas faltantes
+            if e.message.include?("doesn't exist")
+              # Eliminar manualmente las dependencias
+              user.user_match_requests.delete_all rescue nil
+              user.user_interests.delete_all rescue nil
+              user.user_main_interests.delete_all rescue nil
+              user.user_media.delete_all rescue nil
+              user.devices.delete_all rescue nil
+              user.user_filter_preference&.delete rescue nil
+              user.user_info_item_values.delete_all rescue nil
+              user.user_publis.delete_all rescue nil
+              user.banner_users.delete_all rescue nil
+              user.user_vip_unlocks.delete_all rescue nil
+              user.spotify_user_data.delete_all rescue nil
+              user.tmdb_user_data.delete_all rescue nil
+              user.tmdb_user_series_data.delete_all rescue nil
+              user.complaints.delete_all rescue nil
+              user.received_complaints.delete_all rescue nil
+              user.blocks.delete_all rescue nil
+              user.delete
+              deleted_count += 1
+            else
+              raise e
+            end
+          end
         end
       end
       

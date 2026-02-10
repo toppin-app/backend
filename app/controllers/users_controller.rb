@@ -584,8 +584,9 @@ end
   def destroy
     begin
       @user.destroy
+      redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_index_path : users_url
       respond_to do |format|
-        format.html { redirect_to users_url, notice: 'Usuario eliminado con éxito.' }
+        format.html { redirect_to redirect_url, notice: 'Usuario eliminado con éxito.' }
         format.json {
           render json: {
                   notice: "User was successfully destroyed.",
@@ -619,8 +620,9 @@ end
           @user.delete
         end
         
+        redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_index_path : users_url
         respond_to do |format|
-          format.html { redirect_to users_url, notice: 'Usuario eliminado con éxito.' }
+          format.html { redirect_to redirect_url, notice: 'Usuario eliminado con éxito.' }
           format.json {
             render json: {
                     notice: "User was successfully destroyed.",

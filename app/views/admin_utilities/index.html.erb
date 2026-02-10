@@ -609,7 +609,7 @@
                       <%= link_to show_user_path(user), class: 'btn-start', style: 'padding: 8px 12px; font-size: 12px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);', title: 'Ver usuario' do %>
                         <i class="fas fa-eye"></i>
                       <% end %>
-                      <%= link_to destroy_user_path(id: user.id), method: :delete, data: { confirm: '¿Eliminar este usuario?' }, class: 'btn-start', style: 'padding: 8px 12px; font-size: 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);', title: 'Eliminar' do %>
+                      <%= link_to destroy_user_path(id: user.id, redirect_to: 'admin_utilities'), method: :delete, data: { confirm: '¿Eliminar este usuario?' }, class: 'btn-start', style: 'padding: 8px 12px; font-size: 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);', title: 'Eliminar' do %>
                         <i class="fas fa-trash"></i>
                       <% end %>
                     </div>
