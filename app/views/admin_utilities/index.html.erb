@@ -554,7 +554,7 @@
           <div class="warning-badge">
             <i class="fas fa-users"></i>
             <div>
-              <strong>Encontrados:</strong> <%= @incomplete_users.count %> usuarios sin <%= @field_label %>
+              <strong>Encontrados:</strong> <span id="totalUsersCount"><%= @incomplete_users.count %></span> usuarios sin <%= @field_label %>
             </div>
           </div>
 
@@ -574,7 +574,7 @@
 
               <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: #f8fafc;">
                 <% @incomplete_users.each do |user| %>
-                  <div class="user-card" style="background: white; border-radius: 6px; padding: 15px; margin-bottom: 10px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px;">
+                  <div class="user-card" id="user-card-<%= user.id %>" style="background: white; border-radius: 6px; padding: 15px; margin-bottom: 10px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px;">
                     <div style="flex-shrink: 0;">
                       <%= check_box_tag "user_ids[]", user.id, false, class: 'user-checkbox', style: 'width: 20px; height: 20px; cursor: pointer;', onchange: 'updateSelectedCount()' %>
                     </div>
@@ -609,7 +609,7 @@
                       <%= link_to show_user_path(user), class: 'btn-start', style: 'padding: 8px 12px; font-size: 12px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);', title: 'Ver usuario' do %>
                         <i class="fas fa-eye"></i>
                       <% end %>
-                      <%= link_to destroy_user_path(id: user.id, redirect_to: 'admin_utilities'), method: :delete, data: { confirm: '¿Eliminar este usuario?' }, class: 'btn-start', style: 'padding: 8px 12px; font-size: 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);', title: 'Eliminar' do %>
+                      <%= link_to destroy_user_path(id: user.id), method: :delete, remote: true, data: { confirm: '¿Eliminar este usuario?' }, class: 'btn-start', style: 'padding: 8px 12px; font-size: 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);', title: 'Eliminar' do %>
                         <i class="fas fa-trash"></i>
                       <% end %>
                     </div>
@@ -685,5 +685,15 @@ function updateSelectedCount() {
   if (countElement) {
     countElement.textContent = count;
   }
+}
+
+function updateTotalCount() {
+  const totalCards = document.querySelectorAll('.user-card').length;
+  const totalCountElement = document.getElementById('totalUsersCount');
+  if (totalCountElement) {
+    totalCountElement.textContent = totalCards;
+  }
+  // También actualizar el contador de seleccionados
+  updateSelectedCount();
 }
 </script>

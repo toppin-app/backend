@@ -587,6 +587,7 @@ end
       redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_path : users_url
       respond_to do |format|
         format.html { redirect_to redirect_url, notice: 'Usuario eliminado con éxito.' }
+        format.js { render js: "document.getElementById('user-card-#{@user.id}').remove(); updateTotalCount();" }
         format.json {
           render json: {
                   notice: "User was successfully destroyed.",
@@ -623,6 +624,7 @@ end
         redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_path : users_url
         respond_to do |format|
           format.html { redirect_to redirect_url, notice: 'Usuario eliminado con éxito.' }
+          format.js { render js: "document.getElementById('user-card-#{@user.id}').remove(); updateTotalCount();" }
           format.json {
             render json: {
                     notice: "User was successfully destroyed.",
