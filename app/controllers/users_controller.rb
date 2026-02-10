@@ -582,17 +582,35 @@ end
   # DELETE /users/1
   # DELETE /users/1.json
   def destroy
-    @user.destroy
-     respond_to do |format|
-      format.html { redirect_to users_url, notice: 'Usuario eliminado con éxito.' }
-       format.json {
+    begin
+      @user.destroy
+      respond_to do |format|
+        format.html { redirect_to users_url, notice: 'Usuario eliminado con éxito.' }
+        format.json {
           render json: {
                   notice: "User was successfully destroyed.",
                   status: 200
                 }, status: 200
         }
-
-     end
+      end
+    rescue ActiveRecord::StatementInvalid => e
+      # Manejar errores de tablas faltantes
+      if e.message.include?("doesn't exist")
+        # Eliminar directamente sin callbacks
+        @user.delete
+        respond_to do |format|
+          format.html { redirect_to users_url, notice: 'Usuario eliminado con éxito.' }
+          format.json {
+            render json: {
+                    notice: "User was successfully destroyed.",
+                    status: 200
+                  }, status: 200
+          }
+        end
+      else
+        raise e
+      end
+    end
   end
 
 
