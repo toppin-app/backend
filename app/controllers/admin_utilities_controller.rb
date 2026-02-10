@@ -165,37 +165,39 @@ class AdminUtilitiesController < ApplicationController
       @incomplete_users = case field
       when 'image'
         @field_label = "imagen de perfil"
-        User.active_accounts.where("image IS NULL OR image = ''")
+        User.active_accounts.includes(:user_media).left_joins(:user_media)
+            .group('users.id')
+            .having('COUNT(user_media.id) = 0')
       when 'name'
         @field_label = "nombre"
-        User.active_accounts.where("name IS NULL OR name = ''")
+        User.active_accounts.includes(:user_media).where("name IS NULL OR TRIM(name) = ''")
       when 'email'
         @field_label = "email"
-        User.active_accounts.where("email IS NULL OR email = ''")
+        User.active_accounts.includes(:user_media).where("email IS NULL OR TRIM(email) = ''")
       when 'gender'
         @field_label = "género"
-        User.active_accounts.where(gender: nil)
+        User.active_accounts.includes(:user_media).where(gender: nil)
       when 'birthday'
         @field_label = "fecha de nacimiento"
-        User.active_accounts.where(birthday: nil)
+        User.active_accounts.includes(:user_media).where(birthday: nil)
       when 'description'
         @field_label = "descripción"
-        User.active_accounts.where("description IS NULL OR description = ''")
+        User.active_accounts.includes(:user_media).where("description IS NULL OR TRIM(description) = ''")
       when 'location_country'
         @field_label = "país"
-        User.active_accounts.where("location_country IS NULL OR location_country = ''")
+        User.active_accounts.includes(:user_media).where("location_country IS NULL OR TRIM(location_country) = ''")
       when 'location_city'
         @field_label = "ciudad"
-        User.active_accounts.where("location_city IS NULL OR location_city = ''")
+        User.active_accounts.includes(:user_media).where("location_city IS NULL OR TRIM(location_city) = ''")
       when 'coordinates'
         @field_label = "coordenadas"
-        User.active_accounts.where("lat IS NULL OR lat = '' OR lng IS NULL OR lng = ''")
+        User.active_accounts.includes(:user_media).where("lat IS NULL OR TRIM(CAST(lat AS CHAR)) = '' OR lng IS NULL OR TRIM(CAST(lng AS CHAR)) = ''")
       when 'occupation'
         @field_label = "ocupación"
-        User.active_accounts.where("occupation IS NULL OR occupation = ''")
+        User.active_accounts.includes(:user_media).where("occupation IS NULL OR TRIM(occupation) = ''")
       when 'studies'
         @field_label = "estudios"
-        User.active_accounts.where("studies IS NULL OR studies = ''")
+        User.active_accounts.includes(:user_media).where("studies IS NULL OR TRIM(studies) = ''")
       else
         @field_label = "datos"
         User.none
