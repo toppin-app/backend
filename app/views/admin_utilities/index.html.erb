@@ -559,7 +559,7 @@
           </div>
 
           <% if @incomplete_users.any? %>
-            <%= form_with url: bulk_delete_users_admin_utilities_path, method: :delete, local: true, id: 'bulkDeleteForm' do |f| %>
+            <%= form_with url: bulk_delete_users_admin_utilities_path, method: :delete, local: false, id: 'bulkDeleteForm' do |f| %>
               <div style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="btn-start" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);" onclick="selectAll()">
                   <i class="fas fa-check-double"></i> Seleccionar todos
@@ -627,6 +627,21 @@
     
   </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="deleteLoadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; justify-content: center; align-items: center;">
+  <div style="text-align: center; color: white;">
+    <div style="border: 8px solid #f3f3f3; border-top: 8px solid #3b82f6; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+    <p style="margin-top: 20px; font-size: 18px; font-weight: bold;">Eliminando usuarios...</p>
+  </div>
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
 
 <script>
 function startPopulateLocations() {
@@ -696,4 +711,35 @@ function updateTotalCount() {
   // También actualizar el contador de seleccionados
   updateSelectedCount();
 }
+
+function showLoading() {
+  const overlay = document.getElementById('deleteLoadingOverlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
+  }
+}
+
+function hideLoading() {
+  const overlay = document.getElementById('deleteLoadingOverlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
+// Escuchar eventos AJAX de Rails
+document.addEventListener('ajax:before', function(event) {
+  // Verificar si es una eliminación
+  if (event.target.matches('[data-method="delete"]') || event.target.id === 'bulkDeleteForm') {
+    showLoading();
+  }
+});
+
+document.addEventListener('ajax:complete', function(event) {
+  hideLoading();
+});
+
+document.addEventListener('ajax:error', function(event) {
+  hideLoading();
+  alert('Error al eliminar usuario(s). Por favor, intenta de nuevo.');
+});
 </script>

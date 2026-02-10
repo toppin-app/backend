@@ -249,9 +249,21 @@ class AdminUtilitiesController < ApplicationController
         end
       end
       
-      redirect_to admin_utilities_path, notice: "#{deleted_count} usuarios eliminados correctamente"
+      respond_to do |format|
+        format.html { redirect_to admin_utilities_path, notice: "#{deleted_count} usuarios eliminados correctamente" }
+        format.js do
+          render js: "
+            #{user_ids.map { |id| "document.getElementById('user-card-#{id}')?.remove();" }.join("\n")}
+            updateTotalCount();
+            alert('#{deleted_count} usuarios eliminados correctamente');
+          "
+        end
+      end
     else
-      redirect_to admin_utilities_path, alert: 'No se seleccionaron usuarios para eliminar'
+      respond_to do |format|
+        format.html { redirect_to admin_utilities_path, alert: 'No se seleccionaron usuarios para eliminar' }
+        format.js { render js: "alert('No se seleccionaron usuarios para eliminar');" }
+      end
     end
   end
 
