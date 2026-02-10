@@ -594,10 +594,31 @@ end
         }
       end
     rescue ActiveRecord::StatementInvalid => e
-      # Manejar errores de tablas faltantes
+      # Manejar errores de tablas faltantes eliminando manualmente las dependencias
       if e.message.include?("doesn't exist")
-        # Eliminar directamente sin callbacks
-        @user.delete
+        ActiveRecord::Base.transaction do
+          # Eliminar dependencias que sí existen
+          @user.user_match_requests.delete_all rescue nil
+          @user.user_interests.delete_all rescue nil
+          @user.user_main_interests.delete_all rescue nil
+          @user.user_media.delete_all rescue nil
+          @user.devices.delete_all rescue nil
+          @user.user_filter_preference&.delete rescue nil
+          @user.user_info_item_values.delete_all rescue nil
+          @user.user_publis.delete_all rescue nil
+          @user.banner_users.delete_all rescue nil
+          @user.user_vip_unlocks.delete_all rescue nil
+          @user.spotify_user_data.delete_all rescue nil
+          @user.tmdb_user_data.delete_all rescue nil
+          @user.tmdb_user_series_data.delete_all rescue nil
+          @user.complaints.delete_all rescue nil
+          @user.received_complaints.delete_all rescue nil
+          @user.blocks.delete_all rescue nil
+          
+          # Finalmente eliminar el usuario
+          @user.delete
+        end
+        
         respond_to do |format|
           format.html { redirect_to users_url, notice: 'Usuario eliminado con éxito.' }
           format.json {
