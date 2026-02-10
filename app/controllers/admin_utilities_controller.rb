@@ -148,6 +148,82 @@ class AdminUtilitiesController < ApplicationController
     redirect_to admin_utilities_path, notice: 'Progreso limpiado'
   end
 
+  def find_incomplete_users
+    @title = "Configuración y Utilidades"
+    
+    # Contar usuarios que necesitan población de ubicación (para la otra utilidad)
+    @users_needing_location = User.where.not(lat: [nil, '']).where.not(lng: [nil, ''])
+                                   .where("location_country IS NULL OR location_country = '' OR location_city IS NULL OR location_city = ''")
+                                   .count
+    
+    # Obtener progreso actual si existe
+    @current_progress = Rails.cache.read('location_population_progress')
+    
+    field = params[:field_to_validate]
+    
+    if field.present?
+      @incomplete_users = case field
+      when 'image'
+        @field_label = "imagen de perfil"
+        User.active_accounts.where("image IS NULL OR image = ''")
+      when 'name'
+        @field_label = "nombre"
+        User.active_accounts.where("name IS NULL OR name = ''")
+      when 'email'
+        @field_label = "email"
+        User.active_accounts.where("email IS NULL OR email = ''")
+      when 'gender'
+        @field_label = "género"
+        User.active_accounts.where(gender: nil)
+      when 'birthday'
+        @field_label = "fecha de nacimiento"
+        User.active_accounts.where(birthday: nil)
+      when 'description'
+        @field_label = "descripción"
+        User.active_accounts.where("description IS NULL OR description = ''")
+      when 'location_country'
+        @field_label = "país"
+        User.active_accounts.where("location_country IS NULL OR location_country = ''")
+      when 'location_city'
+        @field_label = "ciudad"
+        User.active_accounts.where("location_city IS NULL OR location_city = ''")
+      when 'coordinates'
+        @field_label = "coordenadas"
+        User.active_accounts.where("lat IS NULL OR lat = '' OR lng IS NULL OR lng = ''")
+      when 'occupation'
+        @field_label = "ocupación"
+        User.active_accounts.where("occupation IS NULL OR occupation = ''")
+      when 'studies'
+        @field_label = "estudios"
+        User.active_accounts.where("studies IS NULL OR studies = ''")
+      else
+        @field_label = "datos"
+        User.none
+      end
+    end
+    
+    render :index
+  end
+
+  def bulk_delete_users
+    user_ids = params[:user_ids] || []
+    
+    if user_ids.any?
+      deleted_count = 0
+      user_ids.each do |user_id|
+        user = User.find_by(id: user_id)
+        if user
+          user.destroy
+          deleted_count += 1
+        end
+      end
+      
+      redirect_to admin_utilities_path, notice: "#{deleted_count} usuarios eliminados correctamente"
+    else
+      redirect_to admin_utilities_path, alert: 'No se seleccionaron usuarios para eliminar'
+    end
+  end
+
   private
 
   def check_admin
