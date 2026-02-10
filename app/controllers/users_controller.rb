@@ -584,7 +584,7 @@ end
   def destroy
     begin
       @user.destroy
-      redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_index_path : users_url
+      redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_path : users_url
       respond_to do |format|
         format.html { redirect_to redirect_url, notice: 'Usuario eliminado con éxito.' }
         format.json {
@@ -620,7 +620,7 @@ end
           @user.delete
         end
         
-        redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_index_path : users_url
+        redirect_url = params[:redirect_to] == 'admin_utilities' ? admin_utilities_path : users_url
         respond_to do |format|
           format.html { redirect_to redirect_url, notice: 'Usuario eliminado con éxito.' }
           format.json {
