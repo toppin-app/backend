@@ -165,9 +165,11 @@ class AdminUtilitiesController < ApplicationController
       @incomplete_users = case field
       when 'image'
         @field_label = "imagen de perfil"
-        User.active_accounts.includes(:user_media).left_joins(:user_media)
-            .group('users.id')
-            .having('COUNT(user_media.id) = 0')
+        user_ids_without_media = User.active_accounts.left_joins(:user_media)
+                                     .group('users.id')
+                                     .having('COUNT(user_media.id) = 0')
+                                     .pluck(:id)
+        User.active_accounts.includes(:user_media).where(id: user_ids_without_media)
       when 'name'
         @field_label = "nombre"
         User.active_accounts.includes(:user_media).where("name IS NULL OR TRIM(name) = ''")
