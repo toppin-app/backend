@@ -255,6 +255,7 @@ class AdminUtilitiesController < ApplicationController
           render js: "
             #{user_ids.map { |id| "document.getElementById('user-card-#{id}')?.remove();" }.join("\n")}
             updateTotalCount();
+            hideLoading();
             alert('#{deleted_count} usuarios eliminados correctamente');
           "
         end
@@ -262,7 +263,7 @@ class AdminUtilitiesController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to admin_utilities_path, alert: 'No se seleccionaron usuarios para eliminar' }
-        format.js { render js: "alert('No se seleccionaron usuarios para eliminar');" }
+        format.js { render js: "hideLoading(); alert('No se seleccionaron usuarios para eliminar');" }
       end
     end
   end
