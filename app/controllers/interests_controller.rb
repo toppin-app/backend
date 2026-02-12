@@ -4,14 +4,13 @@ class InterestsController < ApplicationController
 
   # GET /interests or /interests.json
   def index
-    @interests = Interest.all
+    @interests = Interest.order(:name)
     @title = "Intereses"
 
-      respond_to do |format|
-        format.html { @interests = @interests.paginate(:page => params[:page], :per_page => 15) }
-        format.json {}
-      end
-
+    respond_to do |format|
+      format.html
+      format.json {}
+    end
   end
 
   # GET /interests/1 or /interests/1.json
