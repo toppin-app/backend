@@ -40,7 +40,7 @@
 
   <div class="field">
 
-    <%= form.text_field :value, class: 'form-control', placeholder: 'Introduce nuevo valor' %>
+    <%= form.text_field :name, class: 'form-control', placeholder: 'Introduce nuevo valor', required: true %>
   </div>
 
     <%= form.hidden_field :info_item_category_id, value: @info_item_category.id %>
