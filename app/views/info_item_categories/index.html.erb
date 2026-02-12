@@ -98,14 +98,14 @@
             </div>
 
             <!-- Valores Count -->
-            <div style="justify-self: end;">
+            <div style="display: flex; justify-content: flex-end;">
               <span style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 13px; display: inline-block; min-width: 30px; text-align: center;">
                 <%= category.info_item_values.count %>
               </span>
             </div>
 
             <!-- Acciones -->
-            <div style="justify-self: end; display: flex; gap: 6px;" onclick="event.stopPropagation();">
+            <div style="display: flex; gap: 6px; justify-content: flex-end;" onclick="event.stopPropagation();">
               <%= link_to category, class: 'btn-start', style: 'padding: 7px 14px; font-size: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; color: white; white-space: nowrap;', title: 'Gestionar valores' do %>
                 <i class="fas fa-cogs" style="color: white;"></i> Gestionar
               <% end %>
