@@ -56,17 +56,17 @@
     
     <!-- Table Header -->
     <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 15px 20px; border-bottom: 3px solid #0ea5e9;">
-      <div style="display: grid; grid-template-columns: 50px 2fr 90px 240px; gap: 15px; align-items: center;">
-        <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="width: 50px; flex-shrink: 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
           #
         </div>
-        <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+        <div style="flex: 1; min-width: 200px; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
           <i class="fas fa-key"></i> Translation Key
         </div>
-        <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">
+        <div style="width: 90px; flex-shrink: 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">
           <i class="fas fa-list"></i> Valores
         </div>
-        <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">
+        <div style="width: 240px; flex-shrink: 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">
           <i class="fas fa-cog"></i> Acciones
         </div>
       </div>
@@ -75,17 +75,17 @@
     <!-- Table Body -->
     <div style="max-height: 70vh; overflow-y: auto;">
       <% @info_item_categories.each_with_index do |category, index| %>
-        <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: grid; grid-template-columns: 50px 2fr 90px 240px; gap: 15px; align-items: center; transition: all 0.2s; <%= 'background: #f8fafc;' if index.even? %>" 
+        <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 15px; align-items: center; transition: all 0.2s; <%= 'background: #f8fafc;' if index.even? %>" 
              onmouseover="this.style.background='#f0f9ff'; this.style.borderLeft='4px solid #0ea5e9';" 
              onmouseout="this.style.background='<%= index.even? ? '#f8fafc' : 'white' %>'; this.style.borderLeft='none';">
           
           <!-- ID -->
-          <div style="color: #94a3b8; font-weight: 600; font-size: 14px;">
+          <div style="width: 50px; flex-shrink: 0; color: #94a3b8; font-weight: 600; font-size: 14px;">
             #<%= category.id %>
           </div>
 
           <!-- Translation Key -->
-          <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 10px;">
             <i class="fas fa-language" style="color: #64748b; font-size: 18px;"></i>
             <div>
               <code style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 14px; color: #334155; font-weight: 600; font-family: 'Monaco', 'Courier New', monospace; border: 1px solid #e2e8f0;">
@@ -95,14 +95,14 @@
           </div>
 
           <!-- Valores Count -->
-          <div style="text-align: center;">
+          <div style="width: 90px; flex-shrink: 0; text-align: center;">
             <span style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 13px; display: inline-block;">
               <%= category.info_item_values.count %>
             </span>
           </div>
 
           <!-- Acciones -->
-          <div style="display: flex; gap: 8px; justify-content: center;">
+          <div style="width: 240px; flex-shrink: 0; display: flex; gap: 8px; justify-content: center;">
             <%= link_to category, class: 'btn-start', style: 'padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; color: white;', title: 'Gestionar valores' do %>
               <i class="fas fa-cogs" style="color: white;"></i> Gestionar
             <% end %>
