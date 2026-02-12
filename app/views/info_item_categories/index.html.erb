@@ -94,12 +94,12 @@
                   <div style="display: table-row;">
                     
                     <!-- ID -->
-                    <div style="display: table-cell; width: 70px; vertical-align: middle; color: #94a3b8; font-weight: 600; font-size: 14px; padding-left: 20px; padding-right: 10px;">
+                    <div style="display: table-cell; width: 70px; vertical-align: middle; color: #94a3b8; font-weight: 600; font-size: 14px; padding: 20px 10px 20px 20px;">
                       #<%= category.id %>
                     </div>
 
                     <!-- Translation Key -->
-                    <div style="display: table-cell; width: auto; vertical-align: middle; padding-right: 15px;">
+                    <div style="display: table-cell; width: auto; vertical-align: middle; padding: 20px 15px 20px 0;">
                       <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
                         <i id="expand-icon-<%= category.id %>" class="fas fa-chevron-right" style="color: #64748b; font-size: 12px; flex-shrink: 0; transition: transform 0.2s;"></i>
                         <i class="fas fa-language" style="color: #64748b; font-size: 16px; flex-shrink: 0;"></i>
@@ -110,14 +110,14 @@
                     </div>
 
                     <!-- Valores Count -->
-                    <div style="display: table-cell; width: 120px; vertical-align: middle; text-align: center; padding: 0 10px;">
+                    <div style="display: table-cell; width: 120px; vertical-align: middle; text-align: center; padding: 20px 10px;">
                       <span style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 13px; display: inline-block; min-width: 35px; text-align: center;">
                         <%= category.info_item_values.count %>
                       </span>
                     </div>
 
                     <!-- Acciones -->
-                    <div style="display: table-cell; width: 240px; vertical-align: middle; text-align: center; padding-left: 10px;" onclick="event.stopPropagation();">
+                    <div style="display: table-cell; width: 240px; vertical-align: middle; text-align: center; padding: 20px 0 20px 10px;" onclick="event.stopPropagation();">
                       <div style="display: flex; gap: 8px; justify-content: center;">
                         <%= link_to category, class: 'btn-start', style: 'padding: 9px 16px; font-size: 13px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; color: white; white-space: nowrap; border-radius: 6px;', title: 'Gestionar valores' do %>
                           <i class="fas fa-cogs" style="color: white;"></i> Gestionar
