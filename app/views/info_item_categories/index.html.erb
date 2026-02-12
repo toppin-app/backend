@@ -56,7 +56,7 @@
     
     <!-- Table Header -->
     <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 15px 20px; border-bottom: 3px solid #0ea5e9;">
-      <div style="display: grid; grid-template-columns: 60px 1fr 120px 280px; gap: 20px; align-items: center;">
+      <div style="display: grid; grid-template-columns: 50px 2fr 90px 240px; gap: 15px; align-items: center;">
         <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
           #
         </div>
@@ -75,7 +75,7 @@
     <!-- Table Body -->
     <div style="max-height: 70vh; overflow-y: auto;">
       <% @info_item_categories.each_with_index do |category, index| %>
-        <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: grid; grid-template-columns: 60px 1fr 120px 280px; gap: 20px; align-items: center; transition: all 0.2s; <%= 'background: #f8fafc;' if index.even? %>" 
+        <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: grid; grid-template-columns: 50px 2fr 90px 240px; gap: 15px; align-items: center; transition: all 0.2s; <%= 'background: #f8fafc;' if index.even? %>" 
              onmouseover="this.style.background='#f0f9ff'; this.style.borderLeft='4px solid #0ea5e9';" 
              onmouseout="this.style.background='<%= index.even? ? '#f8fafc' : 'white' %>'; this.style.borderLeft='none';">
           
