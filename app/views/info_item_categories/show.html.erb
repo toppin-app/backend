@@ -12,7 +12,7 @@
   <tbody>
     <% @info_item_category.info_item_values.each do |info_item_value| %>
       <tr>
-        <td><%= info_item_value.value %></td>
+        <td><%= info_item_value.name %></td>
         <td><%= link_to 'Editar', edit_info_item_value_path(info_item_value) %></td>
         <td><%= link_to 'Eliminar', info_item_value, method: :delete, data: { confirm: '¿Estás seguro?' } %></td>
       </tr>
