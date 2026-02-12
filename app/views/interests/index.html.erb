@@ -83,9 +83,7 @@
 
           <!-- Translation Key -->
           <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="flex-shrink: 0; width: 36px; height: 36px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
-              <i class="fas fa-language" style="color: #2563eb; font-size: 16px;"></i>
-            </div>
+            <i class="fas fa-language" style="color: #64748b; font-size: 18px;"></i>
             <div>
               <code style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-size: 14px; color: #334155; font-weight: 600; font-family: 'Monaco', 'Courier New', monospace; border: 1px solid #e2e8f0;">
                 <%= interest.name %>
@@ -95,11 +93,11 @@
 
           <!-- Acciones -->
           <div style="display: flex; gap: 8px; justify-content: center;">
-            <%= link_to edit_interest_path(interest), class: 'btn-start', style: 'padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;', title: 'Editar interes' do %>
-              <i class="fas fa-edit"></i> Editar
+            <%= link_to edit_interest_path(interest), class: 'btn-start', style: 'padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; color: white;', title: 'Editar interes' do %>
+              <i class="fas fa-edit" style="color: white;"></i> Editar
             <% end %>
-            <%= link_to interest, method: :delete, data: { confirm: "ADVERTENCIA: ¿Estas COMPLETAMENTE seguro de eliminar este interes? Esto puede romper el filtrado en la app, afectar el matching de usuarios y causar errores de traduccion. ¿Confirmas la eliminacion?" }, class: 'btn-start', style: 'padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;', title: 'Eliminar interes' do %>
-              <i class="fas fa-trash"></i> Eliminar
+            <%= link_to interest, method: :delete, data: { confirm: "ADVERTENCIA: ¿Estas COMPLETAMENTE seguro de eliminar este interes? Esto puede romper el filtrado en la app, afectar el matching de usuarios y causar errores de traduccion. ¿Confirmas la eliminacion?" }, class: 'btn-start', style: 'padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; color: white;', title: 'Eliminar interes' do %>
+              <i class="fas fa-trash" style="color: white;"></i> Eliminar
             <% end %>
           </div>
 
@@ -120,7 +118,7 @@
   <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #64748b;">
     <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.6;">
       <i class="fas fa-info-circle"></i> <strong>Nota:</strong> 
-      La <strong>Translation Key</strong> se utiliza para buscar la traduccion correspondiente en los archivos de idioma de la app movil (interests_translations.json).
+      La <strong>Translation Key</strong> se utiliza para buscar la traduccion correspondiente en los archivos de idioma de la app movil.
       Asegurate de que exista la traduccion antes de agregar un nuevo interes.
     </p>
   </div>
