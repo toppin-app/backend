@@ -125,8 +125,10 @@
                         <%= link_to edit_info_item_category_path(category), class: 'btn-start', style: 'padding: 9px 12px; font-size: 14px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); text-decoration: none; display: inline-flex; align-items: center; color: white; border-radius: 6px;', title: 'Editar categoria' do %>
                           <i class="fas fa-edit" style="color: white;"></i>
                         <% end %>
-                        <%= button_to info_item_category_path(category), method: :delete, form: { style: 'display: inline;' }, data: { confirm: "ADVERTENCIA: ¿Estas COMPLETAMENTE seguro de eliminar esta categoria?\n\nEsto puede:\n• Romper perfiles de usuario en la app\n• Afectar el filtrado y matching\n• Causar errores de traduccion\n• Perder #{category.info_item_values.count} valores asociados\n\n¿Confirmas la eliminacion?" }, class: 'btn-start', style: 'padding: 9px 12px; font-size: 14px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; cursor: pointer; display: inline-flex; align-items: center; color: white; border-radius: 6px;', title: 'Eliminar categoria' do %>
-                          <i class="fas fa-trash" style="color: white;"></i>
+                        <%= form_with(url: info_item_category_path(category), method: :delete, local: true, id: "delete-form-#{category.id}", style: 'display: inline; margin: 0;') do |f| %>
+                          <button type="button" onclick="confirmarEliminacion(<%= category.id %>, <%= category.info_item_values.count %>)" class="btn-start" style="padding: 9px 12px; font-size: 14px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; cursor: pointer; display: inline-flex; align-items: center; color: white; border-radius: 6px;" title="Eliminar categoria">
+                            <i class="fas fa-trash" style="color: white;"></i>
+                          </button>
                         <% end %>
                       </div>
                     </div>
@@ -194,6 +196,20 @@
     } else {
       content.style.maxHeight = '0px';
       icon.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  function confirmarEliminacion(categoryId, valoresCount) {
+    const mensaje = "ADVERTENCIA: ¿Estas COMPLETAMENTE seguro de eliminar esta categoria?\n\n" +
+                    "Esto puede:\n" +
+                    "• Romper perfiles de usuario en la app\n" +
+                    "• Afectar el filtrado y matching\n" +
+                    "• Causar errores de traduccion\n" +
+                    "• Perder " + valoresCount + " valores asociados\n\n" +
+                    "¿Confirmas la eliminacion?";
+    
+    if (confirm(mensaje)) {
+      document.getElementById('delete-form-' + categoryId).submit();
     }
   }
 </script>
