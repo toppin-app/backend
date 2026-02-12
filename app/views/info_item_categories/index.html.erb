@@ -56,7 +56,7 @@
     
     <!-- Table Header -->
     <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 15px 20px; border-bottom: 3px solid #0ea5e9;">
-      <div style="display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; gap: 12px; align-items: center;">
+      <div style="display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; column-gap: 20px; align-items: center;">
         <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
           #
         </div>
@@ -76,11 +76,11 @@
     <div style="max-height: 70vh; overflow-y: auto;">
       <% @info_item_categories.each_with_index do |category, index| %>
         <!-- Main Row -->
-        <div id="category-row-<%= category.id %>" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s; <%= 'background: #f8fafc;' if index.even? %>" 
+        <div id="category-row-<%= category.id %>" style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s; <%= 'background: #f8fafc;' if index.even? %>" 
              onmouseover="this.style.background='#f0f9ff';" 
              onmouseout="this.style.background='<%= index.even? ? '#f8fafc' : 'white' %>';">
           
-          <div style="padding: 16px 20px; display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; gap: 12px; align-items: center; cursor: pointer;" 
+          <div style="padding: 16px 20px; display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; column-gap: 20px; align-items: center; cursor: pointer;" 
                onclick="toggleExpand(<%= category.id %>)">
             
             <!-- ID -->
@@ -89,10 +89,10 @@
             </div>
 
             <!-- Translation Key -->
-            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
               <i id="expand-icon-<%= category.id %>" class="fas fa-chevron-right" style="color: #64748b; font-size: 12px; flex-shrink: 0; transition: transform 0.2s;"></i>
               <i class="fas fa-language" style="color: #64748b; font-size: 16px; flex-shrink: 0;"></i>
-              <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 6px; font-size: 13px; color: #334155; font-weight: 600; font-family: 'Monaco', 'Courier New', monospace; border: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+              <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 6px; font-size: 13px; color: #334155; font-weight: 600; font-family: 'Monaco', 'Courier New', monospace; border: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 <%= category.name %>
               </code>
             </div>
@@ -105,7 +105,7 @@
             </div>
 
             <!-- Acciones -->
-            <div style="display: flex; gap: 6px; justify-self: end;" onclick="event.stopPropagation();">
+            <div style="justify-self: end; display: flex; gap: 6px;" onclick="event.stopPropagation();">
               <%= link_to category, class: 'btn-start', style: 'padding: 7px 14px; font-size: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; color: white; white-space: nowrap;', title: 'Gestionar valores' do %>
                 <i class="fas fa-cogs" style="color: white;"></i> Gestionar
               <% end %>
