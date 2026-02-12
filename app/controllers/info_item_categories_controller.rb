@@ -3,12 +3,7 @@ class InfoItemCategoriesController < ApplicationController
 
   # GET /info_item_categories or /info_item_categories.json
   def index
-    @info_item_categories = []
-
-
-    @info_item_categories = InfoItemCategory.where(id: 8).includes(:info_item_values)
-    @info_item_categories = @info_item_categories + InfoItemCategory.where.not(id: 8).includes(:info_item_values)
-
+    @info_item_categories = InfoItemCategory.order(:name).includes(:info_item_values)
     @title = "Categorías de perfil"
   end
 
