@@ -55,8 +55,8 @@
   <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
     
     <!-- Table Header -->
-    <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 15px 20px; border-bottom: 3px solid #0ea5e9;">
-      <div style="display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; column-gap: 20px; align-items: center;">
+    <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 16px 20px; border-bottom: 3px solid #0ea5e9;">
+      <div style="display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; gap: 20px; align-items: center;">
         <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
           #
         </div>
@@ -80,7 +80,7 @@
              onmouseover="this.style.background='#f0f9ff';" 
              onmouseout="this.style.background='<%= index.even? ? '#f8fafc' : 'white' %>';">
           
-          <div style="padding: 16px 20px; display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; column-gap: 20px; align-items: center; cursor: pointer;" 
+          <div style="padding: 16px 20px; display: grid; grid-template-columns: 45px minmax(200px, 1fr) 110px 290px; gap: 20px; align-items: center; cursor: pointer;" 
                onclick="toggleExpand(<%= category.id %>)">
             
             <!-- ID -->
