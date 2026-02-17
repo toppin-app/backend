@@ -165,7 +165,7 @@
         <% if @impressions_by_day.any? %>
           <div class="row mb-4">
             <div class="col-12">
-              <h5 class="mb-3"><i class="fas fa-chart-area mr-2"></i>Impresiones por Día (Últimos 30 días)</h5>
+              <h5 class="mb-3"><i class="fas fa-chart-area mr-2"></i>Distribución Temporal (Últimos 30 días)</h5>
               <div class="card border-0" style="background-color: #f8f9fa;">
                 <div class="card-body">
                   <canvas id="impressionsChart" height="80"></canvas>
@@ -176,7 +176,7 @@
         <% end %>
 
         <!-- Desglose por plataforma y género -->
-        <div class="row">
+        <div class="row mb-4">
           <div class="col-md-6">
             <h5 class="mb-3"><i class="fas fa-mobile-alt mr-2"></i>Distribución por Plataforma</h5>
             <div class="card border-0 bg-light">
@@ -185,7 +185,7 @@
                 <% platform_names = { 0 => 'iOS', 1 => 'Android' } %>
                 <% if @impressions_by_platform.any? %>
                   <% @impressions_by_platform.each do |platform, count| %>
-                    <% platform_name = platform_names[platform] || 'Otra' %>
+                    <% platform_name = platform_names[platform] || 'Desconocido' %>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                       <div>
                         <i class="<%= platform == 0 ? 'fab fa-apple' : platform == 1 ? 'fab fa-android' : 'fas fa-question-circle' %>" style="font-size: 24px; color: <%= platform == 0 ? '#000' : platform == 1 ? '#3DDC84' : '#ccc' %>;"></i>
@@ -240,6 +240,100 @@
             </div>
           </div>
         </div>
+        
+        <!-- Distribución por edad y suscripción -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-birthday-cake mr-2"></i>Distribución por Edad</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @age_distribution.any? %>
+                  <% total_aged = @age_distribution.values.sum %>
+                  <% age_order = ['< 18', '18-24', '25-34', '35-44', '45-54', '55+'] %>
+                  <% age_order.each do |age_range| %>
+                    <% count = @age_distribution[age_range] %>
+                    <% if count.present? %>
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                          <i class="fas fa-user-circle" style="font-size: 24px; color: #6c5ce7;"></i>
+                          <strong class="ml-2"><%= age_range %> años</strong>
+                        </div>
+                        <div>
+                          <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                          <span class="text-muted small">(<%= ((count.to_f / total_aged) * 100).round(1) %>%)</span>
+                        </div>
+                      </div>
+                      <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: <%= (count.to_f / total_aged) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_aged %>"></div>
+                      </div>
+                    <% end %>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de edad</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-crown mr-2"></i>Distribución por Tipo de Suscripción</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @subscription_distribution.any? %>
+                  <% total_subs = @subscription_distribution.values.sum %>
+                  <% @subscription_distribution.sort_by { |k, v| -v }.each do |sub_name, count| %>
+                    <% display_name = sub_name.present? ? sub_name : 'Gratuito' %>
+                    <% icon_color = sub_name.present? ? '#ffd700' : '#95a5a6' %>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <i class="<%= sub_name.present? ? 'fas fa-gem' : 'fas fa-user' %>" style="font-size: 24px; color: <%= icon_color %>;"></i>
+                        <strong class="ml-2"><%= display_name %></strong>
+                      </div>
+                      <div>
+                        <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                        <span class="text-muted small">(<%= ((count.to_f / total_subs) * 100).round(1) %>%)</span>
+                      </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                      <div class="progress-bar bg-warning" role="progressbar" style="width: <%= (count.to_f / total_subs) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_subs %>"></div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de suscripción</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Top Intereses -->
+        <% if @top_interests.any? %>
+          <div class="row mb-4">
+            <div class="col-12">
+              <h5 class="mb-3"><i class="fas fa-heart mr-2"></i>Top 10 Intereses de la Audiencia</h5>
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <div class="row">
+                    <% @top_interests.each_with_index do |(interest_name, user_count), index| %>
+                      <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center">
+                          <span class="badge badge-pill badge-primary mr-3" style="font-size: 18px; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><%= index + 1 %></span>
+                          <div class="flex-grow-1">
+                            <strong><%= interest_name %></strong>
+                            <div class="progress mt-1" style="height: 6px;">
+                              <div class="progress-bar bg-success" role="progressbar" style="width: <%= (user_count.to_f / @unique_viewers * 100).round(1) %>%;"></div>
+                            </div>
+                          </div>
+                          <span class="badge badge-light ml-2"><%= user_count %> usuarios</span>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
 
         <!-- Información adicional -->
         <div class="row mt-4">
@@ -251,9 +345,39 @@
                 <li><strong>Impresiones Totales:</strong> Número total de veces que se ha mostrado esta publicidad a los usuarios.</li>
                 <li><strong>Usuarios Únicos:</strong> Cantidad de usuarios diferentes que han visto la publicidad.</li>
                 <li><strong>Promedio Vistas/Usuario:</strong> Número promedio de veces que cada usuario ha visto la publicidad.</li>
-                <li><strong>Distribución por Plataforma:</strong> Desglose de impresiones según el sistema operativo del usuario (iOS/Android).</li>
+                <li><strong>Distribución por Plataforma:</strong> Desglose de impresiones según el sistema operativo del usuario (iOS/Android). "Desconocido" indica usuarios sin plataforma asignada.</li>
                 <li><strong>Distribución por Género:</strong> Perfil demográfico de los usuarios que han visto la publicidad.</li>
+                <li><strong>Distribución por Edad:</strong> Rangos etarios de los usuarios que han visualizado la publicidad.</li>
+                <li><strong>Tipo de Suscripción:</strong> Indica si los usuarios tienen plan gratuito o premium activo.</li>
+                <li><strong>Top Intereses:</strong> Los 10 intereses más populares entre los usuarios que vieron la publicidad.</li>
               </ul>
+              
+              <% if @top_interests.blank? || @age_distribution.blank? %>
+                <hr>
+                <div class="alert alert-warning mt-2 mb-0" style="background-color: #fff3cd; border-color: #ffeaa7;">
+                  <h6 class="alert-heading"><i class="fas fa-exclamation-triangle mr-2"></i>Limitaciones Técnicas Actuales</h6>
+                  <ul class="mb-0 small">
+                    <% if @age_distribution.blank? %>
+                      <li><strong>Edades no disponibles:</strong> Muchos usuarios no han completado su fecha de nacimiento en el perfil.</li>
+                    <% end %>
+                    <% if @top_interests.blank? %>
+                      <li><strong>Intereses no disponibles:</strong> Los usuarios no han seleccionado intereses o no hay suficiente información.</li>
+                    <% end %>
+                  </ul>
+                </div>
+              <% end %>
+              
+              <hr>
+              <div class="alert alert-light mt-2 mb-0" style="background-color: #e3f2fd; border-color: #90caf9;">
+                <h6 class="alert-heading"><i class="fas fa-lightbulb mr-2"></i>Recomendaciones Futuras</h6>
+                <ul class="mb-0 small">
+                  <li><strong>Tracking de Clics:</strong> Actualmente no se registran los clics en el link de la publicidad. Se recomienda agregar un campo <code>clicked</code> en la tabla <code>users_publis</code> y un endpoint específico para trackear cuando un usuario hace clic en el anuncio.</li>
+                  <li><strong>Geolocalización:</strong> Agregar reportes de distribución geográfica (ciudades/países) usando los campos <code>locality</code> y <code>country</code> de la tabla <code>users</code>.</li>
+                  <li><strong>Tasa de Conversión:</strong> Con el tracking de clics, se podría calcular CTR (Click-Through Rate) = (Clics / Impresiones) × 100.</li>
+                  <li><strong>Segmentación avanzada:</strong> Permitir filtrar impresiones por ocupación, estudios, o música favorita (Spotify) para campañas más dirigidas.</li>
+                  <li><strong>Heatmap de horarios:</strong> Analizar en qué horas del día se generan más impresiones para optimizar la estrategia de publicación.</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -267,30 +391,53 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const ctx = document.getElementById('impressionsChart').getContext('2d');
-      const data = <%= raw @impressions_by_day.to_json %>;
+      const impressionsData = <%= raw @impressions_by_day.to_json %>;
+      const uniqueUsersData = <%= raw @unique_users_by_day.to_json %>;
       
-      const labels = Object.keys(data);
-      const values = Object.values(data);
+      const labels = Object.keys(impressionsData);
+      const impressionsValues = Object.values(impressionsData);
+      const uniqueUsersValues = labels.map(date => uniqueUsersData[date] || 0);
       
       new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
-          datasets: [{
-            label: 'Impresiones',
-            data: values,
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.1)',
-            tension: 0.3,
-            fill: true
-          }]
+          datasets: [
+            {
+              label: 'Impresiones Totales',
+              data: impressionsValues,
+              borderColor: 'rgb(75, 192, 192)',
+              backgroundColor: 'rgba(75, 192, 192, 0.1)',
+              tension: 0.3,
+              fill: true,
+              borderWidth: 2
+            },
+            {
+              label: 'Usuarios Únicos',
+              data: uniqueUsersValues,
+              borderColor: 'rgb(255, 99, 132)',
+              backgroundColor: 'rgba(255, 99, 132, 0.1)',
+              tension: 0.3,
+              fill: true,
+              borderWidth: 2
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: true,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
           plugins: {
             legend: {
-              display: false
+              display: true,
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                padding: 15
+              }
             },
             tooltip: {
               callbacks: {
