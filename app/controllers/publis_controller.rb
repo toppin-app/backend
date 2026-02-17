@@ -10,6 +10,29 @@ class PublisController < ApplicationController
   # GET /publis/1 or /publis/1.json
   def show
     @title = "Información del anuncio"
+    
+    # Métricas de desempeño
+    @total_impressions = @publi.user_publis.count
+    @unique_viewers = @publi.viewers.distinct.count
+    
+    # Datos agrupados por plataforma (iOS, Android)
+    @impressions_by_platform = @publi.user_publis
+      .joins(:user)
+      .group("users.device_platform")
+      .count
+    
+    # Impresiones por día (últimos 30 días)
+    @impressions_by_day = @publi.user_publis
+      .where("users_publis.created_at >= ?", 30.days.ago)
+      .group("DATE(users_publis.created_at)")
+      .count
+      .sort_by { |date, _| date }
+    
+    # Usuarios que han visto la publicidad (para análisis de tipo de usuario)
+    @viewer_genders = @publi.viewers.group(:gender).count
+    
+    # Conversión aproximada (usuarios que hicieron clic - si tenemos el link)
+    @has_link = @publi.link.present?
   end
 
   # GET /publis/new

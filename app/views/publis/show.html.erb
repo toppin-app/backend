@@ -109,6 +109,214 @@
   </div>
 </div>
 
+<!-- Panel de Rendimiento de Campaña -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-white d-flex align-items-center">
+        <i class="fas fa-chart-line text-primary mr-2" style="font-size: 24px;"></i>
+        <h4 class="mb-0">Rendimiento de Campaña</h4>
+      </div>
+      <div class="card-body">
+        <!-- Métricas principales -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-eye text-primary mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= @total_impressions %></h2>
+                <p class="text-muted mb-0">Impresiones Totales</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-users text-success mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= @unique_viewers %></h2>
+                <p class="text-muted mb-0">Usuarios Únicos</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-redo text-info mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= @total_impressions > 0 ? (@total_impressions.to_f / @unique_viewers).round(2) : 0 %></h2>
+                <p class="text-muted mb-0">Promedio Vistas/Usuario</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-calendar-day text-warning mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= ((Time.now - @publi.created_at) / 1.day).round %></h2>
+                <p class="text-muted mb-0">Días Activa</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfica de impresiones por día -->
+        <% if @impressions_by_day.any? %>
+          <div class="row mb-4">
+            <div class="col-12">
+              <h5 class="mb-3"><i class="fas fa-chart-area mr-2"></i>Impresiones por Día (Últimos 30 días)</h5>
+              <div class="card border-0" style="background-color: #f8f9fa;">
+                <div class="card-body">
+                  <canvas id="impressionsChart" height="80"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Desglose por plataforma y género -->
+        <div class="row">
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-mobile-alt mr-2"></i>Distribución por Plataforma</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% platform_names = { 0 => 'iOS', 1 => 'Android', nil => 'Desconocida' } %>
+                <% if @impressions_by_platform.any? %>
+                  <% @impressions_by_platform.each do |platform, count| %>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <i class="<%= platform == 0 ? 'fab fa-apple' : platform == 1 ? 'fab fa-android' : 'fas fa-question-circle' %>" style="font-size: 24px; color: <%= platform == 0 ? '#000' : platform == 1 ? '#3DDC84' : '#ccc' %>;"></i>
+                        <strong class="ml-2"><%= platform_names[platform] %></strong>
+                      </div>
+                      <div>
+                        <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                        <span class="text-muted small">(<%= ((count.to_f / @total_impressions) * 100).round(1) %>%)</span>
+                      </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                      <div class="progress-bar" role="progressbar" style="width: <%= (count.to_f / @total_impressions) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= @total_impressions %>"></div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de plataforma</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-venus-mars mr-2"></i>Distribución por Género</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% gender_names = { 0 => 'Hombre', 1 => 'Mujer', 2 => 'Otro' } %>
+                <% gender_icons = { 0 => 'fas fa-mars', 1 => 'fas fa-venus', 2 => 'fas fa-genderless' } %>
+                <% gender_colors = { 0 => '#0066cc', 1 => '#ff69b4', 2 => '#9c27b0' } %>
+                <% if @viewer_genders.any? %>
+                  <% total_gendered = @viewer_genders.values.sum %>
+                  <% @viewer_genders.each do |gender, count| %>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <i class="<%= gender_icons[gender] || 'fas fa-user' %>" style="font-size: 24px; color: <%= gender_colors[gender] || '#ccc' %>;"></i>
+                        <strong class="ml-2"><%= gender_names[gender] || 'Sin especificar' %></strong>
+                      </div>
+                      <div>
+                        <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                        <span class="text-muted small">(<%= ((count.to_f / total_gendered) * 100).round(1) %>%)</span>
+                      </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                      <div class="progress-bar" role="progressbar" style="width: <%= (count.to_f / total_gendered) * 100 %>%; background-color: <%= gender_colors[gender] || '#6c757d' %>;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_gendered %>"></div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de género</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="alert alert-info mb-0">
+              <h6 class="alert-heading"><i class="fas fa-info-circle mr-2"></i>Información sobre las métricas</h6>
+              <hr>
+              <ul class="mb-0 small">
+                <li><strong>Impresiones Totales:</strong> Número total de veces que se ha mostrado esta publicidad a los usuarios.</li>
+                <li><strong>Usuarios Únicos:</strong> Cantidad de usuarios diferentes que han visto la publicidad.</li>
+                <li><strong>Promedio Vistas/Usuario:</strong> Número promedio de veces que cada usuario ha visto la publicidad.</li>
+                <li><strong>Distribución por Plataforma:</strong> Desglose de impresiones según el sistema operativo del usuario (iOS/Android).</li>
+                <li><strong>Distribución por Género:</strong> Perfil demográfico de los usuarios que han visto la publicidad.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if @impressions_by_day.any? %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('impressionsChart').getContext('2d');
+      const data = <%= raw @impressions_by_day.to_json %>;
+      
+      const labels = Object.keys(data);
+      const values = Object.values(data);
+      
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Impresiones',
+            data: values,
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+            tension: 0.3,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                title: function(context) {
+                  const date = new Date(context[0].label);
+                  return date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+<% end %>
+
 <div class="mt-4">
   <%= link_to edit_publi_path(@publi), class: 'btn btn-primary text-white', style: 'color: white !important;', :"data-turbolinks" => false do %>
     <i class="fas fa-edit"></i> Editar
