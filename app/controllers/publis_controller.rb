@@ -88,7 +88,7 @@ class PublisController < ApplicationController
     
     # Distribución por horario de visualización (horas del día)
     @hourly_distribution = @publi.user_publis
-      .select("HOUR(users_publis.created_at) as hour, COUNT(*) as count")
+      .select("HOUR(COALESCE(users_publis.created_at, users_publis.updated_at)) as hour, COUNT(*) as count")
       .group("hour")
       .order("hour")
       .map { |h| [h.hour, h.count] }
@@ -96,7 +96,7 @@ class PublisController < ApplicationController
     
     # Distribución por día de la semana
     @weekday_distribution = @publi.user_publis
-      .select("DAYOFWEEK(users_publis.created_at) as day_of_week, COUNT(*) as count")
+      .select("DAYOFWEEK(COALESCE(users_publis.created_at, users_publis.updated_at)) as day_of_week, COUNT(*) as count")
       .group("day_of_week")
       .order("day_of_week")
       .map { |d| [d.day_of_week, d.count] }
