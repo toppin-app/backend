@@ -787,8 +787,11 @@ function clearProgress() {
 
 function startPopulatePlatforms() {
   const btn = document.getElementById('startPlatformBtn');
+  const container = document.getElementById('platformProcessContainer');
+  
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+  container.classList.add('active');
   
   console.log('🚀 Iniciando proceso de detección de plataformas...');
   
@@ -802,19 +805,37 @@ function startPopulatePlatforms() {
   .then(response => response.json())
   .then(data => {
     console.log('✅ Respuesta del servidor:', data);
-    document.getElementById('platformProcessContainer').classList.add('active');
-    btn.style.display = 'none';
-    // Esperar 500ms antes de empezar a consultar el progreso
-    setTimeout(() => {
-      console.log('⏱️ Iniciando polling de progreso...');
-      checkPlatformProgress();
-    }, 500);
+    
+    if (data.result && data.result.status === 'completed') {
+      // Mostrar resultado inmediato
+      container.innerHTML = `
+        <div class="success-alert" style="display: block;">
+          <i class="fas fa-check-circle fa-3x"></i>
+          <h5>¡Proceso Completado!</h5>
+          <p>
+            Total: ${data.result.total || 0} | 
+            iOS: ${data.result.ios_detected || 0} | 
+            Android: ${data.result.android_detected || 0} | 
+            Omitidos: ${data.result.skipped || 0}
+          </p>
+          <button class="btn-reload" onclick="window.location.reload()">
+            <i class="fas fa-check"></i> Aceptar
+          </button>
+        </div>
+      `;
+    } else if (data.error) {
+      alert('Error: ' + data.error);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-rocket"></i> Iniciar Detección';
+      container.classList.remove('active');
+    }
   })
   .catch(error => {
     console.error('❌ Error al iniciar el proceso:', error);
     alert('Error al iniciar el proceso: ' + error);
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-rocket"></i> Iniciar Detección';
+    container.classList.remove('active');
   });
 }
 

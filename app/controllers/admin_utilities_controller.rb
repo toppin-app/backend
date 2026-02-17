@@ -288,103 +288,60 @@ class AdminUtilitiesController < ApplicationController
     # Marcar proceso como en ejecución
     Rails.cache.write('platform_population_running', true, expires_in: 30.minutes)
     
-    # Contar usuarios antes de iniciar
-    users_to_process = User.where(device_platform: nil).where.not(device_id: [nil, ''])
-    total_count = users_to_process.count
-    
-    # Inicializar progreso CON el total ya calculado
-    progress = {
-      status: 'running',
-      total: total_count,
-      processed: 0,
-      ios_detected: 0,
-      android_detected: 0,
-      skipped: 0,
-      current_user: nil,
-      started_at: Time.current
-    }
-    Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
-    Rails.logger.info "✅ Progreso inicial guardado en cache: #{progress.inspect}"
-    
-    # Log para verificar que se guardó
-    cached_progress = Rails.cache.read('platform_population_progress')
-    Rails.logger.info "🔍 Verificación inmediata del cache: #{cached_progress.inspect}"
-
-    # Ejecutar el proceso en segundo plano
-    Thread.new do
-      begin
-        Rails.logger.info "🚀 Thread iniciado correctamente"
+    begin
+      # Patrones de detección
+      ios_pattern = /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i
+      android_pattern = /^[a-f0-9]{16}$/i
+      
+      # Buscar usuarios sin device_platform pero con device_id
+      users = User.where(device_platform: nil).where.not(device_id: [nil, ''])
+      
+      total = users.count
+      processed = 0
+      ios_detected = 0
+      android_detected = 0
+      skipped = 0
+      
+      Rails.logger.info "🚀 Iniciando detección síncrona de #{total} usuarios"
+      
+      users.find_each do |user|
+        device_id_clean = user.device_id.to_s.strip
         
-        ActiveRecord::Base.connection_pool.with_connection do
-          # Patrones de detección
-          ios_pattern = /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i
-          android_pattern = /^[a-f0-9]{16}$/i
-          
-          # Buscar usuarios sin device_platform pero con device_id
-          users = User.where(device_platform: nil).where.not(device_id: [nil, ''])
-          
-          Rails.logger.info "🔄 Procesando #{users.count} usuarios"
-          
-          processed = 0
-          ios_detected = 0
-          android_detected = 0
-          skipped = 0
-          
-          users.find_each.with_index do |user, index|
-            begin
-              progress[:current_user] = { id: user.id, name: user.name, index: index + 1 }
-              progress[:processed] = processed
-              progress[:ios_detected] = ios_detected
-              progress[:android_detected] = android_detected
-              progress[:skipped] = skipped
-              Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
-              
-              device_id_clean = user.device_id.to_s.strip
-              
-              if device_id_clean.match?(ios_pattern)
-                user.update_column(:device_platform, 0) # iOS
-                processed += 1
-                ios_detected += 1
-              elsif device_id_clean.match?(android_pattern)
-                user.update_column(:device_platform, 1) # Android
-                processed += 1
-                android_detected += 1
-              else
-                skipped += 1
-              end
-              
-            rescue => e
-              skipped += 1
-              Rails.logger.error "Error procesando usuario #{user.id}: #{e.message}"
-            end
-          end
-          
-          # Marcar como completado
-          progress[:status] = 'completed'
-          progress[:completed_at] = Time.current
-          progress[:current_user] = nil
-          progress[:processed] = processed
-          progress[:ios_detected] = ios_detected
-          progress[:android_detected] = android_detected
-          progress[:skipped] = skipped
-          Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
-          Rails.logger.info "✅ Proceso completado: #{progress.inspect}"
-          
-        rescue => e
-          Rails.logger.error "❌ Error en populate_device_platforms thread: #{e.message}\n#{e.backtrace.join("\n")}"
-          progress[:status] = 'error'
-          progress[:error_message] = e.message
-          Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
-        ensure
-          Rails.cache.delete('platform_population_running')
-          Rails.logger.info "🏁 Thread finalizado, running flag eliminado"
+        if device_id_clean.match?(ios_pattern)
+          user.update_column(:device_platform, 0) # iOS
+          processed += 1
+          ios_detected += 1
+        elsif device_id_clean.match?(android_pattern)
+          user.update_column(:device_platform, 1) # Android
+          processed += 1
+          android_detected += 1
+        else
+          skipped += 1
         end
+      rescue => e
+        skipped += 1
+        Rails.logger.error "Error procesando usuario #{user.id}: #{e.message}"
       end
+      
+      result = {
+        status: 'completed',
+        total: total,
+        processed: processed,
+        ios_detected: ios_detected,
+        android_detected: android_detected,
+        skipped: skipped
+      }
+      
+      Rails.logger.info "✅ Proceso completado: #{result.inspect}"
+      
+      render json: { message: 'Proceso completado', result: result }
+      
     rescue => e
-      Rails.logger.error "❌ Error fuera del connection pool: #{e.message}\n#{e.backtrace.join("\n")}"
+      Rails.logger.error "❌ Error en populate_device_platforms: #{e.message}\n#{e.backtrace.join("\n")}"
+      render json: { error: e.message }, status: :internal_server_error
+    ensure
+      Rails.cache.delete('platform_population_running')
     end
-
-    render json: { message: 'Proceso iniciado', progress: progress }
   end
 
   def platform_progress
