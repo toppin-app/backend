@@ -485,6 +485,79 @@
           }
         }
       });
+      
+      // Gráfica de distribución por horario
+      const hourlyCanvas = document.getElementById('hourlyChart');
+      if (hourlyCanvas) {
+        const hourlyCtx = hourlyCanvas.getContext('2d');
+        const hourlyDataRaw = <%= raw @hourly_distribution.to_json %>;
+        
+        console.log('Hourly data raw:', hourlyDataRaw);
+        console.log('Type:', typeof hourlyDataRaw);
+        console.log('Keys:', Object.keys(hourlyDataRaw));
+        
+        // Crear array con todas las horas del día (0-23)
+        const hours = Array.from({length: 24}, (_, i) => i);
+        const hourlyValues = hours.map(hour => {
+          // Intentar con el número directo primero, luego como string
+          const value = hourlyDataRaw[hour] !== undefined ? hourlyDataRaw[hour] : hourlyDataRaw[hour.toString()];
+          console.log(`Hour ${hour}: ${value}`);
+          return value || 0;
+        });
+        const hourLabels = hours.map(h => `${h}:00`);
+        
+        console.log('Final hourly values:', hourlyValues);
+        
+        new Chart(hourlyCtx, {
+          type: 'bar',
+          data: {
+            labels: hourLabels,
+            datasets: [{
+              label: 'Impresiones',
+              data: hourlyValues,
+              backgroundColor: 'rgba(54, 162, 235, 0.6)',
+              borderColor: 'rgb(54, 162, 235)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  title: function(context) {
+                    const hour = context[0].label;
+                    return `Hora: ${hour}`;
+                  },
+                  label: function(context) {
+                    return `Impresiones: ${context.parsed.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              },
+              x: {
+                ticks: {
+                  maxRotation: 90,
+                  minRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 12
+                }
+              }
+            }
+          }
+        });
+      }
     });
   </script>
 <% end %>
