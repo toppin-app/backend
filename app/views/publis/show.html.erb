@@ -181,13 +181,15 @@
             <h5 class="mb-3"><i class="fas fa-mobile-alt mr-2"></i>Distribución por Plataforma</h5>
             <div class="card border-0 bg-light">
               <div class="card-body">
-                <% platform_names = { 0 => 'iOS', 1 => 'Android', nil => 'Desconocida' } %>
+                <% # device_platform: 0 = iOS, 1 = Android %>
+                <% platform_names = { 0 => 'iOS', 1 => 'Android' } %>
                 <% if @impressions_by_platform.any? %>
                   <% @impressions_by_platform.each do |platform, count| %>
+                    <% platform_name = platform_names[platform] || "Desconocida (#{platform})" %>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                       <div>
                         <i class="<%= platform == 0 ? 'fab fa-apple' : platform == 1 ? 'fab fa-android' : 'fas fa-question-circle' %>" style="font-size: 24px; color: <%= platform == 0 ? '#000' : platform == 1 ? '#3DDC84' : '#ccc' %>;"></i>
-                        <strong class="ml-2"><%= platform_names[platform] %></strong>
+                        <strong class="ml-2"><%= platform_name %></strong>
                       </div>
                       <div>
                         <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
@@ -209,16 +211,18 @@
             <h5 class="mb-3"><i class="fas fa-venus-mars mr-2"></i>Distribución por Género</h5>
             <div class="card border-0 bg-light">
               <div class="card-body">
-                <% gender_names = { 0 => 'Hombre', 1 => 'Mujer', 2 => 'Otro' } %>
-                <% gender_icons = { 0 => 'fas fa-mars', 1 => 'fas fa-venus', 2 => 'fas fa-genderless' } %>
-                <% gender_colors = { 0 => '#0066cc', 1 => '#ff69b4', 2 => '#9c27b0' } %>
+                <% # Enum del modelo User: female: 0, male: 1, non_binary: 2, couple: 3 %>
+                <% gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' } %>
+                <% gender_icons = { 0 => 'fas fa-venus', 1 => 'fas fa-mars', 2 => 'fas fa-genderless', 3 => 'fas fa-user-friends' } %>
+                <% gender_colors = { 0 => '#ff69b4', 1 => '#0066cc', 2 => '#9c27b0', 3 => '#20c997' } %>
                 <% if @viewer_genders.any? %>
                   <% total_gendered = @viewer_genders.values.sum %>
                   <% @viewer_genders.each do |gender, count| %>
+                    <% gender_name = gender_names[gender] || (gender.nil? ? 'Sin especificar' : "Desconocido (#{gender})") %>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                       <div>
                         <i class="<%= gender_icons[gender] || 'fas fa-user' %>" style="font-size: 24px; color: <%= gender_colors[gender] || '#ccc' %>;"></i>
-                        <strong class="ml-2"><%= gender_names[gender] || 'Sin especificar' %></strong>
+                        <strong class="ml-2"><%= gender_name %></strong>
                       </div>
                       <div>
                         <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>

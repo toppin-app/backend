@@ -21,6 +21,9 @@ class PublisController < ApplicationController
       .group("users.device_platform")
       .count
     
+    # Debug: Log de los valores reales de plataforma
+    Rails.logger.info "Platform data: #{@impressions_by_platform.inspect}"
+    
     # Impresiones por día (últimos 30 días)
     @impressions_by_day = @publi.user_publis
       .where("users_publis.created_at >= ?", 30.days.ago)
@@ -29,7 +32,11 @@ class PublisController < ApplicationController
       .sort_by { |date, _| date }
     
     # Usuarios que han visto la publicidad (para análisis de tipo de usuario)
+    # Gender es un enum: female: 0, male: 1, non_binary: 2, couple: 3
     @viewer_genders = @publi.viewers.group(:gender).count
+    
+    # Debug: Log de los valores reales de género
+    Rails.logger.info "Gender data: #{@viewer_genders.inspect}"
     
     # Conversión aproximada (usuarios que hicieron clic - si tenemos el link)
     @has_link = @publi.link.present?
