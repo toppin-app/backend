@@ -1,53 +1,119 @@
 <div class="row">
-  <div class="col">
-          
-      <p>
-        <strong>Título del anuncio:</strong>
-        <%= @publi.title %>
-      </p>
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header bg-white">
+        <h3 class="mb-0"><%= @publi.title %></h3>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <strong>Fecha de inicio:</strong>
+          </div>
+          <div class="col-sm-8">
+            <%= @publi.start_date.strftime("%d-%m-%Y %H:%M") %>
+          </div>
+        </div>
 
-      <p>
-        <strong>Fechas:</strong>
-       Desde <%= @publi.start_date.strftime("%d-%m-%Y %H:%M") %> hasta el 
-          <%= @publi.end_date.strftime("%d-%m-%Y %H:%M") %>
-      </p>
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <strong>Fecha de fin:</strong>
+          </div>
+          <div class="col-sm-8">
+            <%= @publi.end_date.strftime("%d-%m-%Y %H:%M") %>
+          </div>
+        </div>
 
-      <p>
-        <strong>Días de la semana que se muestra:</strong>
-        <%= weekday(@publi.weekdays) %>
-      </p>
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <strong>Días de la semana:</strong>
+          </div>
+          <div class="col-sm-8">
+            <%= weekday(@publi.weekdays) %>
+          </div>
+        </div>
 
-      <p>
-        <strong>Horario del anuncio:</strong>
-        Desde las <%= @publi.start_time.strftime("%H:%M") %>
-        hasta las <%= @publi.end_time.strftime("%H:%M") %>
-      </p>
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <strong>Horario:</strong>
+          </div>
+          <div class="col-sm-8">
+            Desde las <%= @publi.start_time.strftime("%H:%M") %> hasta las <%= @publi.end_time.strftime("%H:%M") %>
+          </div>
+        </div>
 
-      <p>
-        <strong>Link:</strong>
-        <%= @publi.link %>
-      </p>
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <strong>Link:</strong>
+          </div>
+          <div class="col-sm-8">
+            <% if @publi.link.present? %>
+              <%= link_to @publi.link, @publi.link, target: '_blank', class: 'text-primary' %>
+              <i class="fas fa-external-link-alt ml-1 text-muted" style="font-size: 12px;"></i>
+            <% else %>
+              <em class="text-muted">Sin link</em>
+            <% end %>
+          </div>
+        </div>
 
-      <p>
-        <strong>Cancelable:</strong>
-        <%= true_false(@publi.cancellable) %>
-      </p>
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <strong>Cancelable:</strong>
+          </div>
+          <div class="col-sm-8">
+            <% if @publi.cancellable %>
+              <span class="badge badge-success">Sí</span>
+            <% else %>
+              <span class="badge badge-secondary">No</span>
+            <% end %>
+          </div>
+        </div>
 
-      <p>
-        <strong>Cada cuantos swipes:</strong>
-        <%= @publi.repeat_swipes %>
-      </p>
-
-
-  </div>
-  <div class="col">
-      <%= image_tag @publi.image.thumb.url if @publi.image? %>
-      
-      <%= video_tag @publi.video.url, controls: true,size: "400x400" if @publi.video? %>
+        <div class="row">
+          <div class="col-sm-4">
+            <strong>Cada cuántos swipes:</strong>
+          </div>
+          <div class="col-sm-8">
+            <span class="badge badge-info"><%= @publi.repeat_swipes %></span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Vista previa</h5>
+      </div>
+      <div class="card-body text-center">
+        <% if @publi.image? %>
+          <div class="mb-3">
+            <p class="text-muted small mb-2">Imagen:</p>
+            <%= image_tag @publi.image.url, class: 'img-fluid rounded', style: 'max-height: 250px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);' %>
+          </div>
+        <% end %>
+        
+        <% if @publi.video? %>
+          <div class="mb-3">
+            <p class="text-muted small mb-2">Video:</p>
+            <%= video_tag @publi.video.url, controls: true, class: 'img-fluid rounded', style: 'max-height: 250px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);' %>
+          </div>
+        <% end %>
+        
+        <% if !@publi.image? && !@publi.video? %>
+          <i class="fas fa-image" style="font-size: 80px; color: #ccc;"></i>
+          <p class="text-muted mt-2">No hay multimedia</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
 </div>
 
-
-<%= link_to 'Editar', edit_publi_path(@publi), :"data-turbolinks" => false  %> |
-<%= link_to 'Atrás', publis_path %>
+<div class="mt-4">
+  <%= link_to edit_publi_path(@publi), class: 'btn btn-primary text-white', style: 'color: white !important;', :"data-turbolinks" => false do %>
+    <i class="fas fa-edit"></i> Editar
+  <% end %>
+  <%= link_to publis_path, class: 'btn btn-secondary text-white ml-2', style: 'color: white !important;' do %>
+    <i class="fas fa-arrow-left"></i> Atrás
+  <% end %>
+</div>
