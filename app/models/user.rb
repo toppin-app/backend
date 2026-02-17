@@ -114,6 +114,27 @@ class User < ApplicationRecord
   #before_update :recalculate_percentage
   after_create :create_filters
   before_destroy :destroy_match_requests
+  before_save :detect_device_platform
+
+
+
+  def detect_device_platform
+    # Solo detectar si device_platform no está establecido y hay un device_id
+    return if device_platform.present? || device_id.blank?
+    
+    device_id_clean = device_id.to_s.strip
+    
+    # iOS: UUID format with dashes (XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX)
+    # Android: Hexadecimal without dashes (xxxxxxxxxxxxxxxx)
+    ios_pattern = /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i
+    android_pattern = /^[a-f0-9]{16}$/i
+    
+    if device_id_clean.match?(ios_pattern)
+      self.device_platform = 0 # iOS
+    elsif device_id_clean.match?(android_pattern)
+      self.device_platform = 1 # Android
+    end
+  end
 
 
 

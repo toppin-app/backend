@@ -80,6 +80,9 @@ Rails.application.routes.draw do
   post '/admin/utilities/populate_locations', to: 'admin_utilities#populate_locations', as: :populate_locations_admin_utilities
   get '/admin/utilities/location_progress', to: 'admin_utilities#location_progress', as: :location_progress_admin_utilities
   delete '/admin/utilities/clear_location_progress', to: 'admin_utilities#clear_location_progress', as: :clear_location_progress_admin_utilities
+  post '/admin/utilities/populate_device_platforms', to: 'admin_utilities#populate_device_platforms', as: :populate_device_platforms_admin_utilities
+  get '/admin/utilities/platform_progress', to: 'admin_utilities#platform_progress', as: :platform_progress_admin_utilities
+  delete '/admin/utilities/clear_platform_progress', to: 'admin_utilities#clear_platform_progress', as: :clear_platform_progress_admin_utilities
   get '/admin/utilities/find_incomplete_users', to: 'admin_utilities#find_incomplete_users', as: :find_incomplete_users_admin_utilities
   delete '/admin/utilities/bulk_delete_users', to: 'admin_utilities#bulk_delete_users', as: :bulk_delete_users_admin_utilities
   

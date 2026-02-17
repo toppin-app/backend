@@ -514,6 +514,111 @@
     </div>
     <!-- Fin de Utilidad: Poblar Ubicaciones -->
     
+    <!-- Utilidad: Poblar Device Platform -->
+    <div class="utility-card">
+      <h3><i class="fas fa-mobile-alt"></i> Poblar Plataforma de Dispositivos</h3>
+      <p>
+        Detecta automáticamente iOS/Android basándose en el patrón del device_id de los usuarios.
+      </p>
+      
+      <div class="info-badge">
+        <i class="fas fa-info-circle"></i> 
+        <div>
+          <strong>Usuarios pendientes:</strong> <%= @users_needing_platform %> usuarios
+        </div>
+      </div>
+
+      <div class="stats-grid" style="margin-top: 10px; margin-bottom: 10px;">
+        <div class="stat-box">
+          <div class="stat-number"><%= @users_with_platform %></div>
+          <div class="stat-label">Con Plataforma</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number text-success"><%= @ios_users %></div>
+          <div class="stat-label">iOS</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number text-success"><%= @android_users %></div>
+          <div class="stat-label">Android</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number text-warning"><%= @users_needing_platform %></div>
+          <div class="stat-label">Sin Detectar</div>
+        </div>
+      </div>
+
+      <button id="startPlatformBtn" class="btn-start" onclick="startPopulatePlatforms()" 
+              <%= 'disabled' if @users_needing_platform == 0 || (@platform_progress && @platform_progress[:status] == 'running') %>>
+        <i class="fas fa-rocket"></i> Iniciar Detección
+      </button>
+
+      <% if @platform_progress && @platform_progress[:status] == 'running' %>
+        <span class="status-running">
+          <i class="fas fa-spinner fa-spin"></i> En ejecución
+        </span>
+      <% end %>
+
+      <!-- Contenedor de Proceso -->
+      <div id="platformProcessContainer" class="progress-container <%= 'active' if @platform_progress && @platform_progress[:status] == 'running' %>">
+        <div class="spinner-container">
+          <div class="spinner"></div>
+        </div>
+        
+        <h4 class="status-title">Detectando plataformas...</h4>
+        
+        <div id="platformProgress" class="progress-wrapper">
+          <div class="progress">
+            <div id="platformProgressBar" class="progress-bar" style="width: 0%">
+              0%
+            </div>
+          </div>
+        </div>
+
+        <div id="platformCurrentUser" class="current-user-info" style="display: none;">
+          <i class="fas fa-user"></i>
+          Procesando usuario <strong id="platformUserName"></strong> (<span id="platformUserIndex"></span>/<span id="platformUserTotal"></span>)
+        </div>
+
+        <div id="platformStats" class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-number" id="platformTotalCount">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number text-success" id="platformIosCount">0</div>
+            <div class="stat-label">iOS</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number text-success" id="platformAndroidCount">0</div>
+            <div class="stat-label">Android</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number text-warning" id="platformSkippedCount">0</div>
+            <div class="stat-label">Omitidos</div>
+          </div>
+        </div>
+      </div>
+
+      <% if @platform_progress && @platform_progress[:status] == 'completed' %>
+        <div class="completed-message" style="display: block; margin-top: 15px;">
+          <div class="success-alert">
+            <i class="fas fa-check-circle fa-3x"></i>
+            <h5>¡Proceso Completado!</h5>
+            <p>
+              Total: <%= @platform_progress[:total] %> | 
+              iOS: <%= @platform_progress[:ios_detected] %> | 
+              Android: <%= @platform_progress[:android_detected] %> | 
+              Omitidos: <%= @platform_progress[:skipped] %>
+            </p>
+            <button class="btn-reload" onclick="clearPlatformProgress()">
+              <i class="fas fa-check"></i> Aceptar
+            </button>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <!-- Fin de Utilidad: Poblar Device Platform -->
+    
     <!-- Utilidad: Validar Usuarios Incompletos -->
     <div class="utility-card">
       <h3><i class="fas fa-user-check"></i> Validar Datos de Usuarios</h3>
@@ -680,6 +785,93 @@ function clearProgress() {
   });
 }
 
+function startPopulatePlatforms() {
+  const btn = document.getElementById('startPlatformBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
+  
+  fetch('<%= populate_device_platforms_admin_utilities_path %>', {
+    method: 'POST',
+    headers: {
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById('platformProcessContainer').classList.add('active');
+    btn.style.display = 'none';
+    checkPlatformProgress();
+  })
+  .catch(error => {
+    alert('Error al iniciar el proceso: ' + error);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-rocket"></i> Iniciar Detección';
+  });
+}
+
+function checkPlatformProgress() {
+  fetch('<%= platform_progress_admin_utilities_path %>')
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'running') {
+        updatePlatformProgress(data);
+        setTimeout(checkPlatformProgress, 1000);
+      } else if (data.status === 'completed') {
+        updatePlatformProgress(data);
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else if (data.status === 'error') {
+        alert('Error en el proceso: ' + (data.error_message || 'Error desconocido'));
+        window.location.reload();
+      }
+    })
+    .catch(error => {
+      console.error('Error checking progress:', error);
+      setTimeout(checkPlatformProgress, 2000);
+    });
+}
+
+function updatePlatformProgress(data) {
+  const percentage = data.total > 0 ? Math.round((data.processed / data.total) * 100) : 0;
+  
+  const progressBar = document.getElementById('platformProgressBar');
+  if (progressBar) {
+    progressBar.style.width = percentage + '%';
+    progressBar.textContent = percentage + '%';
+  }
+  
+  if (data.current_user) {
+    const currentUserDiv = document.getElementById('platformCurrentUser');
+    const userNameSpan = document.getElementById('platformUserName');
+    const userIndexSpan = document.getElementById('platformUserIndex');
+    const userTotalSpan = document.getElementById('platformUserTotal');
+    
+    if (currentUserDiv) currentUserDiv.style.display = 'block';
+    if (userNameSpan) userNameSpan.textContent = data.current_user.name || 'Usuario ' + data.current_user.id;
+    if (userIndexSpan) userIndexSpan.textContent = data.current_user.index;
+    if (userTotalSpan) userTotalSpan.textContent = data.total;
+  }
+  
+  document.getElementById('platformTotalCount').textContent = data.total || 0;
+  document.getElementById('platformIosCount').textContent = data.ios_detected || 0;
+  document.getElementById('platformAndroidCount').textContent = data.android_detected || 0;
+  document.getElementById('platformSkippedCount').textContent = data.skipped || 0;
+}
+
+function clearPlatformProgress() {
+  fetch('<%= clear_platform_progress_admin_utilities_path %>', {
+    method: 'DELETE',
+    headers: {
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(() => {
+    window.location.reload();
+  });
+}
+
 function selectAll() {
   document.querySelectorAll('.user-checkbox').forEach(checkbox => {
     checkbox.checked = true;
@@ -728,6 +920,11 @@ function hideLoading() {
 
 // Escuchar eventos AJAX de Rails
 document.addEventListener('DOMContentLoaded', function() {
+  // Iniciar monitoreo si hay un proceso de plataforma en ejecución
+  <% if @platform_progress && @platform_progress[:status] == 'running' %>
+    checkPlatformProgress();
+  <% end %>
+  
   document.addEventListener('ajax:beforeSend', function(event) {
     // Verificar si es una eliminación
     const target = event.target;

@@ -9,8 +9,18 @@ class AdminUtilitiesController < ApplicationController
                                    .where("location_country IS NULL OR location_country = '' OR location_city IS NULL OR location_city = ''")
                                    .count
     
+    # Contar usuarios que necesitan población de device_platform
+    @users_needing_platform = User.where(device_platform: nil).where.not(device_id: [nil, '']).count
+    
+    # Estadísticas de device_platform
+    @total_users = User.count
+    @users_with_platform = User.where.not(device_platform: nil).count
+    @ios_users = User.where(device_platform: 0).count
+    @android_users = User.where(device_platform: 1).count
+    
     # Obtener progreso actual si existe
     @current_progress = Rails.cache.read('location_population_progress')
+    @platform_progress = Rails.cache.read('platform_population_progress')
   end
 
   def populate_locations
@@ -266,6 +276,113 @@ class AdminUtilitiesController < ApplicationController
         format.js { render js: "hideLoading(); alert('No se seleccionaron usuarios para eliminar');" }
       end
     end
+  end
+
+  def populate_device_platforms
+    # Verificar si ya hay un proceso en ejecución
+    if Rails.cache.read('platform_population_running')
+      render json: { error: 'Ya hay un proceso en ejecución' }, status: :conflict
+      return
+    end
+
+    # Marcar proceso como en ejecución
+    Rails.cache.write('platform_population_running', true, expires_in: 30.minutes)
+    
+    # Inicializar progreso
+    progress = {
+      status: 'running',
+      total: 0,
+      processed: 0,
+      ios_detected: 0,
+      android_detected: 0,
+      skipped: 0,
+      current_user: nil,
+      started_at: Time.current
+    }
+    Rails.cache.write('platform_population_progress', progress)
+
+    # Ejecutar en un thread para no bloquear la petición
+    Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        begin
+          # Patrones de detección
+          ios_pattern = /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i
+          android_pattern = /^[a-f0-9]{16}$/i
+          
+          # Buscar usuarios sin device_platform pero con device_id
+          users = User.where(device_platform: nil).where.not(device_id: [nil, ''])
+          
+          total = users.count
+          progress[:total] = total
+          Rails.cache.write('platform_population_progress', progress)
+          
+          processed = 0
+          ios_detected = 0
+          android_detected = 0
+          skipped = 0
+          
+          users.find_each.with_index do |user, index|
+            begin
+              progress[:current_user] = { id: user.id, name: user.name, index: index + 1 }
+              progress[:processed] = processed
+              progress[:ios_detected] = ios_detected
+              progress[:android_detected] = android_detected
+              progress[:skipped] = skipped
+              Rails.cache.write('platform_population_progress', progress)
+              
+              device_id_clean = user.device_id.to_s.strip
+              
+              if device_id_clean.match?(ios_pattern)
+                user.update_column(:device_platform, 0) # iOS
+                processed += 1
+                ios_detected += 1
+              elsif device_id_clean.match?(android_pattern)
+                user.update_column(:device_platform, 1) # Android
+                processed += 1
+                android_detected += 1
+              else
+                skipped += 1
+              end
+              
+            rescue => e
+              skipped += 1
+              Rails.logger.error "Error procesando usuario #{user.id}: #{e.message}"
+            end
+          end
+          
+          # Marcar como completado
+          progress[:status] = 'completed'
+          progress[:completed_at] = Time.current
+          progress[:current_user] = nil
+          progress[:processed] = processed
+          progress[:ios_detected] = ios_detected
+          progress[:android_detected] = android_detected
+          progress[:skipped] = skipped
+          Rails.cache.write('platform_population_progress', progress)
+          
+        rescue => e
+          progress[:status] = 'error'
+          progress[:error_message] = e.message
+          Rails.cache.write('platform_population_progress', progress)
+          Rails.logger.error "Error en populate_device_platforms thread: #{e.message}\n#{e.backtrace.join("\n")}"
+        ensure
+          Rails.cache.delete('platform_population_running')
+        end
+      end
+    end
+
+    render json: { message: 'Proceso iniciado', progress: progress }
+  end
+
+  def platform_progress
+    progress = Rails.cache.read('platform_population_progress')
+    render json: progress || { status: 'idle' }
+  end
+
+  def clear_platform_progress
+    Rails.cache.delete('platform_population_progress')
+    Rails.cache.delete('platform_population_running')
+    redirect_to admin_utilities_path, notice: 'Progreso de plataforma limpiado'
   end
 
   private

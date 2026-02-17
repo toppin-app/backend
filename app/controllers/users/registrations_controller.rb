@@ -33,6 +33,9 @@ class Users::RegistrationsController < Devise::RegistrationsController
             resource.birthday = params[:user][:birthday]
             resource.push_token = params[:user][:push_token]
             resource.device_id = params[:user][:device_id]
+            # El callback detect_device_platform detectará automáticamente la plataforma basado en device_id
+            # Si viene explícitamente en params, lo usamos
+            resource.device_platform = params[:user][:device_platform] if params[:user][:device_platform]
             resource.lat = params[:user][:lat]
             resource.lng = params[:user][:lng]
             resource.language = params[:user][:language] || "ES" #TODO cambiar por el idioma del dispositivo
