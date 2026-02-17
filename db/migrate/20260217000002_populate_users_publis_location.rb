@@ -4,8 +4,8 @@ class PopulateUsersPublisLocation < ActiveRecord::Migration[6.0]
     execute <<-SQL
       UPDATE users_publis up
       INNER JOIN users u ON up.user_id = u.id
-      SET up.locality = u.locality,
-          up.country = u.country,
+      SET up.locality = u.location_city,
+          up.country = u.location_country,
           up.lat = u.lat,
           up.lng = u.lng
       WHERE up.locality IS NULL

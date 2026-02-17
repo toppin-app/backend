@@ -9,8 +9,8 @@ class UserPubli < ApplicationRecord
   private
   
   def copy_user_location
-    self.locality = user.locality
-    self.country = user.country
+    self.locality = user.location_city
+    self.country = user.location_country
     self.lat = user.lat
     self.lng = user.lng
   end
