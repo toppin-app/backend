@@ -288,7 +288,7 @@ class AdminUtilitiesController < ApplicationController
     # Marcar proceso como en ejecución
     Rails.cache.write('platform_population_running', true, expires_in: 30.minutes)
     
-    # Contar usuarios antes de iniciar el thread
+    # Contar usuarios antes de iniciar
     users_to_process = User.where(device_platform: nil).where.not(device_id: [nil, ''])
     total_count = users_to_process.count
     
@@ -303,13 +303,19 @@ class AdminUtilitiesController < ApplicationController
       current_user: nil,
       started_at: Time.current
     }
-    Rails.cache.write('platform_population_progress', progress)
-    Rails.logger.info "✅ Progreso inicial guardado: #{progress.inspect}"
+    Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
+    Rails.logger.info "✅ Progreso inicial guardado en cache: #{progress.inspect}"
+    
+    # Log para verificar que se guardó
+    cached_progress = Rails.cache.read('platform_population_progress')
+    Rails.logger.info "🔍 Verificación inmediata del cache: #{cached_progress.inspect}"
 
-    # Ejecutar en un thread para no bloquear la petición
+    # Ejecutar el proceso en segundo plano
     Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do
-        begin
+      begin
+        Rails.logger.info "🚀 Thread iniciado correctamente"
+        
+        ActiveRecord::Base.connection_pool.with_connection do
           # Patrones de detección
           ios_pattern = /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i
           android_pattern = /^[a-f0-9]{16}$/i
@@ -317,7 +323,7 @@ class AdminUtilitiesController < ApplicationController
           # Buscar usuarios sin device_platform pero con device_id
           users = User.where(device_platform: nil).where.not(device_id: [nil, ''])
           
-          Rails.logger.info "🔄 Thread iniciado, procesando #{users.count} usuarios"
+          Rails.logger.info "🔄 Procesando #{users.count} usuarios"
           
           processed = 0
           ios_detected = 0
@@ -331,7 +337,7 @@ class AdminUtilitiesController < ApplicationController
               progress[:ios_detected] = ios_detected
               progress[:android_detected] = android_detected
               progress[:skipped] = skipped
-              Rails.cache.write('platform_population_progress', progress)
+              Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
               
               device_id_clean = user.device_id.to_s.strip
               
@@ -361,18 +367,21 @@ class AdminUtilitiesController < ApplicationController
           progress[:ios_detected] = ios_detected
           progress[:android_detected] = android_detected
           progress[:skipped] = skipped
-          Rails.cache.write('platform_population_progress', progress)
+          Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
           Rails.logger.info "✅ Proceso completado: #{progress.inspect}"
           
         rescue => e
+          Rails.logger.error "❌ Error en populate_device_platforms thread: #{e.message}\n#{e.backtrace.join("\n")}"
           progress[:status] = 'error'
           progress[:error_message] = e.message
-          Rails.cache.write('platform_population_progress', progress)
-          Rails.logger.error "Error en populate_device_platforms thread: #{e.message}\n#{e.backtrace.join("\n")}"
+          Rails.cache.write('platform_population_progress', progress, expires_in: 30.minutes)
         ensure
           Rails.cache.delete('platform_population_running')
+          Rails.logger.info "🏁 Thread finalizado, running flag eliminado"
         end
       end
+    rescue => e
+      Rails.logger.error "❌ Error fuera del connection pool: #{e.message}\n#{e.backtrace.join("\n")}"
     end
 
     render json: { message: 'Proceso iniciado', progress: progress }
@@ -380,6 +389,7 @@ class AdminUtilitiesController < ApplicationController
 
   def platform_progress
     progress = Rails.cache.read('platform_population_progress')
+    Rails.logger.info "📊 Progress request - Cache contenido: #{progress.inspect}"
     render json: progress || { status: 'idle' }
   end
 
