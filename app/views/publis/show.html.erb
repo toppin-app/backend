@@ -276,30 +276,28 @@
           </div>
 
           <div class="col-md-6">
-            <h5 class="mb-3"><i class="fas fa-crown mr-2"></i>Distribución por Tipo de Suscripción</h5>
+            <h5 class="mb-3"><i class="fas fa-map-marked-alt mr-2"></i>Distribución por Geolocalización</h5>
             <div class="card border-0 bg-light">
               <div class="card-body">
-                <% if @subscription_distribution.any? %>
-                  <% total_subs = @subscription_distribution.values.sum %>
-                  <% @subscription_distribution.sort_by { |k, v| -v }.each do |sub_name, count| %>
-                    <% display_name = sub_name.present? ? sub_name : 'Gratuito' %>
-                    <% icon_color = sub_name.present? ? '#ffd700' : '#95a5a6' %>
+                <% if @location_distribution.any? %>
+                  <% total_locations = @location_distribution.values.sum %>
+                  <% @location_distribution.first(10).each do |location, count| %>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                       <div>
-                        <i class="<%= sub_name.present? ? 'fas fa-gem' : 'fas fa-user' %>" style="font-size: 24px; color: <%= icon_color %>;"></i>
-                        <strong class="ml-2"><%= display_name %></strong>
+                        <i class="fas fa-map-marker-alt" style="font-size: 24px; color: #e74c3c;"></i>
+                        <strong class="ml-2"><%= location %></strong>
                       </div>
                       <div>
                         <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
-                        <span class="text-muted small">(<%= ((count.to_f / total_subs) * 100).round(1) %>%)</span>
+                        <span class="text-muted small">(<%= ((count.to_f / total_locations) * 100).round(1) %>%)</span>
                       </div>
                     </div>
                     <div class="progress mb-3" style="height: 8px;">
-                      <div class="progress-bar bg-warning" role="progressbar" style="width: <%= (count.to_f / total_subs) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_subs %>"></div>
+                      <div class="progress-bar bg-danger" role="progressbar" style="width: <%= (count.to_f / total_locations) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_locations %>"></div>
                     </div>
                   <% end %>
                 <% else %>
-                  <p class="text-muted text-center mb-0">Sin datos de suscripción</p>
+                  <p class="text-muted text-center mb-0">Sin datos de ubicación</p>
                 <% end %>
               </div>
             </div>
@@ -334,6 +332,54 @@
             </div>
           </div>
         <% end %>
+        
+        <!-- Horarios de Visualización -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-clock mr-2"></i>Distribución por Horario</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @hourly_distribution.any? %>
+                  <canvas id="hourlyChart" height="250"></canvas>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de horario</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-calendar-week mr-2"></i>Distribución por Día de la Semana</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @weekday_distribution.any? %>
+                  <% weekday_names = { 1 => 'Domingo', 2 => 'Lunes', 3 => 'Martes', 4 => 'Miércoles', 5 => 'Jueves', 6 => 'Viernes', 7 => 'Sábado' } %>
+                  <% total_weekday = @weekday_distribution.values.sum %>
+                  <% [2, 3, 4, 5, 6, 7, 1].each do |day_num| %>
+                    <% count = @weekday_distribution[day_num] %>
+                    <% if count.present? %>
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                          <i class="fas fa-calendar-day" style="font-size: 20px; color: #3498db;"></i>
+                          <strong class="ml-2"><%= weekday_names[day_num] %></strong>
+                        </div>
+                        <div>
+                          <span class="badge badge-primary" style="font-size: 14px;"><%= count %></span>
+                          <span class="text-muted small">(<%= ((count.to_f / total_weekday) * 100).round(1) %>%)</span>
+                        </div>
+                      </div>
+                      <div class="progress mb-2" style="height: 6px;">
+                        <div class="progress-bar" role="progressbar" style="width: <%= (count.to_f / total_weekday) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_weekday %>"></div>
+                      </div>
+                    <% end %>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de día de la semana</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Información adicional -->
         <div class="row mt-4">
@@ -348,11 +394,12 @@
                 <li><strong>Distribución por Plataforma:</strong> Desglose de impresiones según el sistema operativo del usuario (iOS/Android). "Desconocido" indica usuarios sin plataforma asignada.</li>
                 <li><strong>Distribución por Género:</strong> Perfil demográfico de los usuarios que han visto la publicidad.</li>
                 <li><strong>Distribución por Edad:</strong> Rangos etarios de los usuarios que han visualizado la publicidad.</li>
-                <li><strong>Tipo de Suscripción:</strong> Indica si los usuarios tienen plan gratuito o premium activo.</li>
+                <li><strong>Geolocalización:</strong> Principales ciudades y países de origen de los espectadores.</li>
                 <li><strong>Top Intereses:</strong> Los 10 intereses más populares entre los usuarios que vieron la publicidad.</li>
+                <li><strong>Horarios de Visualización:</strong> Horas del día y días de la semana con más impresiones.</li>
               </ul>
               
-              <% if @top_interests.blank? || @age_distribution.blank? %>
+              <% if @top_interests.blank? || @age_distribution.blank? || @location_distribution.blank? %>
                 <hr>
                 <div class="alert alert-warning mt-2 mb-0" style="background-color: #fff3cd; border-color: #ffeaa7;">
                   <h6 class="alert-heading"><i class="fas fa-exclamation-triangle mr-2"></i>Limitaciones Técnicas Actuales</h6>
@@ -363,21 +410,12 @@
                     <% if @top_interests.blank? %>
                       <li><strong>Intereses no disponibles:</strong> Los usuarios no han seleccionado intereses o no hay suficiente información.</li>
                     <% end %>
+                    <% if @location_distribution.blank? %>
+                      <li><strong>Ubicación no disponible:</strong> Los usuarios no han configurado su ubicación.</li>
+                    <% end %>
                   </ul>
                 </div>
               <% end %>
-              
-              <hr>
-              <div class="alert alert-light mt-2 mb-0" style="background-color: #e3f2fd; border-color: #90caf9;">
-                <h6 class="alert-heading"><i class="fas fa-lightbulb mr-2"></i>Recomendaciones Futuras</h6>
-                <ul class="mb-0 small">
-                  <li><strong>Tracking de Clics:</strong> Actualmente no se registran los clics en el link de la publicidad. Se recomienda agregar un campo <code>clicked</code> en la tabla <code>users_publis</code> y un endpoint específico para trackear cuando un usuario hace clic en el anuncio.</li>
-                  <li><strong>Geolocalización:</strong> Agregar reportes de distribución geográfica (ciudades/países) usando los campos <code>locality</code> y <code>country</code> de la tabla <code>users</code>.</li>
-                  <li><strong>Tasa de Conversión:</strong> Con el tracking de clics, se podría calcular CTR (Click-Through Rate) = (Clics / Impresiones) × 100.</li>
-                  <li><strong>Segmentación avanzada:</strong> Permitir filtrar impresiones por ocupación, estudios, o música favorita (Spotify) para campañas más dirigidas.</li>
-                  <li><strong>Heatmap de horarios:</strong> Analizar en qué horas del día se generan más impresiones para optimizar la estrategia de publicación.</li>
-                </ul>
-              </div>
             </div>
           </div>
         </div>
@@ -464,6 +502,67 @@
           }
         }
       });
+      
+      // Gráfica de distribución por horario
+      <% if @hourly_distribution.any? %>
+        const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+        const hourlyData = <%= raw @hourly_distribution.to_json %>;
+        
+        // Crear array con todas las horas del día (0-23)
+        const hours = Array.from({length: 24}, (_, i) => i);
+        const hourlyValues = hours.map(hour => hourlyData[hour] || 0);
+        const hourLabels = hours.map(h => `${h}:00`);
+        
+        new Chart(hourlyCtx, {
+          type: 'bar',
+          data: {
+            labels: hourLabels,
+            datasets: [{
+              label: 'Impresiones',
+              data: hourlyValues,
+              backgroundColor: 'rgba(54, 162, 235, 0.6)',
+              borderColor: 'rgb(54, 162, 235)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  title: function(context) {
+                    const hour = context[0].label;
+                    return `Hora: ${hour}`;
+                  },
+                  label: function(context) {
+                    return `Impresiones: ${context.parsed.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              },
+              x: {
+                ticks: {
+                  maxRotation: 90,
+                  minRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 12
+                }
+              }
+            }
+          }
+        });
+      <% end %>
     });
   </script>
 <% end %>

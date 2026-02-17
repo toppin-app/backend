@@ -64,11 +64,6 @@ class PublisController < ApplicationController
       .map { |r| [r.age_range, r.count] }
       .to_h
     
-    # Distribución por tipo de suscripción
-    @subscription_distribution = @publi.viewers
-      .group(:current_subscription_name)
-      .count
-    
     # Top intereses de los espectadores (a través de user_interests)
     @top_interests = Interest
       .joins(user_interests: :user)
@@ -81,9 +76,37 @@ class PublisController < ApplicationController
       .map { |i| [i.name, i.user_count] }
       .to_h
     
+    # Distribución por geolocalización (ciudad y país)
+    @location_distribution = @publi.viewers
+      .where.not(locality: nil)
+      .group(:locality, :country)
+      .select("locality, country, COUNT(*) as count")
+      .order("count DESC")
+      .limit(10)
+      .map { |l| ["#{l.locality}, #{l.country}", l.count] }
+      .to_h
+    
+    # Distribución por horario de visualización (horas del día)
+    @hourly_distribution = @publi.user_publis
+      .select("HOUR(users_publis.created_at) as hour, COUNT(*) as count")
+      .group("hour")
+      .order("hour")
+      .map { |h| [h.hour, h.count] }
+      .to_h
+    
+    # Distribución por día de la semana
+    @weekday_distribution = @publi.user_publis
+      .select("DAYOFWEEK(users_publis.created_at) as day_of_week, COUNT(*) as count")
+      .group("day_of_week")
+      .order("day_of_week")
+      .map { |d| [d.day_of_week, d.count] }
+      .to_h
+    
     # Log de debugging adicional
     Rails.logger.info "Age distribution: #{@age_distribution.inspect}"
-    Rails.logger.info "Subscription distribution: #{@subscription_distribution.inspect}"
+    Rails.logger.info "Location distribution: #{@location_distribution.inspect}"
+    Rails.logger.info "Hourly distribution: #{@hourly_distribution.inspect}"
+    Rails.logger.info "Weekday distribution: #{@weekday_distribution.inspect}"
     Rails.logger.info "Top interests: #{@top_interests.inspect}"
     
     # Conversión aproximada (usuarios que hicieron clic - si tenemos el link)
