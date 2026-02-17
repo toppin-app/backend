@@ -489,15 +489,23 @@
       const hourlyCanvas = document.getElementById('hourlyChart');
       if (hourlyCanvas) {
         const hourlyCtx = hourlyCanvas.getContext('2d');
-        const hourlyData = <%= raw @hourly_distribution.to_json %>;
+        const hourlyDataRaw = <%= raw @hourly_distribution.to_json %>;
+        
+        console.log('Hourly data raw:', hourlyDataRaw);
+        console.log('Type:', typeof hourlyDataRaw);
+        console.log('Keys:', Object.keys(hourlyDataRaw));
         
         // Crear array con todas las horas del día (0-23)
         const hours = Array.from({length: 24}, (_, i) => i);
-        const hourlyValues = hours.map(hour => hourlyData[hour.toString()] || hourlyData[hour] || 0);
+        const hourlyValues = hours.map(hour => {
+          // Intentar con el número directo primero, luego como string
+          const value = hourlyDataRaw[hour] !== undefined ? hourlyDataRaw[hour] : hourlyDataRaw[hour.toString()];
+          console.log(`Hour ${hour}: ${value}`);
+          return value || 0;
+        });
         const hourLabels = hours.map(h => `${h}:00`);
         
-        console.log('Hourly data:', hourlyData);
-        console.log('Hourly values:', hourlyValues);
+        console.log('Final hourly values:', hourlyValues);
         
         new Chart(hourlyCtx, {
           type: 'bar',
