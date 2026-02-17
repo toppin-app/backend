@@ -76,8 +76,8 @@ class PublisController < ApplicationController
       .map { |i| [i.name, i.user_count] }
       .to_h
     
-    # Distribución por geolocalización (ciudad y país)
-    @location_distribution = @publi.viewers
+    # Distribución por geolocalización (ciudad y país) - desde users_publis
+    @location_distribution = @publi.user_publis
       .where.not(locality: nil)
       .group(:locality, :country)
       .select("locality, country, COUNT(*) as count")

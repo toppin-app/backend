@@ -398,24 +398,6 @@
                 <li><strong>Top Intereses:</strong> Los 10 intereses más populares entre los usuarios que vieron la publicidad.</li>
                 <li><strong>Horarios de Visualización:</strong> Horas del día y días de la semana con más impresiones.</li>
               </ul>
-              
-              <% if @top_interests.blank? || @age_distribution.blank? || @location_distribution.blank? %>
-                <hr>
-                <div class="alert alert-warning mt-2 mb-0" style="background-color: #fff3cd; border-color: #ffeaa7;">
-                  <h6 class="alert-heading"><i class="fas fa-exclamation-triangle mr-2"></i>Limitaciones Técnicas Actuales</h6>
-                  <ul class="mb-0 small">
-                    <% if @age_distribution.blank? %>
-                      <li><strong>Edades no disponibles:</strong> Muchos usuarios no han completado su fecha de nacimiento en el perfil.</li>
-                    <% end %>
-                    <% if @top_interests.blank? %>
-                      <li><strong>Intereses no disponibles:</strong> Los usuarios no han seleccionado intereses o no hay suficiente información.</li>
-                    <% end %>
-                    <% if @location_distribution.blank? %>
-                      <li><strong>Ubicación no disponible:</strong> Los usuarios no han configurado su ubicación.</li>
-                    <% end %>
-                  </ul>
-                </div>
-              <% end %>
             </div>
           </div>
         </div>
