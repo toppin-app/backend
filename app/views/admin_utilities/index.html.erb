@@ -790,6 +790,8 @@ function startPopulatePlatforms() {
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
   
+  console.log('🚀 Iniciando proceso de detección de plataformas...');
+  
   fetch('<%= populate_device_platforms_admin_utilities_path %>', {
     method: 'POST',
     headers: {
@@ -799,11 +801,17 @@ function startPopulatePlatforms() {
   })
   .then(response => response.json())
   .then(data => {
+    console.log('✅ Respuesta del servidor:', data);
     document.getElementById('platformProcessContainer').classList.add('active');
     btn.style.display = 'none';
-    checkPlatformProgress();
+    // Esperar 500ms antes de empezar a consultar el progreso
+    setTimeout(() => {
+      console.log('⏱️ Iniciando polling de progreso...');
+      checkPlatformProgress();
+    }, 500);
   })
   .catch(error => {
+    console.error('❌ Error al iniciar el proceso:', error);
     alert('Error al iniciar el proceso: ' + error);
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-rocket"></i> Iniciar Detección';
@@ -814,12 +822,13 @@ function checkPlatformProgress() {
   fetch('<%= platform_progress_admin_utilities_path %>')
     .then(response => response.json())
     .then(data => {
-      console.log('Platform progress:', data); // Debug
+      console.log('📊 Platform progress:', data);
       
       if (data.status === 'running') {
         updatePlatformProgress(data);
         setTimeout(checkPlatformProgress, 1000);
       } else if (data.status === 'completed') {
+        console.log('✅ Proceso completado!');
         updatePlatformProgress(data);
         // Ocultar spinner y mostrar mensaje de éxito
         document.getElementById('platformProcessContainer').innerHTML = `
@@ -838,15 +847,17 @@ function checkPlatformProgress() {
           </div>
         `;
       } else if (data.status === 'error') {
+        console.error('❌ Error en el proceso:', data.error_message);
         alert('Error en el proceso: ' + (data.error_message || 'Error desconocido'));
         window.location.reload();
       } else {
-        // Status es 'idle' o no hay proceso
-        console.log('No hay proceso activo o status desconocido');
+        // Status es 'idle' o no hay proceso - podría ser que aún no inició
+        console.warn('⚠️ Status recibido:', data.status, '- Reintentando en 1 segundo...');
+        setTimeout(checkPlatformProgress, 1000);
       }
     })
     .catch(error => {
-      console.error('Error checking progress:', error);
+      console.error('❌ Error checking progress:', error);
       setTimeout(checkPlatformProgress, 2000);
     });
 }

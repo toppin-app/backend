@@ -288,10 +288,14 @@ class AdminUtilitiesController < ApplicationController
     # Marcar proceso como en ejecución
     Rails.cache.write('platform_population_running', true, expires_in: 30.minutes)
     
-    # Inicializar progreso
+    # Contar usuarios antes de iniciar el thread
+    users_to_process = User.where(device_platform: nil).where.not(device_id: [nil, ''])
+    total_count = users_to_process.count
+    
+    # Inicializar progreso CON el total ya calculado
     progress = {
       status: 'running',
-      total: 0,
+      total: total_count,
       processed: 0,
       ios_detected: 0,
       android_detected: 0,
@@ -300,6 +304,7 @@ class AdminUtilitiesController < ApplicationController
       started_at: Time.current
     }
     Rails.cache.write('platform_population_progress', progress)
+    Rails.logger.info "✅ Progreso inicial guardado: #{progress.inspect}"
 
     # Ejecutar en un thread para no bloquear la petición
     Thread.new do
@@ -312,9 +317,7 @@ class AdminUtilitiesController < ApplicationController
           # Buscar usuarios sin device_platform pero con device_id
           users = User.where(device_platform: nil).where.not(device_id: [nil, ''])
           
-          total = users.count
-          progress[:total] = total
-          Rails.cache.write('platform_population_progress', progress)
+          Rails.logger.info "🔄 Thread iniciado, procesando #{users.count} usuarios"
           
           processed = 0
           ios_detected = 0
@@ -359,6 +362,7 @@ class AdminUtilitiesController < ApplicationController
           progress[:android_detected] = android_detected
           progress[:skipped] = skipped
           Rails.cache.write('platform_population_progress', progress)
+          Rails.logger.info "✅ Proceso completado: #{progress.inspect}"
           
         rescue => e
           progress[:status] = 'error'
