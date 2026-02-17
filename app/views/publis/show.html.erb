@@ -410,8 +410,18 @@
 
 <% if @impressions_by_day.any? %>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const ctx = document.getElementById('impressionsChart').getContext('2d');
+    let impressionsChartInstance = null;
+    
+    document.addEventListener('turbolinks:load', function() {
+      const canvas = document.getElementById('impressionsChart');
+      if (!canvas) return;
+      
+      // Destruir instancia anterior si existe
+      if (impressionsChartInstance) {
+        impressionsChartInstance.destroy();
+      }
+      
+      const ctx = canvas.getContext('2d');
       const impressionsData = <%= raw @impressions_by_day.to_json %>;
       const uniqueUsersData = <%= raw @unique_users_by_day.to_json %>;
       
@@ -419,7 +429,7 @@
       const impressionsValues = Object.values(impressionsData);
       const uniqueUsersValues = labels.map(date => uniqueUsersData[date] || 0);
       
-      new Chart(ctx, {
+      impressionsChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
@@ -490,14 +500,22 @@
 <% end %>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded - initializing hourly chart');
+  let hourlyChartInstance = null;
+  
+  document.addEventListener('turbolinks:load', function() {
+    console.log('Turbolinks loaded - initializing hourly chart');
     
     // Gráfica de distribución por horario
     const hourlyCanvas = document.getElementById('hourlyChart');
     console.log('Hourly canvas:', hourlyCanvas);
     
     if (hourlyCanvas) {
+      // Destruir instancia anterior si existe
+      if (hourlyChartInstance) {
+        console.log('Destroying previous hourly chart instance');
+        hourlyChartInstance.destroy();
+      }
+      
       const hourlyCtx = hourlyCanvas.getContext('2d');
       const hourlyDataRaw = <%= raw @hourly_distribution.to_json %>;
       
@@ -517,7 +535,7 @@
       
       console.log('Final hourly values:', hourlyValues);
       
-      new Chart(hourlyCtx, {
+      hourlyChartInstance = new Chart(hourlyCtx, {
         type: 'bar',
         data: {
           labels: hourLabels,
