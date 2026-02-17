@@ -486,14 +486,18 @@
       });
       
       // Gráfica de distribución por horario
-      <% if @hourly_distribution.any? %>
-        const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+      const hourlyCanvas = document.getElementById('hourlyChart');
+      if (hourlyCanvas) {
+        const hourlyCtx = hourlyCanvas.getContext('2d');
         const hourlyData = <%= raw @hourly_distribution.to_json %>;
         
         // Crear array con todas las horas del día (0-23)
         const hours = Array.from({length: 24}, (_, i) => i);
-        const hourlyValues = hours.map(hour => hourlyData[hour] || 0);
+        const hourlyValues = hours.map(hour => hourlyData[hour.toString()] || hourlyData[hour] || 0);
         const hourLabels = hours.map(h => `${h}:00`);
+        
+        console.log('Hourly data:', hourlyData);
+        console.log('Hourly values:', hourlyValues);
         
         new Chart(hourlyCtx, {
           type: 'bar',
@@ -544,7 +548,7 @@
             }
           }
         });
-      <% end %>
+      }
     });
   </script>
 <% end %>
