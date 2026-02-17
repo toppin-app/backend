@@ -850,10 +850,7 @@ function checkPlatformProgress() {
       setTimeout(checkPlatformProgress, 2000);
     });
 }
-      console.error('Error checking progress:', error);
-      setTimeout(checkPlatformProgress, 2000);
-    });
-}
+
 
 function updatePlatformProgress(data) {
   const percentage = data.total > 0 ? Math.round((data.processed / data.total) * 100) : 0;
