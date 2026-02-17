@@ -814,17 +814,35 @@ function checkPlatformProgress() {
   fetch('<%= platform_progress_admin_utilities_path %>')
     .then(response => response.json())
     .then(data => {
+      console.log('Platform progress:', data); // Debug
+      
       if (data.status === 'running') {
         updatePlatformProgress(data);
         setTimeout(checkPlatformProgress, 1000);
       } else if (data.status === 'completed') {
         updatePlatformProgress(data);
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        // Ocultar spinner y mostrar mensaje de éxito
+        document.getElementById('platformProcessContainer').innerHTML = `
+          <div class="success-alert" style="display: block;">
+            <i class="fas fa-check-circle fa-3x"></i>
+            <h5>¡Proceso Completado!</h5>
+            <p>
+              Total: ${data.total || 0} | 
+              iOS: ${data.ios_detected || 0} | 
+              Android: ${data.android_detected || 0} | 
+              Omitidos: ${data.skipped || 0}
+            </p>
+            <button class="btn-reload" onclick="clearPlatformProgress()">
+              <i class="fas fa-check"></i> Aceptar
+            </button>
+          </div>
+        `;
       } else if (data.status === 'error') {
         alert('Error en el proceso: ' + (data.error_message || 'Error desconocido'));
         window.location.reload();
+      } else {
+        // Status es 'idle' o no hay proceso
+        console.log('No hay proceso activo o status desconocido');
       }
     })
     .catch(error => {
@@ -832,9 +850,20 @@ function checkPlatformProgress() {
       setTimeout(checkPlatformProgress, 2000);
     });
 }
+      console.error('Error checking progress:', error);
+      setTimeout(checkPlatformProgress, 2000);
+    });
+}
 
 function updatePlatformProgress(data) {
   const percentage = data.total > 0 ? Math.round((data.processed / data.total) * 100) : 0;
+  
+  console.log('Updating progress:', {
+    total: data.total,
+    processed: data.processed,
+    percentage: percentage,
+    status: data.status
+  });
   
   const progressBar = document.getElementById('platformProgressBar');
   if (progressBar) {
@@ -854,10 +883,15 @@ function updatePlatformProgress(data) {
     if (userTotalSpan) userTotalSpan.textContent = data.total;
   }
   
-  document.getElementById('platformTotalCount').textContent = data.total || 0;
-  document.getElementById('platformIosCount').textContent = data.ios_detected || 0;
-  document.getElementById('platformAndroidCount').textContent = data.android_detected || 0;
-  document.getElementById('platformSkippedCount').textContent = data.skipped || 0;
+  const totalCount = document.getElementById('platformTotalCount');
+  const iosCount = document.getElementById('platformIosCount');
+  const androidCount = document.getElementById('platformAndroidCount');
+  const skippedCount = document.getElementById('platformSkippedCount');
+  
+  if (totalCount) totalCount.textContent = data.total || 0;
+  if (iosCount) iosCount.textContent = data.ios_detected || 0;
+  if (androidCount) androidCount.textContent = data.android_detected || 0;
+  if (skippedCount) skippedCount.textContent = data.skipped || 0;
 }
 
 function clearPlatformProgress() {
