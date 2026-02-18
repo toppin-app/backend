@@ -1,3 +1,120 @@
+<style>
+  /* Toggle de Modo de Visualización - Estilo protagonista */
+  .analytics-mode-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 8px;
+  }
+
+  .analytics-mode-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #adb5bd;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    padding: 12px 20px;
+    border-radius: 12px;
+    min-width: 120px;
+  }
+
+  .analytics-mode-label i {
+    font-size: 28px;
+    transition: all 0.3s ease;
+  }
+
+  .analytics-mode-label.active {
+    color: #4e73df;
+    background: rgba(78, 115, 223, 0.1);
+  }
+
+  .analytics-mode-label.left.active {
+    color: #4e73df;
+  }
+
+  .analytics-mode-label.right.active {
+    color: #1cc88a;
+  }
+
+  .analytics-mode-label:hover:not(.active) {
+    color: #6e84a3;
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .analytics-mode-toggle {
+    position: relative;
+    display: inline-block;
+  }
+
+  .analytics-mode-toggle input[type="checkbox"] {
+    display: none;
+  }
+
+  .toggle-slider {
+    display: block;
+    width: 80px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+
+  .toggle-slider:before {
+    content: '';
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: white;
+    top: 4px;
+    left: 4px;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .analytics-mode-toggle input[type="checkbox"]:checked + .toggle-slider {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+  }
+
+  .analytics-mode-toggle input[type="checkbox"]:checked + .toggle-slider:before {
+    transform: translateX(40px);
+  }
+
+  .toggle-slider:hover {
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .analytics-mode-toggle input[type="checkbox"]:checked + .toggle-slider:hover {
+    box-shadow: 0 6px 16px rgba(17, 153, 142, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .analytics-mode-toggle-container {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .analytics-mode-label {
+      flex-direction: row;
+      gap: 10px;
+      min-width: 150px;
+    }
+
+    .analytics-mode-label i {
+      font-size: 24px;
+    }
+  }
+</style>
+
 <div class="row">
   <div class="col-md-8">
     <div class="card">
@@ -104,25 +221,44 @@
 <!-- Panel de Rendimiento de Campaña -->
 <div class="row mt-4">
   <div class="col-12">
+    <!-- Toggle de Modo de Visualización Principal -->
+    <div class="card mb-3 shadow-sm" style="border: 2px solid #e3e6f0;">
+      <div class="card-body py-4">
+        <div class="d-flex justify-content-center align-items-center">
+          <div class="analytics-mode-toggle-container">
+            <div class="analytics-mode-label left <%= 'active' if @analytics_mode == 'viewed' %>" data-mode="viewed">
+              <i class="fas fa-eye"></i>
+              <span>Vistas</span>
+            </div>
+            <div class="analytics-mode-toggle">
+              <input type="checkbox" id="analytics-mode-switch" <%= 'checked' if @analytics_mode == 'opened' %>>
+              <label for="analytics-mode-switch" class="toggle-slider"></label>
+            </div>
+            <div class="analytics-mode-label right <%= 'active' if @analytics_mode == 'opened' %>" data-mode="opened">
+              <i class="fas fa-lock-open"></i>
+              <span>Abiertas</span>
+            </div>
+          </div>
+        </div>
+        <div class="text-center mt-3">
+          <small class="text-muted">
+            <% if @analytics_mode == 'viewed' %>
+              <i class="fas fa-info-circle mr-1"></i>Mostrando métricas de <strong>impresiones visualizadas</strong>
+            <% else %>
+              <i class="fas fa-info-circle mr-1"></i>Mostrando métricas de <strong>interacción real (abiertas)</strong>
+            <% end %>
+          </small>
+        </div>
+      </div>
+    </div>
+    
     <div class="card">
       <div class="card-header bg-white">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="d-flex align-items-center">
-            <i class="fas fa-chart-line text-primary mr-2" style="font-size: 24px;"></i>
-            <h4 class="mb-0">Rendimiento de Campaña</h4>
-          </div>
-          
-          <!-- Selector de Modo de Visualización -->
-          <div class="btn-group btn-group-toggle" data-toggle="buttons">
-            <label class="btn btn-outline-primary <%= 'active' if @analytics_mode == 'viewed' %>">
-              <input type="radio" name="analytics_mode" value="viewed" <%= 'checked' if @analytics_mode == 'viewed' %>>
-              <i class="fas fa-eye mr-1"></i> Vistas
-            </label>
-            <label class="btn btn-outline-success <%= 'active' if @analytics_mode == 'opened' %>">
-              <input type="radio" name="analytics_mode" value="opened" <%= 'checked' if @analytics_mode == 'opened' %>>
-              <i class="fas fa-lock-open mr-1"></i> Abiertas
-            </label>
-          </div>
+        <div class="d-flex align-items-center">
+          <i class="fas fa-chart-line text-primary mr-2" style="font-size: 24px;"></i>
+          <h4 class="mb-0">Rendimiento de Campaña</h4>
+        </div>
+      </div>
         </div>
       </div>
       </div>
@@ -631,16 +767,43 @@
 </script>
 
 <script>
-  // Manejador del selector de modo de visualización
+  // Manejador del toggle de modo de visualización
   document.addEventListener('turbolinks:load', function() {
-    const modeButtons = document.querySelectorAll('input[name="analytics_mode"]');
+    const toggleSwitch = document.getElementById('analytics-mode-switch');
+    const labels = document.querySelectorAll('.analytics-mode-label');
     
-    modeButtons.forEach(button => {
-      button.addEventListener('change', function() {
-        if (this.checked) {
-          const currentUrl = new URL(window.location.href);
-          currentUrl.searchParams.set('mode', this.value);
-          window.location.href = currentUrl.toString();
+    if (!toggleSwitch) return;
+    
+    // Función para cambiar el modo
+    function changeMode(mode) {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('mode', mode);
+      
+      // Añadir efecto de transición antes de navegar
+      document.body.style.opacity = '0.7';
+      document.body.style.transition = 'opacity 0.2s ease';
+      
+      setTimeout(() => {
+        window.location.href = currentUrl.toString();
+      }, 200);
+    }
+    
+    // Evento del toggle switch
+    toggleSwitch.addEventListener('change', function() {
+      const mode = this.checked ? 'opened' : 'viewed';
+      changeMode(mode);
+    });
+    
+    // Hacer las etiquetas clickeables
+    labels.forEach(label => {
+      label.addEventListener('click', function() {
+        const mode = this.getAttribute('data-mode');
+        const currentMode = '<%= @analytics_mode %>';
+        
+        // Solo cambiar si es diferente al modo actual
+        if (mode !== currentMode) {
+          toggleSwitch.checked = (mode === 'opened');
+          changeMode(mode);
         }
       });
     });
