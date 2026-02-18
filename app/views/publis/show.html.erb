@@ -305,12 +305,12 @@
         </div>
         
         <!-- Top Intereses -->
-        <% if @top_interests.any? %>
-          <div class="row mb-4">
-            <div class="col-12">
-              <h5 class="mb-3"><i class="fas fa-heart mr-2"></i>Top 10 Intereses de la Audiencia</h5>
-              <div class="card border-0 bg-light">
-                <div class="card-body">
+        <div class="row mb-4">
+          <div class="col-12">
+            <h5 class="mb-3"><i class="fas fa-heart mr-2"></i>Top 10 Intereses de la Audiencia</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @top_interests.any? %>
                   <div class="row">
                     <% @top_interests.each_with_index do |(interest_name, user_count), index| %>
                       <div class="col-md-6 mb-3">
@@ -327,11 +327,13 @@
                       </div>
                     <% end %>
                   </div>
-                </div>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de intereses</p>
+                <% end %>
               </div>
             </div>
           </div>
-        <% end %>
+        </div>
         
         <!-- Horarios de Visualización -->
         <div class="row mb-4">

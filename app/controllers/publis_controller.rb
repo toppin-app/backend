@@ -46,11 +46,15 @@ class PublisController < ApplicationController
     
     # Usuarios que han visto la publicidad (para análisis de tipo de usuario)
     # Gender es un enum: female: 0, male: 1, non_binary: 2, couple: 3
-    @viewer_genders = @publi.user_publis
+    gender_counts = @publi.user_publis
       .where(viewed: true)
       .joins(:user)
       .group("users.gender")
       .count
+    
+    # Convertir las claves numéricas a nombres de enum
+    gender_map = { 0 => 'female', 1 => 'male', 2 => 'non_binary', 3 => 'couple' }
+    @viewer_genders = gender_counts.transform_keys { |k| gender_map[k] || k.to_s }.compact
     
     # Debug: Log de los valores reales de género
     Rails.logger.info "Gender data: #{@viewer_genders.inspect}"
