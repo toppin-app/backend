@@ -505,19 +505,21 @@
   document.addEventListener('turbolinks:load', function() {
     console.log('Turbolinks loaded - initializing hourly chart');
     
-    // Gráfica de distribución por horario
-    const hourlyCanvas = document.getElementById('hourlyChart');
-    console.log('Hourly canvas:', hourlyCanvas);
-    
-    if (hourlyCanvas) {
-      // Destruir instancia anterior si existe
-      if (hourlyChartInstance) {
-        console.log('Destroying previous hourly chart instance');
-        hourlyChartInstance.destroy();
-      }
+    // Pequeño delay para asegurar que Chart.js esté cargado
+    setTimeout(function() {
+      // Gráfica de distribución por horario
+      const hourlyCanvas = document.getElementById('hourlyChart');
+      console.log('Hourly canvas:', hourlyCanvas);
       
-      const hourlyCtx = hourlyCanvas.getContext('2d');
-      const hourlyDataRaw = <%= raw @hourly_distribution.to_json %>;
+      if (hourlyCanvas) {
+        // Destruir instancia anterior si existe
+        if (hourlyChartInstance) {
+          console.log('Destroying previous hourly chart instance');
+          hourlyChartInstance.destroy();
+        }
+        
+        const hourlyCtx = hourlyCanvas.getContext('2d');
+        const hourlyDataRaw = <%= raw @hourly_distribution.to_json %>;
       
       console.log('Hourly data raw:', hourlyDataRaw);
       console.log('Type:', typeof hourlyDataRaw);
@@ -589,6 +591,7 @@
     } else {
       console.error('Hourly canvas not found!');
     }
+    }, 100); // Delay de 100ms
   });
 </script>
 

@@ -13,7 +13,7 @@ class PublisController < ApplicationController
     
     # Métricas de desempeño
     @total_impressions = @publi.user_publis.where(viewed: true).count
-    @unique_viewers = @publi.viewers.distinct.count
+    @unique_viewers = @publi.user_publis.where(viewed: true).select(:user_id).distinct.count
     
     # Datos agrupados por plataforma (iOS, Android)
     @impressions_by_platform = @publi.user_publis
@@ -46,22 +46,28 @@ class PublisController < ApplicationController
     
     # Usuarios que han visto la publicidad (para análisis de tipo de usuario)
     # Gender es un enum: female: 0, male: 1, non_binary: 2, couple: 3
-    @viewer_genders = @publi.viewers.group(:gender).count
+    @viewer_genders = @publi.user_publis
+      .where(viewed: true)
+      .joins(:user)
+      .group("users.gender")
+      .count
     
     # Debug: Log de los valores reales de género
     Rails.logger.info "Gender data: #{@viewer_genders.inspect}"
     
     # Distribución por rango de edad (calculada desde birthday)
-    @age_distribution = @publi.viewers
-      .where.not(birthday: nil)
+    @age_distribution = @publi.user_publis
+      .where(viewed: true)
+      .joins(:user)
+      .where.not("users.birthday" => nil)
       .select("CASE
-        WHEN TIMESTAMPDIFF(YEAR, birthday, CURDATE()) < 18 THEN '< 18'
-        WHEN TIMESTAMPDIFF(YEAR, birthday, CURDATE()) BETWEEN 18 AND 24 THEN '18-24'
-        WHEN TIMESTAMPDIFF(YEAR, birthday, CURDATE()) BETWEEN 25 AND 34 THEN '25-34'
-        WHEN TIMESTAMPDIFF(YEAR, birthday, CURDATE()) BETWEEN 35 AND 44 THEN '35-44'
-        WHEN TIMESTAMPDIFF(YEAR, birthday, CURDATE()) BETWEEN 45 AND 54 THEN '45-54'
+        WHEN TIMESTAMPDIFF(YEAR, users.birthday, CURDATE()) < 18 THEN '< 18'
+        WHEN TIMESTAMPDIFF(YEAR, users.birthday, CURDATE()) BETWEEN 18 AND 24 THEN '18-24'
+        WHEN TIMESTAMPDIFF(YEAR, users.birthday, CURDATE()) BETWEEN 25 AND 34 THEN '25-34'
+        WHEN TIMESTAMPDIFF(YEAR, users.birthday, CURDATE()) BETWEEN 35 AND 44 THEN '35-44'
+        WHEN TIMESTAMPDIFF(YEAR, users.birthday, CURDATE()) BETWEEN 45 AND 54 THEN '45-54'
         ELSE '55+'
-      END as age_range, COUNT(*) as count")
+      END as age_range, COUNT(DISTINCT users.id) as count")
       .group("age_range")
       .order("age_range")
       .map { |r| [r.age_range, r.count] }
