@@ -70,6 +70,7 @@ Rails.application.routes.draw do
     # Rutas para publicidad
   get 'users/available_publis', to: 'users#available_publis'
   put 'users/mark_publi_viewed', to: 'users#mark_publi_viewed'
+  put 'users/mark_publi_opened', to: 'users#mark_publi_opened'
   get 'users/get_banner', to: 'users#get_banner'
 
   # Rutas para deshacer swipe

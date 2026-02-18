@@ -105,9 +105,26 @@
 <div class="row mt-4">
   <div class="col-12">
     <div class="card">
-      <div class="card-header bg-white d-flex align-items-center">
-        <i class="fas fa-chart-line text-primary mr-2" style="font-size: 24px;"></i>
-        <h4 class="mb-0">Rendimiento de Campaña</h4>
+      <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-chart-line text-primary mr-2" style="font-size: 24px;"></i>
+            <h4 class="mb-0">Rendimiento de Campaña</h4>
+          </div>
+          
+          <!-- Selector de Modo de Visualización -->
+          <div class="btn-group btn-group-toggle" data-toggle="buttons">
+            <label class="btn btn-outline-primary <%= 'active' if @analytics_mode == 'viewed' %>">
+              <input type="radio" name="analytics_mode" value="viewed" <%= 'checked' if @analytics_mode == 'viewed' %>>
+              <i class="fas fa-eye mr-1"></i> Vistas
+            </label>
+            <label class="btn btn-outline-success <%= 'active' if @analytics_mode == 'opened' %>">
+              <input type="radio" name="analytics_mode" value="opened" <%= 'checked' if @analytics_mode == 'opened' %>>
+              <i class="fas fa-lock-open mr-1"></i> Abiertas
+            </label>
+          </div>
+        </div>
+      </div>
       </div>
       <div class="card-body">
         <!-- Métricas principales -->
@@ -610,6 +627,23 @@
       console.error('Hourly canvas not found!');
     }
     }, 100); // Delay de 100ms
+  });
+</script>
+
+<script>
+  // Manejador del selector de modo de visualización
+  document.addEventListener('turbolinks:load', function() {
+    const modeButtons = document.querySelectorAll('input[name="analytics_mode"]');
+    
+    modeButtons.forEach(button => {
+      button.addEventListener('change', function() {
+        if (this.checked) {
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('mode', this.value);
+          window.location.href = currentUrl.toString();
+        }
+      });
+    });
   });
 </script>
 

@@ -11,13 +11,26 @@ class PublisController < ApplicationController
   def show
     @title = "Información del anuncio"
     
+    # Determinar modo de visualización (viewed o opened)
+    @analytics_mode = params[:mode] || 'viewed'
+    unless ['viewed', 'opened'].include?(@analytics_mode)
+      @analytics_mode = 'viewed'
+    end
+    
+    # Construir el filtro dinámico basado en el modo
+    if @analytics_mode == 'viewed'
+      @filter_condition = { viewed: true }
+    else # opened
+      @filter_condition = "opened_at IS NOT NULL"
+    end
+    
     # Métricas de desempeño
-    @total_impressions = @publi.user_publis.where(viewed: true).count
-    @unique_viewers = @publi.user_publis.where(viewed: true).select(:user_id).distinct.count
+    @total_impressions = @publi.user_publis.where(@filter_condition).count
+    @unique_viewers = @publi.user_publis.where(@filter_condition).select(:user_id).distinct.count
     
     # Datos agrupados por plataforma (iOS, Android)
     @impressions_by_platform = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .joins(:user)
       .group("users.device_platform")
       .count
@@ -27,7 +40,7 @@ class PublisController < ApplicationController
     
     # Impresiones por día (últimos 30 días)
     @impressions_by_day = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .where("users_publis.created_at >= ?", 30.days.ago)
       .group("DATE(users_publis.created_at)")
       .count
@@ -35,7 +48,7 @@ class PublisController < ApplicationController
     
     # Usuarios únicos por día (últimos 30 días) - para la nueva gráfica
     @unique_users_by_day = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .where("users_publis.created_at >= ?", 30.days.ago)
       .group("DATE(users_publis.created_at)")
       .select("DATE(users_publis.created_at) as date, COUNT(DISTINCT user_id) as unique_count")
@@ -47,7 +60,7 @@ class PublisController < ApplicationController
     # Usuarios que han visto la publicidad (para análisis de tipo de usuario)
     # Gender es un enum: female: 0, male: 1, non_binary: 2, couple: 3
     gender_counts = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .joins(:user)
       .group("users.gender")
       .count
@@ -61,7 +74,7 @@ class PublisController < ApplicationController
     
     # Distribución por rango de edad (calculada desde birthday)
     @age_distribution = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .joins(:user)
       .where.not("users.birthday" => nil)
       .select("CASE
@@ -78,11 +91,23 @@ class PublisController < ApplicationController
       .to_h
     
     # Top intereses principales (user_main_interests) - máximo 4 por usuario
+    filter_sql = @analytics_mode == 'viewed' ? 
+      "users_publis.publi_id = ? AND users_publis.viewed = ?" : 
+      "users_publis.publi_id = ? AND users_publis.opened_at IS NOT NULL"
+    filter_params = [@publi.id]
+    filter_params << true if @analytics_mode == 'viewed'
+    # Top intereses principales (user_main_interests) - máximo 4 por usuario
+    filter_sql = @analytics_mode == 'viewed' ? 
+      "users_publis.publi_id = ? AND users_publis.viewed = ?" : 
+      "users_publis.publi_id = ? AND users_publis.opened_at IS NOT NULL"
+    filter_params = [@publi.id]
+    filter_params << true if @analytics_mode == 'viewed'
+    
     @top_main_interests = Interest
       .joins("INNER JOIN user_main_interests ON interests.id = user_main_interests.interest_id")
       .joins("INNER JOIN users ON user_main_interests.user_id = users.id")
       .joins("INNER JOIN users_publis ON users.id = users_publis.user_id")
-      .where("users_publis.publi_id = ? AND users_publis.viewed = ?", @publi.id, true)
+      .where(filter_sql, *filter_params)
       .group("interests.id", "interests.name")
       .select("interests.name, COUNT(DISTINCT user_main_interests.id) as interest_count")
       .order("interest_count DESC")
@@ -95,7 +120,7 @@ class PublisController < ApplicationController
       .joins("INNER JOIN user_interests ON interests.id = user_interests.interest_id")
       .joins("INNER JOIN users ON user_interests.user_id = users.id")
       .joins("INNER JOIN users_publis ON users.id = users_publis.user_id")
-      .where("users_publis.publi_id = ? AND users_publis.viewed = ?", @publi.id, true)
+      .where(filter_sql, *filter_params)
       .group("interests.id", "interests.name")
       .select("interests.name, COUNT(DISTINCT user_interests.id) as interest_count")
       .order("interest_count DESC")
@@ -105,7 +130,7 @@ class PublisController < ApplicationController
     
     # Distribución por geolocalización (ciudad y país) - desde users_publis
     @location_distribution = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .where.not(locality: nil)
       .group(:locality, :country)
       .select("locality, country, COUNT(*) as count")
@@ -116,7 +141,7 @@ class PublisController < ApplicationController
     
     # Distribución por horario de visualización (horas del día)
     @hourly_distribution = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .select("HOUR(COALESCE(users_publis.created_at, users_publis.updated_at)) as hour, COUNT(*) as count")
       .group("hour")
       .order("hour")
@@ -125,7 +150,7 @@ class PublisController < ApplicationController
     
     # Distribución por día de la semana
     @weekday_distribution = @publi.user_publis
-      .where(viewed: true)
+      .where(@filter_condition)
       .select("DAYOFWEEK(COALESCE(users_publis.created_at, users_publis.updated_at)) as day_of_week, COUNT(*) as count")
       .group("day_of_week")
       .order("day_of_week")

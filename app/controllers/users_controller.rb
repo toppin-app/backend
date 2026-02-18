@@ -2269,6 +2269,53 @@ def mark_publi_viewed
   end
 end
 
+def mark_publi_opened
+  Rails.logger.info "Current user: #{current_user.inspect}"
+  Rails.logger.info "Publi ID recibido para apertura: #{params[:publi_id]}"
+
+  unless current_user
+    render json: { status: 401, message: "Usuario no autenticado" }, status: 401
+    return
+  end
+
+  unless params[:publi_id]
+    render json: { status: 400, message: "publi_id es requerido" }, status: 400
+    return
+  end
+
+  # Buscar o crear el registro de esta publi para este usuario
+  user_publi_record = current_user.user_publis.find_or_initialize_by(publi_id: params[:publi_id])
+  
+  # Solo actualizar opened_at si es null (idempotente)
+  if user_publi_record.opened_at.nil?
+    user_publi_record.opened_at = Time.current
+    
+    if user_publi_record.save
+      Rails.logger.info "Registro marcado como abierto: #{user_publi_record.inspect}"
+      
+      render json: { 
+        status: 200, 
+        message: "Publi marcada como abierta", 
+        publi_id: params[:publi_id].to_i,
+        opened_at: user_publi_record.opened_at
+      }
+    else
+      Rails.logger.error "Error guardando registro: #{user_publi_record.errors.inspect}"
+      render json: { status: 500, message: "Error al marcar la publi como abierta" }, status: 500
+    end
+  else
+    # Ya estaba abierta, respuesta idempotente
+    Rails.logger.info "Publi ya estaba marcada como abierta: #{user_publi_record.inspect}"
+    
+    render json: { 
+      status: 200, 
+      message: "Publi ya estaba marcada como abierta", 
+      publi_id: params[:publi_id].to_i,
+      opened_at: user_publi_record.opened_at
+    }
+  end
+end
+
 # GET /users/get_banner
 def get_banner
   Rails.logger.info "=== GET BANNER REQUEST ==="
