@@ -77,16 +77,30 @@ class PublisController < ApplicationController
       .map { |r| [r.age_range, r.count] }
       .to_h
     
-    # Top intereses de los espectadores (a través de user_interests)
-    @top_interests = Interest
-      .joins(user_interests: :user)
+    # Top intereses principales (user_main_interests) - máximo 4 por usuario
+    @top_main_interests = Interest
+      .joins("INNER JOIN user_main_interests ON interests.id = user_main_interests.interest_id")
+      .joins("INNER JOIN users ON user_main_interests.user_id = users.id")
       .joins("INNER JOIN users_publis ON users.id = users_publis.user_id")
       .where("users_publis.publi_id = ? AND users_publis.viewed = ?", @publi.id, true)
       .group("interests.id", "interests.name")
-      .select("interests.name, COUNT(DISTINCT users.id) as user_count")
-      .order("user_count DESC")
+      .select("interests.name, COUNT(DISTINCT user_main_interests.id) as interest_count")
+      .order("interest_count DESC")
       .limit(10)
-      .map { |i| [i.name, i.user_count] }
+      .map { |i| [i.name, i.interest_count] }
+      .to_h
+    
+    # Top intereses secundarios (user_interests)
+    @top_secondary_interests = Interest
+      .joins("INNER JOIN user_interests ON interests.id = user_interests.interest_id")
+      .joins("INNER JOIN users ON user_interests.user_id = users.id")
+      .joins("INNER JOIN users_publis ON users.id = users_publis.user_id")
+      .where("users_publis.publi_id = ? AND users_publis.viewed = ?", @publi.id, true)
+      .group("interests.id", "interests.name")
+      .select("interests.name, COUNT(DISTINCT user_interests.id) as interest_count")
+      .order("interest_count DESC")
+      .limit(10)
+      .map { |i| [i.name, i.interest_count] }
       .to_h
     
     # Distribución por geolocalización (ciudad y país) - desde users_publis
@@ -123,7 +137,8 @@ class PublisController < ApplicationController
     Rails.logger.info "Location distribution: #{@location_distribution.inspect}"
     Rails.logger.info "Hourly distribution: #{@hourly_distribution.inspect}"
     Rails.logger.info "Weekday distribution: #{@weekday_distribution.inspect}"
-    Rails.logger.info "Top interests: #{@top_interests.inspect}"
+    Rails.logger.info "Top main interests: #{@top_main_interests.inspect}"
+    Rails.logger.info "Top secondary interests: #{@top_secondary_interests.inspect}"
     
     # Conversión aproximada (usuarios que hicieron clic - si tenemos el link)
     @has_link = @publi.link.present?

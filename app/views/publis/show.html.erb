@@ -296,31 +296,55 @@
           </div>
         </div>
         
-        <!-- Top Intereses -->
+        <!-- Top Intereses Principales -->
         <div class="row mb-4">
-          <div class="col-12">
-            <h5 class="mb-3"><i class="fas fa-heart mr-2"></i>Top 10 Intereses de la Audiencia</h5>
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-star mr-2 text-warning"></i>Top Intereses Principales</h5>
             <div class="card border-0 bg-light">
               <div class="card-body">
-                <% if @top_interests.any? %>
-                  <div class="row">
-                    <% @top_interests.each_with_index do |(interest_name, user_count), index| %>
-                      <div class="col-md-6 mb-3">
-                        <div class="d-flex align-items-center">
-                          <span class="badge badge-pill badge-primary mr-3" style="font-size: 18px; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><%= index + 1 %></span>
-                          <div class="flex-grow-1">
-                            <strong><%= interest_name %></strong>
-                            <div class="progress mt-1" style="height: 6px;">
-                              <div class="progress-bar bg-success" role="progressbar" style="width: <%= (user_count.to_f / @unique_viewers * 100).round(1) %>%;"></div>
-                            </div>
-                          </div>
-                          <span class="badge badge-light ml-2"><%= user_count %> usuarios</span>
+                <% if @top_main_interests.any? %>
+                  <% @top_main_interests.each_with_index do |(interest_name, count), index| %>
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                          <span class="badge badge-pill badge-warning mr-2" style="font-size: 14px; width: 25px; height: 25px; display: inline-flex; align-items: center; justify-content: center;"><%= index + 1 %></span>
+                          <strong><%= interest_name %></strong>
                         </div>
+                        <span class="badge badge-light"><%= count %></span>
                       </div>
-                    <% end %>
-                  </div>
+                      <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: <%= (@top_main_interests.values.max > 0 ? (count.to_f / @top_main_interests.values.max * 100) : 0).round(1) %>%;"></div>
+                      </div>
+                    </div>
+                  <% end %>
                 <% else %>
-                  <p class="text-muted text-center mb-0">Sin datos de intereses</p>
+                  <p class="text-muted text-center mb-0">Sin datos de intereses principales</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-heart mr-2 text-success"></i>Top Intereses Secundarios</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @top_secondary_interests.any? %>
+                  <% @top_secondary_interests.each_with_index do |(interest_name, count), index| %>
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                          <span class="badge badge-pill badge-success mr-2" style="font-size: 14px; width: 25px; height: 25px; display: inline-flex; align-items: center; justify-content: center;"><%= index + 1 %></span>
+                          <strong><%= interest_name %></strong>
+                        </div>
+                        <span class="badge badge-light"><%= count %></span>
+                      </div>
+                      <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: <%= (@top_secondary_interests.values.max > 0 ? (count.to_f / @top_secondary_interests.values.max * 100) : 0).round(1) %>%;"></div>
+                      </div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de intereses secundarios</p>
                 <% end %>
               </div>
             </div>
