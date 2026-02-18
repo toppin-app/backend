@@ -12,11 +12,12 @@ class PublisController < ApplicationController
     @title = "Información del anuncio"
     
     # Métricas de desempeño
-    @total_impressions = @publi.user_publis.count
+    @total_impressions = @publi.user_publis.where(viewed: true).count
     @unique_viewers = @publi.viewers.distinct.count
     
     # Datos agrupados por plataforma (iOS, Android)
     @impressions_by_platform = @publi.user_publis
+      .where(viewed: true)
       .joins(:user)
       .group("users.device_platform")
       .count
@@ -26,6 +27,7 @@ class PublisController < ApplicationController
     
     # Impresiones por día (últimos 30 días)
     @impressions_by_day = @publi.user_publis
+      .where(viewed: true)
       .where("users_publis.created_at >= ?", 30.days.ago)
       .group("DATE(users_publis.created_at)")
       .count
@@ -33,6 +35,7 @@ class PublisController < ApplicationController
     
     # Usuarios únicos por día (últimos 30 días) - para la nueva gráfica
     @unique_users_by_day = @publi.user_publis
+      .where(viewed: true)
       .where("users_publis.created_at >= ?", 30.days.ago)
       .group("DATE(users_publis.created_at)")
       .select("DATE(users_publis.created_at) as date, COUNT(DISTINCT user_id) as unique_count")
@@ -68,7 +71,7 @@ class PublisController < ApplicationController
     @top_interests = Interest
       .joins(user_interests: :user)
       .joins("INNER JOIN users_publis ON users.id = users_publis.user_id")
-      .where("users_publis.publi_id = ?", @publi.id)
+      .where("users_publis.publi_id = ? AND users_publis.viewed = ?", @publi.id, true)
       .group("interests.id", "interests.name")
       .select("interests.name, COUNT(DISTINCT users.id) as user_count")
       .order("user_count DESC")
@@ -78,6 +81,7 @@ class PublisController < ApplicationController
     
     # Distribución por geolocalización (ciudad y país) - desde users_publis
     @location_distribution = @publi.user_publis
+      .where(viewed: true)
       .where.not(locality: nil)
       .group(:locality, :country)
       .select("locality, country, COUNT(*) as count")
@@ -88,6 +92,7 @@ class PublisController < ApplicationController
     
     # Distribución por horario de visualización (horas del día)
     @hourly_distribution = @publi.user_publis
+      .where(viewed: true)
       .select("HOUR(COALESCE(users_publis.created_at, users_publis.updated_at)) as hour, COUNT(*) as count")
       .group("hour")
       .order("hour")
@@ -96,6 +101,7 @@ class PublisController < ApplicationController
     
     # Distribución por día de la semana
     @weekday_distribution = @publi.user_publis
+      .where(viewed: true)
       .select("DAYOFWEEK(COALESCE(users_publis.created_at, users_publis.updated_at)) as day_of_week, COUNT(*) as count")
       .group("day_of_week")
       .order("day_of_week")
