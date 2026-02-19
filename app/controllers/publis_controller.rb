@@ -139,15 +139,6 @@ class PublisController < ApplicationController
       .map { |l| ["#{l.locality}, #{l.country}", l.count] }
       .to_h
     
-    # Distribución por horario de visualización (horas del día)
-    @hourly_distribution = @publi.user_publis
-      .where(@filter_condition)
-      .select("HOUR(COALESCE(users_publis.created_at, users_publis.updated_at)) as hour, COUNT(*) as count")
-      .group("hour")
-      .order("hour")
-      .map { |h| [h.hour, h.count] }
-      .to_h
-    
     # Distribución por día de la semana
     @weekday_distribution = @publi.user_publis
       .where(@filter_condition)
@@ -160,7 +151,6 @@ class PublisController < ApplicationController
     # Log de debugging adicional
     Rails.logger.info "Age distribution: #{@age_distribution.inspect}"
     Rails.logger.info "Location distribution: #{@location_distribution.inspect}"
-    Rails.logger.info "Hourly distribution: #{@hourly_distribution.inspect}"
     Rails.logger.info "Weekday distribution: #{@weekday_distribution.inspect}"
     Rails.logger.info "Top main interests: #{@top_main_interests.inspect}"
     Rails.logger.info "Top secondary interests: #{@top_secondary_interests.inspect}"

@@ -504,22 +504,9 @@
           </div>
         </div>
         
-        <!-- Horarios de Visualización -->
+        <!-- Día de la Semana -->
         <div class="row mb-4">
-          <div class="col-md-6">
-            <h5 class="mb-3"><i class="fas fa-clock mr-2"></i>Distribución por Horario</h5>
-            <div class="card border-0 bg-light">
-              <div class="card-body">
-                <% if @hourly_distribution.any? %>
-                  <canvas id="hourlyChart" height="250"></canvas>
-                <% else %>
-                  <p class="text-muted text-center mb-0">Sin datos de horario</p>
-                <% end %>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-6">
+          <div class="col-md-12">
             <h5 class="mb-3"><i class="fas fa-calendar-week mr-2"></i>Distribución por Día de la Semana</h5>
             <div class="card border-0 bg-light">
               <div class="card-body">
@@ -567,7 +554,7 @@
                 <li><strong>Distribución por Edad:</strong> Rangos etarios de los usuarios que han visualizado la publicidad.</li>
                 <li><strong>Geolocalización:</strong> Principales ciudades y países de origen de los espectadores.</li>
                 <li><strong>Top Intereses:</strong> Los 10 intereses más populares entre los usuarios que vieron la publicidad.</li>
-                <li><strong>Horarios de Visualización:</strong> Horas del día y días de la semana con más impresiones.</li>
+                <li><strong>Día de la Semana:</strong> Días de la semana con más impresiones.</li>
               </ul>
             </div>
           </div>
@@ -669,102 +656,6 @@
     });
   </script>
 <% end %>
-
-<script>
-  let hourlyChartInstance = null;
-  
-  document.addEventListener('turbolinks:load', function() {
-    console.log('Turbolinks loaded - initializing hourly chart');
-    
-    // Pequeño delay para asegurar que Chart.js esté cargado
-    setTimeout(function() {
-      // Gráfica de distribución por horario
-      const hourlyCanvas = document.getElementById('hourlyChart');
-      console.log('Hourly canvas:', hourlyCanvas);
-      
-      if (hourlyCanvas) {
-        // Destruir instancia anterior si existe
-        if (hourlyChartInstance) {
-          console.log('Destroying previous hourly chart instance');
-          hourlyChartInstance.destroy();
-        }
-        
-        const hourlyCtx = hourlyCanvas.getContext('2d');
-        const hourlyDataRaw = <%= raw @hourly_distribution.to_json %>;
-      
-      console.log('Hourly data raw:', hourlyDataRaw);
-      console.log('Type:', typeof hourlyDataRaw);
-      console.log('Keys:', Object.keys(hourlyDataRaw));
-      
-      // Crear array con todas las horas del día (0-23)
-      const hours = Array.from({length: 24}, (_, i) => i);
-      const hourlyValues = hours.map(hour => {
-        // Intentar con el número directo primero, luego como string
-        const value = hourlyDataRaw[hour] !== undefined ? hourlyDataRaw[hour] : hourlyDataRaw[hour.toString()];
-        console.log(`Hour ${hour}: ${value}`);
-        return value || 0;
-      });
-      const hourLabels = hours.map(h => `${h}:00`);
-      
-      console.log('Final hourly values:', hourlyValues);
-      
-      hourlyChartInstance = new Chart(hourlyCtx, {
-        type: 'bar',
-        data: {
-          labels: hourLabels,
-          datasets: [{
-            label: 'Impresiones',
-            data: hourlyValues,
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgb(54, 162, 235)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                title: function(context) {
-                  const hour = context[0].label;
-                  return `Hora: ${hour}`;
-                },
-                label: function(context) {
-                  return `${context.parsed.y} impresiones`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            },
-            x: {
-              grid: {
-                display: false
-              },
-              ticks: {
-                autoSkip: false,
-                maxRotation: 90,
-                minRotation: 45
-              }
-            }
-          }
-        }
-      });
-    } else {
-      console.error('Hourly canvas not found!');
-    }
-    }, 100); // Delay de 100ms
-  });
-</script>
 
 <script>
   // Manejador del toggle de modo de visualización
