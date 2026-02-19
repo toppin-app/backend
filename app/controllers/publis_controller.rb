@@ -38,21 +38,24 @@ class PublisController < ApplicationController
     # Debug: Log de los valores reales de plataforma
     Rails.logger.info "Platform data: #{@impressions_by_platform.inspect}"
     
+    # Determinar qué campo de fecha usar según el modo
+    date_field = @analytics_mode == 'viewed' ? 'users_publis.created_at' : 'users_publis.opened_at'
+    
     # Impresiones por día (últimos 30 días)
     @impressions_by_day = @publi.user_publis
       .where(@filter_condition)
-      .where("users_publis.created_at >= ?", 30.days.ago)
-      .group("DATE(users_publis.created_at)")
+      .where("#{date_field} >= ?", 30.days.ago)
+      .group("DATE(#{date_field})")
       .count
       .sort_by { |date, _| date }
     
-    # Usuarios únicos por día (últimos 30 días) - para la nueva gráfica
+    # Usuarios únicos por día (últimos 30 días)
+    # Usar la misma fecha que impresiones para consistencia
     @unique_users_by_day = @publi.user_publis
       .where(@filter_condition)
-      .where("users_publis.created_at >= ?", 30.days.ago)
-      .group("DATE(users_publis.created_at)")
-      .select("DATE(users_publis.created_at) as date, COUNT(DISTINCT user_id) as unique_count")
-      .group("date")
+      .where("#{date_field} >= ?", 30.days.ago)
+      .group("DATE(#{date_field})")
+      .select("DATE(#{date_field}) as date, COUNT(DISTINCT user_id) as unique_count")
       .order("date")
       .map { |r| [r.date.to_s, r.unique_count] }
       .to_h
@@ -149,6 +152,10 @@ class PublisController < ApplicationController
       .to_h
     
     # Log de debugging adicional
+    Rails.logger.info "Analytics mode: #{@analytics_mode}"
+    Rails.logger.info "Date field used: #{@analytics_mode == 'viewed' ? 'created_at' : 'opened_at'}"
+    Rails.logger.info "Impressions by day: #{@impressions_by_day.inspect}"
+    Rails.logger.info "Unique users by day: #{@unique_users_by_day.inspect}"
     Rails.logger.info "Age distribution: #{@age_distribution.inspect}"
     Rails.logger.info "Location distribution: #{@location_distribution.inspect}"
     Rails.logger.info "Weekday distribution: #{@weekday_distribution.inspect}"
