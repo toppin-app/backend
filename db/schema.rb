@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20260219000001) do
+ActiveRecord::Schema.define(version: 20260219000002) do
 
   create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "android_last_version"
@@ -52,7 +52,7 @@ ActiveRecord::Schema.define(version: 20260219000001) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["banner_id"], name: "index_banner_users_on_banner_id"
     t.index ["opened_at"], name: "index_banner_users_on_opened_at"
-    t.index ["user_id", "banner_id"], name: "index_banner_users_on_user_id_and_banner_id", unique: true
+    t.index ["user_id", "banner_id"], name: "index_banner_users_on_user_id_and_banner_id"
     t.index ["user_id"], name: "index_banner_users_on_user_id"
     t.index ["viewed_at"], name: "index_banner_users_on_viewed_at"
   end

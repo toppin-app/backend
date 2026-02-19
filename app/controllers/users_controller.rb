@@ -2386,18 +2386,21 @@ def get_banner
     return
   end
 
-  # Obtener banners que el usuario NO ha visto
-  viewed_banner_ids = current_user.banner_users.pluck(:banner_id)
-  unseen_banners = active_banners.where.not(id: viewed_banner_ids)
+  # Obtener el último banner visto (para no repetirlo inmediatamente)
+  last_viewed_banner = current_user.banner_users.order(created_at: :desc).first&.banner
   
-  Rails.logger.info "Banners no vistos: #{unseen_banners.map(&:id).inspect}"
-
-  # Si no hay banners sin ver, tomar uno aleatorio de todos los activos
-  banner_to_show = if unseen_banners.any?
-                     unseen_banners.sample
-                   else
-                     active_banners.sample
-                   end
+  # Seleccionar banners disponibles (todos menos el último visto)
+  available_banners = if last_viewed_banner
+                        active_banners.where.not(id: last_viewed_banner.id)
+                      else
+                        active_banners
+                      end
+  
+  # Si no hay otros banners, usar todos (incluyendo el último)
+  available_banners = active_banners if available_banners.empty?
+  
+  # Seleccionar uno aleatorio
+  banner_to_show = available_banners.sample
 
   Rails.logger.info "Banner seleccionado: #{banner_to_show.id}"
 

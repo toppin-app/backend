@@ -17,8 +17,7 @@ class Banner < ApplicationRecord
   end
 
   def mark_as_viewed_by(user)
-    banner_user = banner_users.find_or_create_by(user: user)
-    banner_user.update(viewed_at: Time.current) if banner_user.viewed_at.nil?
-    banner_user
+    # Crear siempre un nuevo registro (múltiples impresiones como publis)
+    banner_users.create(user: user, viewed: true, viewed_at: Time.current)
   end
 end
