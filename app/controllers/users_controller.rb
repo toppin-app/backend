@@ -2283,36 +2283,44 @@ def mark_publi_opened
     return
   end
 
-  # Buscar o crear el registro de esta publi para este usuario
-  user_publi_record = current_user.user_publis.find_or_initialize_by(publi_id: params[:publi_id])
+  # Buscar el registro más reciente que aún no ha sido abierto
+  # Ordenar por created_at DESC para obtener el más reciente primero
+  user_publi_record = current_user.user_publis
+    .where(publi_id: params[:publi_id])
+    .where(opened_at: nil)
+    .order(created_at: :desc)
+    .first
   
-  # Solo actualizar opened_at si es null (idempotente)
-  if user_publi_record.opened_at.nil?
-    user_publi_record.opened_at = Time.current
+  unless user_publi_record
+    # No hay registro pendiente de apertura para esta publi
+    Rails.logger.info "No se encontró registro pendiente de apertura para publi #{params[:publi_id]}"
+    render json: { 
+      status: 404, 
+      message: "No se encontró registro pendiente para abrir esta publicidad" 
+    }, status: 404
+    return
+  end
+
+  # Marcar como abierta el registro específico
+  user_publi_record.opened_at = Time.current
+  
+  if user_publi_record.save
+    Rails.logger.info "Registro marcado como abierto: #{user_publi_record.inspect}"
     
-    if user_publi_record.save
-      Rails.logger.info "Registro marcado como abierto: #{user_publi_record.inspect}"
-      
-      render json: { 
-        status: 200, 
-        message: "Publi marcada como abierta", 
-        publi_id: params[:publi_id].to_i,
-        opened_at: user_publi_record.opened_at
-      }
-    else
-      Rails.logger.error "Error guardando registro: #{user_publi_record.errors.inspect}"
-      render json: { status: 500, message: "Error al marcar la publi como abierta" }, status: 500
-    end
-  else
-    # Ya estaba abierta, respuesta idempotente
-    Rails.logger.info "Publi ya estaba marcada como abierta: #{user_publi_record.inspect}"
+    # Contar cuántas veces ha abierto esta publi en total
+    open_count = current_user.user_publis.where(publi_id: params[:publi_id]).where.not(opened_at: nil).count
+    Rails.logger.info "Usuario #{current_user.id} ha abierto la publi #{params[:publi_id]} un total de #{open_count} veces"
     
     render json: { 
       status: 200, 
-      message: "Publi ya estaba marcada como abierta", 
+      message: "Publi marcada como abierta", 
       publi_id: params[:publi_id].to_i,
-      opened_at: user_publi_record.opened_at
+      opened_at: user_publi_record.opened_at,
+      open_count: open_count
     }
+  else
+    Rails.logger.error "Error guardando registro: #{user_publi_record.errors.inspect}"
+    render json: { status: 500, message: "Error al marcar la publi como abierta" }, status: 500
   end
 end
 
