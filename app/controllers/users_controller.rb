@@ -2369,8 +2369,12 @@ end
 
 # GET /users/get_banner
 def get_banner
+  # Log absolutamente PRIMERO para confirmar que Rails recibe la petición
+  Rails.logger.info "🔴🔴🔴 GET BANNER - PETICIÓN RECIBIDA EN RAILS 🔴🔴🔴"
   Rails.logger.info "=== GET BANNER REQUEST ==="
-  Rails.logger.info "Current user: #{current_user.id}"
+  Rails.logger.info "Current user: #{current_user&.id || 'NO AUTENTICADO'}"
+  Rails.logger.info "Request IP: #{request.remote_ip}"
+  Rails.logger.info "Request headers: #{request.headers['HTTP_AUTHORIZATION']}"
 
   unless current_user
     render json: { status: 401, message: "Usuario no autenticado" }, status: 401
