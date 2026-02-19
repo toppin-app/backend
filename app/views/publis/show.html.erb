@@ -566,7 +566,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
-<% if @impressions_by_day.any? %>
+<% if @temporal_chart_data&.any? %>
   <script>
     let impressionsChartInstance = null;
     
