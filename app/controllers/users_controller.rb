@@ -2404,9 +2404,18 @@ def get_banner
 
   Rails.logger.info "Banner seleccionado: #{banner_to_show.id}"
 
+  # Contar registros ANTES de marcar
+  count_before = BannerUser.where(banner_id: banner_to_show.id, user_id: current_user.id).count
+  Rails.logger.info "Registros existentes ANTES: #{count_before}"
+
   # Marcar automáticamente como visto
-  banner_to_show.mark_as_viewed_by(current_user)
-  Rails.logger.info "Banner marcado como visto para usuario #{current_user.id}"
+  result = banner_to_show.mark_as_viewed_by(current_user)
+  Rails.logger.info "Resultado de mark_as_viewed_by: #{result.inspect}"
+  
+  # Contar registros DESPUÉS de marcar
+  count_after = BannerUser.where(banner_id: banner_to_show.id, user_id: current_user.id).count
+  Rails.logger.info "Registros existentes DESPUÉS: #{count_after}"
+  Rails.logger.info "¿Se creó nuevo registro? #{count_after > count_before}"
 
   # URL base igual que en available_publis
   banner_url = "https://web-backend-ruby.uao3jo.easypanel.host"
