@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_06_25_093800) do
+ActiveRecord::Schema.define(version: 20260219000001) do
 
   create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "android_last_version"
@@ -26,6 +26,35 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
     t.string "email"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "banners", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "title", null: false
+    t.text "description"
+    t.string "image", null: false
+    t.string "url"
+    t.boolean "active", default: true
+    t.datetime "start_date"
+    t.datetime "end_date"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["active", "start_date", "end_date"], name: "index_banners_on_active_and_start_date_and_end_date"
+    t.index ["active"], name: "index_banners_on_active"
+  end
+
+  create_table "banner_users", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "banner_id", null: false
+    t.bigint "user_id", null: false
+    t.boolean "viewed", default: true, null: false
+    t.datetime "viewed_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "opened_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["banner_id"], name: "index_banner_users_on_banner_id"
+    t.index ["opened_at"], name: "index_banner_users_on_opened_at"
+    t.index ["user_id", "banner_id"], name: "index_banner_users_on_user_id_and_banner_id", unique: true
+    t.index ["user_id"], name: "index_banner_users_on_user_id"
+    t.index ["viewed_at"], name: "index_banner_users_on_viewed_at"
   end
 
   create_table "complaints", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -394,6 +423,8 @@ ActiveRecord::Schema.define(version: 2024_06_25_093800) do
   end
 
   add_foreign_key "complaints", "users"
+  add_foreign_key "banner_users", "banners"
+  add_foreign_key "banner_users", "users"
   add_foreign_key "devices", "users"
   add_foreign_key "info_item_values", "info_item_categories"
   add_foreign_key "interests", "interest_categories"

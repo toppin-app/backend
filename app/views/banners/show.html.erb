@@ -1,3 +1,120 @@
+<style>
+  /* Toggle de Modo de Visualización - Estilo protagonista */
+  .analytics-mode-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 8px;
+  }
+
+  .analytics-mode-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #adb5bd;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    padding: 12px 20px;
+    border-radius: 12px;
+    min-width: 120px;
+  }
+
+  .analytics-mode-label i {
+    font-size: 28px;
+    transition: all 0.3s ease;
+  }
+
+  .analytics-mode-label.active {
+    color: #4e73df;
+    background: rgba(78, 115, 223, 0.1);
+  }
+
+  .analytics-mode-label.left.active {
+    color: #4e73df;
+  }
+
+  .analytics-mode-label.right.active {
+    color: #1cc88a;
+  }
+
+  .analytics-mode-label:hover:not(.active) {
+    color: #6e84a3;
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .analytics-mode-toggle {
+    position: relative;
+    display: inline-block;
+  }
+
+  .analytics-mode-toggle input[type="checkbox"] {
+    display: none;
+  }
+
+  .toggle-slider {
+    display: block;
+    width: 80px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+
+  .toggle-slider:before {
+    content: '';
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: white;
+    top: 4px;
+    left: 4px;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .analytics-mode-toggle input[type="checkbox"]:checked + .toggle-slider {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+  }
+
+  .analytics-mode-toggle input[type="checkbox"]:checked + .toggle-slider:before {
+    transform: translateX(40px);
+  }
+
+  .toggle-slider:hover {
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .analytics-mode-toggle input[type="checkbox"]:checked + .toggle-slider:hover {
+    box-shadow: 0 6px 16px rgba(17, 153, 142, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .analytics-mode-toggle-container {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .analytics-mode-label {
+      flex-direction: row;
+      gap: 10px;
+      min-width: 150px;
+    }
+
+    .analytics-mode-label i {
+      font-size: 24px;
+    }
+  }
+</style>
+
 <div class="row">
   <div class="col-md-8">
     <div class="card">
@@ -6,69 +123,39 @@
       </div>
       <div class="card-body">
         <div class="row mb-3">
-          <div class="col-sm-3">
-            <strong>Descripción:</strong>
+          <div class="col-sm-4">
+            <strong>Fecha de inicio:</strong>
           </div>
-          <div class="col-sm-9">
-            <%= @banner.description.presence || '<em class="text-muted">Sin descripción</em>'.html_safe %>
+          <div class="col-sm-8">
+            <%= @banner.start_date.strftime("%d-%m-%Y %H:%M") %>
           </div>
         </div>
 
         <div class="row mb-3">
-          <div class="col-sm-3">
-            <strong>URL:</strong>
+          <div class="col-sm-4">
+            <strong>Fecha de fin:</strong>
           </div>
-          <div class="col-sm-9">
+          <div class="col-sm-8">
+            <%= @banner.end_date.strftime("%d-%m-%Y %H:%M") %>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <strong>Link:</strong>
+          </div>
+          <div class="col-sm-8">
             <% if @banner.url.present? %>
               <%= link_to @banner.url, @banner.url, target: '_blank', class: 'text-primary' %>
               <i class="fas fa-external-link-alt ml-1 text-muted" style="font-size: 12px;"></i>
             <% else %>
-              <em class="text-muted">Sin URL</em>
+              <em class="text-muted">Sin link</em>
             <% end %>
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-sm-3">
-            <strong>Estado:</strong>
-          </div>
-          <div class="col-sm-9">
-            <% if @banner.active? %>
-              <span class="badge badge-success">Activo</span>
-            <% else %>
-              <span class="badge badge-secondary">Inactivo</span>
-            <% end %>
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-sm-3">
-            <strong>Fecha de inicio:</strong>
-          </div>
-          <div class="col-sm-9">
-            <%= @banner.start_date&.strftime("%d-%m-%Y %H:%M") || '<em class="text-muted">Sin límite</em>'.html_safe %>
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-sm-3">
-            <strong>Fecha de fin:</strong>
-          </div>
-          <div class="col-sm-9">
-            <%= @banner.end_date&.strftime("%d-%m-%Y %H:%M") || '<em class="text-muted">Sin límite</em>'.html_safe %>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-sm-3">
-            <strong>Visualizaciones:</strong>
-          </div>
-          <div class="col-sm-9">
-            <span class="badge badge-info"><%= @banner.banner_users.count %></span>
           </div>
         </div>
       </div>
     </div>
+  </div>
   </div>
   
   <div class="col-md-4">
@@ -78,7 +165,10 @@
       </div>
       <div class="card-body text-center">
         <% if @banner.image? %>
-          <%= image_tag @banner.image.url, class: 'img-fluid rounded', style: 'max-height: 300px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);' %>
+          <div class="mb-3">
+            <p class="text-muted small mb-2">Imagen:</p>
+            <%= image_tag @banner.image.url, class: 'img-fluid rounded', style: 'max-height: 250px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);' %>
+          </div>
         <% else %>
           <i class="fas fa-image" style="font-size: 80px; color: #ccc;"></i>
           <p class="text-muted mt-2">No hay imagen</p>
@@ -88,7 +178,501 @@
   </div>
 </div>
 
-<div class="mt-4">
+<!-- Panel de Rendimiento de Campaña -->
+<div class="row mt-4">
+  <div class="col-12">
+    <!-- Toggle de Modo de Visualización Principal -->
+    <div class="card mb-3 shadow-sm" style="border: 2px solid #e3e6f0;">
+      <div class="card-body py-4">
+        <div class="d-flex justify-content-center align-items-center">
+          <div class="analytics-mode-toggle-container">
+            <div class="analytics-mode-label left <%= 'active' if @analytics_mode == 'viewed' %>" data-mode="viewed">
+              <i class="fas fa-eye"></i>
+              <span>Vistas</span>
+            </div>
+            <div class="analytics-mode-toggle">
+              <input type="checkbox" id="analytics-mode-switch" <%= 'checked' if @analytics_mode == 'opened' %>>
+              <label for="analytics-mode-switch" class="toggle-slider"></label>
+            </div>
+            <div class="analytics-mode-label right <%= 'active' if @analytics_mode == 'opened' %>" data-mode="opened">
+              <i class="fas fa-lock-open"></i>
+              <span>Abiertas</span>
+            </div>
+          </div>
+        </div>
+        <div class="text-center mt-3">
+          <small class="text-muted">
+            <% if @analytics_mode == 'viewed' %>
+              <i class="fas fa-info-circle mr-1"></i>Mostrando métricas de <strong>impresiones visualizadas</strong>
+            <% else %>
+              <i class="fas fa-info-circle mr-1"></i>Mostrando métricas de <strong>interacción real (abiertas)</strong>
+            <% end %>
+          </small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header bg-white">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-chart-line text-primary mr-2" style="font-size: 24px;"></i>
+          <h4 class="mb-0">Rendimiento de Campaña</h4>
+        </div>
+      </div>
+        </div>
+      </div>
+      </div>
+      <div class="card-body">
+        <!-- Métricas principales -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-eye text-primary mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= @total_impressions %></h2>
+                <p class="text-muted mb-0">Impresiones Totales</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-users text-success mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= @unique_viewers %></h2>
+                <p class="text-muted mb-0">Usuarios Únicos</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-redo text-info mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= @total_impressions > 0 ? (@total_impressions.to_f / @unique_viewers).round(2) : 0 %></h2>
+                <p class="text-muted mb-0">Promedio Vistas/Usuario</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="card bg-light border-0">
+              <div class="card-body text-center">
+                <i class="fas fa-calendar-day text-warning mb-2" style="font-size: 32px;"></i>
+                <h2 class="mb-0"><%= ((Time.now - @banner.created_at) / 1.day).round %></h2>
+                <p class="text-muted mb-0">Días Activa</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfica de impresiones por día -->
+        <% if @temporal_chart_data.any? %>
+          <div class="row mb-4">
+            <div class="col-12">
+              <h5 class="mb-3"><i class="fas fa-chart-area mr-2"></i>Distribución Temporal</h5>
+              <div class="card border-0" style="background-color: #f8f9fa;">
+                <div class="card-body">
+                  <canvas id="impressionsChart" height="80"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Desglose por plataforma y género -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-mobile-alt mr-2"></i>Distribución por Plataforma</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% # device_platform: 0 = iOS, 1 = Android %>
+                <% platform_names = { 0 => 'iOS', 1 => 'Android' } %>
+                <% if @impressions_by_platform.any? %>
+                  <% @impressions_by_platform.each do |platform, count| %>
+                    <% platform_name = platform_names[platform] || 'Desconocido' %>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <i class="<%= platform == 0 ? 'fab fa-apple' : platform == 1 ? 'fab fa-android' : 'fas fa-question-circle' %>" style="font-size: 24px; color: <%= platform == 0 ? '#000' : platform == 1 ? '#3DDC84' : '#ccc' %>;"></i>
+                        <strong class="ml-2"><%= platform_name %></strong>
+                      </div>
+                      <div>
+                        <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                        <span class="text-muted small">(<%= ((count.to_f / @total_impressions) * 100).round(1) %>%)</span>
+                      </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                      <div class="progress-bar" role="progressbar" style="width: <%= (count.to_f / @total_impressions) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= @total_impressions %>"></div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de plataforma</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-venus-mars mr-2"></i>Distribución por Género</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% # Rails devuelve las claves del enum como strings en GROUP BY %>
+                <% gender_names = { 'female' => 'Mujer', 'male' => 'Hombre', 'non_binary' => 'No binario', 'couple' => 'Pareja' } %>
+                <% gender_icons = { 'female' => 'fas fa-venus', 'male' => 'fas fa-mars', 'non_binary' => 'fas fa-genderless', 'couple' => 'fas fa-user-friends' } %>
+                <% gender_colors = { 'female' => '#ff69b4', 'male' => '#0066cc', 'non_binary' => '#9c27b0', 'couple' => '#20c997' } %>
+                <% if @viewer_genders.any? %>
+                  <% total_gendered = @viewer_genders.values.sum %>
+                  <% @viewer_genders.each do |gender, count| %>
+                    <% gender_name = gender_names[gender] || 'Sin especificar' %>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <i class="<%= gender_icons[gender] || 'fas fa-user' %>" style="font-size: 24px; color: <%= gender_colors[gender] || '#ccc' %>;"></i>
+                        <strong class="ml-2"><%= gender_name %></strong>
+                      </div>
+                      <div>
+                        <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                        <span class="text-muted small">(<%= ((count.to_f / total_gendered) * 100).round(1) %>%)</span>
+                      </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                      <div class="progress-bar" role="progressbar" style="width: <%= (count.to_f / total_gendered) * 100 %>%; background-color: <%= gender_colors[gender] || '#6c757d' %>;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_gendered %>"></div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de género</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Distribución por edad y suscripción -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-birthday-cake mr-2"></i>Distribución por Edad</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @age_distribution.any? %>
+                  <% total_aged = @age_distribution.values.sum %>
+                  <% age_order = ['< 18', '18-24', '25-34', '35-44', '45-54', '55+'] %>
+                  <% age_order.each do |age_range| %>
+                    <% count = @age_distribution[age_range] %>
+                    <% if count.present? %>
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                          <i class="fas fa-user-circle" style="font-size: 24px; color: #6c5ce7;"></i>
+                          <strong class="ml-2"><%= age_range %> años</strong>
+                        </div>
+                        <div>
+                          <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                          <span class="text-muted small">(<%= ((count.to_f / total_aged) * 100).round(1) %>%)</span>
+                        </div>
+                      </div>
+                      <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: <%= (count.to_f / total_aged) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_aged %>"></div>
+                      </div>
+                    <% end %>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de edad</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-map-marked-alt mr-2"></i>Distribución por Geolocalización</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @location_distribution.any? %>
+                  <% total_locations = @location_distribution.values.sum %>
+                  <% @location_distribution.first(10).each do |location, count| %>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <i class="fas fa-map-marker-alt" style="font-size: 24px; color: #e74c3c;"></i>
+                        <strong class="ml-2"><%= location %></strong>
+                      </div>
+                      <div>
+                        <span class="badge badge-primary" style="font-size: 16px;"><%= count %></span>
+                        <span class="text-muted small">(<%= ((count.to_f / total_locations) * 100).round(1) %>%)</span>
+                      </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                      <div class="progress-bar bg-danger" role="progressbar" style="width: <%= (count.to_f / total_locations) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_locations %>"></div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de ubicación</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Top Intereses Principales -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-star mr-2 text-warning"></i>Top Intereses Principales</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @top_main_interests.any? %>
+                  <% @top_main_interests.each_with_index do |(interest_name, count), index| %>
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                          <span class="badge badge-pill badge-warning mr-2" style="font-size: 14px; width: 25px; height: 25px; display: inline-flex; align-items: center; justify-content: center;"><%= index + 1 %></span>
+                          <strong><%= interest_name %></strong>
+                        </div>
+                        <span class="badge badge-light"><%= count %></span>
+                      </div>
+                      <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: <%= (@top_main_interests.values.max > 0 ? (count.to_f / @top_main_interests.values.max * 100) : 0).round(1) %>%;"></div>
+                      </div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de intereses principales</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <h5 class="mb-3"><i class="fas fa-heart mr-2 text-success"></i>Top Intereses Secundarios</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @top_secondary_interests.any? %>
+                  <% @top_secondary_interests.each_with_index do |(interest_name, count), index| %>
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                          <span class="badge badge-pill badge-success mr-2" style="font-size: 14px; width: 25px; height: 25px; display: inline-flex; align-items: center; justify-content: center;"><%= index + 1 %></span>
+                          <strong><%= interest_name %></strong>
+                        </div>
+                        <span class="badge badge-light"><%= count %></span>
+                      </div>
+                      <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: <%= (@top_secondary_interests.values.max > 0 ? (count.to_f / @top_secondary_interests.values.max * 100) : 0).round(1) %>%;"></div>
+                      </div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de intereses secundarios</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Día de la Semana -->
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <h5 class="mb-3"><i class="fas fa-calendar-week mr-2"></i>Distribución por Día de la Semana</h5>
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <% if @weekday_distribution.any? %>
+                  <% weekday_names = { 1 => 'Domingo', 2 => 'Lunes', 3 => 'Martes', 4 => 'Miércoles', 5 => 'Jueves', 6 => 'Viernes', 7 => 'Sábado' } %>
+                  <% total_weekday = @weekday_distribution.values.sum %>
+                  <% [2, 3, 4, 5, 6, 7, 1].each do |day_num| %>
+                    <% count = @weekday_distribution[day_num] %>
+                    <% if count.present? %>
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                          <i class="fas fa-calendar-day" style="font-size: 20px; color: #3498db;"></i>
+                          <strong class="ml-2"><%= weekday_names[day_num] %></strong>
+                        </div>
+                        <div>
+                          <span class="badge badge-primary" style="font-size: 14px;"><%= count %></span>
+                          <span class="text-muted small">(<%= ((count.to_f / total_weekday) * 100).round(1) %>%)</span>
+                        </div>
+                      </div>
+                      <div class="progress mb-2" style="height: 6px;">
+                        <div class="progress-bar" role="progressbar" style="width: <%= (count.to_f / total_weekday) * 100 %>%;" aria-valuenow="<%= count %>" aria-valuemin="0" aria-valuemax="<%= total_weekday %>"></div>
+                      </div>
+                    <% end %>
+                  <% end %>
+                <% else %>
+                  <p class="text-muted text-center mb-0">Sin datos de día de la semana</p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="alert alert-info mb-0">
+              <h6 class="alert-heading"><i class="fas fa-info-circle mr-2"></i>Información sobre las métricas</h6>
+              <hr>
+              <ul class="mb-0 small">
+                <li><strong>Impresiones Totales:</strong> Número total de veces que se ha mostrado este banner a los usuarios.</li>
+                <li><strong>Usuarios Únicos:</strong> Cantidad de usuarios diferentes que han visto la banner.</li>
+                <li><strong>Promedio Vistas/Usuario:</strong> Número promedio de veces que cada usuario ha visto la banner.</li>
+                <li><strong>Distribución por Plataforma:</strong> Desglose de impresiones según el sistema operativo del usuario (iOS/Android). "Desconocido" indica usuarios sin plataforma asignada.</li>
+                <li><strong>Distribución por Género:</strong> Perfil demográfico de los usuarios que han visto el banner.</li>
+                <li><strong>Distribución por Edad:</strong> Rangos etarios de los usuarios que han visualizado el banner.</li>
+                <li><strong>Geolocalización:</strong> Principales ciudades y países de origen de los espectadores.</li>
+                <li><strong>Top Intereses:</strong> Los 10 intereses más populares entre los usuarios que vieron el banner.</li>
+                <li><strong>Día de la Semana:</strong> Días de la semana con más impresiones.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<% if @temporal_chart_data&.any? %>
+  <script>
+    let impressionsChartInstance = null;
+    
+    document.addEventListener('turbolinks:load', function() {
+      const canvas = document.getElementById('impressionsChart');
+      if (!canvas) return;
+      
+      // Destruir instancia anterior si existe
+      if (impressionsChartInstance) {
+        impressionsChartInstance.destroy();
+      }
+      
+      const ctx = canvas.getContext('2d');
+      
+      // Dataset consolidado desde el backend
+      const chartData = <%= raw @temporal_chart_data.to_json %>;
+      
+      // Extraer labels y valores desde el mismo dataset
+      const labels = chartData.map(d => d.date);
+      const impressionsValues = chartData.map(d => d.impressions);
+      const uniqueUsersValues = chartData.map(d => d.unique_users);
+      
+      console.log('Chart data:', chartData);
+      console.log('Labels:', labels);
+      console.log('Impressions:', impressionsValues);
+      console.log('Unique users:', uniqueUsersValues);
+      
+      impressionsChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Impresiones Totales',
+              data: impressionsValues,
+              borderColor: 'rgb(75, 192, 192)',
+              backgroundColor: 'rgba(75, 192, 192, 0.1)',
+              tension: 0.3,
+              fill: true,
+              borderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Usuarios Únicos',
+              data: uniqueUsersValues,
+              borderColor: 'rgb(255, 99, 132)',
+              backgroundColor: 'rgba(255, 99, 132, 0.1)',
+              tension: 0.3,
+              fill: true,
+              borderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                padding: 15
+              }
+            },
+            tooltip: {
+              callbacks: {
+                title: function(context) {
+                  const date = new Date(context[0].label);
+                  return date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+<% end %>
+
+<script>
+  // Manejador del toggle de modo de visualización
+  document.addEventListener('turbolinks:load', function() {
+    const toggleSwitch = document.getElementById('analytics-mode-switch');
+    const labels = document.querySelectorAll('.analytics-mode-label');
+    
+    if (!toggleSwitch) return;
+    
+    // Función para cambiar el modo
+    function changeMode(mode) {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('mode', mode);
+      
+      // Añadir efecto de transición antes de navegar
+      document.body.style.opacity = '0.7';
+      document.body.style.transition = 'opacity 0.2s ease';
+      
+      setTimeout(() => {
+        window.location.href = currentUrl.toString();
+      }, 200);
+    }
+    
+    // Evento del toggle switch
+    toggleSwitch.addEventListener('change', function() {
+      const mode = this.checked ? 'opened' : 'viewed';
+      changeMode(mode);
+    });
+    
+    // Hacer las etiquetas clickeables
+    labels.forEach(label => {
+      label.addEventListener('click', function() {
+        const mode = this.getAttribute('data-mode');
+        const currentMode = '<%= @analytics_mode %>';
+        
+        // Solo cambiar si es diferente al modo actual
+        if (mode !== currentMode) {
+          toggleSwitch.checked = (mode === 'opened');
+          changeMode(mode);
+        }
+      });
+    });
+  });
+</script>
+
+<div class="mt-4 pb-5">
   <%= link_to edit_banner_path(@banner), class: 'btn btn-primary text-white', style: 'color: white !important;', :"data-turbolinks" => false do %>
     <i class="fas fa-edit"></i> Editar
   <% end %>

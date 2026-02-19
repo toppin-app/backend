@@ -2324,6 +2324,49 @@ def mark_publi_opened
   end
 end
 
+# PUT /users/mark_banner_opened
+def mark_banner_opened
+  unless params[:banner_id]
+    render json: { status: 400, message: "banner_id es requerido" }, status: 400
+    return
+  end
+
+  banner = Banner.find_by(id: params[:banner_id])
+  unless banner
+    render json: { status: 404, message: "Banner no encontrado" }, status: 404
+    return
+  end
+
+  # Buscar el registro existente
+  banner_user = BannerUser.find_by(
+    banner_id: params[:banner_id],
+    user_id: current_user.id
+  )
+
+  unless banner_user
+    render json: { status: 404, message: "No hay registro de vista para este banner" }, status: 404
+    return
+  end
+
+  # Marcar como abierto si aún no lo está (idempotente)
+  if banner_user.opened_at.nil?
+    banner_user.update(opened_at: Time.current)
+    message = "Banner marcado como abierto"
+  else
+    message = "Banner ya estaba marcado como abierto"
+  end
+  
+  render json: { 
+    status: 200, 
+    message: message,
+    banner_id: params[:banner_id].to_i,
+    opened_at: banner_user.opened_at
+  }
+rescue => e
+  Rails.logger.error "Error en mark_banner_opened: #{e.message}"
+  render json: { status: 500, message: "Error al marcar banner como abierto" }, status: 500
+end
+
 # GET /users/get_banner
 def get_banner
   Rails.logger.info "=== GET BANNER REQUEST ==="
