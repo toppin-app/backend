@@ -17,8 +17,8 @@ class Banner < ApplicationRecord
   end
 
   def mark_as_viewed_by(user)
-    banner_users.find_or_create_by(user: user) do |banner_user|
-      banner_user.viewed_at = Time.current
-    end
+    banner_user = banner_users.find_or_create_by(user: user)
+    banner_user.update(viewed_at: Time.current) if banner_user.viewed_at.nil?
+    banner_user
   end
 end
