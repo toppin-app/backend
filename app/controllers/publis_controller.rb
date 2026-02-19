@@ -50,15 +50,13 @@ class PublisController < ApplicationController
       .sort_by { |date, _| date }
     
     # Usuarios únicos por día (últimos 30 días)
-    # Usar la misma fecha que impresiones para consistencia
+    # Usar SQL directo para COUNT(DISTINCT user_id) agrupado por fecha
     @unique_users_by_day = @publi.user_publis
       .where(@filter_condition)
       .where("#{date_field} >= ?", 30.days.ago)
+      .select("DATE(#{date_field}) as date")
       .group("DATE(#{date_field})")
-      .select("DATE(#{date_field}) as date, COUNT(DISTINCT user_id) as unique_count")
-      .order("date")
-      .map { |r| [r.date.to_s, r.unique_count] }
-      .to_h
+      .count("DISTINCT user_id")
     
     # Usuarios que han visto la publicidad (para análisis de tipo de usuario)
     # Gender es un enum: female: 0, male: 1, non_binary: 2, couple: 3
