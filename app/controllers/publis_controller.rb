@@ -42,21 +42,32 @@ class PublisController < ApplicationController
     date_field = @analytics_mode == 'viewed' ? 'users_publis.created_at' : 'users_publis.opened_at'
     
     # Obtener datos consolidados por día (todo el historial de la campaña)
-    # Una sola query que devuelve ambas métricas por fecha
+    # Una sola query que devuelve impresiones por fecha
     temporal_data = @publi.user_publis
       .where(@filter_condition)
       .group("DATE(#{date_field})")
       .select("DATE(#{date_field}) as date, 
-               COUNT(*) as total_impressions,
-               COUNT(DISTINCT user_id) as unique_users")
+               COUNT(*) as total_impressions")
       .order("date")
     
-    # Construir array consolidado para el frontend
+    # Obtener todos los user_ids únicos hasta cada fecha para cálculo acumulativo
+    all_dates = temporal_data.map { |row| row.date }
+    
+    # Construir array consolidado con usuarios únicos acumulativos
+    seen_users = Set.new
     @temporal_chart_data = temporal_data.map do |row|
+      # Obtener usuarios únicos hasta esta fecha (acumulativo)
+      users_up_to_date = @publi.user_publis
+        .where(@filter_condition)
+        .where("DATE(#{date_field}) <= ?", row.date)
+        .select(:user_id)
+        .distinct
+        .count
+      
       {
         date: row.date.to_s,
         impressions: row.total_impressions,
-        unique_users: row.unique_users
+        unique_users: users_up_to_date
       }
     end
     
