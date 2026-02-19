@@ -41,11 +41,10 @@ class PublisController < ApplicationController
     # Determinar qué campo de fecha usar según el modo
     date_field = @analytics_mode == 'viewed' ? 'users_publis.created_at' : 'users_publis.opened_at'
     
-    # Obtener datos consolidados por día (últimos 30 días)
+    # Obtener datos consolidados por día (todo el historial de la campaña)
     # Una sola query que devuelve ambas métricas por fecha
     temporal_data = @publi.user_publis
       .where(@filter_condition)
-      .where("#{date_field} >= ?", 30.days.ago)
       .group("DATE(#{date_field})")
       .select("DATE(#{date_field}) as date, 
                COUNT(*) as total_impressions,
