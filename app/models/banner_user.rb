@@ -2,7 +2,8 @@ class BannerUser < ApplicationRecord
   belongs_to :banner
   belongs_to :user
 
-  validates :banner_id, uniqueness: { scope: :user_id }
+  # REMOVED: validates :banner_id, uniqueness: { scope: :user_id }
+  # Permitir múltiples impresiones del mismo banner por usuario (como publis)
   
   before_create :set_viewed_at
 
