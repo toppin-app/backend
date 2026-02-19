@@ -127,7 +127,7 @@
             <strong>Fecha de inicio:</strong>
           </div>
           <div class="col-sm-8">
-            <%= @banner.start_date.strftime("%d-%m-%Y %H:%M") %>
+            <%= @banner.start_date&.strftime("%d-%m-%Y %H:%M") || '<em class="text-muted">Sin límite</em>'.html_safe %>
           </div>
         </div>
 
@@ -136,7 +136,7 @@
             <strong>Fecha de fin:</strong>
           </div>
           <div class="col-sm-8">
-            <%= @banner.end_date.strftime("%d-%m-%Y %H:%M") %>
+            <%= @banner.end_date&.strftime("%d-%m-%Y %H:%M") || '<em class="text-muted">Sin límite</em>'.html_safe %>
           </div>
         </div>
 
