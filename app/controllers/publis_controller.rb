@@ -41,22 +41,25 @@ class PublisController < ApplicationController
     # Determinar qué campo de fecha usar según el modo
     date_field = @analytics_mode == 'viewed' ? 'users_publis.created_at' : 'users_publis.opened_at'
     
-    # Impresiones por día (últimos 30 días)
-    @impressions_by_day = @publi.user_publis
+    # Obtener datos consolidados por día (últimos 30 días)
+    # Una sola query que devuelve ambas métricas por fecha
+    temporal_data = @publi.user_publis
       .where(@filter_condition)
       .where("#{date_field} >= ?", 30.days.ago)
       .group("DATE(#{date_field})")
-      .count
-      .sort_by { |date, _| date }
+      .select("DATE(#{date_field}) as date, 
+               COUNT(*) as total_impressions,
+               COUNT(DISTINCT user_id) as unique_users")
+      .order("date")
     
-    # Usuarios únicos por día (últimos 30 días)
-    # Usar SQL directo para COUNT(DISTINCT user_id) agrupado por fecha
-    @unique_users_by_day = @publi.user_publis
-      .where(@filter_condition)
-      .where("#{date_field} >= ?", 30.days.ago)
-      .select("DATE(#{date_field}) as date")
-      .group("DATE(#{date_field})")
-      .count("DISTINCT user_id")
+    # Construir array consolidado para el frontend
+    @temporal_chart_data = temporal_data.map do |row|
+      {
+        date: row.date.to_s,
+        impressions: row.total_impressions,
+        unique_users: row.unique_users
+      }
+    end
     
     # Usuarios que han visto la publicidad (para análisis de tipo de usuario)
     # Gender es un enum: female: 0, male: 1, non_binary: 2, couple: 3
@@ -152,8 +155,7 @@ class PublisController < ApplicationController
     # Log de debugging adicional
     Rails.logger.info "Analytics mode: #{@analytics_mode}"
     Rails.logger.info "Date field used: #{@analytics_mode == 'viewed' ? 'created_at' : 'opened_at'}"
-    Rails.logger.info "Impressions by day: #{@impressions_by_day.inspect}"
-    Rails.logger.info "Unique users by day: #{@unique_users_by_day.inspect}"
+    Rails.logger.info "Temporal chart data: #{@temporal_chart_data.inspect}"
     Rails.logger.info "Age distribution: #{@age_distribution.inspect}"
     Rails.logger.info "Location distribution: #{@location_distribution.inspect}"
     Rails.logger.info "Weekday distribution: #{@weekday_distribution.inspect}"

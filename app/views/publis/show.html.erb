@@ -580,12 +580,19 @@
       }
       
       const ctx = canvas.getContext('2d');
-      const impressionsData = <%= raw @impressions_by_day.to_json %>;
-      const uniqueUsersData = <%= raw @unique_users_by_day.to_json %>;
       
-      const labels = Object.keys(impressionsData);
-      const impressionsValues = Object.values(impressionsData);
-      const uniqueUsersValues = labels.map(date => uniqueUsersData[date] || 0);
+      // Dataset consolidado desde el backend
+      const chartData = <%= raw @temporal_chart_data.to_json %>;
+      
+      // Extraer labels y valores desde el mismo dataset
+      const labels = chartData.map(d => d.date);
+      const impressionsValues = chartData.map(d => d.impressions);
+      const uniqueUsersValues = chartData.map(d => d.unique_users);
+      
+      console.log('Chart data:', chartData);
+      console.log('Labels:', labels);
+      console.log('Impressions:', impressionsValues);
+      console.log('Unique users:', uniqueUsersValues);
       
       impressionsChartInstance = new Chart(ctx, {
         type: 'line',
@@ -599,7 +606,9 @@
               backgroundColor: 'rgba(75, 192, 192, 0.1)',
               tension: 0.3,
               fill: true,
-              borderWidth: 2
+              borderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6
             },
             {
               label: 'Usuarios Únicos',
@@ -608,7 +617,9 @@
               backgroundColor: 'rgba(255, 99, 132, 0.1)',
               tension: 0.3,
               fill: true,
-              borderWidth: 2
+              borderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6
             }
           ]
         },
