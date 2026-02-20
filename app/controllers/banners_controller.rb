@@ -118,13 +118,12 @@ class BannersController < ApplicationController
       .map { |i| [i.name, i.interest_count] }
       .to_h
     
-    # Distribución por geolocalización (JOIN con users)
+    # Distribución por geolocalización (datos de banner_users, no JOIN)
     @location_distribution = @banner.banner_users
       .where(@filter_condition)
-      .joins(:user)
-      .where.not("users.locality" => nil)
-      .group("users.locality", "users.country")
-      .select("users.locality as locality, users.country as country, COUNT(*) as count")
+      .where.not(locality: nil)
+      .group("banner_users.locality", "banner_users.country")
+      .select("banner_users.locality as locality, banner_users.country as country, COUNT(*) as count")
       .order("count DESC")
       .limit(10)
       .map { |l| ["#{l.locality}, #{l.country}", l.count] }
