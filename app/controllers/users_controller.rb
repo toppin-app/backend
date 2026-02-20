@@ -2326,31 +2326,27 @@ end
 
 # PUT /users/mark_banner_opened
 def mark_banner_opened
-  unless params[:banner_id]
-    render json: { status: 400, message: "banner_id es requerido" }, status: 400
+  unless current_user
+    render json: { status: 401, message: "Usuario no autenticado" }, status: 401
     return
   end
 
-  banner = Banner.find_by(id: params[:banner_id])
-  unless banner
-    render json: { status: 404, message: "Banner no encontrado" }, status: 404
+  unless params[:delivery_id].present?
+    render json: { status: 400, message: "delivery_id es requerido" }, status: 400
     return
   end
 
-  # Buscar el registro existente
-  banner_user = BannerUser.find_by(
-    banner_id: params[:banner_id],
-    user_id: current_user.id
-  )
+  # Buscar el registro específico de entrega
+  delivery_record = current_user.banner_users.find_by(id: params[:delivery_id])
 
-  unless banner_user
-    render json: { status: 404, message: "No hay registro de vista para este banner" }, status: 404
+  unless delivery_record
+    render json: { status: 404, message: "Registro de entrega no encontrado" }, status: 404
     return
   end
 
   # Marcar como abierto si aún no lo está (idempotente)
-  if banner_user.opened_at.nil?
-    banner_user.update(opened_at: Time.current)
+  if delivery_record.opened_at.nil?
+    delivery_record.update(opened_at: Time.current)
     message = "Banner marcado como abierto"
   else
     message = "Banner ya estaba marcado como abierto"
@@ -2359,8 +2355,8 @@ def mark_banner_opened
   render json: { 
     status: 200, 
     message: message,
-    banner_id: params[:banner_id].to_i,
-    opened_at: banner_user.opened_at
+    banner_id: delivery_record.banner_id,
+    opened_at: delivery_record.opened_at
   }
 rescue => e
   Rails.logger.error "Error en mark_banner_opened: #{e.message}"
@@ -2375,29 +2371,30 @@ def mark_banner_viewed
     return
   end
 
-  unless params[:banner_id].present?
-    render json: { status: 400, message: "Se requiere banner_id" }, status: 400
+  unless params[:delivery_id].present?
+    render json: { status: 400, message: "Se requiere delivery_id" }, status: 400
     return
   end
 
-  banner = Banner.find_by(id: params[:banner_id])
-  
-  unless banner
-    render json: { status: 404, message: "Banner no encontrado" }, status: 404
-    return
-  end
-
-  # Buscar el registro de entrega pendiente (viewed_at = NULL)
-  delivery_record = current_user.banner_users
-                                .where(banner_id: banner.id, viewed_at: nil)
-                                .order(created_at: :desc)
-                                .first
+  # Buscar el registro específico de entrega
+  delivery_record = current_user.banner_users.find_by(id: params[:delivery_id])
 
   unless delivery_record
     render json: {
       status: 404,
-      message: "No hay entrega pendiente para este banner"
+      message: "Registro de entrega no encontrado"
     }, status: 404
+    return
+  end
+
+  # Verificar que no esté ya marcado como visto
+  if delivery_record.viewed_at.present?
+    render json: {
+      status: 200,
+      message: "Banner ya estaba marcado como visto",
+      banner_id: delivery_record.banner_id,
+      viewed_at: delivery_record.viewed_at
+    }
     return
   end
 
@@ -2406,7 +2403,7 @@ def mark_banner_viewed
     render json: {
       status: 200,
       message: "Banner marcado como visto",
-      banner_id: banner.id,
+      banner_id: delivery_record.banner_id,
       viewed_at: delivery_record.viewed_at
     }
   else
@@ -2438,7 +2435,8 @@ def get_banner
   if pending_delivery
     # Ya tiene una entrega pendiente → devolver ese mismo banner
     banner_to_show = pending_delivery.banner
-    Rails.logger.info "Devolviendo entrega pendiente: Banner #{banner_to_show.id}"
+    delivery_id = pending_delivery.id
+    Rails.logger.info "Devolviendo entrega pendiente: Banner #{banner_to_show.id}, Delivery #{delivery_id}"
   else
     # No tiene entrega pendiente → seleccionar nuevo banner
     active_banners = Banner.active_now
@@ -2464,14 +2462,15 @@ def get_banner
     banner_to_show = available_banners.sample
 
     # CREAR REGISTRO DE ENTREGA INMEDIATAMENTE (sin marcar viewed_at)
-    delivery_record = BannerUser.create(
+    pending_delivery = BannerUser.create(
       banner: banner_to_show,
       user: current_user,
       viewed_at: nil,
       opened_at: nil
     )
+    delivery_id = pending_delivery.id
 
-    Rails.logger.info "Nueva entrega creada: Banner #{banner_to_show.id}, Registro #{delivery_record.id}"
+    Rails.logger.info "Nueva entrega creada: Banner #{banner_to_show.id}, Delivery #{delivery_id}"
   end
 
   # URL base
@@ -2479,6 +2478,7 @@ def get_banner
 
   render json: {
     status: 200,
+    delivery_id: delivery_id,
     banner: banner_to_show.as_json.merge("image_url" => "#{banner_url}#{banner_to_show.image.url}")
   }
 end
