@@ -528,103 +528,137 @@
 
 <% if @temporal_chart_data&.any? %>
   <script>
-    let impressionsChartInstance = null;
-    
-    document.addEventListener('turbolinks:load', function() {
-      const canvas = document.getElementById('impressionsChart');
-      if (!canvas) return;
+    (function() {
+      // IIFE para evitar contaminación del scope global
+      let impressionsChartInstance = null;
       
-      // Destruir instancia anterior si existe
-      if (impressionsChartInstance) {
-        impressionsChartInstance.destroy();
-      }
-      
-      const ctx = canvas.getContext('2d');
-      
-      // Dataset consolidado desde el backend
-      const chartData = <%= raw @temporal_chart_data.to_json %>;
-      
-      // Extraer labels y valores desde el mismo dataset
-      const labels = chartData.map(d => d.date);
-      const impressionsValues = chartData.map(d => d.impressions);
-      const uniqueUsersValues = chartData.map(d => d.unique_users);
-      
-      console.log('Chart data:', chartData);
-      console.log('Labels:', labels);
-      console.log('Impressions:', impressionsValues);
-      console.log('Unique users:', uniqueUsersValues);
-      
-      impressionsChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'Impresiones Totales',
-              data: impressionsValues,
-              borderColor: 'rgb(75, 192, 192)',
-              backgroundColor: 'rgba(75, 192, 192, 0.1)',
-              tension: 0.3,
-              fill: true,
-              borderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6
-            },
-            {
-              label: 'Usuarios Únicos',
-              data: uniqueUsersValues,
-              borderColor: 'rgb(255, 99, 132)',
-              backgroundColor: 'rgba(255, 99, 132, 0.1)',
-              tension: 0.3,
-              fill: true,
-              borderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          interaction: {
-            mode: 'index',
-            intersect: false
+      function initChart() {
+        const canvas = document.getElementById('impressionsChart');
+        if (!canvas) {
+          console.warn('Canvas impressionsChart no encontrado');
+          return;
+        }
+        
+        // Destruir instancia anterior si existe
+        if (impressionsChartInstance) {
+          console.log('Destruyendo instancia anterior del chart');
+          impressionsChartInstance.destroy();
+          impressionsChartInstance = null;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Dataset consolidado desde el backend - ÚNICO PARA ESTE BANNER
+        const chartData = <%= raw @temporal_chart_data.to_json %>;
+        
+        if (!chartData || chartData.length === 0) {
+          console.warn('No hay datos para graficar');
+          return;
+        }
+        
+        // Extraer labels y valores desde el mismo dataset
+        const labels = chartData.map(d => d.date);
+        const impressionsValues = chartData.map(d => d.impressions);
+        const uniqueUsersValues = chartData.map(d => d.unique_users);
+        
+        console.log('Banner ID: <%= @banner.id %>, Chart data:', chartData);
+        console.log('Labels:', labels);
+        console.log('Impressions:', impressionsValues);
+        console.log('Unique users:', uniqueUsersValues);
+        
+        impressionsChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Impresiones Totales',
+                data: impressionsValues,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.3,
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+              },
+              {
+                label: 'Usuarios Únicos',
+                data: uniqueUsersValues,
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                tension: 0.3,
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+              }
+            ]
           },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-              labels: {
-                usePointStyle: true,
-                padding: 15
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  usePointStyle: true,
+                  padding: 15
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  title: function(context) {
+                    const date = new Date(context[0].label);
+                    return date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                  }
+                }
               }
             },
-            tooltip: {
-              callbacks: {
-                title: function(context) {
-                  const date = new Date(context[0].label);
-                  return date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              },
+              x: {
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45
                 }
               }
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            },
-            x: {
-              ticks: {
-                maxRotation: 45,
-                minRotation: 45
-              }
-            }
           }
+        });
+        
+        console.log('Chart creado exitosamente para banner <%= @banner.id %>');
+      }
+      
+      // Inicializar con turbolinks:load
+      document.addEventListener('turbolinks:load', initChart);
+      
+      // Limpiar antes de salir de la página
+      document.addEventListener('turbolinks:before-render', function() {
+        if (impressionsChartInstance) {
+          console.log('Limpiando chart antes de cambiar de página');
+          impressionsChartInstance.destroy();
+          impressionsChartInstance = null;
         }
       });
-    });
+      
+      // Si ya estamos en la página (no viene de turbolinks), inicializar inmediatamente
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChart);
+      } else {
+        initChart();
+      }
+    })();
   </script>
 <% end %>
 
