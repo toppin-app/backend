@@ -72,6 +72,7 @@ Rails.application.routes.draw do
   put 'users/mark_publi_viewed', to: 'users#mark_publi_viewed'
   put 'users/mark_publi_opened', to: 'users#mark_publi_opened'
   get 'users/get_banner', to: 'users#get_banner'
+  put 'users/mark_banner_viewed', to: 'users#mark_banner_viewed'
   put 'users/mark_banner_opened', to: 'users#mark_banner_opened'
 
   # Rutas para deshacer swipe

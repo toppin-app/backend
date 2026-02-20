@@ -2367,6 +2367,47 @@ rescue => e
   render json: { status: 500, message: "Error al marcar banner como abierto" }, status: 500
 end
 
+# PUT /users/mark_banner_viewed
+def mark_banner_viewed
+  unless current_user
+    render json: { status: 401, message: "Usuario no autenticado" }, status: 401
+    return
+  end
+
+  unless params[:banner_id].present?
+    render json: { status: 400, message: "Se requiere banner_id" }, status: 400
+    return
+  end
+
+  banner = Banner.find_by(id: params[:banner_id])
+  
+  unless banner
+    render json: { status: 404, message: "Banner no encontrado" }, status: 404
+    return
+  end
+
+  # Crear registro de visualización
+  banner_user = banner.mark_as_viewed_by(current_user)
+
+  if banner_user.persisted?
+    render json: {
+      status: 200,
+      message: "Banner marcado como visto",
+      banner_id: banner.id,
+      viewed_at: banner_user.viewed_at
+    }
+  else
+    render json: {
+      status: 422,
+      message: "Error al marcar banner como visto",
+      errors: banner_user.errors.full_messages
+    }, status: 422
+  end
+rescue => e
+  Rails.logger.error "Error en mark_banner_viewed: #{e.message}"
+  render json: { status: 500, message: "Error al marcar banner como visto" }, status: 500
+end
+
 # GET /users/get_banner
 def get_banner
   # Log absolutamente PRIMERO para confirmar que Rails recibe la petición
@@ -2407,19 +2448,6 @@ def get_banner
   banner_to_show = available_banners.sample
 
   Rails.logger.info "Banner seleccionado: #{banner_to_show.id}"
-
-  # Contar registros ANTES de marcar
-  count_before = BannerUser.where(banner_id: banner_to_show.id, user_id: current_user.id).count
-  Rails.logger.info "Registros existentes ANTES: #{count_before}"
-
-  # Marcar automáticamente como visto
-  result = banner_to_show.mark_as_viewed_by(current_user)
-  Rails.logger.info "Resultado de mark_as_viewed_by: #{result.inspect}"
-  
-  # Contar registros DESPUÉS de marcar
-  count_after = BannerUser.where(banner_id: banner_to_show.id, user_id: current_user.id).count
-  Rails.logger.info "Registros existentes DESPUÉS: #{count_after}"
-  Rails.logger.info "¿Se creó nuevo registro? #{count_after > count_before}"
 
   # URL base igual que en available_publis
   banner_url = "https://web-backend-ruby.uao3jo.easypanel.host"
