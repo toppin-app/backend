@@ -2368,6 +2368,7 @@ rescue => e
 end
 
 # PUT /users/mark_banner_viewed
+# Actualiza el registro de entrega existente marcando viewed_at
 def mark_banner_viewed
   unless current_user
     render json: { status: 401, message: "Usuario no autenticado" }, status: 401
@@ -2386,21 +2387,33 @@ def mark_banner_viewed
     return
   end
 
-  # Crear registro de visualización
-  banner_user = banner.mark_as_viewed_by(current_user)
+  # Buscar el registro de entrega pendiente (viewed_at = NULL)
+  delivery_record = current_user.banner_users
+                                .where(banner_id: banner.id, viewed_at: nil)
+                                .order(created_at: :desc)
+                                .first
 
-  if banner_user.persisted?
+  unless delivery_record
+    render json: {
+      status: 404,
+      message: "No hay entrega pendiente para este banner"
+    }, status: 404
+    return
+  end
+
+  # ACTUALIZAR el registro existente (no crear uno nuevo)
+  if delivery_record.update(viewed_at: Time.current)
     render json: {
       status: 200,
       message: "Banner marcado como visto",
       banner_id: banner.id,
-      viewed_at: banner_user.viewed_at
+      viewed_at: delivery_record.viewed_at
     }
   else
     render json: {
       status: 422,
-      message: "Error al marcar banner como visto",
-      errors: banner_user.errors.full_messages
+      message: "Error al actualizar visualización",
+      errors: delivery_record.errors.full_messages
     }, status: 422
   end
 rescue => e
@@ -2409,47 +2422,59 @@ rescue => e
 end
 
 # GET /users/get_banner
+# Devuelve un banner y CREA inmediatamente el registro de entrega (viewed_at = NULL)
 def get_banner
-  # Log absolutamente PRIMERO para confirmar que Rails recibe la petición
-  Rails.logger.info "🔴🔴🔴 GET BANNER - PETICIÓN RECIBIDA EN RAILS 🔴🔴🔴"
-  Rails.logger.info "=== GET BANNER REQUEST ==="
-  Rails.logger.info "Current user: #{current_user&.id || 'NO AUTENTICADO'}"
-  Rails.logger.info "Request IP: #{request.remote_ip}"
-  Rails.logger.info "Request headers: #{request.headers['HTTP_AUTHORIZATION']}"
-
   unless current_user
     render json: { status: 401, message: "Usuario no autenticado" }, status: 401
     return
   end
 
-  # Obtener todos los banners activos y vigentes
-  active_banners = Banner.active_now
-  Rails.logger.info "Banners activos: #{active_banners.map(&:id).inspect}"
+  # 1. Verificar si hay una entrega pendiente (no vista)
+  pending_delivery = current_user.banner_users
+                                 .where(viewed_at: nil)
+                                 .order(created_at: :desc)
+                                 .first
 
-  if active_banners.empty?
-    render json: { status: 404, message: "No hay banners disponibles" }, status: 404
-    return
+  if pending_delivery
+    # Ya tiene una entrega pendiente → devolver ese mismo banner
+    banner_to_show = pending_delivery.banner
+    Rails.logger.info "Devolviendo entrega pendiente: Banner #{banner_to_show.id}"
+  else
+    # No tiene entrega pendiente → seleccionar nuevo banner
+    active_banners = Banner.active_now
+    
+    if active_banners.empty?
+      render json: { status: 404, message: "No hay banners disponibles" }, status: 404
+      return
+    end
+
+    # Seleccionar banner (evitando el último visto si es posible)
+    last_viewed_banner = current_user.banner_users
+                                     .where.not(viewed_at: nil)
+                                     .order(viewed_at: :desc)
+                                     .first&.banner
+    
+    available_banners = if last_viewed_banner
+                          active_banners.where.not(id: last_viewed_banner.id)
+                        else
+                          active_banners
+                        end
+    
+    available_banners = active_banners if available_banners.empty?
+    banner_to_show = available_banners.sample
+
+    # CREAR REGISTRO DE ENTREGA INMEDIATAMENTE (sin marcar viewed_at)
+    delivery_record = BannerUser.create(
+      banner: banner_to_show,
+      user: current_user,
+      viewed_at: nil,
+      opened_at: nil
+    )
+
+    Rails.logger.info "Nueva entrega creada: Banner #{banner_to_show.id}, Registro #{delivery_record.id}"
   end
 
-  # Obtener el último banner visto (para no repetirlo inmediatamente)
-  last_viewed_banner = current_user.banner_users.order(created_at: :desc).first&.banner
-  
-  # Seleccionar banners disponibles (todos menos el último visto)
-  available_banners = if last_viewed_banner
-                        active_banners.where.not(id: last_viewed_banner.id)
-                      else
-                        active_banners
-                      end
-  
-  # Si no hay otros banners, usar todos (incluyendo el último)
-  available_banners = active_banners if available_banners.empty?
-  
-  # Seleccionar uno aleatorio
-  banner_to_show = available_banners.sample
-
-  Rails.logger.info "Banner seleccionado: #{banner_to_show.id}"
-
-  # URL base igual que en available_publis
+  # URL base
   banner_url = "https://web-backend-ruby.uao3jo.easypanel.host"
 
   render json: {
