@@ -9,4 +9,17 @@ class BannerUser < ApplicationRecord
   # - Se crea en el momento que se entrega (GET /get_banner)
   # - Se marca como visto cuando se renderiza (PUT /mark_banner_viewed)
   # - Se marca como abierto cuando se hace clic (PUT /mark_banner_opened)
+  
+  before_create :set_location_from_user
+
+  private
+
+  def set_location_from_user
+    return if self.locality.present?
+    
+    self.locality = user.location_city
+    self.country = user.location_country
+    self.lat = user.lat
+    self.lng = user.lng
+  end
 end
