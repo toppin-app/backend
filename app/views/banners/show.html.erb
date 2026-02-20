@@ -531,11 +531,37 @@
     (function() {
       // IIFE para evitar contaminación del scope global
       let impressionsChartInstance = null;
+      let initAttempts = 0;
+      const maxAttempts = 50; // Intentar hasta 5 segundos (50 * 100ms)
       
-      function initChart() {
+      function waitForChart() {
+        return new Promise((resolve) => {
+          function check() {
+            if (typeof Chart !== 'undefined') {
+              resolve(true);
+            } else if (initAttempts < maxAttempts) {
+              initAttempts++;
+              setTimeout(check, 100);
+            } else {
+              console.error('Chart.js no se cargó después de múltiples intentos');
+              resolve(false);
+            }
+          }
+          check();
+        });
+      }
+      
+      async function initChart() {
         const canvas = document.getElementById('impressionsChart');
         if (!canvas) {
           console.warn('Canvas impressionsChart no encontrado');
+          return;
+        }
+        
+        // Esperar a que Chart.js esté disponible
+        const chartLoaded = await waitForChart();
+        if (!chartLoaded) {
+          console.error('No se pudo inicializar la gráfica: Chart.js no disponible');
           return;
         }
         
