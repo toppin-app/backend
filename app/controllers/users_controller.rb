@@ -2346,7 +2346,14 @@ def mark_banner_opened
 
   # Marcar como abierto si aún no lo está (idempotente)
   if delivery_record.opened_at.nil?
-    delivery_record.update(opened_at: Time.current)
+    # Si no está marcado como visto, marcarlo también (no se puede abrir sin ver)
+    updates = { opened_at: Time.current }
+    if delivery_record.viewed_at.nil?
+      updates[:viewed] = true
+      updates[:viewed_at] = Time.current
+    end
+    
+    delivery_record.update(updates)
     message = "Banner marcado como abierto"
   else
     message = "Banner ya estaba marcado como abierto"
@@ -2399,7 +2406,7 @@ def mark_banner_viewed
   end
 
   # ACTUALIZAR el registro existente (no crear uno nuevo)
-  if delivery_record.update(viewed_at: Time.current)
+  if delivery_record.update(viewed: true, viewed_at: Time.current)
     render json: {
       status: 200,
       message: "Banner marcado como visto",
