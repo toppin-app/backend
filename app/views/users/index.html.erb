@@ -552,6 +552,7 @@
     <%= hidden_field_tag :include_deleted, params[:include_deleted] if params[:include_deleted] %>
     <%= hidden_field_tag :show_real_users, params[:show_real_users] if params[:show_real_users] %>
     <%= hidden_field_tag :show_fake_users, params[:show_fake_users] if params[:show_fake_users] %>
+    <%= hidden_field_tag :show_blocked_users, params[:show_blocked_users] if params[:show_blocked_users] %>
     
     <%= select_tag :per_page,
         options_for_select([["15", 15], ["25", 25], ["50", 50], ["100", 100], ["Personalizado", "custom"]], params[:per_page] == 'custom' ? 'custom' : (params[:per_page] || 15)),
@@ -578,7 +579,17 @@
 
 <!-- Paginación -->
 <div class="digg_pagination" style="margin-top: 15px; padding-bottom: 10px;">
-  <%= will_paginate @users, :container => false %>
+  <%= will_paginate @users, 
+      container: false, 
+      params: params.permit(
+        :per_page, 
+        :custom_per_page, 
+        :include_deleted, 
+        :show_real_users, 
+        :show_fake_users, 
+        :show_blocked_users,
+        q: {}
+      ) %>
 </div>
 
 </div>
