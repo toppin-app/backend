@@ -514,7 +514,7 @@
             <div class="col-md-7">
               <%= select_tag "main_interest_#{i}_id", 
                   options_from_collection_for_select(Interest.all.order(:name), :id, :name, current_main&.interest_id), 
-                  { include_blank: "Selecciona un interés", class: 'form-control' } %>
+                  { include_blank: "Selecciona un interés", class: 'form-control selectpicker', "data-live-search" => "true" } %>
             </div>
             <div class="col-md-4">
               <div class="input-group">
