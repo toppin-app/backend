@@ -307,6 +307,9 @@
   <div class="card-body">
 
   <%= search_form_for @q, url: users_path do |f| %>
+    <%# Preservar parámetros de paginación %>
+    <%= hidden_field_tag :per_page, params[:per_page] if params[:per_page].present? %>
+    <%= hidden_field_tag :custom_per_page, params[:custom_per_page] if params[:custom_per_page].present? %>
 
   <!-- Búsqueda principal -->
   <div class="row mb-3">
@@ -375,10 +378,18 @@
     <div class="col-md-12">
       <label class="form-label"><i class="fa fa-sort"></i> <strong>Ordenar por</strong></label>
       <div class="d-flex flex-wrap" style="gap: 8px;">
-        <%= sort_link(@q, :created_at, '<i class="fa fa-calendar"></i> Fecha de registro'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
-        <%= sort_link(@q, :name, '<i class="fa fa-font"></i> Nombre'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
-        <%= sort_link(@q, :email, '<i class="fa fa-envelope"></i> Email'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
-        <%= sort_link(@q, :ranking, '<i class="fa fa-trophy"></i> Ranking'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
+        <%= sort_link(@q, :created_at, '<i class="fa fa-calendar"></i> Fecha de registro'.html_safe, 
+            { per_page: params[:per_page], custom_per_page: params[:custom_per_page], include_deleted: params[:include_deleted], show_real_users: params[:show_real_users], show_fake_users: params[:show_fake_users], show_blocked_users: params[:show_blocked_users] }, 
+            { class: 'btn btn-outline-secondary btn-sm' }) %>
+        <%= sort_link(@q, :name, '<i class="fa fa-font"></i> Nombre'.html_safe, 
+            { per_page: params[:per_page], custom_per_page: params[:custom_per_page], include_deleted: params[:include_deleted], show_real_users: params[:show_real_users], show_fake_users: params[:show_fake_users], show_blocked_users: params[:show_blocked_users] }, 
+            { class: 'btn btn-outline-secondary btn-sm' }) %>
+        <%= sort_link(@q, :email, '<i class="fa fa-envelope"></i> Email'.html_safe, 
+            { per_page: params[:per_page], custom_per_page: params[:custom_per_page], include_deleted: params[:include_deleted], show_real_users: params[:show_real_users], show_fake_users: params[:show_fake_users], show_blocked_users: params[:show_blocked_users] }, 
+            { class: 'btn btn-outline-secondary btn-sm' }) %>
+        <%= sort_link(@q, :ranking, '<i class="fa fa-trophy"></i> Ranking'.html_safe, 
+            { per_page: params[:per_page], custom_per_page: params[:custom_per_page], include_deleted: params[:include_deleted], show_real_users: params[:show_real_users], show_fake_users: params[:show_fake_users], show_blocked_users: params[:show_blocked_users] }, 
+            { class: 'btn btn-outline-secondary btn-sm' }) %>
       </div>
     </div>
   </div>
@@ -581,15 +592,7 @@
 <div class="digg_pagination" style="margin-top: 15px; padding-bottom: 10px;">
   <%= will_paginate @users, 
       container: false, 
-      params: params.permit(
-        :per_page, 
-        :custom_per_page, 
-        :include_deleted, 
-        :show_real_users, 
-        :show_fake_users, 
-        :show_blocked_users,
-        q: {}
-      ) %>
+      params: params.to_unsafe_h.except(:action, :controller) %>
 </div>
 
 </div>
