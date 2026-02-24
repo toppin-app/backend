@@ -360,10 +360,10 @@
       <%= f.select :gender_eq, 
           options_for_select([
             ['Todos los géneros', ''],
-            ['👩 Mujer', 'female'],
-            ['👨 Hombre', 'male'],
-            ['⚧ No binario', 'non_binary'],
-            ['👫 Pareja', 'couple']
+            ['👩 Mujer', 0],
+            ['👨 Hombre', 1],
+            ['⚧ No binario', 2],
+            ['👫 Pareja', 3]
           ], params.dig(:q, :gender_eq)), 
           {}, 
           { class: 'form-select', onchange: 'this.form.submit();' } %>
