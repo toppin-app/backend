@@ -356,6 +356,23 @@
     </div>
 
     <div class="col-md-6">
+      <label class="form-label"><i class="fa fa-venus-mars"></i> <strong>Género</strong></label>
+      <%= f.select :gender_eq, 
+          options_for_select([
+            ['Todos los géneros', ''],
+            ['👩 Mujer', 'female'],
+            ['👨 Hombre', 'male'],
+            ['⚧ No binario', 'non_binary'],
+            ['👫 Pareja', 'couple']
+          ], params.dig(:q, :gender_eq)), 
+          {}, 
+          { class: 'form-select', onchange: 'this.form.submit();' } %>
+    </div>
+  </div>
+
+  <!-- Ordenar por -->
+  <div class="row mb-3">
+    <div class="col-md-12">
       <label class="form-label"><i class="fa fa-sort"></i> <strong>Ordenar por</strong></label>
       <div class="d-flex flex-wrap" style="gap: 8px;">
         <%= sort_link(@q, :created_at, '<i class="fa fa-calendar"></i> Fecha de registro'.html_safe, class: 'btn btn-outline-secondary btn-sm') %>
