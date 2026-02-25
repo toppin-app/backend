@@ -765,7 +765,7 @@
 
           <% if @tmdb_problems.any? %>
             <div style="margin-bottom: 15px;">
-              <%= link_to "🔧 Reparar todos los problemas (#{@tmdb_problems.count})", 
+              <%= link_to "Reparar todos los problemas (#{@tmdb_problems.count})", 
                   fix_all_tmdb_admin_utilities_path(content_type: params[:content_type]),
                   method: :post,
                   data: { confirm: "¿Estás seguro de eliminar TODOS los registros problemáticos de #{@content_type_label}? Esta acción no se puede deshacer." },
@@ -809,7 +809,7 @@
                         <% end %>
                       </div>
 
-                      <div style="margin-top: 10px; display: flex; gap: 10px;">
+                      <div style="margin-top: 10px;">
                         <%= link_to fix_tmdb_problem_admin_utilities_path(tmdb_id: item.tmdb_id, content_type: params[:content_type]), 
                             method: :post,
                             data: { confirm: "¿Eliminar todos los registros con TMDB ID #{item.tmdb_id}? Afectará a #{item.user_count} usuario(s)." },
@@ -817,13 +817,6 @@
                             style: 'display: inline-block; padding: 6px 12px; font-size: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);' do %>
                           <i class="fas fa-wrench"></i> Reparar problema
                         <% end %>
-                        
-                        <a href="#" 
-                           onclick="showAffectedUsers(#{item.affected_user_ids.to_json.html_safe}, '#{item.title || item.name}'); return false;"
-                           class="btn-start"
-                           style="display: inline-block; padding: 6px 12px; font-size: 12px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-                          <i class="fas fa-users"></i> Ver usuarios (#{item.affected_user_ids.count})
-                        </a>
                       </div>
                     </div>
                   </div>
