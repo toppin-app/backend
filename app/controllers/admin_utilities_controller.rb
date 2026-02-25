@@ -377,7 +377,7 @@ class AdminUtilitiesController < ApplicationController
 
   def validate_movies
     # Obtener todas las películas agrupadas por tmdb_id con conteo de usuarios
-    movies_data = TmdbUserDatum.select('tmdb_id, title, poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
+    movies_data = TmdbUserDatum.select('tmdb_id, MAX(title) as title, MAX(poster_path) as poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
                                 .group(:tmdb_id)
                                 .having('tmdb_id IS NOT NULL')
     
@@ -423,7 +423,7 @@ class AdminUtilitiesController < ApplicationController
 
   def validate_series
     # Obtener todas las series agrupadas por tmdb_id con conteo de usuarios
-    series_data = TmdbUserSeriesDatum.select('tmdb_id, name, poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
+    series_data = TmdbUserSeriesDatum.select('tmdb_id, MAX(name) as name, MAX(poster_path) as poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
                                       .group(:tmdb_id)
                                       .having('tmdb_id IS NOT NULL')
     
