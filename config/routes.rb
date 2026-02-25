@@ -88,6 +88,7 @@ Rails.application.routes.draw do
   delete '/admin/utilities/clear_platform_progress', to: 'admin_utilities#clear_platform_progress', as: :clear_platform_progress_admin_utilities
   get '/admin/utilities/find_incomplete_users', to: 'admin_utilities#find_incomplete_users', as: :find_incomplete_users_admin_utilities
   delete '/admin/utilities/bulk_delete_users', to: 'admin_utilities#bulk_delete_users', as: :bulk_delete_users_admin_utilities
+  get '/admin/utilities/validate_tmdb', to: 'admin_utilities#validate_tmdb', as: :validate_tmdb_admin_utilities
   
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user

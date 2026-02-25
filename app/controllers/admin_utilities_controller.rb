@@ -1,3 +1,5 @@
+require 'ostruct'
+
 class AdminUtilitiesController < ApplicationController
   before_action :check_admin
 
@@ -356,7 +358,114 @@ class AdminUtilitiesController < ApplicationController
     redirect_to admin_utilities_path, notice: 'Progreso de plataforma limpiado'
   end
 
+  def validate_tmdb
+    @title = "Configuración y Utilidades"
+    content_type = params[:content_type] || 'movies'
+    
+    if content_type == 'movies'
+      @content_type_label = 'películas'
+      validate_movies
+    else
+      @content_type_label = 'series'
+      validate_series
+    end
+    
+    render :index
+  end
+
   private
+
+  def validate_movies
+    # Obtener todas las películas agrupadas por tmdb_id con conteo de usuarios
+    movies_data = TmdbUserDatum.select('tmdb_id, title, poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
+                                .group(:tmdb_id)
+                                .having('tmdb_id IS NOT NULL')
+    
+    @tmdb_problems = []
+    
+    movies_data.each do |movie|
+      issues = []
+      
+      # Validar título
+      if movie.title.blank? || movie.title == 'undefined' || movie.title == 'null'
+        issues << "Título vacío, undefined o null"
+      end
+      
+      # Validar poster_path
+      if movie.poster_path.blank? || movie.poster_path == 'undefined' || movie.poster_path == 'null'
+        issues << "Poster path vacío, undefined o null"
+      end
+      
+      # Validar tmdb_id
+      if movie.tmdb_id.blank? || movie.tmdb_id.to_s == 'undefined' || movie.tmdb_id.to_s == 'null'
+        issues << "TMDB ID vacío, undefined o null"
+      end
+      
+      # Si hay problemas, agregarlo a la lista
+      if issues.any?
+        affected_user_ids = movie.user_ids.to_s.split(',').map(&:to_i)
+        
+        @tmdb_problems << OpenStruct.new(
+          tmdb_id: movie.tmdb_id,
+          title: movie.title,
+          name: nil,
+          poster_path: movie.poster_path,
+          user_count: movie.user_count,
+          affected_user_ids: affected_user_ids,
+          issues: issues
+        )
+      end
+    end
+    
+    # Ordenar por número de usuarios afectados (descendente)
+    @tmdb_problems.sort_by! { |p| -p.user_count }
+  end
+
+  def validate_series
+    # Obtener todas las series agrupadas por tmdb_id con conteo de usuarios
+    series_data = TmdbUserSeriesDatum.select('tmdb_id, name, poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
+                                      .group(:tmdb_id)
+                                      .having('tmdb_id IS NOT NULL')
+    
+    @tmdb_problems = []
+    
+    series_data.each do |series|
+      issues = []
+      
+      # Validar nombre
+      if series.name.blank? || series.name == 'undefined' || series.name == 'null'
+        issues << "Nombre vacío, undefined o null"
+      end
+      
+      # Validar poster_path
+      if series.poster_path.blank? || series.poster_path == 'undefined' || series.poster_path == 'null'
+        issues << "Poster path vacío, undefined o null"
+      end
+      
+      # Validar tmdb_id
+      if series.tmdb_id.blank? || series.tmdb_id.to_s == 'undefined' || series.tmdb_id.to_s == 'null'
+        issues << "TMDB ID vacío, undefined o null"
+      end
+      
+      # Si hay problemas, agregarlo a la lista
+      if issues.any?
+        affected_user_ids = series.user_ids.to_s.split(',').map(&:to_i)
+        
+        @tmdb_problems << OpenStruct.new(
+          tmdb_id: series.tmdb_id,
+          title: nil,
+          name: series.name,
+          poster_path: series.poster_path,
+          user_count: series.user_count,
+          affected_user_ids: affected_user_ids,
+          issues: issues
+        )
+      end
+    end
+    
+    # Ordenar por número de usuarios afectados (descendente)
+    @tmdb_problems.sort_by! { |p| -p.user_count }
+  end
 
   def check_admin
     unless current_user&.admin?
