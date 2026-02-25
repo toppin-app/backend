@@ -436,7 +436,7 @@ class AdminUtilitiesController < ApplicationController
 
   def validate_series
     # Obtener todas las series agrupadas por tmdb_id con conteo de usuarios
-    series_data = TmdbUserSeriesDatum.select('tmdb_id, MAX(name) as name, MAX(poster_path) as poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
+    series_data = TmdbUserSeriesDatum.select('tmdb_id, MAX(title) as title, MAX(poster_path) as poster_path, COUNT(DISTINCT user_id) as user_count, GROUP_CONCAT(DISTINCT user_id) as user_ids')
                                       .group(:tmdb_id)
                                       .having('tmdb_id IS NOT NULL')
     
@@ -445,9 +445,9 @@ class AdminUtilitiesController < ApplicationController
     series_data.each do |series|
       issues = []
       
-      # Validar nombre
-      if series.name.blank? || series.name == 'undefined' || series.name == 'null'
-        issues << "Nombre vacío, undefined o null"
+      # Validar título
+      if series.title.blank? || series.title == 'undefined' || series.title == 'null'
+        issues << "Título vacío, undefined o null"
       end
       
       # Validar poster_path
@@ -466,8 +466,8 @@ class AdminUtilitiesController < ApplicationController
         
         @tmdb_problems << OpenStruct.new(
           tmdb_id: series.tmdb_id,
-          title: nil,
-          name: series.name,
+          title: series.title,
+          name: nil,
           poster_path: series.poster_path,
           user_count: series.user_count,
           affected_user_ids: affected_user_ids,
