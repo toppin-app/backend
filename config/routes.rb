@@ -89,6 +89,8 @@ Rails.application.routes.draw do
   get '/admin/utilities/find_incomplete_users', to: 'admin_utilities#find_incomplete_users', as: :find_incomplete_users_admin_utilities
   delete '/admin/utilities/bulk_delete_users', to: 'admin_utilities#bulk_delete_users', as: :bulk_delete_users_admin_utilities
   get '/admin/utilities/validate_tmdb', to: 'admin_utilities#validate_tmdb', as: :validate_tmdb_admin_utilities
+  post '/admin/utilities/fix_tmdb_problem', to: 'admin_utilities#fix_tmdb_problem', as: :fix_tmdb_problem_admin_utilities
+  post '/admin/utilities/fix_all_tmdb', to: 'admin_utilities#fix_all_tmdb', as: :fix_all_tmdb_admin_utilities
   
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user

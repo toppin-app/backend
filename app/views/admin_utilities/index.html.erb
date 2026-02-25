@@ -764,6 +764,15 @@
           </div>
 
           <% if @tmdb_problems.any? %>
+            <div style="margin-bottom: 15px;">
+              <%= link_to "🔧 Reparar todos los problemas (#{@tmdb_problems.count})", 
+                  fix_all_tmdb_admin_utilities_path(content_type: params[:content_type]),
+                  method: :post,
+                  data: { confirm: "¿Estás seguro de eliminar TODOS los registros problemáticos de #{@content_type_label}? Esta acción no se puede deshacer." },
+                  class: 'btn-start',
+                  style: 'background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: inline-block;' %>
+            </div>
+
             <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: #f8fafc; margin-top: 15px;">
               <% @tmdb_problems.each do |item| %>
                 <div class="user-card" style="background: white; border-radius: 6px; padding: 15px; margin-bottom: 10px; border: 1px solid #fecaca;">
@@ -800,12 +809,21 @@
                         <% end %>
                       </div>
 
-                      <div style="margin-top: 10px;">
-                        <%= link_to "Ver usuarios afectados (#{item.affected_user_ids.count})", 
-                            "#", 
-                            onclick: "showAffectedUsers(#{item.affected_user_ids.to_json.html_safe}, '#{item.title || item.name}'); return false;",
+                      <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <%= link_to fix_tmdb_problem_admin_utilities_path(tmdb_id: item.tmdb_id, content_type: params[:content_type]), 
+                            method: :post,
+                            data: { confirm: "¿Eliminar todos los registros con TMDB ID #{item.tmdb_id}? Afectará a #{item.user_count} usuario(s)." },
                             class: 'btn-start', 
-                            style: 'display: inline-block; padding: 6px 12px; font-size: 12px;' %>
+                            style: 'display: inline-block; padding: 6px 12px; font-size: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);' do %>
+                          <i class="fas fa-wrench"></i> Reparar problema
+                        <% end %>
+                        
+                        <a href="#" 
+                           onclick="showAffectedUsers(#{item.affected_user_ids.to_json.html_safe}, '#{item.title || item.name}'); return false;"
+                           class="btn-start"
+                           style="display: inline-block; padding: 6px 12px; font-size: 12px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                          <i class="fas fa-users"></i> Ver usuarios (#{item.affected_user_ids.count})
+                        </a>
                       </div>
                     </div>
                   </div>

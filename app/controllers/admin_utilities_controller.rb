@@ -386,7 +386,80 @@ class AdminUtilitiesController < ApplicationController
     render :index
   end
 
+  def fix_tmdb_problem
+    tmdb_id = params[:tmdb_id]
+    content_type = params[:content_type] || 'movies'
+    
+    if content_type == 'movies'
+      deleted_count = TmdbUserDatum.where(tmdb_id: tmdb_id).delete_all
+      flash[:notice] = "✅ Se eliminaron #{deleted_count} registro(s) de películas con TMDB ID #{tmdb_id}"
+    else
+      deleted_count = TmdbUserSeriesDatum.where(tmdb_id: tmdb_id).delete_all
+      flash[:notice] = "✅ Se eliminaron #{deleted_count} registro(s) de series con TMDB ID #{tmdb_id}"
+    end
+    
+    redirect_to validate_tmdb_admin_utilities_path(content_type: content_type)
+  end
+
+  def fix_all_tmdb
+    content_type = params[:content_type] || 'movies'
+    
+    if content_type == 'movies'
+      # Encontrar todos los tmdb_id problemáticos
+      problem_ids = find_problematic_movie_ids
+      deleted_count = TmdbUserDatum.where(tmdb_id: problem_ids).delete_all
+      flash[:notice] = "✅ Se eliminaron #{deleted_count} registro(s) de películas problemáticas (#{problem_ids.count} TMDB IDs distintos)"
+    else
+      # Encontrar todos los tmdb_id problemáticos
+      problem_ids = find_problematic_series_ids
+      deleted_count = TmdbUserSeriesDatum.where(tmdb_id: problem_ids).delete_all
+      flash[:notice] = "✅ Se eliminaron #{deleted_count} registro(s) de series problemáticas (#{problem_ids.count} TMDB IDs distintos)"
+    end
+    
+    redirect_to validate_tmdb_admin_utilities_path(content_type: content_type)
+  end
+
   private
+
+  def find_problematic_movie_ids
+    problem_ids = []
+    
+    movies_data = TmdbUserDatum.select('tmdb_id, MAX(title) as title, MAX(poster_path) as poster_path')
+                                .group(:tmdb_id)
+                                .having('tmdb_id IS NOT NULL')
+    
+    movies_data.each do |movie|
+      has_problems = false
+      
+      has_problems = true if movie.title.blank? || movie.title == 'undefined' || movie.title == 'null'
+      has_problems = true if movie.poster_path.blank? || movie.poster_path == 'undefined' || movie.poster_path == 'null'
+      has_problems = true if movie.tmdb_id.blank? || movie.tmdb_id.to_s == 'undefined' || movie.tmdb_id.to_s == 'null'
+      
+      problem_ids << movie.tmdb_id if has_problems
+    end
+    
+    problem_ids
+  end
+
+  def find_problematic_series_ids
+    problem_ids = []
+    
+    series_data = TmdbUserSeriesDatum.select('tmdb_id, MAX(title) as title, MAX(poster_path) as poster_path')
+                                      .group(:tmdb_id)
+                                      .having('tmdb_id IS NOT NULL')
+    
+    series_data.each do |series|
+      has_problems = false
+      
+      has_problems = true if series.title.blank? || series.title == 'undefined' || series.title == 'null'
+      has_problems = true if series.poster_path.blank? || series.poster_path == 'undefined' || series.poster_path == 'null'
+      has_problems = true if series.tmdb_id.blank? || series.tmdb_id.to_s == 'undefined' || series.tmdb_id.to_s == 'null'
+      
+      problem_ids << series.tmdb_id if has_problems
+    end
+    
+    problem_ids
+  end
 
   def validate_movies
     # Obtener todas las películas agrupadas por tmdb_id con conteo de usuarios
