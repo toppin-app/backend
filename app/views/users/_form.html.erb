@@ -6,6 +6,42 @@
 	     <%= f.label "Email" %>
 	    <%= f.text_field :id , value: @user.id%>
 	  </div>
+	<% else %>
+  <!-- Precargar datos desde JSON - Solo visible en creación -->
+  <div class="card" style="margin-bottom: 30px; border: 2px solid #667eea; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);">
+    <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer;" onclick="toggleJSONPreload()">
+      <h5 class="mb-0">
+        <i class="fa fa-file-code"></i> Precargar datos de usuario con JSON
+        <i class="fa fa-chevron-down" id="json-preload-icon" style="float: right; transition: transform 0.3s;"></i>
+      </h5>
+    </div>
+    <div class="card-body" id="json-preload-body" style="display: none;">
+      <p class="text-muted">
+        <small>
+          <strong>📋 Pega aquí un JSON con los datos del usuario.</strong> Los campos que se pueden precargar son: 
+          <code>email</code>, <code>name</code>, <code>birthdate</code> (DD/MM/YYYY), <code>description</code>, 
+          <code>movies[]</code>, <code>series[]</code>, <code>interests[]</code> (con name y percent).
+        </small>
+      </p>
+      
+      <div class="form-group">
+        <label><strong>JSON de datos:</strong></label>
+        <textarea 
+          id="user-json-input" 
+          class="form-control" 
+          rows="12" 
+          placeholder='{"email": "user@example.com", "name": "Usuario", "birthdate": "10/09/1998", "description": "...", "movies": ["Movie 1", "Movie 2"], "series": ["Series 1"], "interests": [{"name": "gym", "percent": 88}]}'
+          style="font-family: monospace; font-size: 12px;"
+        ></textarea>
+      </div>
+      
+      <div id="json-preload-messages" style="margin-top: 10px;"></div>
+      
+      <button type="button" class="btn btn-primary btn-lg btn-block" onclick="preloadUserData()" style="margin-top: 15px;">
+        <i class="fa fa-download"></i> Precargar datos en el formulario
+      </button>
+    </div>
+  </div>
 	<% end %>
 
   <div class="field">
@@ -690,4 +726,194 @@
         <i class="fa fa-check" aria-hidden="true"></i> Guardar datos
     <% end %>
   </div>
+
+  <script>
+    // Toggle JSON preload section
+    function toggleJSONPreload() {
+      const body = document.getElementById('json-preload-body');
+      const icon = document.getElementById('json-preload-icon');
+      
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        body.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Función principal para precargar datos
+    async function preloadUserData() {
+      const jsonInput = document.getElementById('user-json-input').value.trim();
+      const messagesDiv = document.getElementById('json-preload-messages');
+      
+      // Limpiar mensajes anteriores
+      messagesDiv.innerHTML = '';
+      
+      if (!jsonInput) {
+        showMessage('error', '⚠️ Por favor, pega un JSON antes de precargar los datos.');
+        return;
+      }
+      
+      // Validar JSON
+      let userData;
+      try {
+        userData = JSON.parse(jsonInput);
+      } catch (e) {
+        showMessage('error', `❌ Error al parsear JSON: ${e.message}`);
+        return;
+      }
+      
+      showMessage('info', '⏳ Precargando datos...');
+      
+      try {
+        // Precargar campos básicos
+        if (userData.email) {
+          document.getElementById('user_email').value = userData.email;
+        }
+        
+        if (userData.name) {
+          document.getElementById('user_name').value = userData.name;
+        }
+        
+        if (userData.birthdate) {
+          // Convertir de DD/MM/YYYY a YYYY-MM-DD
+          const [day, month, year] = userData.birthdate.split('/');
+          if (day && month && year) {
+            const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            document.getElementById('user_birthday').value = formattedDate;
+          }
+        }
+        
+        if (userData.description) {
+          document.getElementById('user_description').value = userData.description;
+        }
+        
+        // Precargar intereses principales
+        if (userData.interests && Array.isArray(userData.interests)) {
+          await preloadInterests(userData.interests);
+        }
+        
+        // Precargar películas
+        if (userData.movies && Array.isArray(userData.movies)) {
+          await preloadMovies(userData.movies);
+        }
+        
+        // Precargar series
+        if (userData.series && Array.isArray(userData.series)) {
+          await preloadSeries(userData.series);
+        }
+        
+        showMessage('success', '✅ ¡Datos precargados exitosamente! Revisa los campos y guarda el formulario.');
+        
+      } catch (error) {
+        showMessage('error', `❌ Error al precargar datos: ${error.message}`);
+      }
+    }
+    
+    // Precargar intereses principales
+    async function preloadInterests(interests) {
+      // Obtener todos los options disponibles del primer select
+      const firstSelect = document.querySelector('[id^="main_interest_"][id$="_id"]');
+      if (!firstSelect) return;
+      
+      const availableInterests = {};
+      Array.from(firstSelect.options).forEach(option => {
+        if (option.value) {
+          availableInterests[option.text.toLowerCase()] = option.value;
+        }
+      });
+      
+      // Precargar hasta 4 intereses
+      for (let i = 0; i < Math.min(4, interests.length); i++) {
+        const interest = interests[i];
+        const interestSelect = document.getElementById(`main_interest_${i}_id`);
+        const percentInput = document.getElementById(`main_interest_${i}_percentage`);
+        
+        if (interestSelect && percentInput) {
+          // Buscar el ID del interés por nombre (case insensitive)
+          const interestId = availableInterests[interest.name.toLowerCase()];
+          
+          if (interestId) {
+            interestSelect.value = interestId;
+            // Refrescar selectpicker si está activo
+            if (typeof $(interestSelect).selectpicker === 'function') {
+              $(interestSelect).selectpicker('refresh');
+            }
+          } else {
+            console.warn(`Interés "${interest.name}" no encontrado en las opciones disponibles`);
+          }
+          
+          if (interest.percent !== undefined) {
+            percentInput.value = interest.percent;
+          }
+        }
+      }
+    }
+    
+    // Precargar películas buscando en TMDB
+    async function preloadMovies(movies) {
+      for (let i = 0; i < Math.min(3, movies.length); i++) {
+        const movieTitle = movies[i];
+        const searchInput = document.getElementById(`movie_search_${i}`);
+        
+        if (searchInput) {
+          searchInput.value = movieTitle;
+          
+          // Buscar en TMDB
+          try {
+            const response = await fetch(`/tmdb/search_movie?query=${encodeURIComponent(movieTitle)}`);
+            const data = await response.json();
+            
+            if (data.results && data.results.length > 0) {
+              const firstResult = data.results[0];
+              selectMovie(i, firstResult.id, firstResult.title, firstResult.poster_path, firstResult.release_date);
+            }
+          } catch (error) {
+            console.warn(`No se pudo buscar la película "${movieTitle}" en TMDB:`, error);
+          }
+        }
+      }
+    }
+    
+    // Precargar series buscando en TMDB
+    async function preloadSeries(series) {
+      for (let i = 0; i < Math.min(3, series.length); i++) {
+        const seriesTitle = series[i];
+        const searchInput = document.getElementById(`series_search_${i}`);
+        
+        if (searchInput) {
+          searchInput.value = seriesTitle;
+          
+          // Buscar en TMDB
+          try {
+            const response = await fetch(`/tmdb/search_series?query=${encodeURIComponent(seriesTitle)}`);
+            const data = await response.json();
+            
+            if (data.results && data.results.length > 0) {
+              const firstResult = data.results[0];
+              selectSeries(i, firstResult.id, firstResult.name, firstResult.poster_path, firstResult.first_air_date);
+            }
+          } catch (error) {
+            console.warn(`No se pudo buscar la serie "${seriesTitle}" en TMDB:`, error);
+          }
+        }
+      }
+    }
+    
+    // Mostrar mensajes
+    function showMessage(type, message) {
+      const messagesDiv = document.getElementById('json-preload-messages');
+      const alertClass = type === 'error' ? 'alert-danger' : 
+                        type === 'success' ? 'alert-success' : 
+                        'alert-info';
+      
+      messagesDiv.innerHTML = `
+        <div class="alert ${alertClass}" role="alert">
+          ${message}
+        </div>
+      `;
+    }
+  </script>
+
 <% end %>
