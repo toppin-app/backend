@@ -360,6 +360,19 @@ class AdminUtilitiesController < ApplicationController
 
   def validate_tmdb
     @title = "Configuración y Utilidades"
+    
+    # Inicializar variables necesarias para la vista index
+    @users_needing_location = User.where.not(lat: [nil, '']).where.not(lng: [nil, ''])
+                                   .where("location_country IS NULL OR location_country = '' OR location_city IS NULL OR location_city = ''")
+                                   .count
+    @users_needing_platform = User.where(device_platform: nil).where.not(device_id: [nil, '']).count
+    @total_users = User.count
+    @users_with_platform = User.where.not(device_platform: nil).count
+    @ios_users = User.where(device_platform: 0).count
+    @android_users = User.where(device_platform: 1).count
+    @current_progress = Rails.cache.read('location_population_progress')
+    @platform_progress = Rails.cache.read('platform_population_progress')
+    
     content_type = params[:content_type] || 'movies'
     
     if content_type == 'movies'
