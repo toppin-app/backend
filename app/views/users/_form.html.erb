@@ -855,23 +855,21 @@
     async function preloadMovies(movies) {
       for (let i = 0; i < Math.min(3, movies.length); i++) {
         const movieTitle = movies[i];
-        const searchInput = document.getElementById(`movie_search_${i}`);
         
-        if (searchInput) {
-          searchInput.value = movieTitle;
+        // Buscar en TMDB y seleccionar automáticamente
+        try {
+          const response = await fetch(`/tmdb/search_movies?query=${encodeURIComponent(movieTitle)}`);
+          const data = await response.json();
           
-          // Buscar en TMDB
-          try {
-            const response = await fetch(`/tmdb/search_movie?query=${encodeURIComponent(movieTitle)}`);
-            const data = await response.json();
-            
-            if (data.results && data.results.length > 0) {
-              const firstResult = data.results[0];
-              selectMovie(i, firstResult.id, firstResult.title, firstResult.poster_path, firstResult.release_date);
-            }
-          } catch (error) {
-            console.warn(`No se pudo buscar la película "${movieTitle}" en TMDB:`, error);
+          if (data && data.length > 0) {
+            const firstResult = data[0];
+            // Llamar directamente a selectMovie para seleccionar automáticamente
+            selectMovie(i, firstResult.id, firstResult.title, firstResult.poster_path || '', firstResult.release_date || '');
+          } else {
+            console.warn(`No se encontraron resultados para la película "${movieTitle}"`);
           }
+        } catch (error) {
+          console.warn(`No se pudo buscar la película "${movieTitle}" en TMDB:`, error);
         }
       }
     }
@@ -880,23 +878,21 @@
     async function preloadSeries(series) {
       for (let i = 0; i < Math.min(3, series.length); i++) {
         const seriesTitle = series[i];
-        const searchInput = document.getElementById(`series_search_${i}`);
         
-        if (searchInput) {
-          searchInput.value = seriesTitle;
+        // Buscar en TMDB y seleccionar automáticamente
+        try {
+          const response = await fetch(`/tmdb/search_series?query=${encodeURIComponent(seriesTitle)}`);
+          const data = await response.json();
           
-          // Buscar en TMDB
-          try {
-            const response = await fetch(`/tmdb/search_series?query=${encodeURIComponent(seriesTitle)}`);
-            const data = await response.json();
-            
-            if (data.results && data.results.length > 0) {
-              const firstResult = data.results[0];
-              selectSeries(i, firstResult.id, firstResult.name, firstResult.poster_path, firstResult.first_air_date);
-            }
-          } catch (error) {
-            console.warn(`No se pudo buscar la serie "${seriesTitle}" en TMDB:`, error);
+          if (data && data.length > 0) {
+            const firstResult = data[0];
+            // Llamar directamente a selectSeries para seleccionar automáticamente
+            selectSeries(i, firstResult.id, firstResult.name, firstResult.poster_path || '', firstResult.first_air_date || '');
+          } else {
+            console.warn(`No se encontraron resultados para la serie "${seriesTitle}"`);
           }
+        } catch (error) {
+          console.warn(`No se pudo buscar la serie "${seriesTitle}" en TMDB:`, error);
         }
       }
     }
