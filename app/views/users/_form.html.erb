@@ -887,7 +887,7 @@
           if (data && data.length > 0) {
             const firstResult = data[0];
             // Llamar directamente a selectSeries para seleccionar automáticamente
-            selectSeries(i, firstResult.id, firstResult.name, firstResult.poster_path || '', firstResult.first_air_date || '');
+            selectSeries(i, firstResult.id, firstResult.title, firstResult.poster_path || '', firstResult.first_air_date || '');
           } else {
             console.warn(`No se encontraron resultados para la serie "${seriesTitle}"`);
           }
