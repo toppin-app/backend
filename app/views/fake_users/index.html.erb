@@ -539,11 +539,17 @@
         </div>
         
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeLocationModal()">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="fa fa-times"></i> Cancelar
           </button>
-          <button type="submit" class="btn btn-primary">
-            <i class="fa fa-check"></i> Actualizar ubicación
+          <button type="submit" class="btn btn-primary" id="bulkLocationSubmitBtn">
+            <span id="submitBtnText">
+              <i class="fa fa-check"></i> Actualizar ubicación
+            </span>
+            <span id="submitBtnLoader" style="display: none;">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Actualizando...
+            </span>
           </button>
         </div>
       <% end %>
@@ -632,8 +638,9 @@
     });
     
     // Abrir modal
-    const modal = new bootstrap.Modal(document.getElementById('locationModal'));
-    modal.show();
+    const modalElement = document.getElementById('locationModal');
+    currentModalInstance = new bootstrap.Modal(modalElement);
+    currentModalInstance.show();
   }
   
   function setModalLocation(lat, lng, city, country) {
@@ -643,15 +650,14 @@
     document.getElementById('modal_location_country').value = country;
   }
   
+  let currentModalInstance = null;
+  
   function closeLocationModal() {
     const modalElement = document.getElementById('locationModal');
-    const modal = bootstrap.Modal.getInstance(modalElement);
+    const modal = bootstrap.Modal.getInstance(modalElement) || currentModalInstance;
     if (modal) {
       modal.hide();
-    } else {
-      // Si no hay instancia, crear una y cerrarla
-      const newModal = new bootstrap.Modal(modalElement);
-      newModal.hide();
+      currentModalInstance = null;
     }
   }
   
@@ -667,4 +673,47 @@
       updateSelectionCount();
     }
   }
+  
+  // Manejar el submit del formulario de ubicación masiva
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('bulkLocationForm');
+    const submitBtn = document.getElementById('bulkLocationSubmitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const submitBtnLoader = document.getElementById('submitBtnLoader');
+    
+    if (form) {
+      // Antes de enviar
+      form.addEventListener('ajax:before', function() {
+        submitBtn.disabled = true;
+        submitBtnText.style.display = 'none';
+        submitBtnLoader.style.display = 'inline-block';
+      });
+      
+      // En caso de éxito
+      form.addEventListener('ajax:success', function(event) {
+        const [data, status, xhr] = event.detail;
+        closeLocationModal();
+        deselectAll();
+        
+        // Mostrar mensaje de éxito
+        alert('Ubicación actualizada correctamente');
+        
+        // Recargar la página para ver los cambios
+        location.reload();
+      });
+      
+      // En caso de error
+      form.addEventListener('ajax:error', function(event) {
+        const [data, status, xhr] = event.detail;
+        
+        // Re-habilitar botón
+        submitBtn.disabled = false;
+        submitBtnText.style.display = 'inline-block';
+        submitBtnLoader.style.display = 'none';
+        
+        // Mostrar mensaje de error
+        alert('Error al actualizar la ubicación. Por favor intenta nuevamente.');
+      });
+    }
+  });
 </script>
