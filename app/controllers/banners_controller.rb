@@ -191,7 +191,15 @@ class BannersController < ApplicationController
   private
 
   def set_banner
-    @banner = Banner.find(params[:id])
+    @banner = Banner.find_by(id: params[:id])
+    unless @banner
+      respond_to do |format|
+        format.html do 
+          redirect_to banners_path, alert: "El banner con ID #{params[:id]} no existe o fue eliminado."
+        end
+        format.json { render json: { error: "Banner not found" }, status: :not_found }
+      end
+    end
   end
 
   def banner_params
