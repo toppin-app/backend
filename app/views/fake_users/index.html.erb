@@ -24,9 +24,9 @@
   
   .user-selection-checkbox {
     position: absolute;
-    top: 65px;
-    right: 50%;
-    transform: translateX(50%);
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
     width: 32px;
     height: 32px;
     cursor: pointer;
@@ -117,7 +117,7 @@
   .bulk-actions-bar {
     position: fixed;
     bottom: 0;
-    left: 0;
+    left: 250px;
     right: 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -127,6 +127,12 @@
     display: none;
     align-items: center;
     justify-content: space-between;
+  }
+  
+  @media (max-width: 991px) {
+    .bulk-actions-bar {
+      left: 0;
+    }
   }
   
   .bulk-actions-bar.show {
@@ -328,6 +334,19 @@
   </div>
 </div>
 
+<!-- Contador total de usuarios -->
+<div class="card shadow-sm" style="margin-bottom: 25px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-left: 4px solid #667eea;">
+  <div class="card-body" style="padding: 15px 20px;">
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <i class="fas fa-robot" style="font-size: 32px; color: #667eea;"></i>
+      <div>
+        <h4 style="margin: 0; color: #667eea; font-weight: 700;"><%= @users.count %> usuario(s) fake</h4>
+        <p style="margin: 0; color: #666; font-size: 14px;">Total de usuarios BOT visibles con los filtros actuales</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Lista de usuarios fake en tarjetas -->
 <div class="row">
   <div class="col-12">
@@ -467,7 +486,7 @@
         <h5 class="modal-title" id="locationModalLabel">
           <i class="fa fa-map-marker-alt"></i> Cambiar ubicación masiva
         </h5>
-        <button type="button" class="btn-close" onclick="closeLocationModal()" aria-label="Close" style="filter: brightness(0) invert(1); font-size: 24px; opacity: 1;">×</button>
+        <button type="button" class="btn-close" onclick="closeLocationModal()" aria-label="Close" style="background: none; border: none; color: white; font-size: 32px; font-weight: 300; line-height: 1; padding: 0; width: 32px; height: 32px; cursor: pointer; opacity: 0.8;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">×</button>
       </div>
       
       <%= form_with url: bulk_update_location_fake_users_path, method: :post, id: 'bulkLocationForm' do |f| %>
@@ -625,9 +644,14 @@
   }
   
   function closeLocationModal() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('locationModal'));
+    const modalElement = document.getElementById('locationModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
     if (modal) {
       modal.hide();
+    } else {
+      // Si no hay instancia, crear una y cerrarla
+      const newModal = new bootstrap.Modal(modalElement);
+      newModal.hide();
     }
   }
   
