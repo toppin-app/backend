@@ -26,22 +26,14 @@ class FakeUsersController < ApplicationController
     
     @q = base_users.ransack(params[:q])
     
-    # Manejar usuarios por página: personalizado o predefinido
-    if params[:per_page] == 'custom' && params[:custom_per_page].present?
-      per_page = [params[:custom_per_page].to_i, 500].min # Máximo 500
-      per_page = [per_page, 1].max # Mínimo 1
-    else
-      per_page = params[:per_page].present? ? params[:per_page].to_i : 20
-    end
-    
     # Aplicar ordenamiento: si hay un sort de Ransack, usarlo; si no, ordenar por ID descendente
     sorted_users = @q.result
     if params[:q].present? && params[:q][:s].present?
       # Ransack maneja el ordenamiento
-      @users = sorted_users.paginate(:page => params[:page], :per_page => per_page)
+      @users = sorted_users
     else
       # Ordenamiento por defecto
-      @users = sorted_users.order("id DESC").paginate(:page => params[:page], :per_page => per_page)
+      @users = sorted_users.order("id DESC")
     end
     
     @show_blocked_users = params[:show_blocked_users] == '1'

@@ -9,6 +9,7 @@
     transition: all 0.3s ease;
     border-left: 4px solid #667eea;
     position: relative;
+    cursor: pointer;
   }
   
   .fake-user-card:hover {
@@ -23,11 +24,13 @@
   
   .user-selection-checkbox {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 24px;
-    height: 24px;
+    top: 65px;
+    right: 50%;
+    transform: translateX(50%);
+    width: 32px;
+    height: 32px;
     cursor: pointer;
+    z-index: 10;
   }
   
   .user-info-grid {
@@ -306,40 +309,17 @@
   </div>
 </div>
 
-<!-- Controles de paginación -->
+<!-- Acciones de selección -->
 <div class="card shadow-sm" style="margin-bottom: 25px;">
   <div class="card-body">
     <div class="row">
-      <div class="col-md-6">
-        <label class="form-label"><strong>Usuarios por página</strong></label>
-        <%= form_tag fake_users_path, method: :get do %>
-          <%= hidden_field_tag :q, params[:q].to_json if params[:q].present? %>
-          <%= hidden_field_tag :show_blocked_users, params[:show_blocked_users] if params[:show_blocked_users].present? %>
-          
-          <div class="d-flex gap-2 align-items-center flex-wrap">
-            <%= select_tag :per_page, 
-                options_for_select([['15', 15], ['20', 20], ['30', 30], ['50', 50], ['100', 100], ['Personalizado', 'custom']], params[:per_page] || 20),
-                class: 'form-select', 
-                style: 'width: auto; min-width: 150px;',
-                onchange: "if(this.value !== 'custom') { document.getElementById('custom_per_page_input').style.display = 'none'; this.form.submit(); } else { document.getElementById('custom_per_page_input').style.display = 'flex'; }" %>
-            
-            <div id="custom_per_page_input" style="<%= params[:per_page] == 'custom' ? 'display: flex;' : 'display: none;' %> gap: 8px; align-items: center;">
-              <%= number_field_tag :custom_per_page, params[:custom_per_page] || 25, min: 1, max: 500, class: 'form-control', style: 'width: 100px;', placeholder: 'Cantidad' %>
-              <button type="submit" class="btn btn-primary btn-sm">
-                <i class="fa fa-check"></i> Aplicar
-              </button>
-            </div>
-          </div>
-        <% end %>
-      </div>
-      
-      <div class="col-md-6">
+      <div class="col-md-12">
         <label class="form-label"><strong>Acciones de selección</strong></label>
-        <div class="d-flex gap-2 flex-wrap">
-          <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()" style="min-width: 200px;">
             <i class="fa fa-check-square"></i> Seleccionar todos
           </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()" style="min-width: 200px;">
             <i class="fa fa-square"></i> Deseleccionar todos
           </button>
         </div>
@@ -354,11 +334,12 @@
     <% if @users.any? %>
       <div id="fake-users-container">
         <% @users.each do |user| %>
-          <div class="fake-user-card" data-user-id="<%= user.id %>">
+          <div class="fake-user-card" data-user-id="<%= user.id %>" onclick="toggleCardSelection(event, this)">
             <input type="checkbox" 
                    class="user-selection-checkbox form-check-input" 
                    data-user-id="<%= user.id %>"
-                   onchange="updateSelectionCount()">
+                   onchange="updateSelectionCount()"
+                   onclick="event.stopPropagation()">
             
             <div class="user-header">
               <% if user.user_media.any? && user.user_media.first.file.present? %>
@@ -442,8 +423,8 @@
               <div class="info-item">
                 <span class="info-label"><i class="fa fa-eye"></i> Acciones</span>
                 <span class="info-value">
-                  <%= link_to show_user_path(user.id), class: 'btn btn-sm btn-primary' do %>
-                    <i class="fa fa-eye"></i> Ver detalles
+                  <%= link_to show_user_path(user.id), class: 'btn btn-sm btn-success', style: 'color: white !important;', target: '_blank', onclick: 'event.stopPropagation();' do %>
+                    <i class="fa fa-eye" style="color: white !important;"></i> Ver detalles
                   <% end %>
                 </span>
               </div>
@@ -452,16 +433,8 @@
         <% end %>
       </div>
       
-      <!-- Paginación -->
-      <div style="margin-top: 30px; margin-bottom: 80px;">
-        <%= will_paginate @users, 
-            container: false,
-            previous_label: '← Anterior',
-            next_label: 'Siguiente →',
-            inner_window: 2,
-            outer_window: 1,
-            params: params.to_unsafe_h.except(:action, :controller) %>
-      </div>
+      <!-- Espacio inferior para la barra flotante -->
+      <div style="margin-top: 30px; margin-bottom: 80px;"></div>
     <% else %>
       <div class="alert alert-info" role="alert">
         <i class="fa fa-info-circle"></i> No se encontraron usuarios fake con los filtros especificados.
@@ -494,7 +467,7 @@
         <h5 class="modal-title" id="locationModalLabel">
           <i class="fa fa-map-marker-alt"></i> Cambiar ubicación masiva
         </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" onclick="closeLocationModal()" aria-label="Close" style="filter: brightness(0) invert(1); font-size: 24px; opacity: 1;">×</button>
       </div>
       
       <%= form_with url: bulk_update_location_fake_users_path, method: :post, id: 'bulkLocationForm' do |f| %>
@@ -547,7 +520,7 @@
         </div>
         
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <button type="button" class="btn btn-secondary" onclick="closeLocationModal()">
             <i class="fa fa-times"></i> Cancelar
           </button>
           <button type="submit" class="btn btn-primary">
@@ -649,5 +622,25 @@
     document.getElementById('modal_lng').value = lng;
     document.getElementById('modal_location_city').value = city;
     document.getElementById('modal_location_country').value = country;
+  }
+  
+  function closeLocationModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('locationModal'));
+    if (modal) {
+      modal.hide();
+    }
+  }
+  
+  function toggleCardSelection(event, card) {
+    // No hacer nada si se hizo clic en un botón, link o input
+    if (event.target.closest('a, button, input')) {
+      return;
+    }
+    
+    const checkbox = card.querySelector('.user-selection-checkbox');
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      updateSelectionCount();
+    }
   }
 </script>
