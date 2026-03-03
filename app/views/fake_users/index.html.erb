@@ -486,7 +486,9 @@
         <h5 class="modal-title" id="locationModalLabel">
           <i class="fa fa-map-marker-alt"></i> Cambiar ubicación masiva
         </h5>
-        <button type="button" class="btn-close" onclick="closeLocationModal()" aria-label="Close" style="background: none; border: none; color: white; font-size: 32px; font-weight: 300; line-height: 1; padding: 0; width: 32px; height: 32px; cursor: pointer; opacity: 0.8;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">×</button>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; font-size: 32px; font-weight: 300; line-height: 1; padding: 0; width: 32px; height: 32px; cursor: pointer; opacity: 0.8; background: none; border: none;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+          <span aria-hidden="true">×</span>
+        </button>
       </div>
       
       <%= form_with url: bulk_update_location_fake_users_path, method: :post, id: 'bulkLocationForm' do |f| %>
@@ -539,7 +541,7 @@
         </div>
         
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
             <i class="fa fa-times"></i> Cancelar
           </button>
           <button type="submit" class="btn btn-primary" id="bulkLocationSubmitBtn">
@@ -637,10 +639,8 @@
       form.appendChild(input);
     });
     
-    // Abrir modal
-    const modalElement = document.getElementById('locationModal');
-    currentModalInstance = new bootstrap.Modal(modalElement);
-    currentModalInstance.show();
+    // Abrir modal con Bootstrap 4 (jQuery)
+    $('#locationModal').modal('show');
   }
   
   function setModalLocation(lat, lng, city, country) {
@@ -650,15 +650,9 @@
     document.getElementById('modal_location_country').value = country;
   }
   
-  let currentModalInstance = null;
-  
   function closeLocationModal() {
-    const modalElement = document.getElementById('locationModal');
-    const modal = bootstrap.Modal.getInstance(modalElement) || currentModalInstance;
-    if (modal) {
-      modal.hide();
-      currentModalInstance = null;
-    }
+    // Cerrar modal con Bootstrap 4 (jQuery)
+    $('#locationModal').modal('hide');
   }
   
   function toggleCardSelection(event, card) {
@@ -692,7 +686,9 @@
       // En caso de éxito
       form.addEventListener('ajax:success', function(event) {
         const [data, status, xhr] = event.detail;
-        closeLocationModal();
+        
+        // Cerrar modal con Bootstrap 4
+        $('#locationModal').modal('hide');
         deselectAll();
         
         // Mostrar mensaje de éxito
