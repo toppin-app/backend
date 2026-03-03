@@ -455,11 +455,12 @@
       <!-- Paginación -->
       <div style="margin-top: 30px; margin-bottom: 80px;">
         <%= will_paginate @users, 
-            renderer: WillPaginate::ActionView::BootstrapLinkRenderer,
+            container: false,
             previous_label: '← Anterior',
             next_label: 'Siguiente →',
             inner_window: 2,
-            outer_window: 1 %>
+            outer_window: 1,
+            params: params.to_unsafe_h.except(:action, :controller) %>
       </div>
     <% else %>
       <div class="alert alert-info" role="alert">
