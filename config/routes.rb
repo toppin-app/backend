@@ -102,6 +102,10 @@ Rails.application.routes.draw do
   get '/logout'=> 'users#logout', as: :logout
   post '/logout'=> 'users#logout'
   post '/update_location', to: "users#update_location"
+  
+  # Fake Users (BOT) Management
+  get '/fake_users' => 'fake_users#index', as: :fake_users
+  post '/fake_users/bulk_update_location' => 'fake_users#bulk_update_location', as: :bulk_update_location_fake_users
   post '/social_login_check', to: 'users#social_login_check'
   post '/update_spotify', to: 'users#update_spotify'
   post '/update_push_preferences', to: 'users#update_push_preferences'
