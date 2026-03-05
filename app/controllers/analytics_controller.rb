@@ -70,36 +70,46 @@ class AnalyticsController < ApplicationController
       @filters[:start_date] = 12.months.ago.beginning_of_day
       @filters[:end_date] = Time.current.end_of_day
     when 'custom'
-      @filters[:start_date] = params[:start_date].present? ? Date.parse(params[:start_date]) : 30.days.ago
-      @filters[:end_date] = params[:end_date].present? ? Date.parse(params[:end_date]) : Time.current
+      @filters[:start_date] = params[:start_date].present? ? Date.parse(params[:start_date]) : nil
+      @filters[:end_date] = params[:end_date].present? ? Date.parse(params[:end_date]) : nil
     else
-      # Default to last 30 days
-      @filters[:start_date] = 30.days.ago.beginning_of_day
-      @filters[:end_date] = Time.current.end_of_day
+      # Default to all time (no date filter)
+      @filters[:start_date] = nil
+      @filters[:end_date] = nil
     end
     
     # Bot filter
     case params[:bot_filter]
     when 'exclude_bots'
       @filters[:exclude_bots] = true
+      @filters[:only_bots] = false
     when 'only_bots'
       @filters[:only_bots] = true
+      @filters[:exclude_bots] = false
     when 'include_bots'
       @filters[:exclude_bots] = false
+      @filters[:only_bots] = false
     else
-      @filters[:exclude_bots] = true # default
+      # Default: exclude bots (fake_user: false) for cleaner data
+      @filters[:exclude_bots] = true
+      @filters[:only_bots] = false
     end
     
     # Account status
     case params[:account_status]
     when 'active'
       @filters[:exclude_deleted] = true
+      @filters[:only_deleted] = false
     when 'deleted'
       @filters[:only_deleted] = true
+      @filters[:exclude_deleted] = false
     when 'all'
       @filters[:exclude_deleted] = false
+      @filters[:only_deleted] = false
     else
-      @filters[:exclude_deleted] = true # default
+      # Default: active accounts only (exclude deleted)
+      @filters[:exclude_deleted] = true
+      @filters[:only_deleted] = false
     end
     
     # Gender

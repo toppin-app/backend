@@ -47,6 +47,8 @@ Rails.application.routes.draw do
   # Admin - Analytics Dashboard
   get '/analytics', to: 'analytics#index', as: :analytics
   get '/analytics/data', to: 'analytics#data', as: :analytics_data
+  get '/dashboard/analytics', to: 'analytics#index'  # Alias route
+  get '/dashboard/analytics/data', to: 'analytics#data'  # Alias route
   
   # Admin - Panel de pruebas de emails
   namespace :admin do

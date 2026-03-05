@@ -93,7 +93,7 @@
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
           
           <li class="nav-item">
-            <%= link_to admin_metrics_path, class: "nav-link" do %>
+            <%= link_to admin_metrics_path, class: "nav-link #{'active' if request.path == admin_metrics_path}" do %>
               <i class="nav-icon fas fa-chart-line"></i>
               <p>
                 Métricas
@@ -102,7 +102,16 @@
           </li>
           
           <li class="nav-item">
-            <%= link_to users_path, class: "nav-link" do %>
+            <%= link_to analytics_path, class: "nav-link #{'active' if request.path == analytics_path}" do %>
+              <i class="nav-icon fas fa-chart-area"></i>
+              <p>
+                Analytics
+              </p>
+            <% end %>
+          </li>
+          
+          <li class="nav-item">
+            <%= link_to users_path, class: "nav-link #{'active' if request.path == users_path}" do %>
               <i class="nav-icon far fa-user"></i>
               <p>
                 Usuarios

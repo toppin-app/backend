@@ -1,9 +1,24 @@
 class AnalyticsService
   # Filter parameters helper
+  # Filters are OPTIONAL and ADDITIVE - only apply when explicitly set
   def self.apply_filters(scope, filters)
-    scope = scope.where(deleted_account: false) if filters[:exclude_deleted] != false
-    scope = scope.where(fake_user: false) if filters[:exclude_bots]
-    scope = scope.where(fake_user: true) if filters[:only_bots]
+    # Account status filters (mutually exclusive)
+    if filters[:exclude_deleted] == true
+      scope = scope.where(deleted_account: false)
+    elsif filters[:only_deleted] == true
+      scope = scope.where(deleted_account: true)
+    end
+    # If both are false or nil, show ALL accounts
+    
+    # Bot filters (mutually exclusive)
+    if filters[:exclude_bots] == true
+      scope = scope.where(fake_user: false)
+    elsif filters[:only_bots] == true
+      scope = scope.where(fake_user: true)
+    end
+    # If both are false or nil, show ALL users (bots and real)
+    
+    # Optional filters - only apply when explicitly set
     scope = scope.where(gender: filters[:gender]) if filters[:gender].present?
     scope = scope.where(device_platform: filters[:device_platform]) if filters[:device_platform].present?
     scope = scope.where(verified: true) if filters[:verified] == true
@@ -23,7 +38,7 @@ class AnalyticsService
       end
     end
     
-    # Date range
+    # Date range - only apply if BOTH dates are present
     if filters[:start_date].present? && filters[:end_date].present?
       scope = scope.where(created_at: filters[:start_date]..filters[:end_date])
     end
@@ -94,7 +109,7 @@ class AnalyticsService
   end
 
   def self.verified_distribution(filters = {})
-    scope = User.where(deleted_account: false)
+    scope = User.all
     scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters)
     
@@ -114,7 +129,7 @@ class AnalyticsService
   # ===== ENGAGEMENT METRICS =====
   
   def self.daily_active_users(filters = {})
-    scope = User.where(deleted_account: false)
+    scope = User.all
     scope = apply_date_range(scope, filters, :last_sign_in_at)
     scope = apply_filters(scope, filters)
     
@@ -122,12 +137,13 @@ class AnalyticsService
   end
 
   def self.engagement_metrics(filters = {})
-    base_scope = User.where(deleted_account: false, fake_user: false)
+    base_scope = User.all
+    base_scope = apply_filters(base_scope, filters)
     date_range = get_date_range(filters)
     
     dau = base_scope.where('last_sign_in_at >= ?', date_range[:start]).count
-    wau = base_scope.where('last_sign_in_at >= ?', 7.days.ago).count
-    mau = base_scope.where('last_sign_in_at >= ?', 30.days.ago).count
+    wau = base_scope.where('last_sign_in_at >= ?', date_range[:wau_start]).count
+    mau = base_scope.where('last_sign_in_at >= ?', date_range[:mau_start]).count
     
     {
       dau: dau,
@@ -152,7 +168,7 @@ class AnalyticsService
   end
 
   def self.average_engagement(filters = {})
-    base_scope = User.where(deleted_account: false, fake_user: false)
+    base_scope = User.all
     scope = apply_filters(base_scope, filters)
     
     total_users = scope.count
@@ -164,11 +180,11 @@ class AnalyticsService
       avg_ratio_likes: scope.average(:ratio_likes).to_f.round(2)
     }
   end
-
+  
   # ===== DEMOGRAPHICS =====
   
   def self.gender_distribution(filters = {})
-    scope = User.where(deleted_account: false)
+    scope = User.all
     scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters.except(:gender))
     
@@ -176,7 +192,7 @@ class AnalyticsService
   end
 
   def self.age_distribution(filters = {})
-    scope = User.where(deleted_account: false).where.not(birthday: nil)
+    scope = User.where.not(birthday: nil)
     scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters)
     
@@ -198,7 +214,7 @@ class AnalyticsService
   end
 
   def self.top_countries(filters = {}, limit = 10)
-    scope = User.where(deleted_account: false).where.not(location_country: nil)
+    scope = User.where.not(location_country: nil)
     scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters.except(:country))
     
@@ -206,7 +222,7 @@ class AnalyticsService
   end
 
   def self.top_cities(filters = {}, limit = 10)
-    scope = User.where(deleted_account: false).where.not(location_city: nil)
+    scope = User.where.not(location_city: nil)
     scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters.except(:city))
     
@@ -214,8 +230,7 @@ class AnalyticsService
   end
 
   def self.average_age_by_gender(filters = {})
-    scope = User.where(deleted_account: false).where.not(birthday: nil)
-    scope = apply_date_range(scope, filters, :created_at)
+    scope = User.where.not(birthday: nil)
     scope = apply_filters(scope, filters)
     
     result = {}
@@ -251,7 +266,7 @@ class AnalyticsService
   end
 
   def self.matches_distribution(filters = {})
-    scope = User.where(deleted_account: false, fake_user: false)
+    scope = User.all
     scope = apply_filters(scope, filters)
     
     distribution = { '0' => 0, '1-5' => 0, '6-20' => 0, '21-50' => 0, '51-100' => 0, '100+' => 0 }
@@ -274,7 +289,7 @@ class AnalyticsService
   # ===== MONETIZATION =====
   
   def self.subscription_distribution(filters = {})
-    scope = User.where(deleted_account: false)
+    scope = User.all
     scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters.except(:subscription_type))
     
@@ -288,10 +303,15 @@ class AnalyticsService
   def self.revenue_over_time(filters = {})
     return {} unless table_exists?('purchases')
     
-    scope = Purchase.joins(:user).where('users.deleted_account = ?', false)
-    scope = apply_date_range(scope, filters, 'purchases.created_at')
+    # Apply user filters
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
     
-    scope.group("DATE(purchases.created_at)").sum(:price)
+    scope = Purchase.where(user_id: user_ids)
+    scope = apply_date_range(scope, filters, 'created_at')
+    
+    scope.group("DATE(created_at)").sum(:price)
   end
 
   def self.revenue_metrics(filters = {})
@@ -299,11 +319,17 @@ class AnalyticsService
     
     date_range = get_date_range(filters)
     
-    purchases = Purchase.joins(:user).where('users.deleted_account = ? AND purchases.created_at >= ?', false, date_range[:start])
+    # Apply user filters to purchases through joins
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
+    purchases = Purchase.where(user_id: user_ids)
+    purchases = purchases.where('purchases.created_at >= ?', date_range[:start]) if date_range[:start].present?
     total_revenue = purchases.sum(:price)
     
-    total_users = User.where(deleted_account: false).count
-    paying_users = User.where(deleted_account: false).where.not(current_subscription_name: nil).count
+    total_users = user_scope.count
+    paying_users = user_scope.where.not(current_subscription_name: nil).count
     
     {
       total_revenue: total_revenue,
@@ -319,15 +345,21 @@ class AnalyticsService
     
     date_range = get_date_range(filters)
     
+    # Apply user filters
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    
     Purchase.joins(:user)
-      .where('users.deleted_account = ? AND purchases.created_at >= ?', false, date_range[:start])
+      .where(user_id: user_scope.select(:id))
+      .where('purchases.created_at >= ?', date_range[:start])
       .group('users.device_platform')
       .sum(:price)
   end
 
   def self.boost_superlike_usage(filters = {})
     date_range = get_date_range(filters)
-    scope = User.where(deleted_account: false)
+    scope = User.all
+    scope = apply_filters(scope, filters)
     
     # This is approximate - you might want to track actual usage in a separate table
     {
@@ -445,9 +477,20 @@ class AnalyticsService
 
   def self.get_date_range(filters)
     if filters[:start_date].present? && filters[:end_date].present?
-      { start: filters[:start_date], end: filters[:end_date] }
+      { 
+        start: filters[:start_date], 
+        end: filters[:end_date],
+        wau_start: [filters[:start_date], 7.days.ago].max,
+        mau_start: [filters[:start_date], 30.days.ago].max
+      }
     else
-      { start: 30.days.ago, end: Time.current }
+      # Default to reasonable ranges for engagement metrics
+      { 
+        start: 1.day.ago,  # DAU - last 24 hours
+        wau_start: 7.days.ago,   # WAU - last 7 days
+        mau_start: 30.days.ago,  # MAU - last 30 days
+        end: Time.current 
+      }
     end
   end
 end
