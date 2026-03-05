@@ -116,6 +116,12 @@
     const data = await fetchData('growth');
     if (!data) return;
 
+    // Update KEY METRICS cards at the top
+    const userMetrics = data.user_metrics || {};
+    if (userMetrics.total_users !== undefined) {
+      document.getElementById('metric-total-users').textContent = formatNumber(userMetrics.total_users);
+    }
+
     // New Users Over Time
     renderLineChart('chart-new-users', {
       labels: Object.keys(data.new_users_daily || {}),

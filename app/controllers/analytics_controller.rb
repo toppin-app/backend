@@ -7,14 +7,18 @@ class AnalyticsController < ApplicationController
     @title = "User Analytics Dashboard"
     
     # Pre-load key metrics for initial page load
+    # Default filters: exclude bots and deleted accounts for cleaner initial view
+    # But these will update dynamically when user applies filters
+    default_user_scope = User.where(deleted_account: false, fake_user: false)
+    
     @key_metrics = {
-      total_users: User.where(deleted_account: false, fake_user: false).count,
+      total_users: default_user_scope.count,
       total_matches: UserMatchRequest.where(is_match: true).count,
       total_revenue: table_exists?('purchases') ? Purchase.sum(:price) : 0,
-      active_users_today: User.where('last_sign_in_at >= ?', 24.hours.ago).where(deleted_account: false).count
+      active_users_today: default_user_scope.where('last_sign_in_at >= ?', 24.hours.ago).count
     }
     
-    # Filter options
+    # Filter options - show ALL countries and cities (no filters)
     @countries = User.where.not(location_country: nil).distinct.pluck(:location_country).sort
     @cities = User.where.not(location_city: nil).distinct.pluck(:location_city).sort
   end

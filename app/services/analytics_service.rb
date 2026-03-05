@@ -79,10 +79,16 @@ class AnalyticsService
   end
 
   def self.user_count_metrics(filters = {})
+    # Start with ALL users, then apply filters
     scope = User.all
     scope = apply_date_range(scope, filters, :created_at)
+    # Apply all user-selected filters
+    filtered_scope = apply_filters(scope, filters)
     
-    total_users = scope.count
+    # Return metrics based on the FILTERED dataset
+    total_users = filtered_scope.count
+    
+    # Breakdown by type (calculate from base scope for complete picture)
     real_users = scope.where(fake_user: false, deleted_account: false).count
     bot_users = scope.where(fake_user: true).count
     verified_users = scope.where(verified: true, deleted_account: false).count
@@ -100,6 +106,8 @@ class AnalyticsService
   def self.users_by_type(filters = {})
     scope = User.all
     scope = apply_date_range(scope, filters, :created_at)
+    # Apply filters except bot/deleted filters (since we're breaking those down)
+    scope = apply_filters(scope, filters.except(:exclude_bots, :only_bots, :exclude_deleted, :only_deleted))
     
     {
       real: scope.where(fake_user: false, deleted_account: false).count,
@@ -231,6 +239,7 @@ class AnalyticsService
 
   def self.average_age_by_gender(filters = {})
     scope = User.where.not(birthday: nil)
+    scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters)
     
     result = {}
