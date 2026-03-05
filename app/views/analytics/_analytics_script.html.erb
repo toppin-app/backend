@@ -1,0 +1,551 @@
+// Analytics Dashboard JavaScript
+(function() {
+  'use strict';
+
+  // Global chart instances
+  const charts = {};
+
+  // Chart.js default config
+  Chart.defaults.font.family = "'Source Sans Pro', sans-serif";
+  Chart.defaults.color = '#666';
+  
+  // Color palette
+  const colors = {
+    primary: '#007bff',
+    success: '#28a745',
+    danger: '#dc3545',
+    warning: '#ffc107',
+    info: '#17a2b8',
+    purple: '#6f42c1',
+    pink: '#e83e8c',
+    teal: '#20c997',
+    orange: '#fd7e14',
+    gray: '#6c757d'
+  };
+
+  // Helper function to format numbers
+  function formatNumber(num) {
+    if (num === null || num === undefined) return '-';
+    return num.toLocaleString('es-ES');
+  }
+
+  // Helper function to create gradient
+  function createGradient(ctx, color1, color2) {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, color1);
+    gradient.addColorStop(1, color2);
+    return gradient;
+  }
+
+  // Initialize date range toggle
+  document.getElementById('date-range').addEventListener('change', function() {
+    const customStartDiv = document.getElementById('custom-date-start');
+    const customEndDiv = document.getElementById('custom-date-end');
+    
+    if (this.value === 'custom') {
+      customStartDiv.style.display = 'block';
+      customEndDiv.style.display = 'block';
+    } else {
+      customStartDiv.style.display = 'none';
+      customEndDiv.style.display = 'none';
+    }
+  });
+
+  // Apply filters button
+  document.getElementById('apply-filters').addEventListener('click', function() {
+    loadAllData();
+  });
+
+  // Get filter parameters
+  function getFilters() {
+    const form = document.getElementById('analytics-filters-form');
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    
+    for (let [key, value] of formData.entries()) {
+      if (value && value !== 'all') {
+        params.append(key, value);
+      }
+    }
+    
+    return params.toString();
+  }
+
+  // Fetch data from API
+  async function fetchData(section) {
+    const filters = getFilters();
+    const url = `/analytics/data?section=${section}&${filters}`;
+    
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Network response was not ok');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      return null;
+    }
+  }
+
+  // Load all sections
+  async function loadAllData() {
+    showLoading();
+    
+    await Promise.all([
+      loadGrowthData(),
+      loadEngagementData(),
+      loadDemographicsData(),
+      loadMatchingData(),
+      loadMonetizationData(),
+      loadRetentionData(),
+      loadInsightsData()
+    ]);
+    
+    hideLoading();
+  }
+
+  function showLoading() {
+    document.getElementById('loading-indicator').style.display = 'block';
+  }
+
+  function hideLoading() {
+    document.getElementById('loading-indicator').style.display = 'none';
+  }
+
+  // ===== GROWTH SECTION =====
+  async function loadGrowthData() {
+    const data = await fetchData('growth');
+    if (!data) return;
+
+    // New Users Over Time
+    renderLineChart('chart-new-users', {
+      labels: Object.keys(data.new_users_daily || {}),
+      datasets: [{
+        label: 'New Users',
+        data: Object.values(data.new_users_daily || {}),
+        borderColor: colors.primary,
+        backgroundColor: colors.primary + '20',
+        fill: true,
+        tension: 0.4
+      }]
+    });
+
+    // Cumulative Users
+    renderLineChart('chart-cumulative-users', {
+      labels: Object.keys(data.cumulative_users || {}),
+      datasets: [{
+        label: 'Total Users',
+        data: Object.values(data.cumulative_users || {}),
+        borderColor: colors.success,
+        backgroundColor: colors.success + '20',
+        fill: true,
+        tension: 0.4
+      }]
+    });
+
+    // Users by Type
+    const usersByType = data.users_by_type || {};
+    renderPieChart('chart-users-by-type', {
+      labels: ['Real Users', 'Bots', 'Deleted'],
+      datasets: [{
+        data: [usersByType.real || 0, usersByType.bots || 0, usersByType.deleted || 0],
+        backgroundColor: [colors.success, colors.warning, colors.danger]
+      }]
+    });
+
+    // Verified Distribution
+    const verified = data.verified_distribution || {};
+    renderPieChart('chart-verified', {
+      labels: ['Verified', 'Non-Verified'],
+      datasets: [{
+        data: [verified.verified || 0, verified.non_verified || 0],
+        backgroundColor: [colors.info, colors.gray]
+      }]
+    });
+
+    // Deletions Over Time
+    renderLineChart('chart-deletions', {
+      labels: Object.keys(data.deletions || {}),
+      datasets: [{
+        label: 'Deletions',
+        data: Object.values(data.deletions || {}),
+        borderColor: colors.danger,
+        backgroundColor: colors.danger + '20',
+        fill: true,
+        tension: 0.4
+      }]
+    }, { scales: { y: { beginAtZero: true } } });
+  }
+
+  // ===== ENGAGEMENT SECTION =====
+  async function loadEngagementData() {
+    const data = await fetchData('engagement');
+    if (!data) return;
+
+    // Update metrics
+    const metrics = data.engagement_metrics || {};
+    document.getElementById('metric-dau').textContent = formatNumber(metrics.dau);
+    document.getElementById('metric-wau').textContent = formatNumber(metrics.wau);
+    document.getElementById('metric-mau').textContent = formatNumber(metrics.mau);
+    document.getElementById('metric-stickiness').textContent = metrics.dau_mau_ratio + '%';
+
+    // Average engagement
+    const avgEng = data.average_engagement || {};
+    document.getElementById('avg-matches').textContent = avgEng.avg_matches || '-';
+    document.getElementById('avg-likes').textContent = avgEng.avg_likes_received || '-';
+    document.getElementById('avg-ratio').textContent = avgEng.avg_ratio_likes || '-';
+
+    // DAU Chart
+    renderLineChart('chart-dau', {
+      labels: Object.keys(data.dau || {}),
+      datasets: [{
+        label: 'Daily Active Users',
+        data: Object.values(data.dau || {}),
+        borderColor: colors.purple,
+        backgroundColor: colors.purple + '20',
+        fill: true,
+        tension: 0.4
+      }]
+    });
+
+    // Likes Sent
+    renderLineChart('chart-likes-sent', {
+      labels: Object.keys(data.likes_sent || {}),
+      datasets: [{
+        label: 'Likes Sent',
+        data: Object.values(data.likes_sent || {}),
+        borderColor: colors.pink,
+        backgroundColor: colors.pink + '20',
+        fill: true,
+        tension: 0.4
+      }]
+    });
+
+    // Matches Created
+    renderLineChart('chart-matches-created', {
+      labels: Object.keys(data.matches_created || {}),
+      datasets: [{
+        label: 'Matches Created',
+        data: Object.values(data.matches_created || {}),
+        borderColor: colors.danger,
+        backgroundColor: colors.danger + '20',
+        fill: true,
+        tension: 0.4
+      }]
+    });
+  }
+
+  // ===== DEMOGRAPHICS SECTION =====
+  async function loadDemographicsData() {
+    const data = await fetchData('demographics');
+    if (!data) return;
+
+    // Gender Distribution
+    const genderData = data.gender_distribution || {};
+    const genderLabels = {0: 'Female', 1: 'Male', 2: 'Non-binary', 3: 'Couple'};
+    renderPieChart('chart-gender', {
+      labels: Object.keys(genderData).map(k => genderLabels[k] || k),
+      datasets: [{
+        data: Object.values(genderData),
+        backgroundColor: [colors.pink, colors.primary, colors.purple, colors.teal]
+      }]
+    });
+
+    // Age Distribution
+    const ageData = data.age_distribution || {};
+    renderBarChart('chart-age', {
+      labels: Object.keys(ageData),
+      datasets: [{
+        label: 'Users by Age',
+        data: Object.values(ageData),
+        backgroundColor: colors.info
+      }]
+    });
+
+    // Top Countries
+    const countriesData = data.top_countries || {};
+    renderBarChart('chart-countries', {
+      labels: Object.keys(countriesData),
+      datasets: [{
+        label: 'Users',
+        data: Object.values(countriesData),
+        backgroundColor: colors.success
+      }]
+    }, { indexAxis: 'y' });
+
+    // Top Cities
+    const citiesData = data.top_cities || {};
+    renderBarChart('chart-cities', {
+      labels: Object.keys(citiesData),
+      datasets: [{
+        label: 'Users',
+        data: Object.values(citiesData),
+        backgroundColor: colors.orange
+      }]
+    }, { indexAxis: 'y' });
+  }
+
+  // ===== MATCHING SECTION =====
+  async function loadMatchingData() {
+    const data = await fetchData('matching');
+    if (!data) return;
+
+    // Update metrics
+    const metrics = data.match_metrics || {};
+    document.getElementById('metric-total-likes').textContent = formatNumber(metrics.total_likes);
+    document.getElementById('metric-total-superlikes').textContent = formatNumber(metrics.total_superlikes);
+    document.getElementById('metric-match-conversion').textContent = metrics.conversion_rate + '%';
+    document.getElementById('metric-superlike-conversion').textContent = metrics.superlike_conversion_rate + '%';
+
+    // Matches Distribution
+    const matchesDist = data.matches_distribution || {};
+    renderBarChart('chart-matches-distribution', {
+      labels: Object.keys(matchesDist),
+      datasets: [{
+        label: 'Users',
+        data: Object.values(matchesDist),
+        backgroundColor: colors.warning
+      }]
+    });
+  }
+
+  // ===== MONETIZATION SECTION =====
+  async function loadMonetizationData() {
+    const data = await fetchData('monetization');
+    if (!data) return;
+
+    // Update metrics
+    const metrics = data.revenue_metrics || {};
+    document.getElementById('metric-arpu').textContent = '€' + (metrics.arpu || 0).toFixed(2);
+    document.getElementById('metric-arppu').textContent = '€' + (metrics.arppu || 0).toFixed(2);
+    document.getElementById('metric-paying-users').textContent = formatNumber(metrics.paying_users);
+    document.getElementById('metric-conversion-rate').textContent = metrics.conversion_rate + '%';
+
+    // Subscription Distribution
+    const subData = data.subscription_distribution || {};
+    renderPieChart('chart-subscription', {
+      labels: ['Free', 'Premium', 'Supreme'],
+      datasets: [{
+        data: [subData.free || 0, subData.premium || 0, subData.supreme || 0],
+        backgroundColor: [colors.gray, colors.primary, colors.warning]
+      }]
+    });
+
+    // Revenue Over Time
+    const revenueData = data.revenue_over_time || {};
+    renderLineChart('chart-revenue', {
+      labels: Object.keys(revenueData),
+      datasets: [{
+        label: 'Revenue (€)',
+        data: Object.values(revenueData),
+        borderColor: colors.success,
+        backgroundColor: colors.success + '20',
+        fill: true,
+        tension: 0.4
+      }]
+    });
+  }
+
+  // ===== RETENTION SECTION =====
+  async function loadRetentionData() {
+    const data = await fetchData('retention');
+    if (!data) return;
+
+    // Update churn metrics
+    const churn = data.churn || {};
+    document.getElementById('metric-churn-rate').textContent = (churn.churn_rate || 0) + '%';
+    document.getElementById('metric-churned-users').textContent = formatNumber(churn.churned_users);
+    document.getElementById('metric-retention-active').textContent = formatNumber(churn.total_users);
+
+    // Render retention cohorts table
+    const cohorts = data.cohorts || {};
+    renderRetentionTable(cohorts);
+  }
+
+  function renderRetentionTable(cohorts) {
+    const container = document.getElementById('retention-cohorts-table');
+    
+    let html = '<table class="table table-sm table-bordered">';
+    html += '<thead class="thead-light"><tr><th>Cohort</th><th>Size</th><th>Day 1</th><th>Day 7</th><th>Day 30</th></tr></thead>';
+    html += '<tbody>';
+    
+    Object.entries(cohorts).forEach(([cohort, data]) => {
+      const retention = data.retention || {};
+      html += `<tr>
+        <td>${cohort}</td>
+        <td>${formatNumber(data.size)}</td>
+        <td>${retention.day_1 || '-'}%</td>
+        <td>${retention.day_7 || '-'}%</td>
+        <td>${retention.day_30 || '-'}%</td>
+      </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  // ===== INSIGHTS SECTION =====
+  async function loadInsightsData() {
+    const data = await fetchData('insights');
+    if (!data) return;
+
+    const topUsers = data.top_users || {};
+    
+    // Top Matches
+    let html = '<ol class="pl-3">';
+    (topUsers.most_matches || []).forEach(user => {
+      html += `<li>User #${user[0]} (${user[1]}) - ${formatNumber(user[2])} matches</li>`;
+    });
+    html += '</ol>';
+    document.getElementById('top-matches-list').innerHTML = html;
+
+    // Most Liked
+    html = '<ol class="pl-3">';
+    (topUsers.most_liked || []).forEach(user => {
+      html += `<li>User #${user[0]} (${user[1]}) - ${formatNumber(user[2])} likes</li>`;
+    });
+    html += '</ol>';
+    document.getElementById('top-liked-list').innerHTML = html;
+
+    // Top Cities
+    const topCities = data.top_cities || [];
+    html = '<ol class="pl-3">';
+    topCities.forEach(city => {
+      html += `<li>${city.city} - ${formatNumber(city.users)} users, avg ${city.avg_matches} matches</li>`;
+    });
+    html += '</ol>';
+    document.getElementById('top-cities-list').innerHTML = html;
+  }
+
+  // ===== CHART RENDERING FUNCTIONS =====
+
+  function renderLineChart(canvasId, data, options = {}) {
+    destroyChart(canvasId);
+    
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    const defaultOptions = {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: {
+            display: false
+          }
+        },
+        y: {
+          display: true,
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0,0,0,0.05)'
+          }
+        }
+      }
+    };
+    
+    charts[canvasId] = new Chart(ctx, {
+      type: 'line',
+      data: data,
+      options: Object.assign({}, defaultOptions, options)
+    });
+  }
+
+  function renderBarChart(canvasId, data, options = {}) {
+    destroyChart(canvasId);
+    
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    const defaultOptions = {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            display: false
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0,0,0,0.05)'
+          }
+        }
+      }
+    };
+    
+    charts[canvasId] = new Chart(ctx, {
+      type: 'bar',
+      data: data,
+      options: Object.assign({}, defaultOptions, options)
+    });
+  }
+
+  function renderPieChart(canvasId, data, options = {}) {
+    destroyChart(canvasId);
+    
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    const defaultOptions = {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+              return `${label}: ${formatNumber(value)} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    };
+    
+    charts[canvasId] = new Chart(ctx, {
+      type: 'doughnut',
+      data: data,
+      options: Object.assign({}, defaultOptions, options)
+    });
+  }
+
+  function destroyChart(canvasId) {
+    if (charts[canvasId]) {
+      charts[canvasId].destroy();
+      delete charts[canvasId];
+    }
+  }
+
+  // Load data on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    loadAllData();
+  });
+
+})();

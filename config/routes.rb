@@ -44,6 +44,10 @@ Rails.application.routes.draw do
   get '/admin/metrics/matches', to: 'admin#metrics_matches', as: :admin_metrics_matches
   get '/admin/metrics/retention', to: 'admin#metrics_retention', as: :admin_metrics_retention
   
+  # Admin - Analytics Dashboard
+  get '/analytics', to: 'analytics#index', as: :analytics
+  get '/analytics/data', to: 'analytics#data', as: :analytics_data
+  
   # Admin - Panel de pruebas de emails
   namespace :admin do
     get 'mailer_test', to: 'mailer_test#index'
