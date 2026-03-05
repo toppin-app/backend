@@ -37,25 +37,6 @@
     return gradient;
   }
 
-  // Initialize date range toggle
-  document.getElementById('date-range').addEventListener('change', function() {
-    const customStartDiv = document.getElementById('custom-date-start');
-    const customEndDiv = document.getElementById('custom-date-end');
-    
-    if (this.value === 'custom') {
-      customStartDiv.style.display = 'block';
-      customEndDiv.style.display = 'block';
-    } else {
-      customStartDiv.style.display = 'none';
-      customEndDiv.style.display = 'none';
-    }
-  });
-
-  // Apply filters button
-  document.getElementById('apply-filters').addEventListener('click', function() {
-    loadAllData();
-  });
-
   // Get filter parameters
   function getFilters() {
     const form = document.getElementById('analytics-filters-form');
@@ -90,7 +71,14 @@
 
   // Load all sections
   async function loadAllData() {
+    const applyButton = document.getElementById('apply-filters');
+    
+    // Show loading state
     showLoading();
+    if (applyButton) {
+      applyButton.disabled = true;
+      applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    }
     
     await Promise.all([
       loadGrowthData(),
@@ -102,15 +90,26 @@
       loadInsightsData()
     ]);
     
+    // Hide loading state
     hideLoading();
+    if (applyButton) {
+      applyButton.disabled = false;
+      applyButton.innerHTML = '<i class="fas fa-sync"></i> Apply Filters';
+    }
   }
 
   function showLoading() {
-    document.getElementById('loading-indicator').style.display = 'block';
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) {
+      loadingIndicator.style.display = 'block';
+    }
   }
 
   function hideLoading() {
-    document.getElementById('loading-indicator').style.display = 'none';
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) {
+      loadingIndicator.style.display = 'none';
+    }
   }
 
   // ===== GROWTH SECTION =====
@@ -553,6 +552,32 @@
 
   // Load data on page load
   document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date range toggle
+    const dateRangeSelect = document.getElementById('date-range');
+    if (dateRangeSelect) {
+      dateRangeSelect.addEventListener('change', function() {
+        const customStartDiv = document.getElementById('custom-date-start');
+        const customEndDiv = document.getElementById('custom-date-end');
+        
+        if (this.value === 'custom') {
+          customStartDiv.style.display = 'block';
+          customEndDiv.style.display = 'block';
+        } else {
+          customStartDiv.style.display = 'none';
+          customEndDiv.style.display = 'none';
+        }
+      });
+    }
+
+    // Apply filters button
+    const applyButton = document.getElementById('apply-filters');
+    if (applyButton) {
+      applyButton.addEventListener('click', function() {
+        loadAllData();
+      });
+    }
+
+    // Load initial data
     loadAllData();
   });
 
