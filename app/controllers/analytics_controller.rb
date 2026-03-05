@@ -10,7 +10,7 @@ class AnalyticsController < ApplicationController
     @key_metrics = {
       total_users: User.where(deleted_account: false, fake_user: false).count,
       total_matches: UserMatchRequest.where(is_match: true).count,
-      total_revenue: Purchase.sum(:price),
+      total_revenue: table_exists?('purchases') ? Purchase.sum(:price) : 0,
       active_users_today: User.where('last_sign_in_at >= ?', 24.hours.ago).where(deleted_account: false).count
     }
     
@@ -195,5 +195,9 @@ class AnalyticsController < ApplicationController
     unless current_user&.admin?
       redirect_to root_path, alert: "No tienes permisos para acceder a esta página"
     end
+  end
+  
+  def table_exists?(table_name)
+    ActiveRecord::Base.connection.table_exists?(table_name)
   end
 end

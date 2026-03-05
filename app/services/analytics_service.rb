@@ -286,6 +286,8 @@ class AnalyticsService
   end
 
   def self.revenue_over_time(filters = {})
+    return {} unless table_exists?('purchases')
+    
     scope = Purchase.joins(:user).where('users.deleted_account = ?', false)
     scope = apply_date_range(scope, filters, 'purchases.created_at')
     
@@ -293,6 +295,8 @@ class AnalyticsService
   end
 
   def self.revenue_metrics(filters = {})
+    return default_revenue_metrics unless table_exists?('purchases')
+    
     date_range = get_date_range(filters)
     
     purchases = Purchase.joins(:user).where('users.deleted_account = ? AND purchases.created_at >= ?', false, date_range[:start])
@@ -311,6 +315,8 @@ class AnalyticsService
   end
 
   def self.platform_revenue(filters = {})
+    return {} unless table_exists?('purchases')
+    
     date_range = get_date_range(filters)
     
     Purchase.joins(:user)
@@ -409,7 +415,21 @@ class AnalyticsService
     end
     
     city_stats
+  endtable_exists?(table_name)
+    ActiveRecord::Base.connection.table_exists?(table_name)
   end
+  
+  def self.default_revenue_metrics
+    {
+      total_revenue: 0,
+      arpu: 0,
+      arppu: 0,
+      paying_users: 0,
+      conversion_rate: 0
+    }
+  end
+  
+  def self.
 
   # ===== HELPER METHODS =====
   
