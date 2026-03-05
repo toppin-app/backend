@@ -7,9 +7,8 @@ class AnalyticsController < ApplicationController
     @title = "User Analytics Dashboard"
     
     # Pre-load key metrics for initial page load
-    # Default filters: exclude bots and deleted accounts for cleaner initial view
-    # But these will update dynamically when user applies filters
-    default_user_scope = User.where(deleted_account: false, fake_user: false)
+    # Use inclusive defaults to match filter defaults (show all users)
+    default_user_scope = User.all
     
     @key_metrics = {
       total_users: default_user_scope.count,
@@ -94,8 +93,8 @@ class AnalyticsController < ApplicationController
       @filters[:exclude_bots] = false
       @filters[:only_bots] = false
     else
-      # Default: exclude bots (fake_user: false) for cleaner data
-      @filters[:exclude_bots] = true
+      # Default when no param sent: include all (bots and real users)
+      @filters[:exclude_bots] = false
       @filters[:only_bots] = false
     end
     
@@ -111,8 +110,8 @@ class AnalyticsController < ApplicationController
       @filters[:exclude_deleted] = false
       @filters[:only_deleted] = false
     else
-      # Default: active accounts only (exclude deleted)
-      @filters[:exclude_deleted] = true
+      # Default when no param sent: include all accounts (active and deleted)
+      @filters[:exclude_deleted] = false
       @filters[:only_deleted] = false
     end
     
