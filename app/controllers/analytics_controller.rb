@@ -52,6 +52,20 @@ class AnalyticsController < ApplicationController
   def parse_filters
     @filters = {}
     
+    # Log incoming parameters
+    Rails.logger.debug "="*80
+    Rails.logger.debug "ANALYTICS FILTERS - Incoming params:"
+    Rails.logger.debug "  date_range: #{params[:date_range]}"
+    Rails.logger.debug "  bot_filter: #{params[:bot_filter]}"
+    Rails.logger.debug "  account_status: #{params[:account_status]}"
+    Rails.logger.debug "  gender: #{params[:gender]}"
+    Rails.logger.debug "  device_platform: #{params[:device_platform]}"
+    Rails.logger.debug "  subscription_type: #{params[:subscription_type]}"
+    Rails.logger.debug "  country: #{params[:country]}"
+    Rails.logger.debug "  city: #{params[:city]}"
+    Rails.logger.debug "  verified: #{params[:verified]}"
+    Rails.logger.debug "="*80
+    
     # Date range
     case params[:date_range]
     when 'today'
@@ -140,6 +154,11 @@ class AnalyticsController < ApplicationController
     when 'non_verified'
       @filters[:verified] = false
     end
+    
+    # Log parsed filters
+    Rails.logger.debug "ANALYTICS FILTERS - Parsed @filters:"
+    Rails.logger.debug @filters.inspect
+    Rails.logger.debug "="*80
   end
 
   def growth_data

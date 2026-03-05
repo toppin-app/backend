@@ -2,6 +2,10 @@ class AnalyticsService
   # Filter parameters helper
   # Filters are OPTIONAL and ADDITIVE - only apply when explicitly set
   def self.apply_filters(scope, filters)
+    Rails.logger.debug "ANALYTICS SERVICE - apply_filters called with:"
+    Rails.logger.debug "  filters: #{filters.inspect}"
+    Rails.logger.debug "  initial scope SQL: #{scope.to_sql}" rescue nil
+    
     # Account status filters (mutually exclusive)
     if filters[:exclude_deleted] == true
       scope = scope.where(deleted_account: false)
@@ -42,6 +46,10 @@ class AnalyticsService
     if filters[:start_date].present? && filters[:end_date].present?
       scope = scope.where(created_at: filters[:start_date]..filters[:end_date])
     end
+    
+    Rails.logger.debug "ANALYTICS SERVICE - Final filtered scope SQL:"
+    Rails.logger.debug scope.to_sql rescue "Could not generate SQL"
+    Rails.logger.debug "="*80
     
     scope
   end
@@ -85,14 +93,15 @@ class AnalyticsService
     # Apply all user-selected filters
     filtered_scope = apply_filters(scope, filters)
     
-    # Return metrics based on the FILTERED dataset
+    # ALL metrics must use filtered_scope to respect user's filter choices
     total_users = filtered_scope.count
     
-    # Breakdown by type (calculate from base scope for complete picture)
-    real_users = scope.where(fake_user: false, deleted_account: false).count
-    bot_users = scope.where(fake_user: true).count
-    verified_users = scope.where(verified: true, deleted_account: false).count
-    deleted_users = scope.where(deleted_account: true).count
+    # Breakdown by type - MUST use filtered_scope as base
+    # Then apply additional conditions for each category
+    real_users = filtered_scope.where(fake_user: false, deleted_account: false).count
+    bot_users = filtered_scope.where(fake_user: true).count
+    verified_users = filtered_scope.where(verified: true, deleted_account: false).count
+    deleted_users = filtered_scope.where(deleted_account: true).count
     
     {
       total_users: total_users,
@@ -106,13 +115,17 @@ class AnalyticsService
   def self.users_by_type(filters = {})
     scope = User.all
     scope = apply_date_range(scope, filters, :created_at)
-    # Apply filters except bot/deleted filters (since we're breaking those down)
-    scope = apply_filters(scope, filters.except(:exclude_bots, :only_bots, :exclude_deleted, :only_deleted))
+    # Apply ALL filters to get the base filtered dataset
+    # Then break it down by type
+    filtered_scope = apply_filters(scope, filters)
     
+    # Count each type within the filtered dataset
+    # If user excluded bots, bots count will be 0
+    # If user excluded deleted, deleted count will be 0
     {
-      real: scope.where(fake_user: false, deleted_account: false).count,
-      bots: scope.where(fake_user: true).count,
-      deleted: scope.where(deleted_account: true).count
+      real: filtered_scope.where(fake_user: false, deleted_account: false).count,
+      bots: filtered_scope.where(fake_user: true).count,
+      deleted: filtered_scope.where(deleted_account: true).count
     }
   end
 

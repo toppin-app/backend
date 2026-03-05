@@ -43,6 +43,12 @@
     const formData = new FormData(form);
     const params = new URLSearchParams();
     
+    // Log form data for debugging
+    console.log('=== ANALYTICS FILTERS - Form Data ===');
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
+    
     // Always send all filter values to backend, even "all" values
     // This ensures the backend knows the user's explicit choice
     for (let [key, value] of formData.entries()) {
@@ -51,7 +57,11 @@
       }
     }
     
-    return params.toString();
+    const queryString = params.toString();
+    console.log('Query string:', queryString);
+    console.log('=====================================');
+    
+    return queryString;
   }
 
   // Fetch data from API
