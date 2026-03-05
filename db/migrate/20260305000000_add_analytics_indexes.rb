@@ -37,6 +37,33 @@ class AddAnalyticsIndexes < ActiveRecord::Migration[6.0]
       
       puts "✅ User match requests indexes created successfully"
     else
+      puts "⚠️  Table 'user_match_requests' not found, skipping match requests indexes"
+    end
+    
+    # Purchases table indexes (optional - table may not exist in all environments)
+    if table_exists?(:purchases)
+      add_index :purchases, :created_at, name: 'idx_purchases_created' unless index_exists?(:purchases, :created_at, name: 'idx_purchases_created')
+      add_index :purchases, :user_id, name: 'idx_purchases_user' unless index_exists?(:purchases, :user_id, name: 'idx_purchases_user')
+      
+      puts "✅ Purchases indexes created successfully"
+    else
+      puts "⚠️  Table 'purchases' not found, skipping purchases indexes (this is OK if you don't track purchases yet)"
+    end
+  end
+  
+  def down
+    # Remove indexes in reverse order
+    if table_exists?(:purchases)
+      remove_index :purchases, name: 'idx_purchases_user' if index_exists?(:purchases, name: 'idx_purchases_user')
+      remove_index :purchases, name: 'idx_purchases_created' if index_exists?(:purchases, name: 'idx_purchases_created')
+    end
+    
+    if table_exists?(:user_match_requests)
+      remove_index :user_match_requests, name: 'idx_match_requests_superlike' if index_exists?(:user_match_requests, name: 'idx_match_requests_superlike')
+      remove_index :user_match_requests, name: 'idx_match_requests_match' if index_exists?(:user_match_requests, name: 'idx_match_requests_match')
+      remove_index :user_match_requests, name: 'idx_match_requests_created' if index_exists?(:user_match_requests, name: 'idx_match_requests_created')
+    end
+    
     if table_exists?(:users)
       remove_index :users, name: 'idx_users_analytics_engagement' if index_exists?(:users, name: 'idx_users_analytics_engagement')
       remove_index :users, name: 'idx_users_analytics_growth' if index_exists?(:users, name: 'idx_users_analytics_growth')
@@ -50,35 +77,6 @@ class AddAnalyticsIndexes < ActiveRecord::Migration[6.0]
       remove_index :users, name: 'idx_users_last_sign_in' if index_exists?(:users, name: 'idx_users_last_sign_in')
       remove_index :users, name: 'idx_users_created_at' if index_exists?(:users, name: 'idx_users_created_at')
     end
-    
-    if table_exists?(:purchases)
-      remove_index :purchases, name: 'idx_purchases_user' if index_exists?(:purchases, name: 'idx_purchases_user')
-      remove_index :purchases, name: 'idx_purchases_created' if index_exists?(:purchases, name: 'idx_purchases_created')
-    end
-    
-    if table_exists?(:user_match_requests)
-      remove_index :user_match_requests, name: 'idx_match_requests_superlike' if index_exists?(:user_match_requests, name: 'idx_match_requests_superlike')
-      remove_index :user_match_requests, name: 'idx_match_requests_match' if index_exists?(:user_match_requests, name: 'idx_match_requests_match')
-      remove_index :user_match_requests, name: 'idx_match_requests_created' if index_exists?(:user_match_requests, name: 'idx_match_requests_created')
-    endalytics_engagement')
-    remove_index :users, name: 'idx_users_analytics_growth' if index_exists?(:users, name: 'idx_users_analytics_growth')
-    
-    remove_index :purchases, name: 'idx_purchases_user' if index_exists?(:purchases, name: 'idx_purchases_user')
-    remove_index :purchases, name: 'idx_purchases_created' if index_exists?(:purchases, name: 'idx_purchases_created')
-    
-    remove_index :user_match_requests, name: 'idx_match_requests_superlike' if index_exists?(:user_match_requests, name: 'idx_match_requests_superlike')
-    remove_index :user_match_requests, name: 'idx_match_requests_match' if index_exists?(:user_match_requests, name: 'idx_match_requests_match')
-    remove_index :user_match_requests, name: 'idx_match_requests_created' if index_exists?(:user_match_requests, name: 'idx_match_requests_created')
-    
-    remove_index :users, name: 'idx_users_gender' if index_exists?(:users, name: 'idx_users_gender')
-    remove_index :users, name: 'idx_users_verified' if index_exists?(:users, name: 'idx_users_verified')
-    remove_index :users, name: 'idx_users_subscription' if index_exists?(:users, name: 'idx_users_subscription')
-    remove_index :users, name: 'idx_users_platform' if index_exists?(:users, name: 'idx_users_platform')
-    remove_index :users, name: 'idx_users_city' if index_exists?(:users, name: 'idx_users_city')
-    remove_index :users, name: 'idx_users_country' if index_exists?(:users, name: 'idx_users_country')
-    remove_index :users, name: 'idx_users_deleted_fake' if index_exists?(:users, name: 'idx_users_deleted_fake')
-    remove_index :users, name: 'idx_users_last_sign_in' if index_exists?(:users, name: 'idx_users_last_sign_in')
-    remove_index :users, name: 'idx_users_created_at' if index_exists?(:users, name: 'idx_users_created_at')
     
     puts "✅ Analytics indexes removed"
   end
