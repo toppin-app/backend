@@ -13,7 +13,6 @@ class AnalyticsController < ApplicationController
     @key_metrics = {
       total_users: default_user_scope.count,
       total_matches: UserMatchRequest.where(is_match: true).count,
-      total_revenue: table_exists?('purchases') ? Purchase.sum(:price) : 0,
       active_users_today: default_user_scope.where('last_sign_in_at >= ?', 24.hours.ago).count
     }
     
