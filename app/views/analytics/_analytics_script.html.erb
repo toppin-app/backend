@@ -87,7 +87,7 @@
     showLoading();
     if (applyButton) {
       applyButton.disabled = true;
-      applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+      applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
     }
     
     await Promise.all([
@@ -103,7 +103,7 @@
     hideLoading();
     if (applyButton) {
       applyButton.disabled = false;
-      applyButton.innerHTML = '<i class="fas fa-sync"></i> Apply Filters';
+      applyButton.innerHTML = '<i class="fas fa-sync"></i> Aplicar Filtros';
     }
   }
 
@@ -136,7 +136,7 @@
     renderLineChart('chart-new-users', {
       labels: Object.keys(data.new_users_daily || {}),
       datasets: [{
-        label: 'New Users',
+        label: 'Nuevos Usuarios',
         data: Object.values(data.new_users_daily || {}),
         borderColor: colors.primary,
         backgroundColor: colors.primary + '20',
@@ -149,7 +149,7 @@
     renderLineChart('chart-cumulative-users', {
       labels: Object.keys(data.cumulative_users || {}),
       datasets: [{
-        label: 'Total Users',
+        label: 'Total de Usuarios',
         data: Object.values(data.cumulative_users || {}),
         borderColor: colors.success,
         backgroundColor: colors.success + '20',
@@ -161,7 +161,7 @@
     // Users by Type
     const usersByType = data.users_by_type || {};
     renderPieChart('chart-users-by-type', {
-      labels: ['Real Users', 'Bots', 'Deleted'],
+      labels: ['Usuarios Reales', 'Bots', 'Eliminados'],
       datasets: [{
         data: [usersByType.real || 0, usersByType.bots || 0, usersByType.deleted || 0],
         backgroundColor: [colors.success, colors.warning, colors.danger]
@@ -171,7 +171,7 @@
     // Verified Distribution
     const verified = data.verified_distribution || {};
     renderPieChart('chart-verified', {
-      labels: ['Verified', 'Non-Verified'],
+      labels: ['Verificado', 'No Verificado'],
       datasets: [{
         data: [verified.verified || 0, verified.non_verified || 0],
         backgroundColor: [colors.info, colors.gray]
@@ -182,7 +182,7 @@
     renderLineChart('chart-deletions', {
       labels: Object.keys(data.deletions || {}),
       datasets: [{
-        label: 'Deletions',
+        label: 'Eliminaciones',
         data: Object.values(data.deletions || {}),
         borderColor: colors.danger,
         backgroundColor: colors.danger + '20',
@@ -214,7 +214,7 @@
     renderLineChart('chart-dau', {
       labels: Object.keys(data.dau || {}),
       datasets: [{
-        label: 'Daily Active Users',
+        label: 'Usuarios Activos Diarios',
         data: Object.values(data.dau || {}),
         borderColor: colors.purple,
         backgroundColor: colors.purple + '20',
@@ -227,7 +227,7 @@
     renderLineChart('chart-likes-sent', {
       labels: Object.keys(data.likes_sent || {}),
       datasets: [{
-        label: 'Likes Sent',
+        label: 'Likes Enviados',
         data: Object.values(data.likes_sent || {}),
         borderColor: colors.pink,
         backgroundColor: colors.pink + '20',
@@ -240,7 +240,7 @@
     renderLineChart('chart-matches-created', {
       labels: Object.keys(data.matches_created || {}),
       datasets: [{
-        label: 'Matches Created',
+        label: 'Matches Creados',
         data: Object.values(data.matches_created || {}),
         borderColor: colors.danger,
         backgroundColor: colors.danger + '20',
@@ -257,7 +257,7 @@
 
     // Gender Distribution
     const genderData = data.gender_distribution || {};
-    const genderLabels = {0: 'Female', 1: 'Male', 2: 'Non-binary', 3: 'Couple'};
+    const genderLabels = {0: 'Mujer', 1: 'Hombre', 2: 'No binario', 3: 'Pareja'};
     renderPieChart('chart-gender', {
       labels: Object.keys(genderData).map(k => genderLabels[k] || k),
       datasets: [{
@@ -271,7 +271,7 @@
     renderBarChart('chart-age', {
       labels: Object.keys(ageData),
       datasets: [{
-        label: 'Users by Age',
+        label: 'Usuarios por Edad',
         data: Object.values(ageData),
         backgroundColor: colors.info
       }]
@@ -282,7 +282,7 @@
     renderBarChart('chart-countries', {
       labels: Object.keys(countriesData),
       datasets: [{
-        label: 'Users',
+        label: 'Usuarios',
         data: Object.values(countriesData),
         backgroundColor: colors.success
       }]
@@ -293,7 +293,7 @@
     renderBarChart('chart-cities', {
       labels: Object.keys(citiesData),
       datasets: [{
-        label: 'Users',
+        label: 'Usuarios',
         data: Object.values(citiesData),
         backgroundColor: colors.orange
       }]
@@ -317,7 +317,7 @@
     renderBarChart('chart-matches-distribution', {
       labels: Object.keys(matchesDist),
       datasets: [{
-        label: 'Users',
+        label: 'Usuarios',
         data: Object.values(matchesDist),
         backgroundColor: colors.warning
       }]
@@ -344,7 +344,7 @@
     const container = document.getElementById('retention-cohorts-table');
     
     let html = '<table class="table table-sm table-bordered">';
-    html += '<thead class="thead-light"><tr><th>Cohort</th><th>Size</th><th>Day 1</th><th>Day 7</th><th>Day 30</th></tr></thead>';
+    html += '<thead class="thead-light"><tr><th>Cohorte</th><th>Tamaño</th><th>Día 1</th><th>Día 7</th><th>Día 30</th></tr></thead>';
     html += '<tbody>';
     
     Object.entries(cohorts).forEach(([cohort, data]) => {
@@ -372,7 +372,7 @@
     // Top Matches
     let html = '<ol class="pl-3">';
     (topUsers.most_matches || []).forEach(user => {
-      html += `<li>User #${user[0]} (${user[1]}) - ${formatNumber(user[2])} matches</li>`;
+      html += `<li>Usuario #${user[0]} (${user[1]}) - ${formatNumber(user[2])} matches</li>`;
     });
     html += '</ol>';
     document.getElementById('top-matches-list').innerHTML = html;
@@ -389,7 +389,7 @@
     const topCities = data.top_cities || [];
     html = '<ol class="pl-3">';
     topCities.forEach(city => {
-      html += `<li>${city.city} - ${formatNumber(city.users)} users, avg ${city.avg_matches} matches</li>`;
+      html += `<li>${city.city} - ${formatNumber(city.users)} usuarios, promedio ${city.avg_matches} matches</li>`;
     });
     html += '</ol>';
     document.getElementById('top-cities-list').innerHTML = html;

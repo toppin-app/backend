@@ -10,75 +10,75 @@
         <i class="fas fa-chart-area"></i> <%= @title %>
       </h1>
       <p class="text-muted">
-        Comprehensive user analytics and platform insights
-        <span class="badge badge-info">Last updated: <%= Time.current.strftime("%d/%m/%Y %H:%M") %></span>
+        Análisis completo de usuarios e información de la plataforma
+        <span class="badge badge-info">Última actualización: <%= Time.current.strftime("%d/%m/%Y %H:%M") %></span>
       </p>
     </div>
   </div>
 
-  <!-- Global Filters -->
+  <!-- Filtros Globales -->
   <div class="card mb-4 shadow-sm">
     <div class="card-header bg-primary text-white">
-      <h5 class="mb-0"><i class="fas fa-filter"></i> Global Filters</h5>
+      <h5 class="mb-0"><i class="fas fa-filter"></i> Filtros Globales</h5>
     </div>
     <div class="card-body">
       <form id="analytics-filters-form">
         <div class="row">
           
-          <!-- Date Range -->
+          <!-- Rango de Fechas -->
           <div class="col-md-3 mb-3">
-            <label class="font-weight-bold">Date Range</label>
+            <label class="font-weight-bold">Rango de Fechas</label>
             <select class="form-control" id="date-range" name="date_range">
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="last_7_days">Last 7 days</option>
-              <option value="last_30_days">Last 30 days</option>
-              <option value="last_90_days">Last 90 days</option>
-              <option value="last_12_months">Last 12 months</option>
-              <option value="all_time" selected>All time</option>
-              <option value="custom">Custom range</option>
+              <option value="today">Hoy</option>
+              <option value="yesterday">Ayer</option>
+              <option value="last_7_days">Últimos 7 días</option>
+              <option value="last_30_days">Últimos 30 días</option>
+              <option value="last_90_days">Últimos 90 días</option>
+              <option value="last_12_months">Últimos 12 meses</option>
+              <option value="all_time" selected>Todo el tiempo</option>
+              <option value="custom">Rango personalizado</option>
             </select>
           </div>
 
-          <!-- Custom Date Range -->
+          <!-- Rango Personalizado -->
           <div class="col-md-2 mb-3" id="custom-date-start" style="display: none;">
-            <label class="font-weight-bold">Start Date</label>
+            <label class="font-weight-bold">Fecha Inicio</label>
             <input type="date" class="form-control" name="start_date" id="start-date">
           </div>
           <div class="col-md-2 mb-3" id="custom-date-end" style="display: none;">
-            <label class="font-weight-bold">End Date</label>
+            <label class="font-weight-bold">Fecha Fin</label>
             <input type="date" class="form-control" name="end_date" id="end-date">
           </div>
 
-          <!-- Bot Filter -->
+          <!-- Filtro de Bots -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">Bot Filter</label>
+            <label class="font-weight-bold">Filtro de Bots</label>
             <select class="form-control" name="bot_filter">
-              <option value="exclude_bots" selected>Exclude bots</option>
-              <option value="only_bots">Only bots</option>
-              <option value="include_bots">Include bots</option>
+              <option value="exclude_bots" selected>Excluir bots</option>
+              <option value="only_bots">Solo bots</option>
+              <option value="include_bots">Incluir bots</option>
             </select>
           </div>
 
-          <!-- Account Status -->
+          <!-- Estado de Cuenta -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">Account Status</label>
+            <label class="font-weight-bold">Estado de Cuenta</label>
             <select class="form-control" name="account_status">
-              <option value="active" selected>Active users</option>
-              <option value="deleted">Deleted accounts</option>
-              <option value="all">All users</option>
+              <option value="active" selected>Usuarios activos</option>
+              <option value="deleted">Cuentas eliminadas</option>
+              <option value="all">Todos los usuarios</option>
             </select>
           </div>
 
-          <!-- Gender -->
+          <!-- Género -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">Gender</label>
+            <label class="font-weight-bold">Género</label>
             <select class="form-control" name="gender">
-              <option value="all" selected>All genders</option>
-              <option value="0">Female</option>
-              <option value="1">Male</option>
-              <option value="2">Non binary</option>
-              <option value="3">Couple</option>
+              <option value="all" selected>Todos los géneros</option>
+              <option value="0">Mujer</option>
+              <option value="1">Hombre</option>
+              <option value="2">No binario</option>
+              <option value="3">Pareja</option>
             </select>
           </div>
 
@@ -86,63 +86,63 @@
 
         <div class="row">
           
-          <!-- Device Platform -->
+          <!-- Plataforma -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">Device Platform</label>
+            <label class="font-weight-bold">Plataforma</label>
             <select class="form-control" name="device_platform">
-              <option value="all" selected>All platforms</option>
+              <option value="all" selected>Todas las plataformas</option>
               <option value="ios">iOS</option>
               <option value="android">Android</option>
             </select>
           </div>
 
-          <!-- Subscription Type -->
+          <!-- Tipo de Suscripción -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">Subscription</label>
+            <label class="font-weight-bold">Suscripción</label>
             <select class="form-control" name="subscription_type">
-              <option value="all" selected>All types</option>
-              <option value="free">Free</option>
+              <option value="all" selected>Todos los tipos</option>
+              <option value="free">Gratis</option>
               <option value="premium">Premium</option>
               <option value="supreme">Supreme</option>
             </select>
           </div>
 
-          <!-- Country -->
+          <!-- País -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">Country</label>
+            <label class="font-weight-bold">País</label>
             <select class="form-control" name="country">
-              <option value="all" selected>All countries</option>
+              <option value="all" selected>Todos los países</option>
               <% @countries.each do |country| %>
                 <option value="<%= country %>"><%= country %></option>
               <% end %>
             </select>
           </div>
 
-          <!-- City -->
+          <!-- Ciudad -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">City</label>
+            <label class="font-weight-bold">Ciudad</label>
             <select class="form-control" name="city">
-              <option value="all" selected>All cities</option>
+              <option value="all" selected>Todas las ciudades</option>
               <% @cities.first(100).each do |city| %>
                 <option value="<%= city %>"><%= city %></option>
               <% end %>
             </select>
           </div>
 
-          <!-- Verification Status -->
+          <!-- Estado de Verificación -->
           <div class="col-md-2 mb-3">
-            <label class="font-weight-bold">Verification</label>
+            <label class="font-weight-bold">Verificación</label>
             <select class="form-control" name="verified">
-              <option value="all" selected>All users</option>
-              <option value="verified">Verified only</option>
-              <option value="non_verified">Non-verified</option>
+              <option value="all" selected>Todos los usuarios</option>
+              <option value="verified">Solo verificados</option>
+              <option value="non_verified">No verificados</option>
             </select>
           </div>
 
-          <!-- Apply Button -->
+          <!-- Botón Aplicar -->
           <div class="col-md-2 mb-3 d-flex align-items-end">
             <button type="button" id="apply-filters" class="btn btn-primary btn-block">
-              <i class="fas fa-sync"></i> Apply Filters
+              <i class="fas fa-sync"></i> Aplicar Filtros
             </button>
           </div>
 
@@ -151,12 +151,12 @@
     </div>
   </div>
 
-  <!-- Key Metrics Row -->
+  <!-- Métricas Clave -->
   <div class="row mb-4">
     <div class="col-md-3">
       <div class="card border-primary shadow-sm">
         <div class="card-body text-center">
-          <h6 class="text-muted">Total Users</h6>
+          <h6 class="text-muted">Usuarios Totales</h6>
           <h2 class="text-primary mb-0" id="metric-total-users"><%= number_with_delimiter(@key_metrics[:total_users]) %></h2>
         </div>
       </div>
@@ -164,7 +164,7 @@
     <div class="col-md-3">
       <div class="card border-success shadow-sm">
         <div class="card-body text-center">
-          <h6 class="text-muted">Total Matches</h6>
+          <h6 class="text-muted">Matches Totales</h6>
           <h2 class="text-success mb-0" id="metric-total-matches"><%= number_with_delimiter(@key_metrics[:total_matches]) %></h2>
         </div>
       </div>
@@ -172,7 +172,7 @@
     <div class="col-md-3">
       <div class="card border-warning shadow-sm">
         <div class="card-body text-center">
-          <h6 class="text-muted">Active Today</h6>
+          <h6 class="text-muted">Activos Hoy</h6>
           <h2 class="text-warning mb-0" id="metric-active-today"><%= number_with_delimiter(@key_metrics[:active_users_today]) %></h2>
         </div>
       </div>
@@ -180,30 +180,30 @@
     <div class="col-md-3">
       <div class="card border-info shadow-sm">
         <div class="card-body text-center">
-          <h6 class="text-muted">Total Revenue</h6>
+          <h6 class="text-muted">Ingresos Totales</h6>
           <h2 class="text-info mb-0" id="metric-total-revenue">€<%= number_with_delimiter(@key_metrics[:total_revenue].to_f.round(2)) %></h2>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Loading Indicator -->
+  <!-- Indicador de Carga -->
   <div id="loading-indicator" class="text-center py-5" style="display: none;">
     <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-      <span class="sr-only">Loading...</span>
+      <span class="sr-only">Cargando...</span>
     </div>
-    <p class="mt-3 text-muted">Loading analytics data...</p>
+    <p class="mt-3 text-muted">Cargando datos de análisis...</p>
   </div>
 
-  <!-- Section 1: Growth -->
+  <!-- Sección 1: Crecimiento -->
   <div class="analytics-section mb-5">
-    <h3 class="mb-3"><i class="fas fa-chart-line text-success"></i> User Growth</h3>
+    <h3 class="mb-3"><i class="fas fa-chart-line text-success"></i> Crecimiento de Usuarios</h3>
     <div class="row">
       
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">New Users Over Time</h6>
+            <h6 class="mb-0">Nuevos Usuarios en el Tiempo</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-new-users" height="80"></canvas>
@@ -214,7 +214,7 @@
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Cumulative User Growth</h6>
+            <h6 class="mb-0">Crecimiento Acumulado de Usuarios</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-cumulative-users" height="80"></canvas>
@@ -225,7 +225,7 @@
       <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">User Types Distribution</h6>
+            <h6 class="mb-0">Distribución de Tipos de Usuario</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-users-by-type" height="120"></canvas>
@@ -236,7 +236,7 @@
       <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Verified vs Non-Verified</h6>
+            <h6 class="mb-0">Verificados vs No Verificados</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-verified" height="120"></canvas>
@@ -247,7 +247,7 @@
       <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Account Deletions</h6>
+            <h6 class="mb-0">Eliminación de Cuentas</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-deletions" height="120"></canvas>
@@ -258,11 +258,11 @@
     </div>
   </div>
 
-  <!-- Section 2: Engagement -->
+  <!-- Sección 2: Engagement -->
   <div class="analytics-section mb-5">
-    <h3 class="mb-3"><i class="fas fa-heart text-danger"></i> User Engagement</h3>
+    <h3 class="mb-3"><i class="fas fa-heart text-danger"></i> Engagement de Usuarios</h3>
     
-    <!-- Engagement Metrics Cards -->
+    <!-- Tarjetas de Métricas de Engagement -->
     <div class="row mb-3">
       <div class="col-md-3">
         <div class="card bg-light">
@@ -291,7 +291,7 @@
       <div class="col-md-3">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">DAU/MAU Ratio</small>
+            <small class="text-muted">Ratio DAU/MAU</small>
             <h4 id="metric-stickiness">-</h4>
           </div>
         </div>
@@ -302,7 +302,7 @@
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Daily Active Users</h6>
+            <h6 class="mb-0">Usuarios Activos Diarios</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-dau" height="80"></canvas>
@@ -313,7 +313,7 @@
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Likes Sent Over Time</h6>
+            <h6 class="mb-0">Likes Enviados en el Tiempo</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-likes-sent" height="80"></canvas>
@@ -324,7 +324,7 @@
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Matches Created Over Time</h6>
+            <h6 class="mb-0">Matches Creados en el Tiempo</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-matches-created" height="80"></canvas>
@@ -335,13 +335,13 @@
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Average Engagement Metrics</h6>
+            <h6 class="mb-0">Métricas Promedio de Engagement</h6>
           </div>
           <div class="card-body">
             <div id="engagement-stats">
-              <p><strong>Avg Matches per User:</strong> <span id="avg-matches">-</span></p>
-              <p><strong>Avg Likes Received:</strong> <span id="avg-likes">-</span></p>
-              <p><strong>Avg Like Ratio:</strong> <span id="avg-ratio">-</span></p>
+              <p><strong>Promedio de Matches por Usuario:</strong> <span id="avg-matches">-</span></p>
+              <p><strong>Promedio de Likes Recibidos:</strong> <span id="avg-likes">-</span></p>
+              <p><strong>Ratio Promedio de Likes:</strong> <span id="avg-ratio">-</span></p>
             </div>
           </div>
         </div>
@@ -350,15 +350,15 @@
     </div>
   </div>
 
-  <!-- Section 3: Demographics -->
+  <!-- Sección 3: Demografía -->
   <div class="analytics-section mb-5">
-    <h3 class="mb-3"><i class="fas fa-users text-info"></i> Demographics</h3>
+    <h3 class="mb-3"><i class="fas fa-users text-info"></i> Demografía</h3>
     <div class="row">
       
       <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Gender Distribution</h6>
+            <h6 class="mb-0">Distribución por Género</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-gender" height="120"></canvas>
@@ -369,7 +369,7 @@
       <div class="col-md-8 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Age Distribution</h6>
+            <h6 class="mb-0">Distribución por Edad</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-age" height="100"></canvas>
@@ -380,7 +380,7 @@
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Top Countries</h6>
+            <h6 class="mb-0">Principales Países</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-countries" height="100"></canvas>
@@ -391,7 +391,7 @@
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Top Cities</h6>
+            <h6 class="mb-0">Principales Ciudades</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-cities" height="100"></canvas>
@@ -402,16 +402,16 @@
     </div>
   </div>
 
-  <!-- Section 4: Matching System -->
+  <!-- Sección 4: Sistema de Matching -->
   <div class="analytics-section mb-5">
-    <h3 class="mb-3"><i class="fas fa-star text-warning"></i> Matching System</h3>
+    <h3 class="mb-3"><i class="fas fa-star text-warning"></i> Sistema de Matching</h3>
     
-    <!-- Match Metrics -->
+    <!-- Métricas de Match -->
     <div class="row mb-3">
       <div class="col-md-3">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">Total Likes</small>
+            <small class="text-muted">Likes Totales</small>
             <h4 id="metric-total-likes">-</h4>
           </div>
         </div>
@@ -419,7 +419,7 @@
       <div class="col-md-3">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">Total Superlikes</small>
+            <small class="text-muted">Superlikes Totales</small>
             <h4 id="metric-total-superlikes">-</h4>
           </div>
         </div>
@@ -427,7 +427,7 @@
       <div class="col-md-3">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">Match Conversion</small>
+            <small class="text-muted">Conversión de Match</small>
             <h4 id="metric-match-conversion">-</h4>
           </div>
         </div>
@@ -435,7 +435,7 @@
       <div class="col-md-3">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">Superlike Conversion</small>
+            <small class="text-muted">Conversión de Superlike</small>
             <h4 id="metric-superlike-conversion">-</h4>
           </div>
         </div>
@@ -446,7 +446,7 @@
       <div class="col-md-12 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Matches per User Distribution</h6>
+            <h6 class="mb-0">Distribución de Matches por Usuario</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-matches-distribution" height="60"></canvas>
@@ -456,16 +456,16 @@
     </div>
   </div>
 
-  <!-- Section 5: Retention -->
+  <!-- Sección 5: Retención -->
   <div class="analytics-section mb-5">
-    <h3 class="mb-3"><i class="fas fa-sync text-primary"></i> Retention & Churn</h3>
+    <h3 class="mb-3"><i class="fas fa-sync text-primary"></i> Retención y Churn</h3>
     
-    <!-- Churn Metrics -->
+    <!-- Métricas de Churn -->
     <div class="row mb-3">
       <div class="col-md-4">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">Churn Rate</small>
+            <small class="text-muted">Tasa de Churn</small>
             <h4 id="metric-churn-rate">-</h4>
           </div>
         </div>
@@ -473,7 +473,7 @@
       <div class="col-md-4">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">Churned Users</small>
+            <small class="text-muted">Usuarios con Churn</small>
             <h4 id="metric-churned-users">-</h4>
           </div>
         </div>
@@ -481,7 +481,7 @@
       <div class="col-md-4">
         <div class="card bg-light">
           <div class="card-body text-center">
-            <small class="text-muted">Active Users</small>
+            <small class="text-muted">Usuarios Activos</small>
             <h4 id="metric-retention-active">-</h4>
           </div>
         </div>
@@ -492,11 +492,11 @@
       <div class="col-md-12 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Retention Cohorts (Last 6 Months)</h6>
+            <h6 class="mb-0">Cohortes de Retención (Últimos 6 Meses)</h6>
           </div>
           <div class="card-body">
             <div id="retention-cohorts-table" class="table-responsive">
-              <!-- Will be populated by JavaScript -->
+              <!-- Será llenado por JavaScript -->
             </div>
           </div>
         </div>
@@ -504,19 +504,19 @@
     </div>
   </div>
 
-  <!-- Section 6: Top Insights -->
+  <!-- Sección 6: Principales Insights -->
   <div class="analytics-section mb-5">
-    <h3 class="mb-3"><i class="fas fa-trophy text-warning"></i> Top Insights</h3>
+    <h3 class="mb-3"><i class="fas fa-trophy text-warning"></i> Principales Insights</h3>
     <div class="row">
       
       <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Top Users by Matches</h6>
+            <h6 class="mb-0">Top Usuarios por Matches</h6>
           </div>
           <div class="card-body">
             <div id="top-matches-list" class="small">
-              <!-- Will be populated by JavaScript -->
+              <!-- Será llenado por JavaScript -->
             </div>
           </div>
         </div>
@@ -525,11 +525,11 @@
       <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Most Liked Users</h6>
+            <h6 class="mb-0">Usuarios Más Gustados</h6>
           </div>
           <div class="card-body">
             <div id="top-liked-list" class="small">
-              <!-- Will be populated by JavaScript -->
+              <!-- Será llenado por JavaScript -->
             </div>
           </div>
         </div>
@@ -538,11 +538,11 @@
       <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Top Cities by Engagement</h6>
+            <h6 class="mb-0">Top Ciudades por Engagement</h6>
           </div>
           <div class="card-body">
             <div id="top-cities-list" class="small">
-              <!-- Will be populated by JavaScript -->
+              <!-- Será llenado por JavaScript -->
             </div>
           </div>
         </div>
