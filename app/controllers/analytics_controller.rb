@@ -30,8 +30,6 @@ class AnalyticsController < ApplicationController
       growth_data
     when 'demographics'
       demographics_data
-    when 'retention'
-      retention_data
     when 'insights'
       insights_data
     else
@@ -173,13 +171,6 @@ class AnalyticsController < ApplicationController
       top_countries: AnalyticsService.top_countries(@filters),
       top_cities: AnalyticsService.top_cities(@filters),
       avg_age_by_gender: AnalyticsService.average_age_by_gender(@filters)
-    }
-  end
-
-  def retention_data
-    {
-      cohorts: AnalyticsService.retention_cohorts(@filters),
-      churn: AnalyticsService.churn_metrics(@filters)
     }
   end
 

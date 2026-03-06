@@ -223,63 +223,6 @@ class AnalyticsService
     result
   end
 
-  # ===== RETENTION =====
-  
-  def self.retention_cohorts(filters = {})
-    # Simplified cohort analysis - users grouped by signup month
-    cohorts = {}
-    
-    # Apply user filters to base scope
-    base_scope = User.all
-    base_scope = apply_filters(base_scope, filters.except(:start_date, :end_date))
-    
-    # Get users from last 6 months
-    6.downto(0).each do |months_ago|
-      cohort_start = months_ago.months.ago.beginning_of_month
-      cohort_end = cohort_start.end_of_month
-      
-      cohort_users = base_scope.where(created_at: cohort_start..cohort_end)
-      cohort_size = cohort_users.count
-      
-      next if cohort_size == 0
-      
-      # Calculate retention for each subsequent day/week
-      retention = {}
-      [1, 7, 30].each do |days|
-        target_date = cohort_start + days.days
-        break if target_date > Time.current
-        
-        retained = cohort_users.where('last_sign_in_at >= ?', target_date).count
-        retention["day_#{days}"] = cohort_size > 0 ? (retained.to_f / cohort_size * 100).round(2) : 0
-      end
-      
-      cohorts[cohort_start.strftime('%Y-%m')] = {
-        size: cohort_size,
-        retention: retention
-      }
-    end
-    
-    cohorts
-  end
-
-  def self.churn_metrics(filters = {})
-    date_range = get_date_range(filters)
-    
-    # Apply user filters first
-    scope = User.all
-    scope = apply_filters(scope, filters)
-    
-    total_users = scope.where('created_at < ?', date_range[:start]).count
-    churned_users = scope.where('created_at < ? AND (deleted_account = ? OR last_sign_in_at < ?)', 
-                                date_range[:start], true, 30.days.ago).count
-    
-    {
-      total_users: total_users,
-      churned_users: churned_users,
-      churn_rate: total_users > 0 ? (churned_users.to_f / total_users * 100).round(2) : 0
-    }
-  end
-
   # ===== TOP INSIGHTS =====
   
   def self.top_users(filters = {}, limit = 10)

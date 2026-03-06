@@ -242,44 +242,6 @@
     }, { indexAxis: 'y' });
   }
 
-  // ===== RETENTION SECTION =====
-  async function loadRetentionData() {
-    const data = await fetchData('retention');
-    if (!data) return;
-
-    // Update churn metrics
-    const churn = data.churn || {};
-    document.getElementById('metric-churn-rate').textContent = (churn.churn_rate || 0) + '%';
-    document.getElementById('metric-churned-users').textContent = formatNumber(churn.churned_users);
-    document.getElementById('metric-retention-active').textContent = formatNumber(churn.total_users);
-
-    // Render retention cohorts table
-    const cohorts = data.cohorts || {};
-    renderRetentionTable(cohorts);
-  }
-
-  function renderRetentionTable(cohorts) {
-    const container = document.getElementById('retention-cohorts-table');
-    
-    let html = '<table class="table table-sm table-bordered">';
-    html += '<thead class="thead-light"><tr><th>Cohorte</th><th>Tamaño</th><th>Día 1</th><th>Día 7</th><th>Día 30</th></tr></thead>';
-    html += '<tbody>';
-    
-    Object.entries(cohorts).forEach(([cohort, data]) => {
-      const retention = data.retention || {};
-      html += `<tr>
-        <td>${cohort}</td>
-        <td>${formatNumber(data.size)}</td>
-        <td>${retention.day_1 || '-'}%</td>
-        <td>${retention.day_7 || '-'}%</td>
-        <td>${retention.day_30 || '-'}%</td>
-      </tr>`;
-    });
-    
-    html += '</tbody></table>';
-    container.innerHTML = html;
-  }
-
   // ===== INSIGHTS SECTION =====
   async function loadInsightsData() {
     const data = await fetchData('insights');
