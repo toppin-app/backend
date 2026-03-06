@@ -192,64 +192,6 @@
     }, { scales: { y: { beginAtZero: true } } });
   }
 
-  // ===== ENGAGEMENT SECTION =====
-  async function loadEngagementData() {
-    const data = await fetchData('engagement');
-    if (!data) return;
-
-    // Update metrics
-    const metrics = data.engagement_metrics || {};
-    document.getElementById('metric-dau').textContent = formatNumber(metrics.dau);
-    document.getElementById('metric-wau').textContent = formatNumber(metrics.wau);
-    document.getElementById('metric-mau').textContent = formatNumber(metrics.mau);
-    document.getElementById('metric-stickiness').textContent = metrics.dau_mau_ratio + '%';
-
-    // Average engagement
-    const avgEng = data.average_engagement || {};
-    document.getElementById('avg-matches').textContent = avgEng.avg_matches || '-';
-    document.getElementById('avg-likes').textContent = avgEng.avg_likes_received || '-';
-    document.getElementById('avg-ratio').textContent = avgEng.avg_ratio_likes || '-';
-
-    // DAU Chart
-    renderLineChart('chart-dau', {
-      labels: Object.keys(data.dau || {}),
-      datasets: [{
-        label: 'Usuarios Activos Diarios',
-        data: Object.values(data.dau || {}),
-        borderColor: colors.purple,
-        backgroundColor: colors.purple + '20',
-        fill: true,
-        tension: 0.4
-      }]
-    });
-
-    // Likes Sent
-    renderLineChart('chart-likes-sent', {
-      labels: Object.keys(data.likes_sent || {}),
-      datasets: [{
-        label: 'Likes Enviados',
-        data: Object.values(data.likes_sent || {}),
-        borderColor: colors.pink,
-        backgroundColor: colors.pink + '20',
-        fill: true,
-        tension: 0.4
-      }]
-    });
-
-    // Matches Created
-    renderLineChart('chart-matches-created', {
-      labels: Object.keys(data.matches_created || {}),
-      datasets: [{
-        label: 'Matches Creados',
-        data: Object.values(data.matches_created || {}),
-        borderColor: colors.danger,
-        backgroundColor: colors.danger + '20',
-        fill: true,
-        tension: 0.4
-      }]
-    });
-  }
-
   // ===== DEMOGRAPHICS SECTION =====
   async function loadDemographicsData() {
     const data = await fetchData('demographics');
@@ -298,30 +240,6 @@
         backgroundColor: colors.orange
       }]
     }, { indexAxis: 'y' });
-  }
-
-  // ===== MATCHING SECTION =====
-  async function loadMatchingData() {
-    const data = await fetchData('matching');
-    if (!data) return;
-
-    // Update metrics
-    const metrics = data.match_metrics || {};
-    document.getElementById('metric-total-likes').textContent = formatNumber(metrics.total_likes);
-    document.getElementById('metric-total-superlikes').textContent = formatNumber(metrics.total_superlikes);
-    document.getElementById('metric-match-conversion').textContent = metrics.conversion_rate + '%';
-    document.getElementById('metric-superlike-conversion').textContent = metrics.superlike_conversion_rate + '%';
-
-    // Matches Distribution
-    const matchesDist = data.matches_distribution || {};
-    renderBarChart('chart-matches-distribution', {
-      labels: Object.keys(matchesDist),
-      datasets: [{
-        label: 'Usuarios',
-        data: Object.values(matchesDist),
-        backgroundColor: colors.warning
-      }]
-    });
   }
 
   // ===== RETENTION SECTION =====

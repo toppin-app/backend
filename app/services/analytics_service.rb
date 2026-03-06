@@ -149,73 +149,6 @@ class AnalyticsService
     
     scope.group("DATE(updated_at)").count
   end
-
-  # ===== ENGAGEMENT METRICS =====
-  
-  def self.daily_active_users(filters = {})
-    scope = User.all
-    scope = apply_filters(scope, filters)
-    scope = apply_date_range(scope, filters, :last_sign_in_at)
-    
-    scope.group("DATE(last_sign_in_at)").count
-  end
-
-  def self.engagement_metrics(filters = {})
-    base_scope = User.all
-    base_scope = apply_filters(base_scope, filters)
-    date_range = get_date_range(filters)
-    
-    dau = base_scope.where('last_sign_in_at >= ?', date_range[:start]).count
-    wau = base_scope.where('last_sign_in_at >= ?', date_range[:wau_start]).count
-    mau = base_scope.where('last_sign_in_at >= ?', date_range[:mau_start]).count
-    
-    {
-      dau: dau,
-      wau: wau,
-      mau: mau,
-      dau_mau_ratio: mau > 0 ? (dau.to_f / mau * 100).round(2) : 0
-    }
-  end
-
-  def self.likes_sent_over_time(filters = {})
-    # Apply user filters first
-    user_scope = User.all
-    user_scope = apply_filters(user_scope, filters)
-    user_ids = user_scope.pluck(:id)
-    
-    # Then get match requests from filtered users
-    scope = UserMatchRequest.where(from_user_id: user_ids)
-    scope = apply_date_range(scope, filters, :created_at)
-    
-    scope.group("DATE(created_at)").count
-  end
-
-  def self.matches_created_over_time(filters = {})
-    # Apply user filters first
-    user_scope = User.all
-    user_scope = apply_filters(user_scope, filters)
-    user_ids = user_scope.pluck(:id)
-    
-    # Then get matches from filtered users
-    scope = UserMatchRequest.where(is_match: true).where(from_user_id: user_ids)
-    scope = apply_date_range(scope, filters, :match_date)
-    
-    scope.group("DATE(match_date)").count
-  end
-
-  def self.average_engagement(filters = {})
-    base_scope = User.all
-    scope = apply_filters(base_scope, filters)
-    
-    total_users = scope.count
-    return {} if total_users == 0
-    
-    {
-      avg_matches: scope.average(:matches_number).to_f.round(2),
-      avg_likes_received: scope.average(:incoming_likes_number).to_f.round(2),
-      avg_ratio_likes: scope.average(:ratio_likes).to_f.round(2)
-    }
-  end
   
   # ===== DEMOGRAPHICS =====
   
@@ -288,54 +221,6 @@ class AnalyticsService
       end
     end
     result
-  end
-
-  # ===== MATCHING SYSTEM =====
-  
-  def self.match_metrics(filters = {})
-    # Apply user filters first
-    user_scope = User.all
-    user_scope = apply_filters(user_scope, filters)
-    user_ids = user_scope.pluck(:id)
-    
-    date_range = get_date_range(filters)
-    
-    # Get match requests from filtered users only
-    total_likes = UserMatchRequest.where(from_user_id: user_ids).where('created_at >= ?', date_range[:start]).count
-    total_superlikes = UserMatchRequest.where(from_user_id: user_ids).where('created_at >= ? AND is_superlike = ?', date_range[:start], true).count
-    total_matches = UserMatchRequest.where(from_user_id: user_ids).where('is_match = ? AND match_date >= ?', true, date_range[:start]).count
-    
-    conversion_rate = total_likes > 0 ? (total_matches.to_f / total_likes * 100).round(2) : 0
-    superlike_conversion = total_superlikes > 0 ? (UserMatchRequest.where(from_user_id: user_ids).where('is_match = ? AND is_superlike = ? AND match_date >= ?', true, true, date_range[:start]).count.to_f / total_superlikes * 100).round(2) : 0
-    
-    {
-      total_likes: total_likes,
-      total_superlikes: total_superlikes,
-      total_matches: total_matches,
-      conversion_rate: conversion_rate,
-      superlike_conversion_rate: superlike_conversion
-    }
-  end
-
-  def self.matches_distribution(filters = {})
-    scope = User.all
-    scope = apply_filters(scope, filters)
-    
-    distribution = { '0' => 0, '1-5' => 0, '6-20' => 0, '21-50' => 0, '51-100' => 0, '100+' => 0 }
-    
-    scope.select(:matches_number).each do |user|
-      matches = user.matches_number || 0
-      case matches
-      when 0 then distribution['0'] += 1
-      when 1..5 then distribution['1-5'] += 1
-      when 6..20 then distribution['6-20'] += 1
-      when 21..50 then distribution['21-50'] += 1
-      when 51..100 then distribution['51-100'] += 1
-      else distribution['100+'] += 1
-      end
-    end
-    
-    distribution
   end
 
   # ===== RETENTION =====

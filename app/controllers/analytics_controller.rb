@@ -28,12 +28,8 @@ class AnalyticsController < ApplicationController
     data = case section
     when 'growth'
       growth_data
-    when 'engagement'
-      engagement_data
     when 'demographics'
       demographics_data
-    when 'matching'
-      matching_data
     when 'retention'
       retention_data
     when 'insights'
@@ -170,16 +166,6 @@ class AnalyticsController < ApplicationController
     }
   end
 
-  def engagement_data
-    {
-      dau: AnalyticsService.daily_active_users(@filters),
-      engagement_metrics: AnalyticsService.engagement_metrics(@filters),
-      likes_sent: AnalyticsService.likes_sent_over_time(@filters),
-      matches_created: AnalyticsService.matches_created_over_time(@filters),
-      average_engagement: AnalyticsService.average_engagement(@filters)
-    }
-  end
-
   def demographics_data
     {
       gender_distribution: AnalyticsService.gender_distribution(@filters),
@@ -187,13 +173,6 @@ class AnalyticsController < ApplicationController
       top_countries: AnalyticsService.top_countries(@filters),
       top_cities: AnalyticsService.top_cities(@filters),
       avg_age_by_gender: AnalyticsService.average_age_by_gender(@filters)
-    }
-  end
-
-  def matching_data
-    {
-      match_metrics: AnalyticsService.match_metrics(@filters),
-      matches_distribution: AnalyticsService.matches_distribution(@filters)
     }
   end
 
