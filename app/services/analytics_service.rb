@@ -42,10 +42,8 @@ class AnalyticsService
       end
     end
     
-    # Date range - only apply if BOTH dates are present
-    if filters[:start_date].present? && filters[:end_date].present?
-      scope = scope.where(created_at: filters[:start_date]..filters[:end_date])
-    end
+    # NOTE: Date filtering is handled by apply_date_range only
+    # Do NOT filter by dates here to avoid double filtering
     
     Rails.logger.debug "ANALYTICS SERVICE - Final filtered scope SQL:"
     Rails.logger.debug scope.to_sql rescue "Could not generate SQL"
@@ -58,8 +56,8 @@ class AnalyticsService
   
   def self.new_users_over_time(filters = {}, group_by = :day)
     scope = User.all
-    scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
     
     case group_by
     when :day
@@ -73,8 +71,8 @@ class AnalyticsService
 
   def self.cumulative_users(filters = {})
     scope = User.all
-    scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
     
     users_by_day = scope.group("DATE(created_at)").count
     cumulative = {}
@@ -87,21 +85,21 @@ class AnalyticsService
   end
 
   def self.user_count_metrics(filters = {})
-    # Start with ALL users, then apply filters
+    # CORRECT PATTERN: User.all → apply_filters → apply_date_range
     scope = User.all
+    scope = apply_filters(scope, filters)
     scope = apply_date_range(scope, filters, :created_at)
-    # Apply all user-selected filters
-    filtered_scope = apply_filters(scope, filters)
     
-    # ALL metrics must use filtered_scope to respect user's filter choices
-    total_users = filtered_scope.count
+    # ALL metrics use the filtered scope
+    total_users = scope.count
     
-    # Breakdown by type - MUST use filtered_scope as base
-    # Then apply additional conditions for each category
-    real_users = filtered_scope.where(fake_user: false, deleted_account: false).count
-    bot_users = filtered_scope.where(fake_user: true).count
-    verified_users = filtered_scope.where(verified: true, deleted_account: false).count
-    deleted_users = filtered_scope.where(deleted_account: true).count
+    # Breakdown by type - counts within filtered dataset
+    # Note: If user selected "Only Bots", real_users will be 0
+    # Note: If user selected "Exclude Bots", bot_users will be 0
+    real_users = scope.where(fake_user: false, deleted_account: false).count
+    bot_users = scope.where(fake_user: true).count
+    verified_users = scope.where(verified: true, deleted_account: false).count
+    deleted_users = scope.where(deleted_account: true).count
     
     {
       total_users: total_users,
@@ -114,6 +112,7 @@ class AnalyticsService
 
   def self.users_by_type(filters = {})
     scope = User.all
+    scope = apply_filters(scope, filters)
     scope = apply_date_range(scope, filters, :created_at)
     # Apply ALL filters to get the base filtered dataset
     # Then break it down by type
@@ -131,8 +130,8 @@ class AnalyticsService
 
   def self.verified_distribution(filters = {})
     scope = User.all
-    scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
     
     {
       verified: scope.where(verified: true).count,
@@ -141,7 +140,11 @@ class AnalyticsService
   end
 
   def self.deletions_over_time(filters = {})
-    scope = User.where(deleted_account: true)
+    # Start with all users, apply filters, then restrict to deleted
+    scope = User.all
+    scope = apply_filters(scope, filters)
+    # Only show deletions (but respecting other filters like gender, country, etc)
+    scope = scope.where(deleted_account: true)
     scope = apply_date_range(scope, filters, :updated_at)
     
     scope.group("DATE(updated_at)").count
@@ -151,8 +154,8 @@ class AnalyticsService
   
   def self.daily_active_users(filters = {})
     scope = User.all
-    scope = apply_date_range(scope, filters, :last_sign_in_at)
     scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :last_sign_in_at)
     
     scope.group("DATE(last_sign_in_at)").count
   end
@@ -175,14 +178,26 @@ class AnalyticsService
   end
 
   def self.likes_sent_over_time(filters = {})
-    scope = UserMatchRequest.all
+    # Apply user filters first
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
+    # Then get match requests from filtered users
+    scope = UserMatchRequest.where(from_user_id: user_ids)
     scope = apply_date_range(scope, filters, :created_at)
     
     scope.group("DATE(created_at)").count
   end
 
   def self.matches_created_over_time(filters = {})
-    scope = UserMatchRequest.where(is_match: true)
+    # Apply user filters first
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
+    # Then get matches from filtered users
+    scope = UserMatchRequest.where(is_match: true).where(from_user_id: user_ids)
     scope = apply_date_range(scope, filters, :match_date)
     
     scope.group("DATE(match_date)").count
@@ -206,16 +221,19 @@ class AnalyticsService
   
   def self.gender_distribution(filters = {})
     scope = User.all
-    scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters.except(:gender))
+    scope = apply_date_range(scope, filters, :created_at)
     
     scope.group(:gender).count
   end
 
   def self.age_distribution(filters = {})
-    scope = User.where.not(birthday: nil)
-    scope = apply_date_range(scope, filters, :created_at)
+    # Start with all users, apply filters properly
+    scope = User.all
     scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    # Filter out users without birthday AFTER applying user filters
+    scope = scope.where.not(birthday: nil)
     
     users = scope.select(:birthday)
     age_groups = { '18-24' => 0, '25-34' => 0, '35-44' => 0, '45-54' => 0, '55+' => 0 }
@@ -235,25 +253,31 @@ class AnalyticsService
   end
 
   def self.top_countries(filters = {}, limit = 10)
-    scope = User.where.not(location_country: nil)
-    scope = apply_date_range(scope, filters, :created_at)
+    scope = User.all
     scope = apply_filters(scope, filters.except(:country))
+    scope = apply_date_range(scope, filters, :created_at)
+    # Filter out users without country AFTER applying filters
+    scope = scope.where.not(location_country: nil)
     
     scope.group(:location_country).count.sort_by { |_, v| -v }.first(limit).to_h
   end
 
   def self.top_cities(filters = {}, limit = 10)
-    scope = User.where.not(location_city: nil)
-    scope = apply_date_range(scope, filters, :created_at)
+    scope = User.all
     scope = apply_filters(scope, filters.except(:city))
+    scope = apply_date_range(scope, filters, :created_at)
+    # Filter out users without city AFTER applying filters
+    scope = scope.where.not(location_city: nil)
     
     scope.group(:location_city).count.sort_by { |_, v| -v }.first(limit).to_h
   end
 
   def self.average_age_by_gender(filters = {})
-    scope = User.where.not(birthday: nil)
-    scope = apply_date_range(scope, filters, :created_at)
+    scope = User.all
     scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    # Filter out users without birthday AFTER applying filters
+    scope = scope.where.not(birthday: nil)
     
     result = {}
     User.genders.keys.each do |gender|
@@ -269,14 +293,20 @@ class AnalyticsService
   # ===== MATCHING SYSTEM =====
   
   def self.match_metrics(filters = {})
+    # Apply user filters first
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
     date_range = get_date_range(filters)
     
-    total_likes = UserMatchRequest.where('created_at >= ?', date_range[:start]).count
-    total_superlikes = UserMatchRequest.where('created_at >= ? AND is_superlike = ?', date_range[:start], true).count
-    total_matches = UserMatchRequest.where('is_match = ? AND match_date >= ?', true, date_range[:start]).count
+    # Get match requests from filtered users only
+    total_likes = UserMatchRequest.where(from_user_id: user_ids).where('created_at >= ?', date_range[:start]).count
+    total_superlikes = UserMatchRequest.where(from_user_id: user_ids).where('created_at >= ? AND is_superlike = ?', date_range[:start], true).count
+    total_matches = UserMatchRequest.where(from_user_id: user_ids).where('is_match = ? AND match_date >= ?', true, date_range[:start]).count
     
     conversion_rate = total_likes > 0 ? (total_matches.to_f / total_likes * 100).round(2) : 0
-    superlike_conversion = total_superlikes > 0 ? (UserMatchRequest.where('is_match = ? AND is_superlike = ? AND match_date >= ?', true, true, date_range[:start]).count.to_f / total_superlikes * 100).round(2) : 0
+    superlike_conversion = total_superlikes > 0 ? (UserMatchRequest.where(from_user_id: user_ids).where('is_match = ? AND is_superlike = ? AND match_date >= ?', true, true, date_range[:start]).count.to_f / total_superlikes * 100).round(2) : 0
     
     {
       total_likes: total_likes,
@@ -312,8 +342,8 @@ class AnalyticsService
   
   def self.subscription_distribution(filters = {})
     scope = User.all
-    scope = apply_date_range(scope, filters, :created_at)
     scope = apply_filters(scope, filters.except(:subscription_type))
+    scope = apply_date_range(scope, filters, :created_at)
     
     {
       free: scope.where(current_subscription_name: nil).count,
@@ -396,12 +426,16 @@ class AnalyticsService
     # Simplified cohort analysis - users grouped by signup month
     cohorts = {}
     
+    # Apply user filters to base scope
+    base_scope = User.all
+    base_scope = apply_filters(base_scope, filters.except(:start_date, :end_date))
+    
     # Get users from last 6 months
     6.downto(0).each do |months_ago|
       cohort_start = months_ago.months.ago.beginning_of_month
       cohort_end = cohort_start.end_of_month
       
-      cohort_users = User.where(created_at: cohort_start..cohort_end, deleted_account: false, fake_user: false)
+      cohort_users = base_scope.where(created_at: cohort_start..cohort_end)
       cohort_size = cohort_users.count
       
       next if cohort_size == 0
@@ -428,8 +462,12 @@ class AnalyticsService
   def self.churn_metrics(filters = {})
     date_range = get_date_range(filters)
     
-    total_users = User.where('created_at < ?', date_range[:start]).where(fake_user: false).count
-    churned_users = User.where('created_at < ? AND (deleted_account = ? OR last_sign_in_at < ?)', 
+    # Apply user filters first
+    scope = User.all
+    scope = apply_filters(scope, filters)
+    
+    total_users = scope.where('created_at < ?', date_range[:start]).count
+    churned_users = scope.where('created_at < ? AND (deleted_account = ? OR last_sign_in_at < ?)', 
                                 date_range[:start], true, 30.days.ago).count
     
     {
@@ -442,7 +480,7 @@ class AnalyticsService
   # ===== TOP INSIGHTS =====
   
   def self.top_users(filters = {}, limit = 10)
-    scope = User.where(deleted_account: false, fake_user: false)
+    scope = User.all
     scope = apply_filters(scope, filters)
     
     {
@@ -453,7 +491,9 @@ class AnalyticsService
   end
 
   def self.top_performing_cities(filters = {}, limit = 10)
-    scope = User.where(deleted_account: false, fake_user: false).where.not(location_city: nil)
+    scope = User.all
+    scope = apply_filters(scope, filters.except(:city))
+    scope = scope.where.not(location_city: nil)
     
     cities = scope.group(:location_city).count.sort_by { |_, v| -v }.first(limit)
     
@@ -469,7 +509,9 @@ class AnalyticsService
     end
     
     city_stats
-  endtable_exists?(table_name)
+  end
+  
+  def self.table_exists?(table_name)
     ActiveRecord::Base.connection.table_exists?(table_name)
   end
   
