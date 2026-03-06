@@ -524,8 +524,6 @@ class AnalyticsService
       conversion_rate: 0
     }
   end
-  
-  def self.
 
   # ===== HELPER METHODS =====
   
