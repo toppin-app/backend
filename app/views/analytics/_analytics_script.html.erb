@@ -95,7 +95,6 @@
       loadEngagementData(),
       loadDemographicsData(),
       loadMatchingData(),
-      loadMonetizationData(),
       loadRetentionData(),
       loadInsightsData()
     ]);
@@ -321,43 +320,6 @@
         label: 'Users',
         data: Object.values(matchesDist),
         backgroundColor: colors.warning
-      }]
-    });
-  }
-
-  // ===== MONETIZATION SECTION =====
-  async function loadMonetizationData() {
-    const data = await fetchData('monetization');
-    if (!data) return;
-
-    // Update metrics
-    const metrics = data.revenue_metrics || {};
-    document.getElementById('metric-arpu').textContent = '€' + (metrics.arpu || 0).toFixed(2);
-    document.getElementById('metric-arppu').textContent = '€' + (metrics.arppu || 0).toFixed(2);
-    document.getElementById('metric-paying-users').textContent = formatNumber(metrics.paying_users);
-    document.getElementById('metric-conversion-rate').textContent = metrics.conversion_rate + '%';
-
-    // Subscription Distribution
-    const subData = data.subscription_distribution || {};
-    renderPieChart('chart-subscription', {
-      labels: ['Free', 'Premium', 'Supreme'],
-      datasets: [{
-        data: [subData.free || 0, subData.premium || 0, subData.supreme || 0],
-        backgroundColor: [colors.gray, colors.primary, colors.warning]
-      }]
-    });
-
-    // Revenue Over Time
-    const revenueData = data.revenue_over_time || {};
-    renderLineChart('chart-revenue', {
-      labels: Object.keys(revenueData),
-      datasets: [{
-        label: 'Revenue (€)',
-        data: Object.values(revenueData),
-        borderColor: colors.success,
-        backgroundColor: colors.success + '20',
-        fill: true,
-        tension: 0.4
       }]
     });
   }

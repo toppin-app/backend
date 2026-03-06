@@ -34,8 +34,6 @@ class AnalyticsController < ApplicationController
       demographics_data
     when 'matching'
       matching_data
-    when 'monetization'
-      monetization_data
     when 'retention'
       retention_data
     when 'insights'
@@ -196,16 +194,6 @@ class AnalyticsController < ApplicationController
     {
       match_metrics: AnalyticsService.match_metrics(@filters),
       matches_distribution: AnalyticsService.matches_distribution(@filters)
-    }
-  end
-
-  def monetization_data
-    {
-      subscription_distribution: AnalyticsService.subscription_distribution(@filters),
-      revenue_over_time: AnalyticsService.revenue_over_time(@filters),
-      revenue_metrics: AnalyticsService.revenue_metrics(@filters),
-      platform_revenue: AnalyticsService.platform_revenue(@filters),
-      boost_superlike: AnalyticsService.boost_superlike_usage(@filters)
     }
   end
 

@@ -338,88 +338,6 @@ class AnalyticsService
     distribution
   end
 
-  # ===== MONETIZATION =====
-  
-  def self.subscription_distribution(filters = {})
-    scope = User.all
-    scope = apply_filters(scope, filters.except(:subscription_type))
-    scope = apply_date_range(scope, filters, :created_at)
-    
-    {
-      free: scope.where(current_subscription_name: nil).count,
-      premium: scope.where(current_subscription_name: 'premium').count,
-      supreme: scope.where(current_subscription_name: 'supreme').count
-    }
-  end
-
-  def self.revenue_over_time(filters = {})
-    return {} unless table_exists?('purchases')
-    
-    # Apply user filters
-    user_scope = User.all
-    user_scope = apply_filters(user_scope, filters)
-    user_ids = user_scope.pluck(:id)
-    
-    scope = Purchase.where(user_id: user_ids)
-    scope = apply_date_range(scope, filters, 'created_at')
-    
-    scope.group("DATE(created_at)").sum(:price)
-  end
-
-  def self.revenue_metrics(filters = {})
-    return default_revenue_metrics unless table_exists?('purchases')
-    
-    date_range = get_date_range(filters)
-    
-    # Apply user filters to purchases through joins
-    user_scope = User.all
-    user_scope = apply_filters(user_scope, filters)
-    user_ids = user_scope.pluck(:id)
-    
-    purchases = Purchase.where(user_id: user_ids)
-    purchases = purchases.where('purchases.created_at >= ?', date_range[:start]) if date_range[:start].present?
-    total_revenue = purchases.sum(:price)
-    
-    total_users = user_scope.count
-    paying_users = user_scope.where.not(current_subscription_name: nil).count
-    
-    {
-      total_revenue: total_revenue,
-      arpu: total_users > 0 ? (total_revenue.to_f / total_users).round(2) : 0,
-      arppu: paying_users > 0 ? (total_revenue.to_f / paying_users).round(2) : 0,
-      paying_users: paying_users,
-      conversion_rate: total_users > 0 ? (paying_users.to_f / total_users * 100).round(2) : 0
-    }
-  end
-
-  def self.platform_revenue(filters = {})
-    return {} unless table_exists?('purchases')
-    
-    date_range = get_date_range(filters)
-    
-    # Apply user filters
-    user_scope = User.all
-    user_scope = apply_filters(user_scope, filters)
-    
-    Purchase.joins(:user)
-      .where(user_id: user_scope.select(:id))
-      .where('purchases.created_at >= ?', date_range[:start])
-      .group('users.device_platform')
-      .sum(:price)
-  end
-
-  def self.boost_superlike_usage(filters = {})
-    date_range = get_date_range(filters)
-    scope = User.all
-    scope = apply_filters(scope, filters)
-    
-    # This is approximate - you might want to track actual usage in a separate table
-    {
-      boost_usage: scope.where('boost_available > ?', 0).count,
-      superlike_usage: scope.where('superlike_available > ?', 0).count
-    }
-  end
-
   # ===== RETENTION =====
   
   def self.retention_cohorts(filters = {})
@@ -513,16 +431,6 @@ class AnalyticsService
   
   def self.table_exists?(table_name)
     ActiveRecord::Base.connection.table_exists?(table_name)
-  end
-  
-  def self.default_revenue_metrics
-    {
-      total_revenue: 0,
-      arpu: 0,
-      arppu: 0,
-      paying_users: 0,
-      conversion_rate: 0
-    }
   end
 
   # ===== HELPER METHODS =====
