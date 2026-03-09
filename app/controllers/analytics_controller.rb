@@ -35,6 +35,8 @@ class AnalyticsController < ApplicationController
       media_data
     when 'interests'
       interests_data
+    when 'spotify'
+      spotify_data
     else
       { error: 'Invalid section' }
     end
@@ -198,6 +200,13 @@ class AnalyticsController < ApplicationController
       secondary_interests: AnalyticsService.secondary_interests_distribution(@filters),
       main_interests_count: AnalyticsService.main_interests_count_distribution(@filters),
       secondary_interests_count: AnalyticsService.secondary_interests_count_per_user(@filters)
+    }
+  end
+
+  def spotify_data
+    {
+      artists_count_distribution: AnalyticsService.spotify_artists_count_distribution(@filters),
+      top_artists: AnalyticsService.top_spotify_artists(@filters, 10)
     }
   end
 

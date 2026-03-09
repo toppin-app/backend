@@ -121,18 +121,19 @@
         applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
       }
       
-      // Load only the sections that exist now (growth, demographics, insights, media, interests)
+      // Load only the sections that exist now (growth, demographics, insights, media, interests, spotify)
       const results = await Promise.allSettled([
         loadGrowthData(),
         loadDemographicsData(),
         loadInsightsData(),
         loadMediaData(),
-        loadInterestsData()
+        loadInterestsData(),
+        loadSpotifyData()
       ]);
       
       // Log any failures
       results.forEach((result, index) => {
-        const sections = ['growth', 'demographics', 'insights', 'media', 'interests'];
+        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify'];
         if (result.status === 'rejected') {
           console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
         }
@@ -724,6 +725,60 @@
 
   // Make function globally available
   window.viewInvalidMainInterestsUsers = viewInvalidMainInterestsUsers;
+
+  // ===== SPOTIFY DATA =====
+
+  async function loadSpotifyData() {
+    try {
+      const data = await fetchData('spotify');
+      if (!data) {
+        console.warn('[Analytics] No data returned for spotify section');
+        return;
+      }
+
+      // --- Artist count distribution (0-10, >10) ---
+      const distData = data.artists_count_distribution || {};
+      const distLabels = [];
+      const distValues = [];
+      for (let i = 0; i <= 10; i++) {
+        distLabels.push(i.toString());
+        distValues.push(distData[i.toString()] || 0);
+      }
+      distLabels.push('>10');
+      distValues.push(distData['>10'] || 0);
+
+      renderBarChart('chart-spotify-artists-count', {
+        labels: distLabels,
+        datasets: [{
+          label: 'Usuarios',
+          data: distValues,
+          backgroundColor: '#1DB954'
+        }]
+      }, {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: 'Nº de artistas' } },
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Usuarios' } }
+        }
+      });
+
+      // --- Warning for >10 artists ---
+      const over10Count = distData['>10'] || 0;
+      const alertWrapper = document.getElementById('spotify-over10-alert-wrapper');
+      const over10CountEl = document.getElementById('spotify-over10-count');
+      if (alertWrapper) alertWrapper.style.display = over10Count > 0 ? '' : 'none';
+      if (over10CountEl) over10CountEl.textContent = formatNumber(over10Count);
+
+      // --- Top 10 artists ---
+      const topArtists = data.top_artists || {};
+      const artistLabels = Object.keys(topArtists);
+      const artistCounts = Object.values(topArtists);
+      renderHTMLBarChart('chart-top-spotify-artists', artistLabels, artistCounts, '#1DB954');
+
+    } catch (e) {
+      console.error('[Analytics] Error loading Spotify data:', e);
+    }
+  }
 
   // ===== CHART RENDERING FUNCTIONS =====
 

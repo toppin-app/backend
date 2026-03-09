@@ -467,6 +467,41 @@ class AnalyticsService
     distribution
   end
   
+  # ===== SPOTIFY ANALYTICS =====
+
+  def self.spotify_artists_count_distribution(filters = {})
+    user_scope = apply_filters(User.all, filters)
+    user_ids = user_scope.pluck(:id)
+
+    # Count Spotify artists per user
+    counts_by_user = SpotifyUserDatum.where(user_id: user_ids)
+                                     .group(:user_id).count
+
+    distribution = {}
+    (0..10).each { |i| distribution[i.to_s] = 0 }
+    distribution['>10'] = 0
+
+    user_ids.each do |uid|
+      c = counts_by_user[uid] || 0
+      if c > 10
+        distribution['>10'] += 1
+      else
+        distribution[c.to_s] += 1
+      end
+    end
+
+    distribution
+  end
+
+  def self.top_spotify_artists(filters = {}, limit = 10)
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    SpotifyUserDatum.where(user_id: user_ids)
+                    .group(:artist_name).count
+                    .sort_by { |_, v| -v }
+                    .first(limit)
+                    .to_h
+  end
+
   def self.table_exists?(table_name)
     ActiveRecord::Base.connection.table_exists?(table_name)
   end

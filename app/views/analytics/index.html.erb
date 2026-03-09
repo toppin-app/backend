@@ -543,6 +543,56 @@
   </div>
 </div>
 
+<!-- Sección 7: Spotify -->
+<div class="analytics-section mb-5">
+  <h3 class="mb-3"><i class="fab fa-spotify text-success"></i> Spotify</h3>
+
+  <div class="row">
+    <!-- Distribución de artistas por usuario -->
+    <div class="col-12 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Distribución de Artistas de Spotify por Usuario</h6>
+          <small class="text-muted">Cuántos artistas tiene guardados cada usuario (0–10, &gt;10)</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-spotify-artists-count" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerta usuarios con >10 artistas -->
+    <div class="col-12 mb-4" id="spotify-over10-alert-wrapper" style="display:none;">
+      <div class="card shadow-sm border-warning">
+        <div class="card-header" style="background-color: #fff3cd;">
+          <h6 class="mb-0 text-dark">
+            <i class="fas fa-exclamation-triangle text-warning"></i>
+            Usuarios con más de 10 artistas de Spotify
+          </h6>
+        </div>
+        <div class="card-body">
+          <p class="mb-0">
+            Hay <strong id="spotify-over10-count">0</strong> usuario(s) con más de 10 artistas de Spotify guardados.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 10 artistas más comunes -->
+    <div class="col-12 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Top 10 Artistas de Spotify más Guardados</h6>
+          <small class="text-muted">Artistas más populares entre los usuarios</small>
+        </div>
+        <div class="card-body">
+          <div id="chart-top-spotify-artists"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal para inspeccionar usuarios con fotos inválidas -->
 <div class="modal fade" id="invalidUsersModal" tabindex="-1" role="dialog" aria-labelledby="invalidUsersModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
