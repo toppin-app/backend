@@ -596,18 +596,6 @@
       const mainInterestsCount = mainInterestsLabels.length;
       const mainInterestsHeight = Math.max(400, mainInterestsCount * 40);
       
-      // Set canvas height dynamically and ensure container doesn't restrict it
-      const mainInterestsCanvas = document.getElementById('chart-main-interests');
-      if (mainInterestsCanvas) {
-        mainInterestsCanvas.height = mainInterestsHeight;
-        mainInterestsCanvas.style.height = mainInterestsHeight + 'px';
-        // Ensure parent container allows overflow
-        const parentDiv = mainInterestsCanvas.parentElement;
-        if (parentDiv) {
-          parentDiv.style.minHeight = mainInterestsHeight + 'px';
-        }
-      }
-      
       renderBarChart('chart-main-interests', {
         labels: mainInterestsLabels,
         datasets: [{
@@ -616,6 +604,7 @@
           backgroundColor: colors.blue
         }]
       }, {
+        customHeight: mainInterestsHeight,
         indexAxis: 'y',
         maintainAspectRatio: false,
         plugins: {
@@ -703,18 +692,6 @@
       const secondaryInterestsCount = secondaryInterestsLabels.length;
       const secondaryInterestsHeight = Math.max(400, secondaryInterestsCount * 40);
       
-      // Set canvas height dynamically and ensure container doesn't restrict it
-      const secondaryInterestsCanvas = document.getElementById('chart-secondary-interests');
-      if (secondaryInterestsCanvas) {
-        secondaryInterestsCanvas.height = secondaryInterestsHeight;
-        secondaryInterestsCanvas.style.height = secondaryInterestsHeight + 'px';
-        // Ensure parent container allows overflow
-        const parentDiv = secondaryInterestsCanvas.parentElement;
-        if (parentDiv) {
-          parentDiv.style.minHeight = secondaryInterestsHeight + 'px';
-        }
-      }
-      
       renderBarChart('chart-secondary-interests', {
         labels: secondaryInterestsLabels,
         datasets: [{
@@ -723,6 +700,7 @@
           backgroundColor: colors.green
         }]
       }, {
+        customHeight: secondaryInterestsHeight,
         indexAxis: 'y',
         maintainAspectRatio: false,
         plugins: {
@@ -877,7 +855,28 @@
   function renderBarChart(canvasId, data, options = {}) {
     destroyChart(canvasId);
     
-    const ctx = document.getElementById(canvasId);
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    // Extract custom height if provided
+    const customHeight = options.customHeight;
+    delete options.customHeight; // Remove from options to avoid passing to Chart.js
+    
+    // If custom height is provided, set it on canvas and container
+    if (customHeight) {
+      // Set canvas dimensions
+      canvas.height = customHeight;
+      canvas.style.height = customHeight + 'px';
+      
+      // Set parent container height
+      const parentDiv = canvas.parentElement;
+      if (parentDiv) {
+        parentDiv.style.height = customHeight + 'px';
+        parentDiv.style.minHeight = customHeight + 'px';
+      }
+    }
+    
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
     const defaultOptions = {
