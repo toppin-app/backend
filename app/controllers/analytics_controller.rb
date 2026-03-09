@@ -31,6 +31,8 @@ class AnalyticsController < ApplicationController
       demographics_data
     when 'insights'
       insights_data
+    when 'media'
+      media_data
     else
       { error: 'Invalid section' }
     end
@@ -177,6 +179,14 @@ class AnalyticsController < ApplicationController
     {
       top_users: AnalyticsService.top_users(@filters),
       top_cities: AnalyticsService.top_performing_cities(@filters)
+    }
+  end
+
+  def media_data
+    {
+      top_movies: AnalyticsService.top_movies(@filters, 20),
+      top_series: AnalyticsService.top_series(@filters, 20),
+      photos_distribution: AnalyticsService.photos_distribution(@filters)
     }
   end
 

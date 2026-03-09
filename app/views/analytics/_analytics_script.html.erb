@@ -121,16 +121,17 @@
         applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
       }
       
-      // Load only the sections that exist now (growth, demographics, insights)
+      // Load only the sections that exist now (growth, demographics, insights, media)
       const results = await Promise.allSettled([
         loadGrowthData(),
         loadDemographicsData(),
-        loadInsightsData()
+        loadInsightsData(),
+        loadMediaData()
       ]);
       
       // Log any failures
       results.forEach((result, index) => {
-        const sections = ['growth', 'demographics', 'insights'];
+        const sections = ['growth', 'demographics', 'insights', 'media'];
         if (result.status === 'rejected') {
           console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
         }
@@ -336,6 +337,94 @@
     document.getElementById('top-cities-list').innerHTML = html;
     } catch (error) {
       console.error('[Analytics] Error rendering insights:', error);
+    }
+  }
+
+  // ===== MEDIA SECTION (Movies, Series, Photos) =====
+  async function loadMediaData() {
+    try {
+      const data = await fetchData('media');
+      if (!data) {
+        console.warn('[Analytics] No data returned for media section');
+        return;
+      }
+
+      // Top 20 Movies - Horizontal Bar Chart
+      const moviesData = data.top_movies || {};
+      const movieLabels = Object.keys(moviesData);
+      const movieCounts = Object.values(moviesData);
+      
+      renderBarChart('chart-top-movies', {
+        labels: movieLabels,
+        datasets: [{
+          label: 'Usuarios',
+          data: movieCounts,
+          backgroundColor: colors.danger
+        }]
+      }, {
+        indexAxis: 'y',
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0,0,0,0.05)'
+            }
+          },
+          y: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      });
+
+      // Top 20 Series - Horizontal Bar Chart
+      const seriesData = data.top_series || {};
+      const seriesLabels = Object.keys(seriesData);
+      const seriesCounts = Object.values(seriesData);
+      
+      renderBarChart('chart-top-series', {
+        labels: seriesLabels,
+        datasets: [{
+          label: 'Usuarios',
+          data: seriesCounts,
+          backgroundColor: colors.purple
+        }]
+      }, {
+        indexAxis: 'y',
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0,0,0,0.05)'
+            }
+          },
+          y: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      });
+
+      // Photos Distribution - Bar Chart
+      const photosData = data.photos_distribution || {};
+      const photoLabels = Object.keys(photosData).map(key => {
+        return key === '6+' ? '6+ fotos' : `${key} ${key === '1' ? 'foto' : 'fotos'}`;
+      });
+      const photoCounts = Object.values(photosData);
+      
+      renderBarChart('chart-photos-distribution', {
+        labels: photoLabels,
+        datasets: [{
+          label: 'Usuarios',
+          data: photoCounts,
+          backgroundColor: colors.teal
+        }]
+      });
+      
+    } catch (error) {
+      console.error('[Analytics] Error rendering media charts:', error);
     }
   }
 

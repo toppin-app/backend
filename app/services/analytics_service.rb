@@ -257,6 +257,63 @@ class AnalyticsService
     city_stats
   end
   
+  def self.top_movies(filters = {}, limit = 20)
+    # Get filtered users
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
+    # Get top movies from filtered users
+    # Only consider movies (media_type = 'movie')
+    TmdbUserDatum
+      .where(user_id: user_ids, media_type: 'movie')
+      .where.not(title: nil)
+      .group(:title)
+      .count
+      .sort_by { |_, count| -count }
+      .first(limit)
+      .to_h
+  end
+  
+  def self.top_series(filters = {}, limit = 20)
+    # Get filtered users
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
+    # Get top series from filtered users
+    TmdbUserSeriesDatum
+      .where(user_id: user_ids)
+      .where.not(title: nil)
+      .group(:title)
+      .count
+      .sort_by { |_, count| -count }
+      .first(limit)
+      .to_h
+  end
+  
+  def self.photos_distribution(filters = {})
+    # Get filtered users
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    
+    # Count photos per user
+    # UserMedia model represents user photos
+    distribution = Hash.new(0)
+    
+    user_scope.includes(:user_media).find_each do |user|
+      photo_count = user.user_media.count
+      # Group by number of photos (0, 1, 2, 3, 4, 5, 6+)
+      key = photo_count > 6 ? "6+" : photo_count.to_s
+      distribution[key] += 1
+    end
+    
+    # Sort by photo count (convert keys back to integers for sorting)
+    distribution.sort_by do |key, _|
+      key == "6+" ? 7 : key.to_i
+    end.to_h
+  end
+  
   def self.table_exists?(table_name)
     ActiveRecord::Base.connection.table_exists?(table_name)
   end
