@@ -33,6 +33,8 @@ class AnalyticsController < ApplicationController
       insights_data
     when 'media'
       media_data
+    when 'interests'
+      interests_data
     else
       { error: 'Invalid section' }
     end
@@ -187,6 +189,15 @@ class AnalyticsController < ApplicationController
       top_movies: AnalyticsService.top_movies(@filters, 20),
       top_series: AnalyticsService.top_series(@filters, 20),
       photos_distribution: AnalyticsService.photos_distribution(@filters)
+    }
+  end
+
+  def interests_data
+    {
+      main_interests: AnalyticsService.main_interests_distribution(@filters),
+      secondary_interests: AnalyticsService.secondary_interests_distribution(@filters),
+      main_interests_count: AnalyticsService.main_interests_count_distribution(@filters),
+      secondary_interests_count: AnalyticsService.secondary_interests_count_per_user(@filters)
     }
   end
 

@@ -353,6 +353,121 @@ class AnalyticsService
     }
   end
   
+  # ===== INTERESTS ANALYTICS =====
+  
+  def self.main_interests_distribution(filters = {})
+    # Get filtered users
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
+    # Count users per main interest
+    distribution = UserMainInterest
+      .where(user_id: user_ids)
+      .joins(:interest)
+      .group('interests.name')
+      .count
+    
+    # Sort by count descending
+    distribution.sort_by { |_, count| -count }.to_h
+  end
+  
+  def self.secondary_interests_distribution(filters = {})
+    # Get filtered users
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+    
+    # Count users per secondary interest
+    distribution = UserInterest
+      .where(user_id: user_ids)
+      .joins(:interest)
+      .group('interests.name')
+      .count
+    
+    # Sort by count descending
+    distribution.sort_by { |_, count| -count }.to_h
+  end
+  
+  def self.main_interests_count_distribution(filters = {})
+    # Get filtered users
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    
+    # Initialize valid and invalid distributions
+    valid_distribution = {
+      '1' => 0,
+      '2' => 0,
+      '3' => 0,
+      '4' => 0
+    }
+    
+    invalid_distribution = {
+      '0' => 0,
+      '>4' => 0
+    }
+    
+    # Store users with invalid main interests count
+    invalid_users = {
+      '0' => [],
+      '>4' => []
+    }
+    
+    # Count main interests per user
+    user_scope.includes(:user_main_interests).find_each do |user|
+      main_interests_count = user.user_main_interests.count
+      
+      if main_interests_count == 0
+        invalid_distribution['0'] += 1
+        invalid_users['0'] << {
+          id: user.id,
+          name: user.name,
+          email: user.email
+        }
+      elsif main_interests_count > 4
+        invalid_distribution['>4'] += 1
+        invalid_users['>4'] << {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          main_interests_count: main_interests_count
+        }
+      else
+        valid_distribution[main_interests_count.to_s] += 1
+      end
+    end
+    
+    {
+      valid: valid_distribution,
+      invalid: invalid_distribution,
+      invalid_users: invalid_users
+    }
+  end
+  
+  def self.secondary_interests_count_per_user(filters = {})
+    # Get filtered users
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    
+    # Initialize distribution for 0-10+ secondary interests
+    distribution = {}
+    (0..10).each { |i| distribution[i.to_s] = 0 }
+    distribution['>10'] = 0
+    
+    # Count secondary interests per user
+    user_scope.includes(:user_interests).find_each do |user|
+      secondary_interests_count = user.user_interests.count
+      
+      if secondary_interests_count > 10
+        distribution['>10'] += 1
+      else
+        distribution[secondary_interests_count.to_s] += 1
+      end
+    end
+    
+    distribution
+  end
+  
   def self.table_exists?(table_name)
     ActiveRecord::Base.connection.table_exists?(table_name)
   end
