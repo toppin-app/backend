@@ -868,6 +868,9 @@
       canvas.height = customHeight;
       canvas.style.height = customHeight + 'px';
       
+      // Force width recalculation to ensure Chart.js respects the custom height
+      canvas.width = canvas.parentElement.offsetWidth;
+      
       // Set parent container height
       const parentDiv = canvas.parentElement;
       if (parentDiv) {
@@ -881,7 +884,7 @@
     
     const defaultOptions = {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           display: false
