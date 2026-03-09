@@ -774,70 +774,74 @@
     });
   }
 
-  // Renders a horizontal bar chart with a FIXED pixel height.
-  // Uses responsive:false so Chart.js cannot override the canvas dimensions.
-  // The canvas width is taken from the wrapper element at render time.
+  // Renders a horizontal bar chart with dynamic height.
+  // Uses responsive:true + maintainAspectRatio:false (the Chart.js 3 recommended
+  // pattern), with height set on the wrapper BEFORE chart init via rAF so the
+  // browser has completed layout and Chart.js can measure the container correctly.
   function renderHorizontalBarChart(canvasId, labels, values, color, pixelHeight) {
     destroyChart(canvasId);
 
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    // Determine the available width from the wrapper / parent
     const wrapper = document.getElementById(canvasId + '-wrapper') || canvas.parentElement;
-    const pixelWidth = wrapper.clientWidth || wrapper.offsetWidth || 900;
 
-    // Set canvas size as HTML attributes — the ONLY way responsive:false reads it
-    canvas.width  = pixelWidth;
-    canvas.height = pixelHeight;
-
-    // Also sync CSS so the element occupies the correct space in the page layout
-    canvas.style.width  = pixelWidth  + 'px';
-    canvas.style.height = pixelHeight + 'px';
-    canvas.style.display = 'block';
-
-    // Size the wrapper to match, so no white space appears around the chart
+    // Apply explicit height to the wrapper — Chart.js (responsive:true +
+    // maintainAspectRatio:false) will fill 100% width × this height.
     wrapper.style.height    = pixelHeight + 'px';
     wrapper.style.minHeight = pixelHeight + 'px';
+    wrapper.style.position  = 'relative';
+    wrapper.style.width     = '100%';
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    // Reset any inline sizing on the canvas itself so Chart.js controls it
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
+    canvas.style.width  = '';
+    canvas.style.height = '';
 
-    charts[canvasId] = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Usuarios',
-          data: values,
-          backgroundColor: color
-        }]
-      },
-      options: {
-        responsive: false,          // ← key: Chart.js uses canvas attributes exactly
-        maintainAspectRatio: false,
-        indexAxis: 'y',
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: true }
+    // Defer chart creation by one rAF so the browser commits the wrapper height
+    // before Chart.js reads the container dimensions.
+    requestAnimationFrame(() => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Usuarios',
+            data: values,
+            backgroundColor: color,
+            barThickness: 18
+          }]
         },
-        scales: {
-          x: {
-            beginAtZero: true,
-            grid: { color: 'rgba(0,0,0,0.05)' }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true }
           },
-          y: {
-            grid: { display: false },
-            ticks: {
-              autoSkip: false,    // show every label
-              maxRotation: 0,
-              minRotation: 0,
-              font: { size: 12 }
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: {
+                autoSkip: false,
+                maxRotation: 0,
+                minRotation: 0,
+                font: { size: 12 }
+              }
             }
           }
-        }
-      },
-      plugins: [dataLabelsPlugin]
+        },
+        plugins: [dataLabelsPlugin]
+      });
     });
   }
 
