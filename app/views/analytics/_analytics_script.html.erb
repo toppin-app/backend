@@ -586,13 +586,11 @@
         return;
       }
 
-      // Main Interests Distribution - Horizontal Bar Chart
+      // Main Interests Distribution - HTML/CSS Bar Chart
       const mainInterestsData = data.main_interests || {};
       const mainInterestsLabels = Object.keys(mainInterestsData);
       const mainInterestsCounts = Object.values(mainInterestsData);
-      
-      const mainInterestsHeight = Math.max(400, mainInterestsLabels.length * 40);
-      renderHorizontalBarChart('chart-main-interests', mainInterestsLabels, mainInterestsCounts, colors.blue, mainInterestsHeight);
+      renderHTMLBarChart('chart-main-interests', mainInterestsLabels, mainInterestsCounts, '#4e73df');
 
       // Main Interests Count - Valid and Invalid
       const mainInterestsCountData = data.main_interests_count || {};
@@ -643,13 +641,11 @@
         document.getElementById('invalid-main-interests-actions').classList.remove('d-none');
       }
 
-      // Secondary Interests Distribution - Horizontal Bar Chart
+      // Secondary Interests Distribution - HTML/CSS Bar Chart
       const secondaryInterestsData = data.secondary_interests || {};
       const secondaryInterestsLabels = Object.keys(secondaryInterestsData);
       const secondaryInterestsCounts = Object.values(secondaryInterestsData);
-      
-      const secondaryInterestsHeight = Math.max(400, secondaryInterestsLabels.length * 40);
-      renderHorizontalBarChart('chart-secondary-interests', secondaryInterestsLabels, secondaryInterestsCounts, colors.green, secondaryInterestsHeight);
+      renderHTMLBarChart('chart-secondary-interests', secondaryInterestsLabels, secondaryInterestsCounts, '#1cc88a');
 
       // Secondary Interests Count Per User - Bar Chart
       const secondaryCountData = data.secondary_interests_count || {};
@@ -774,76 +770,36 @@
     });
   }
 
-  // Renders a horizontal bar chart with dynamic height.
-  // Uses responsive:true + maintainAspectRatio:false (the Chart.js 3 recommended
-  // pattern), with height set on the wrapper BEFORE chart init via rAF so the
-  // browser has completed layout and Chart.js can measure the container correctly.
-  function renderHorizontalBarChart(canvasId, labels, values, color, pixelHeight) {
-    destroyChart(canvasId);
+  // Pure HTML/CSS horizontal bar chart — no Chart.js, no sizing issues.
+  // Each row is a flex div: label on the left, proportional colored bar on the right.
+  function renderHTMLBarChart(containerId, labels, values, color) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    const maxVal = Math.max(...values, 1);
 
-    const wrapper = document.getElementById(canvasId + '-wrapper') || canvas.parentElement;
-
-    // Apply explicit height to the wrapper — Chart.js (responsive:true +
-    // maintainAspectRatio:false) will fill 100% width × this height.
-    wrapper.style.height    = pixelHeight + 'px';
-    wrapper.style.minHeight = pixelHeight + 'px';
-    wrapper.style.position  = 'relative';
-    wrapper.style.width     = '100%';
-
-    // Reset any inline sizing on the canvas itself so Chart.js controls it
-    canvas.removeAttribute('width');
-    canvas.removeAttribute('height');
-    canvas.style.width  = '';
-    canvas.style.height = '';
-
-    // Defer chart creation by one rAF so the browser commits the wrapper height
-    // before Chart.js reads the container dimensions.
-    requestAnimationFrame(() => {
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      charts[canvasId] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Usuarios',
-            data: values,
-            backgroundColor: color,
-            barThickness: 18
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          indexAxis: 'y',
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              grid: { color: 'rgba(0,0,0,0.05)' }
-            },
-            y: {
-              grid: { display: false },
-              ticks: {
-                autoSkip: false,
-                maxRotation: 0,
-                minRotation: 0,
-                font: { size: 12 }
-              }
-            }
-          }
-        },
-        plugins: [dataLabelsPlugin]
-      });
+    let html = '<div style="font-family: inherit; padding: 12px 16px;">';
+    labels.forEach((label, i) => {
+      const val   = values[i] || 0;
+      const pct   = (val / maxVal * 100).toFixed(1);
+      html += `
+        <div style="display:flex; align-items:center; margin-bottom:6px; min-height:28px;">
+          <div style="width:200px; min-width:200px; text-align:right; padding-right:12px;
+                      font-size:13px; color:#333; overflow:hidden; text-overflow:ellipsis;
+                      white-space:nowrap;" title="${label}">${label}</div>
+          <div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; position:relative;">
+            <div style="width:${pct}%; background:${color}; height:100%; border-radius:3px;
+                         min-width:${val > 0 ? 2 : 0}px;"></div>
+          </div>
+          <div style="width:36px; min-width:36px; text-align:right; padding-left:8px;
+                      font-size:12px; font-weight:600; color:#555;">${val}</div>
+        </div>`;
     });
+    html += '</div>';
+
+    container.innerHTML = html;
   }
+
 
   function renderBarChart(canvasId, data, options = {}) {
     destroyChart(canvasId);
