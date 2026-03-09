@@ -297,10 +297,8 @@ class AnalyticsService
     user_scope = User.all
     user_scope = apply_filters(user_scope, filters)
     
-    # Initialize distribution with all buckets (0-9, >9) even if empty
-    # This ensures all values 1-9 appear even with 0 users
-    distribution = {
-      '0' => 0,
+    # Initialize valid distribution (1-9 only)
+    valid_distribution = {
       '1' => 0,
       '2' => 0,
       '3' => 0,
@@ -309,23 +307,50 @@ class AnalyticsService
       '6' => 0,
       '7' => 0,
       '8' => 0,
-      '9' => 0,
+      '9' => 0
+    }
+    
+    # Initialize invalid distribution (0 and >9)
+    invalid_distribution = {
+      '0' => 0,
       '>9' => 0
     }
     
-    # Count photos per user and populate distribution
+    # Store users with invalid photo counts for inspection
+    invalid_users = {
+      '0' => [],
+      '>9' => []
+    }
+    
+    # Count photos per user and populate distributions
     user_scope.includes(:user_media).find_each do |user|
       photo_count = user.user_media.count
       
-      if photo_count > 9
-        distribution['>9'] += 1
+      if photo_count == 0
+        invalid_distribution['0'] += 1
+        invalid_users['0'] << {
+          id: user.id,
+          name: user.name,
+          email: user.email
+        }
+      elsif photo_count > 9
+        invalid_distribution['>9'] += 1
+        invalid_users['>9'] << {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          photo_count: photo_count
+        }
       else
-        distribution[photo_count.to_s] += 1
+        valid_distribution[photo_count.to_s] += 1
       end
     end
     
-    # Return ordered hash (0, 1, 2, ..., 9, >9)
-    distribution
+    {
+      valid: valid_distribution,
+      invalid: invalid_distribution,
+      invalid_users: invalid_users
+    }
   end
   
   def self.table_exists?(table_name)
