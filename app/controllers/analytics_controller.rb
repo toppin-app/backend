@@ -194,8 +194,8 @@ class AnalyticsController < ApplicationController
 
   def interests_data
     {
-      main_interests: AnalyticsService.main_interests_distribution(@filters, 20),
-      secondary_interests: AnalyticsService.secondary_interests_distribution(@filters, 20),
+      main_interests: AnalyticsService.main_interests_distribution(@filters),
+      secondary_interests: AnalyticsService.secondary_interests_distribution(@filters),
       main_interests_count: AnalyticsService.main_interests_count_distribution(@filters),
       secondary_interests_count: AnalyticsService.secondary_interests_count_per_user(@filters)
     }

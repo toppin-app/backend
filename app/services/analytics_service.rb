@@ -355,38 +355,40 @@ class AnalyticsService
   
   # ===== INTERESTS ANALYTICS =====
   
-  def self.main_interests_distribution(filters = {}, limit = 20)
+  def self.main_interests_distribution(filters = {}, limit = nil)
     # Get filtered users
     user_scope = User.all
     user_scope = apply_filters(user_scope, filters)
     user_ids = user_scope.pluck(:id)
     
-    # Count users per main interest, limit to top N
+    # Count users per main interest
     distribution = UserMainInterest
       .where(user_id: user_ids)
       .joins(:interest)
       .group('interests.name')
       .count
     
-    # Sort by count descending and limit
-    distribution.sort_by { |_, count| -count }.first(limit).to_h
+    # Sort by count descending, optionally limit
+    sorted = distribution.sort_by { |_, count| -count }
+    limit.present? ? sorted.first(limit).to_h : sorted.to_h
   end
   
-  def self.secondary_interests_distribution(filters = {}, limit = 20)
+  def self.secondary_interests_distribution(filters = {}, limit = nil)
     # Get filtered users
     user_scope = User.all
     user_scope = apply_filters(user_scope, filters)
     user_ids = user_scope.pluck(:id)
     
-    # Count users per secondary interest, limit to top N
+    # Count users per secondary interest
     distribution = UserInterest
       .where(user_id: user_ids)
       .joins(:interest)
       .group('interests.name')
       .count
     
-    # Sort by count descending and limit
-    distribution.sort_by { |_, count| -count }.first(limit).to_h
+    # Sort by count descending, optionally limit
+    sorted = distribution.sort_by { |_, count| -count }
+    limit.present? ? sorted.first(limit).to_h : sorted.to_h
   end
   
   def self.main_interests_count_distribution(filters = {})
