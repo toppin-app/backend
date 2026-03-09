@@ -592,14 +592,20 @@
       const mainInterestsCounts = Object.values(mainInterestsData);
       
       // Calculate dynamic height based on number of interests
-      // Using 35px per bar, with a minimum of 300px
+      // Using 40px per bar for better spacing, with a minimum of 400px
       const mainInterestsCount = mainInterestsLabels.length;
-      const mainInterestsHeight = Math.max(300, mainInterestsCount * 35);
+      const mainInterestsHeight = Math.max(400, mainInterestsCount * 40);
       
-      // Set canvas height dynamically
+      // Set canvas height dynamically and ensure container doesn't restrict it
       const mainInterestsCanvas = document.getElementById('chart-main-interests');
       if (mainInterestsCanvas) {
         mainInterestsCanvas.height = mainInterestsHeight;
+        mainInterestsCanvas.style.height = mainInterestsHeight + 'px';
+        // Ensure parent container allows overflow
+        const parentDiv = mainInterestsCanvas.parentElement;
+        if (parentDiv) {
+          parentDiv.style.minHeight = mainInterestsHeight + 'px';
+        }
       }
       
       renderBarChart('chart-main-interests', {
@@ -693,14 +699,20 @@
       const secondaryInterestsCounts = Object.values(secondaryInterestsData);
       
       // Calculate dynamic height based on number of interests
-      // Using 35px per bar, with a minimum of 300px
+      // Using 40px per bar for better spacing, with a minimum of 400px
       const secondaryInterestsCount = secondaryInterestsLabels.length;
-      const secondaryInterestsHeight = Math.max(300, secondaryInterestsCount * 35);
+      const secondaryInterestsHeight = Math.max(400, secondaryInterestsCount * 40);
       
-      // Set canvas height dynamically
+      // Set canvas height dynamically and ensure container doesn't restrict it
       const secondaryInterestsCanvas = document.getElementById('chart-secondary-interests');
       if (secondaryInterestsCanvas) {
         secondaryInterestsCanvas.height = secondaryInterestsHeight;
+        secondaryInterestsCanvas.style.height = secondaryInterestsHeight + 'px';
+        // Ensure parent container allows overflow
+        const parentDiv = secondaryInterestsCanvas.parentElement;
+        if (parentDiv) {
+          parentDiv.style.minHeight = secondaryInterestsHeight + 'px';
+        }
       }
       
       renderBarChart('chart-secondary-interests', {
@@ -895,17 +907,41 @@
       }
     };
     
+    // Deep merge options to preserve nested properties
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+      plugins: {
+        ...defaultOptions.plugins,
+        ...(options.plugins || {})
+      },
+      scales: {
+        x: {
+          ...defaultOptions.scales.x,
+          ...(options.scales?.x || {})
+        },
+        y: {
+          ...defaultOptions.scales.y,
+          ...(options.scales?.y || {}),
+          ticks: {
+            ...(defaultOptions.scales.y.ticks || {}),
+            ...(options.scales?.y?.ticks || {})
+          }
+        }
+      }
+    };
+    
     // Registrar plugin personalizado si está habilitado
     const plugins = [];
     if (options.plugins && options.plugins.dataLabelsPlugin) {
       plugins.push(dataLabelsPlugin);
-      delete options.plugins.dataLabelsPlugin; // Remover para no conflictuar
+      delete mergedOptions.plugins.dataLabelsPlugin; // Remover para no conflictuar
     }
     
     charts[canvasId] = new Chart(ctx, {
       type: 'bar',
       data: data,
-      options: Object.assign({}, defaultOptions, options),
+      options: mergedOptions,
       plugins: plugins
     });
   }
