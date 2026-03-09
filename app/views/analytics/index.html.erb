@@ -349,23 +349,11 @@
     </div>
   </div>
 
-  <!-- Sección 4: Contenido de Medios -->
+  <!-- Sección 4: Series y Películas -->
   <div class="analytics-section mb-5">
-    <h3 class="mb-3"><i class="fas fa-film text-danger"></i> Series, Películas y Fotos</h3>
+    <h3 class="mb-3"><i class="fas fa-film text-danger"></i> Series y Películas</h3>
     
     <div class="row">
-      <!-- Top 20 Películas -->
-      <div class="col-md-6 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h6 class="mb-0">Top 20 Películas Más Comunes</h6>
-          </div>
-          <div class="card-body">
-            <canvas id="chart-top-movies" height="400"></canvas>
-          </div>
-        </div>
-      </div>
-
       <!-- Top 20 Series -->
       <div class="col-md-6 mb-4">
         <div class="card shadow-sm">
@@ -378,11 +366,30 @@
         </div>
       </div>
 
-      <!-- Distribución de Fotos -->
+      <!-- Top 20 Películas -->
+      <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">Top 20 Películas Más Comunes</h6>
+          </div>
+          <div class="card-body">
+            <canvas id="chart-top-movies" height="400"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección 5: Distribución de Fotos por Usuario -->
+  <div class="analytics-section mb-5">
+    <h3 class="mb-3"><i class="fas fa-camera text-info"></i> Distribución de Fotos por Usuario</h3>
+    <p class="text-muted small">Valores esperados: 1-9 fotos. <strong class="text-warning">0 fotos</strong> y <strong class="text-warning">>9 fotos</strong> indican datos que deberían revisarse.</p>
+    
+    <div class="row">
       <div class="col-md-12 mb-4">
         <div class="card shadow-sm">
           <div class="card-header bg-light">
-            <h6 class="mb-0">Distribución de Número de Fotos por Usuario</h6>
+            <h6 class="mb-0">Número de Fotos por Usuario</h6>
           </div>
           <div class="card-body">
             <canvas id="chart-photos-distribution" height="80"></canvas>

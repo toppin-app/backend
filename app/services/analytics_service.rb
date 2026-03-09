@@ -297,21 +297,35 @@ class AnalyticsService
     user_scope = User.all
     user_scope = apply_filters(user_scope, filters)
     
-    # Count photos per user
-    # UserMedia model represents user photos
-    distribution = Hash.new(0)
+    # Initialize distribution with all buckets (0-9, >9) even if empty
+    # This ensures all values 1-9 appear even with 0 users
+    distribution = {
+      '0' => 0,
+      '1' => 0,
+      '2' => 0,
+      '3' => 0,
+      '4' => 0,
+      '5' => 0,
+      '6' => 0,
+      '7' => 0,
+      '8' => 0,
+      '9' => 0,
+      '>9' => 0
+    }
     
+    # Count photos per user and populate distribution
     user_scope.includes(:user_media).find_each do |user|
       photo_count = user.user_media.count
-      # Group by number of photos (0, 1, 2, 3, 4, 5, 6+)
-      key = photo_count > 6 ? "6+" : photo_count.to_s
-      distribution[key] += 1
+      
+      if photo_count > 9
+        distribution['>9'] += 1
+      else
+        distribution[photo_count.to_s] += 1
+      end
     end
     
-    # Sort by photo count (convert keys back to integers for sorting)
-    distribution.sort_by do |key, _|
-      key == "6+" ? 7 : key.to_i
-    end.to_h
+    # Return ordered hash (0, 1, 2, ..., 9, >9)
+    distribution
   end
   
   def self.table_exists?(table_name)

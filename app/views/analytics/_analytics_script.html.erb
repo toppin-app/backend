@@ -340,6 +340,36 @@
     }
   }
 
+  // Plugin para mostrar valores directamente en las barras
+  const dataLabelsPlugin = {
+    id: 'dataLabelsPlugin',
+    afterDatasetsDraw(chart, args, options) {
+      const { ctx, chartArea: { left, right, top, bottom }, scales: { x, y } } = chart;
+      
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        
+        meta.data.forEach((bar, index) => {
+          const value = dataset.data[index];
+          if (value === 0 || value === null || value === undefined) return;
+          
+          ctx.save();
+          ctx.font = 'bold 12px Arial';
+          ctx.fillStyle = '#333';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          
+          // For horizontal bars, display value to the right of the bar
+          const xPos = bar.x + 5;
+          const yPos = bar.y;
+          
+          ctx.fillText(value, xPos, yPos);
+          ctx.restore();
+        });
+      });
+    }
+  };
+
   // ===== MEDIA SECTION (Movies, Series, Photos) =====
   async function loadMediaData() {
     try {
@@ -349,36 +379,7 @@
         return;
       }
 
-      // Top 20 Movies - Horizontal Bar Chart
-      const moviesData = data.top_movies || {};
-      const movieLabels = Object.keys(moviesData);
-      const movieCounts = Object.values(moviesData);
-      
-      renderBarChart('chart-top-movies', {
-        labels: movieLabels,
-        datasets: [{
-          label: 'Usuarios',
-          data: movieCounts,
-          backgroundColor: colors.danger
-        }]
-      }, {
-        indexAxis: 'y',
-        scales: {
-          x: {
-            beginAtZero: true,
-            grid: {
-              color: 'rgba(0,0,0,0.05)'
-            }
-          },
-          y: {
-            grid: {
-              display: false
-            }
-          }
-        }
-      });
-
-      // Top 20 Series - Horizontal Bar Chart
+      // Top 20 Series - Horizontal Bar Chart (primero, para coincidir con el orden del HTML)
       const seriesData = data.top_series || {};
       const seriesLabels = Object.keys(seriesData);
       const seriesCounts = Object.values(seriesData);
@@ -392,6 +393,12 @@
         }]
       }, {
         indexAxis: 'y',
+        plugins: {
+          tooltip: {
+            enabled: true
+          },
+          dataLabelsPlugin: true
+        },
         scales: {
           x: {
             beginAtZero: true,
@@ -407,19 +414,82 @@
         }
       });
 
-      // Photos Distribution - Bar Chart
-      const photosData = data.photos_distribution || {};
-      const photoLabels = Object.keys(photosData).map(key => {
-        return key === '6+' ? '6+ fotos' : `${key} ${key === '1' ? 'foto' : 'fotos'}`;
+      // Top 20 Movies - Horizontal Bar Chart
+      const moviesData = data.top_movies || {};
+      const movieLabels = Object.keys(moviesData);
+      const movieCounts = Object.values(moviesData);
+      
+      renderBarChart('chart-top-movies', {
+        labels: movieLabels,
+        datasets: [{
+          label: 'Usuarios',
+          data: movieCounts,
+          backgroundColor: colors.pink
+        }]
+      }, {
+        indexAxis: 'y',
+        plugins: {
+          tooltip: {
+            enabled: true
+          },
+          dataLabelsPlugin: true
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0,0,0,0.05)'
+            }
+          },
+          y: {
+            grid: {
+              display: false
+            }
+          }
+        }
       });
-      const photoCounts = Object.values(photosData);
+
+      // Photos Distribution - Bar Chart con warning para 0 y >9
+      const photosData = data.photos_distribution || {};
+      
+      // Preparar labels y colores
+      const photoLabels = [];
+      const photoCounts = [];
+      const photoColors = [];
+      
+      // Procesar buckets en orden: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, >9
+      const buckets = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '>9'];
+      
+      buckets.forEach(bucket => {
+        const count = photosData[bucket] || 0;
+        
+        // Label amigable
+        if (bucket === '0') {
+          photoLabels.push('0 fotos ⚠️');
+        } else if (bucket === '>9') {
+          photoLabels.push('>9 fotos ⚠️');
+        } else if (bucket === '1') {
+          photoLabels.push('1 foto');
+        } else {
+          photoLabels.push(`${bucket} fotos`);
+        }
+        
+        photoCounts.push(count);
+        
+        // Color: warning para 0 y >9, normal para 1-9
+        if (bucket === '0' || bucket === '>9') {
+          photoColors.push(colors.warning); // Amarillo/warning
+        } else {
+          photoColors.push(colors.teal); // Color normal
+        }
+      });
       
       renderBarChart('chart-photos-distribution', {
         labels: photoLabels,
         datasets: [{
           label: 'Usuarios',
           data: photoCounts,
-          backgroundColor: colors.teal
+          backgroundColor: photoColors // Usar colores dinámicos
         }]
       });
       
@@ -506,10 +576,18 @@
       }
     };
     
+    // Registrar plugin personalizado si está habilitado
+    const plugins = [];
+    if (options.plugins && options.plugins.dataLabelsPlugin) {
+      plugins.push(dataLabelsPlugin);
+      delete options.plugins.dataLabelsPlugin; // Remover para no conflictuar
+    }
+    
     charts[canvasId] = new Chart(ctx, {
       type: 'bar',
       data: data,
-      options: Object.assign({}, defaultOptions, options)
+      options: Object.assign({}, defaultOptions, options),
+      plugins: plugins
     });
   }
 
