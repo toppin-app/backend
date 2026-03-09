@@ -355,38 +355,38 @@ class AnalyticsService
   
   # ===== INTERESTS ANALYTICS =====
   
-  def self.main_interests_distribution(filters = {})
+  def self.main_interests_distribution(filters = {}, limit = 20)
     # Get filtered users
     user_scope = User.all
     user_scope = apply_filters(user_scope, filters)
     user_ids = user_scope.pluck(:id)
     
-    # Count users per main interest
+    # Count users per main interest, limit to top N
     distribution = UserMainInterest
       .where(user_id: user_ids)
       .joins(:interest)
       .group('interests.name')
       .count
     
-    # Sort by count descending
-    distribution.sort_by { |_, count| -count }.to_h
+    # Sort by count descending and limit
+    distribution.sort_by { |_, count| -count }.first(limit).to_h
   end
   
-  def self.secondary_interests_distribution(filters = {})
+  def self.secondary_interests_distribution(filters = {}, limit = 20)
     # Get filtered users
     user_scope = User.all
     user_scope = apply_filters(user_scope, filters)
     user_ids = user_scope.pluck(:id)
     
-    # Count users per secondary interest
+    # Count users per secondary interest, limit to top N
     distribution = UserInterest
       .where(user_id: user_ids)
       .joins(:interest)
       .group('interests.name')
       .count
     
-    # Sort by count descending
-    distribution.sort_by { |_, count| -count }.to_h
+    # Sort by count descending and limit
+    distribution.sort_by { |_, count| -count }.first(limit).to_h
   end
   
   def self.main_interests_count_distribution(filters = {})
@@ -394,22 +394,18 @@ class AnalyticsService
     user_scope = User.all
     user_scope = apply_filters(user_scope, filters)
     
-    # Initialize valid and invalid distributions
-    valid_distribution = {
-      '1' => 0,
-      '2' => 0,
-      '3' => 0,
-      '4' => 0
-    }
+    # Valid: exactly 4 main interests
+    valid_count = 0
     
+    # Invalid distributions: <4 or >4
     invalid_distribution = {
-      '0' => 0,
+      '<4' => 0,
       '>4' => 0
     }
     
     # Store users with invalid main interests count
     invalid_users = {
-      '0' => [],
+      '<4' => [],
       '>4' => []
     }
     
@@ -417,14 +413,17 @@ class AnalyticsService
     user_scope.includes(:user_main_interests).find_each do |user|
       main_interests_count = user.user_main_interests.count
       
-      if main_interests_count == 0
-        invalid_distribution['0'] += 1
-        invalid_users['0'] << {
+      if main_interests_count == 4
+        valid_count += 1
+      elsif main_interests_count < 4
+        invalid_distribution['<4'] += 1
+        invalid_users['<4'] << {
           id: user.id,
           name: user.name,
-          email: user.email
+          email: user.email,
+          main_interests_count: main_interests_count
         }
-      elsif main_interests_count > 4
+      else # main_interests_count > 4
         invalid_distribution['>4'] += 1
         invalid_users['>4'] << {
           id: user.id,
@@ -432,13 +431,11 @@ class AnalyticsService
           email: user.email,
           main_interests_count: main_interests_count
         }
-      else
-        valid_distribution[main_interests_count.to_s] += 1
       end
     end
     
     {
-      valid: valid_distribution,
+      valid: valid_count,
       invalid: invalid_distribution,
       invalid_users: invalid_users
     }
