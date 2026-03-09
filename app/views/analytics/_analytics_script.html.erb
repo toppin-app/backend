@@ -862,20 +862,24 @@
     const customHeight = options.customHeight;
     delete options.customHeight; // Remove from options to avoid passing to Chart.js
     
-    // If custom height is provided, set it on canvas and container
-    if (customHeight) {
-      // Set canvas dimensions
-      canvas.height = customHeight;
-      canvas.style.height = customHeight + 'px';
+    // When customHeight is set, use the Chart.js recommended pattern:
+    // set height on the WRAPPER div (position:relative), and use
+    // responsive:true + maintainAspectRatio:false so Chart.js fills it.
+    const hasCustomHeight = !!customHeight;
+    
+    if (hasCustomHeight) {
+      // Check if there's a dedicated wrapper (e.g. chart-main-interests-wrapper)
+      const wrapperId = canvasId + '-wrapper';
+      const wrapper = document.getElementById(wrapperId);
+      const targetContainer = wrapper || canvas.parentElement;
       
-      // Force width recalculation to ensure Chart.js respects the custom height
-      canvas.width = canvas.parentElement.offsetWidth;
+      // Set height on the container — Chart.js (responsive) will fill this
+      targetContainer.style.height = customHeight + 'px';
+      targetContainer.style.minHeight = customHeight + 'px';
       
-      // Set parent container height
-      const parentDiv = canvas.parentElement;
-      if (parentDiv) {
-        parentDiv.style.height = customHeight + 'px';
-        parentDiv.style.minHeight = customHeight + 'px';
+      // Ensure position:relative so Chart.js can measure it
+      if (!wrapper) {
+        targetContainer.style.position = 'relative';
       }
     }
     
@@ -913,6 +917,9 @@
     const mergedOptions = {
       ...defaultOptions,
       ...options,
+      // Always keep responsive + maintainAspectRatio
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         ...defaultOptions.plugins,
         ...(options.plugins || {})
