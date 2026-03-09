@@ -64,46 +64,89 @@
     return queryString;
   }
 
-  // Fetch data from API
+  // Fetch data from API with timeout
   async function fetchData(section) {
     const filters = getFilters();
     const url = `/analytics/data?section=${section}&${filters}`;
     
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Network response was not ok');
-      return await response.json();
+      console.log(`[Analytics] Fetching data for section: ${section}`);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`[Analytics] Successfully loaded data for section: ${section}`);
+      return data;
     } catch (error) {
-      console.error('Error fetching data:', error);
+      clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        console.error(`[Analytics] Timeout loading ${section} data`);
+      } else {
+        console.error(`[Analytics] Error fetching ${section} data:`, error);
+      }
       return null;
     }
   }
 
+  // Track if a load is in progress to prevent race conditions
+  let isLoading = false;
+
   // Load all sections
   async function loadAllData() {
-    const applyButton = document.getElementById('apply-filters');
-    
-    // Show loading state
-    showLoading();
-    if (applyButton) {
-      applyButton.disabled = true;
-      applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+    // Prevent multiple simultaneous loads
+    if (isLoading) {
+      console.log('[Analytics] Load already in progress, skipping...');
+      return;
     }
     
-    await Promise.all([
-      loadGrowthData(),
-      loadEngagementData(),
-      loadDemographicsData(),
-      loadMatchingData(),
-      loadRetentionData(),
-      loadInsightsData()
-    ]);
+    isLoading = true;
+    const applyButton = document.getElementById('apply-filters');
     
-    // Hide loading state
-    hideLoading();
-    if (applyButton) {
-      applyButton.disabled = false;
-      applyButton.innerHTML = '<i class="fas fa-sync"></i> Aplicar Filtros';
+    try {
+      console.log('[Analytics] Starting data load...');
+      
+      // Show loading state
+      showLoading();
+      if (applyButton) {
+        applyButton.disabled = true;
+        applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+      }
+      
+      // Load only the sections that exist now (growth, demographics, insights)
+      const results = await Promise.allSettled([
+        loadGrowthData(),
+        loadDemographicsData(),
+        loadInsightsData()
+      ]);
+      
+      // Log any failures
+      results.forEach((result, index) => {
+        const sections = ['growth', 'demographics', 'insights'];
+        if (result.status === 'rejected') {
+          console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
+        }
+      });
+      
+      console.log('[Analytics] Data load completed');
+    } catch (error) {
+      console.error('[Analytics] Unexpected error during data load:', error);
+    } finally {
+      // Always hide loading state and re-enable button, even if there were errors
+      hideLoading();
+      if (applyButton) {
+        applyButton.disabled = false;
+        applyButton.innerHTML = '<i class="fas fa-sync"></i> Aplicar Filtros';
+      }
+      isLoading = false;
     }
   }
 
@@ -123,8 +166,12 @@
 
   // ===== GROWTH SECTION =====
   async function loadGrowthData() {
-    const data = await fetchData('growth');
-    if (!data) return;
+    try {
+      const data = await fetchData('growth');
+      if (!data) {
+        console.warn('[Analytics] No data returned for growth section');
+        return;
+      }
 
     // Update KEY METRICS cards at the top
     const userMetrics = data.user_metrics || {};
@@ -190,12 +237,19 @@
         tension: 0.4
       }]
     }, { scales: { y: { beginAtZero: true } } });
+    } catch (error) {
+      console.error('[Analytics] Error rendering growth charts:', error);
+    }
   }
 
   // ===== DEMOGRAPHICS SECTION =====
   async function loadDemographicsData() {
-    const data = await fetchData('demographics');
-    if (!data) return;
+    try {
+      const data = await fetchData('demographics');
+      if (!data) {
+        console.warn('[Analytics] No data returned for demographics section');
+        return;
+      }
 
     // Gender Distribution
     const genderData = data.gender_distribution || {};
@@ -240,12 +294,19 @@
         backgroundColor: colors.orange
       }]
     }, { indexAxis: 'y' });
+    } catch (error) {
+      console.error('[Analytics] Error rendering demographics charts:', error);
+    }
   }
 
   // ===== INSIGHTS SECTION =====
   async function loadInsightsData() {
-    const data = await fetchData('insights');
-    if (!data) return;
+    try {
+      const data = await fetchData('insights');
+      if (!data) {
+        console.warn('[Analytics] No data returned for insights section');
+        return;
+      }
 
     const topUsers = data.top_users || {};
     
@@ -273,6 +334,9 @@
     });
     html += '</ol>';
     document.getElementById('top-cities-list').innerHTML = html;
+    } catch (error) {
+      console.error('[Analytics] Error rendering insights:', error);
+    }
   }
 
   // ===== CHART RENDERING FUNCTIONS =====
