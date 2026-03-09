@@ -832,6 +832,7 @@
     extra.style.display = expanded ? 'none' : 'block';
     btn.textContent = expanded ? `Ver ${remaining} más ▼` : 'Ver menos ▲';
   }
+  window.toggleHTMLBarChartExtra = toggleHTMLBarChartExtra;
 
 
   function renderBarChart(canvasId, data, options = {}) {
