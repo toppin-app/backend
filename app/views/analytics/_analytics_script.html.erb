@@ -555,11 +555,11 @@
         html += `<td>${user.name || 'N/A'}</td>`;
         html += `<td>${user.email || 'N/A'}</td>`;
         if (bucket === '>9') {
-          html += `<td><span class="badge bg-warning">${user.photo_count}</span></td>`;
+          html += `<td><span class="badge bg-warning text-dark">${user.photo_count}</span></td>`;
         }
         html += '<td>';
-        html += `<a href="/users/${user.id}" class="btn btn-sm btn-primary" target="_blank"><i class="fas fa-user-cog"></i> Ver perfil</a> `;
-        html += `<a href="/edit_user?user_id=${user.id}" class="btn btn-sm btn-outline-secondary" target="_blank"><i class="fas fa-edit"></i> Editar</a>`;
+        html += `<a href="/users/${user.id}" class="btn btn-sm btn-primary text-white" target="_blank" style="color: white !important;"><i class="fas fa-user-cog"></i> Gestionar perfil</a> `;
+        html += `<a href="/edit_user?id=${user.id}" class="btn btn-sm btn-outline-secondary" target="_blank"><i class="fas fa-edit"></i> Editar</a>`;
         html += '</td>';
         html += '</tr>';
       });
