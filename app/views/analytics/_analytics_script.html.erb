@@ -591,47 +591,8 @@
       const mainInterestsLabels = Object.keys(mainInterestsData);
       const mainInterestsCounts = Object.values(mainInterestsData);
       
-      // Calculate dynamic height based on number of interests
-      // Using 40px per bar for better spacing, with a minimum of 400px
-      const mainInterestsCount = mainInterestsLabels.length;
-      const mainInterestsHeight = Math.max(400, mainInterestsCount * 40);
-      
-      renderBarChart('chart-main-interests', {
-        labels: mainInterestsLabels,
-        datasets: [{
-          label: 'Usuarios',
-          data: mainInterestsCounts,
-          backgroundColor: colors.blue
-        }]
-      }, {
-        customHeight: mainInterestsHeight,
-        indexAxis: 'y',
-        maintainAspectRatio: false,
-        plugins: {
-          tooltip: {
-            enabled: true
-          },
-          dataLabelsPlugin: true
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            grid: {
-              color: 'rgba(0,0,0,0.05)'
-            }
-          },
-          y: {
-            grid: {
-              display: false
-            },
-            ticks: {
-              autoSkip: false,
-              maxRotation: 0,
-              minRotation: 0
-            }
-          }
-        }
-      });
+      const mainInterestsHeight = Math.max(400, mainInterestsLabels.length * 40);
+      renderHorizontalBarChart('chart-main-interests', mainInterestsLabels, mainInterestsCounts, colors.blue, mainInterestsHeight);
 
       // Main Interests Count - Valid and Invalid
       const mainInterestsCountData = data.main_interests_count || {};
@@ -687,47 +648,8 @@
       const secondaryInterestsLabels = Object.keys(secondaryInterestsData);
       const secondaryInterestsCounts = Object.values(secondaryInterestsData);
       
-      // Calculate dynamic height based on number of interests
-      // Using 40px per bar for better spacing, with a minimum of 400px
-      const secondaryInterestsCount = secondaryInterestsLabels.length;
-      const secondaryInterestsHeight = Math.max(400, secondaryInterestsCount * 40);
-      
-      renderBarChart('chart-secondary-interests', {
-        labels: secondaryInterestsLabels,
-        datasets: [{
-          label: 'Usuarios',
-          data: secondaryInterestsCounts,
-          backgroundColor: colors.green
-        }]
-      }, {
-        customHeight: secondaryInterestsHeight,
-        indexAxis: 'y',
-        maintainAspectRatio: false,
-        plugins: {
-          tooltip: {
-            enabled: true
-          },
-          dataLabelsPlugin: true
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            grid: {
-              color: 'rgba(0,0,0,0.05)'
-            }
-          },
-          y: {
-            grid: {
-              display: false
-            },
-            ticks: {
-              autoSkip: false,
-              maxRotation: 0,
-              minRotation: 0
-            }
-          }
-        }
-      });
+      const secondaryInterestsHeight = Math.max(400, secondaryInterestsLabels.length * 40);
+      renderHorizontalBarChart('chart-secondary-interests', secondaryInterestsLabels, secondaryInterestsCounts, colors.green, secondaryInterestsHeight);
 
       // Secondary Interests Count Per User - Bar Chart
       const secondaryCountData = data.secondary_interests_count || {};
@@ -849,6 +771,73 @@
       type: 'line',
       data: data,
       options: Object.assign({}, defaultOptions, options)
+    });
+  }
+
+  // Renders a horizontal bar chart with a FIXED pixel height.
+  // Uses responsive:false so Chart.js cannot override the canvas dimensions.
+  // The canvas width is taken from the wrapper element at render time.
+  function renderHorizontalBarChart(canvasId, labels, values, color, pixelHeight) {
+    destroyChart(canvasId);
+
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    // Determine the available width from the wrapper / parent
+    const wrapper = document.getElementById(canvasId + '-wrapper') || canvas.parentElement;
+    const pixelWidth = wrapper.clientWidth || wrapper.offsetWidth || 900;
+
+    // Set canvas size as HTML attributes — the ONLY way responsive:false reads it
+    canvas.width  = pixelWidth;
+    canvas.height = pixelHeight;
+
+    // Also sync CSS so the element occupies the correct space in the page layout
+    canvas.style.width  = pixelWidth  + 'px';
+    canvas.style.height = pixelHeight + 'px';
+    canvas.style.display = 'block';
+
+    // Size the wrapper to match, so no white space appears around the chart
+    wrapper.style.height    = pixelHeight + 'px';
+    wrapper.style.minHeight = pixelHeight + 'px';
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    charts[canvasId] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Usuarios',
+          data: values,
+          backgroundColor: color
+        }]
+      },
+      options: {
+        responsive: false,          // ← key: Chart.js uses canvas attributes exactly
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: true }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              autoSkip: false,    // show every label
+              maxRotation: 0,
+              minRotation: 0,
+              font: { size: 12 }
+            }
+          }
+        }
+      },
+      plugins: [dataLabelsPlugin]
     });
   }
 
