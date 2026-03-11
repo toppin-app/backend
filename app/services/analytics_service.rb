@@ -529,6 +529,7 @@ class AnalyticsService
     [['Gratuito', nil], ['Premium', 'premium'], ['Supreme', 'supreme']].each do |label, sub|
       sub_scope = sub.nil? ? scope.where(current_subscription_name: nil) : scope.where(current_subscription_name: sub)
       result[label] = sub_scope.group(:gender).count
+                                 .transform_keys { |k| User.genders[k.to_s] || k }
     end
     result
   end
@@ -554,9 +555,10 @@ class AnalyticsService
     scope = apply_filters(scope, filters.except(:gender, :verified))
     scope = apply_date_range(scope, filters, :created_at)
 
+    gender_to_int = ->(h) { h.transform_keys { |k| User.genders[k.to_s] || k } }
     {
-      verified:     scope.where(verified: true).group(:gender).count,
-      non_verified: scope.where(verified: false).group(:gender).count
+      verified:     gender_to_int.call(scope.where(verified: true).group(:gender).count),
+      non_verified: gender_to_int.call(scope.where(verified: false).group(:gender).count)
     }
   end
 
