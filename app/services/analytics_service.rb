@@ -506,6 +506,128 @@ class AnalyticsService
     ActiveRecord::Base.connection.table_exists?(table_name)
   end
 
+  # ===== COMPLAINTS ANALYTICS =====
+
+  def self.complaints_total(filters = {})
+    scope = apply_user_filters_to_complaints(Complaint.all, filters)
+    scope.count
+  end
+
+  def self.complaints_over_time(filters = {}, group_by = :week)
+    scope = apply_user_filters_to_complaints(Complaint.all, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    case group_by
+    when :day   then scope.group("DATE(complaints.created_at)").count
+    when :week  then scope.group("YEARWEEK(complaints.created_at)").count
+    when :month then scope.group("DATE_FORMAT(complaints.created_at, '%Y-%m')").count
+    end
+  end
+
+  def self.complaints_by_reporter_gender(filters = {})
+    scope = apply_user_filters_to_complaints(Complaint.all, filters)
+    gender_enum = User.genders
+    scope.joins("INNER JOIN users AS reporters ON reporters.id = complaints.user_id")
+         .group("reporters.gender")
+         .count
+         .transform_keys { |k| gender_enum[k.to_s] || k }
+  end
+
+  def self.complaints_by_reported_gender(filters = {})
+    scope = apply_user_filters_to_complaints(Complaint.all, filters)
+    gender_enum = User.genders
+    scope.joins("INNER JOIN users AS reported ON reported.id = complaints.to_user_id")
+         .where.not(to_user_id: nil)
+         .group("reported.gender")
+         .count
+         .transform_keys { |k| gender_enum[k.to_s] || k }
+  end
+
+  def self.complaints_gender_matrix(filters = {})
+    scope = apply_user_filters_to_complaints(Complaint.all, filters)
+    gender_enum = User.genders
+    gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+    rows = scope
+      .joins("INNER JOIN users AS reporters ON reporters.id = complaints.user_id")
+      .joins("INNER JOIN users AS reported  ON reported.id  = complaints.to_user_id")
+      .where.not(to_user_id: nil)
+      .group("reporters.gender", "reported.gender")
+      .count
+
+    # Convert {["female","female"] => N} → {reporter_label => {reported_label => N}}
+    matrix = {}
+    rows.each do |(rg, dg), count|
+      r_key = gender_enum[rg.to_s] || rg.to_i
+      d_key = gender_enum[dg.to_s] || dg.to_i
+      r_name = gender_names[r_key] || rg.to_s
+      d_name = gender_names[d_key] || dg.to_s
+      matrix[r_name] ||= {}
+      matrix[r_name][d_name] = count
+    end
+    matrix
+  end
+
+  def self.complaints_made_distribution(filters = {})
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+
+    counts_by_user = Complaint.where(user_id: user_ids).group(:user_id).count
+
+    distribution = {}
+    user_ids.each do |uid|
+      c = counts_by_user[uid] || 0
+      key = c > 10 ? '>10' : c.to_s
+      distribution[key] ||= 0
+      distribution[key] += 1
+    end
+
+    # Return sorted 0..10, >10
+    result = {}
+    (0..10).each { |i| result[i.to_s] = distribution[i.to_s] || 0 }
+    result['>10'] = distribution['>10'] || 0
+    result
+  end
+
+  def self.complaints_received_distribution(filters = {})
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    user_ids = user_scope.pluck(:id)
+
+    counts_by_user = Complaint.where(to_user_id: user_ids).group(:to_user_id).count
+
+    distribution = {}
+    user_ids.each do |uid|
+      c = counts_by_user[uid] || 0
+      key = c > 10 ? '>10' : c.to_s
+      distribution[key] ||= 0
+      distribution[key] += 1
+    end
+
+    result = {}
+    (0..10).each { |i| result[i.to_s] = distribution[i.to_s] || 0 }
+    result['>10'] = distribution['>10'] || 0
+    result
+  end
+
+  def self.avg_complaints_received_by_gender(filters = {})
+    user_scope = User.all
+    user_scope = apply_filters(user_scope, filters)
+    gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+
+    result = {}
+    User.genders.each do |name, int_val|
+      users_of_gender = user_scope.where(gender: int_val)
+      total_users = users_of_gender.count
+      next if total_users == 0
+
+      user_ids = users_of_gender.pluck(:id)
+      total_complaints = Complaint.where(to_user_id: user_ids).count
+      label = gender_names[int_val] || name
+      result[label] = (total_complaints.to_f / total_users).round(2)
+    end
+    result
+  end
+
   # ===== LANGUAGES ANALYTICS =====
 
   def self.subscription_distribution(filters = {})
@@ -704,5 +826,13 @@ class AnalyticsService
         end: Time.current 
       }
     end
+  end
+
+  # Restricts a Complaint scope to only complaints whose reporter (user_id) belongs
+  # to the filtered user set. Respects bot/account-status/gender/country/etc. filters.
+  def self.apply_user_filters_to_complaints(complaint_scope, filters)
+    user_scope = apply_filters(User.all, filters)
+    user_ids = user_scope.pluck(:id)
+    complaint_scope.where(user_id: user_ids)
   end
 end

@@ -121,7 +121,7 @@
         applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
       }
       
-      // Load only the sections that exist now (growth, demographics, insights, media, interests, spotify, languages)
+      // Load only the sections that exist now
       const results = await Promise.allSettled([
         loadGrowthData(),
         loadDemographicsData(),
@@ -129,12 +129,13 @@
         loadMediaData(),
         loadInterestsData(),
         loadSpotifyData(),
-        loadLanguagesData()
+        loadLanguagesData(),
+        loadComplaintsData()
       ]);
       
       // Log any failures
       results.forEach((result, index) => {
-        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages'];
+        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages', 'complaints'];
         if (result.status === 'rejected') {
           console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
         }
@@ -877,6 +878,95 @@
 
     } catch (e) {
       console.error('[Analytics] Error loading languages data:', e);
+    }
+  }
+
+  // ===== COMPLAINTS DATA =====
+
+  async function loadComplaintsData() {
+    try {
+      const data = await fetchData('complaints');
+      if (!data) {
+        console.warn('[Analytics] No data returned for complaints section');
+        return;
+      }
+
+      const genderLabels = { 0: 'Mujer', 1: 'Hombre', 2: 'No binario', 3: 'Pareja' };
+      const genderColors = [colors.pink, colors.primary, colors.purple, colors.teal];
+
+      // Total metric card
+      const totalEl = document.getElementById('metric-complaints-total');
+      if (totalEl) totalEl.textContent = formatNumber(data.total || 0);
+
+      // Over time
+      renderLineChart('chart-complaints-over-time', {
+        labels: Object.keys(data.over_time || {}),
+        datasets: [{
+          label: 'Denuncias',
+          data: Object.values(data.over_time || {}),
+          borderColor: colors.danger,
+          backgroundColor: colors.danger + '20',
+          fill: true,
+          tension: 0.4
+        }]
+      });
+
+      // By reporter gender
+      const repGender = data.by_reporter_gender || {};
+      renderPieChart('chart-complaints-reporter-gender', {
+        labels: Object.keys(repGender).map(k => genderLabels[parseInt(k)] || k),
+        datasets: [{ data: Object.values(repGender), backgroundColor: genderColors }]
+      });
+
+      // By reported gender
+      const repdGender = data.by_reported_gender || {};
+      renderPieChart('chart-complaints-reported-gender', {
+        labels: Object.keys(repdGender).map(k => genderLabels[parseInt(k)] || k),
+        datasets: [{ data: Object.values(repdGender), backgroundColor: genderColors }]
+      });
+
+      // Gender matrix as HTML table
+      const matrix = data.gender_matrix || {};
+      const reporters = Object.keys(matrix);
+      const allReported = [...new Set(reporters.flatMap(r => Object.keys(matrix[r] || {})))];
+      if (reporters.length > 0) {
+        let html = '<table class="table table-bordered table-sm text-center" style="font-size:13px; margin:12px;">';
+        html += '<thead><tr><th>Denunciante \ Denunciado</th>' + allReported.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+        reporters.forEach(r => {
+          html += `<tr><td class="font-weight-bold">${r}</td>` + allReported.map(c => {
+            const val = (matrix[r] || {})[c] || 0;
+            const intensity = val > 0 ? Math.min(0.15 + (val / 200), 0.85) : 0;
+            return `<td style="background:rgba(220,53,69,${intensity}); color:${intensity > 0.4 ? '#fff' : '#333'}">${val}</td>`;
+          }).join('') + '</tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('chart-complaints-gender-matrix').innerHTML = html;
+      }
+
+      // Made distribution
+      const madeDist = data.made_distribution || {};
+      const madeLabels = [...Array(11).keys()].map(String).concat(['>10']);
+      renderBarChart('chart-complaints-made-dist', {
+        labels: madeLabels,
+        datasets: [{ label: 'Usuarios', data: madeLabels.map(k => madeDist[k] || 0), backgroundColor: colors.warning }]
+      }, { plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Denuncias realizadas' } }, y: { beginAtZero: true } } });
+
+      // Received distribution
+      const recvDist = data.received_distribution || {};
+      renderBarChart('chart-complaints-received-dist', {
+        labels: madeLabels,
+        datasets: [{ label: 'Usuarios', data: madeLabels.map(k => recvDist[k] || 0), backgroundColor: colors.danger }]
+      }, { plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Denuncias recibidas' } }, y: { beginAtZero: true } } });
+
+      // Avg received by gender
+      const avgByGender = data.avg_received_by_gender || {};
+      renderBarChart('chart-complaints-avg-by-gender', {
+        labels: Object.keys(avgByGender),
+        datasets: [{ label: 'Promedio', data: Object.values(avgByGender), backgroundColor: genderColors.slice(0, Object.keys(avgByGender).length) }]
+      }, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Promedio denuncias recibidas' } } } });
+
+    } catch (e) {
+      console.error('[Analytics] Error loading complaints data:', e);
     }
   }
 

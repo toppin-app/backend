@@ -39,6 +39,8 @@ class AnalyticsController < ApplicationController
       spotify_data
     when 'languages'
       languages_data
+    when 'complaints'
+      complaints_data
     else
       { error: 'Invalid section' }
     end
@@ -221,6 +223,19 @@ class AnalyticsController < ApplicationController
       app_language_distribution: AnalyticsService.app_language_distribution(@filters),
       profile_languages_distribution: AnalyticsService.profile_languages_distribution(@filters),
       profile_languages_count_distribution: AnalyticsService.profile_languages_count_distribution(@filters)
+    }
+  end
+
+  def complaints_data
+    {
+      total: AnalyticsService.complaints_total(@filters),
+      over_time: AnalyticsService.complaints_over_time(@filters, :week),
+      by_reporter_gender: AnalyticsService.complaints_by_reporter_gender(@filters),
+      by_reported_gender: AnalyticsService.complaints_by_reported_gender(@filters),
+      gender_matrix: AnalyticsService.complaints_gender_matrix(@filters),
+      made_distribution: AnalyticsService.complaints_made_distribution(@filters),
+      received_distribution: AnalyticsService.complaints_received_distribution(@filters),
+      avg_received_by_gender: AnalyticsService.avg_complaints_received_by_gender(@filters)
     }
   end
 
