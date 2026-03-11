@@ -229,6 +229,16 @@
       }]
     });
 
+    // Subscription Distribution
+    const subData = data.subscription_distribution || {};
+    renderPieChart('chart-subscription', {
+      labels: ['Gratuito', 'Premium', 'Supreme'],
+      datasets: [{
+        data: [subData['Gratuito'] || 0, subData['Premium'] || 0, subData['Supreme'] || 0],
+        backgroundColor: [colors.gray, colors.warning, colors.purple]
+      }]
+    });
+
     // Deletions Over Time
     renderLineChart('chart-deletions', {
       labels: Object.keys(data.deletions || {}),

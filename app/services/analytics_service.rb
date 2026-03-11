@@ -508,6 +508,18 @@ class AnalyticsService
 
   # ===== LANGUAGES ANALYTICS =====
 
+  def self.subscription_distribution(filters = {})
+    scope = User.all
+    scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+
+    {
+      'Gratuito' => scope.where(current_subscription_name: nil).count,
+      'Premium'  => scope.where(current_subscription_name: 'premium').count,
+      'Supreme'  => scope.where(current_subscription_name: 'supreme').count
+    }
+  end
+
   def self.app_language_distribution(filters = {})
     scope = User.all
     scope = apply_filters(scope, filters)
