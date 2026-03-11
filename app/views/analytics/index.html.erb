@@ -849,7 +849,7 @@
           <small class="text-muted">Frecuencia de cada motivo de denuncia</small>
         </div>
         <div class="card-body">
-          <canvas id="chart-complaints-by-type" height="120"></canvas>
+          <div id="chart-complaints-by-type"></div>
         </div>
       </div>
     </div>
@@ -860,8 +860,10 @@
           <h6 class="mb-0">Tipos de Denuncia por Género del Denunciante</h6>
           <small class="text-muted">Comparativa de motivos según quién denuncia</small>
         </div>
-        <div class="card-body">
-          <canvas id="chart-complaints-type-reporter-gender" height="120"></canvas>
+        <div class="card-body p-2">
+          <div style="position:relative; height:260px;">
+            <canvas id="chart-complaints-type-reporter-gender"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -875,8 +877,10 @@
           <h6 class="mb-0">Tipos de Denuncia por Género del Denunciado</h6>
           <small class="text-muted">Comparativa de motivos según quién recibe la denuncia</small>
         </div>
-        <div class="card-body">
-          <canvas id="chart-complaints-type-reported-gender" height="120"></canvas>
+        <div class="card-body p-2">
+          <div style="position:relative; height:260px;">
+            <canvas id="chart-complaints-type-reported-gender"></canvas>
+          </div>
         </div>
       </div>
     </div>

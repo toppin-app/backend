@@ -989,19 +989,17 @@
       const ttg = data.by_type_and_gender || {};
       const typeColorPalette = [colors.primary, colors.danger, colors.warning, colors.success, colors.purple, colors.teal];
 
-      // 1. Total by type — horizontal bar
+      // 1. Total by type — HTML bar chart (long labels, no tooltip issues)
       const byType = ttg.by_type || {};
-      const typeLabels = Object.keys(byType);
-      renderBarChart('chart-complaints-by-type', {
-        labels: typeLabels,
-        datasets: [{ label: 'Total', data: typeLabels.map(k => byType[k] || 0), backgroundColor: typeColorPalette }]
-      }, {
-        indexAxis: 'y',
-        plugins: { legend: { display: false } },
-        scales: { x: { beginAtZero: true }, y: { grid: { display: false } } }
-      });
+      const sortedTypeEntries = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+      renderHTMLBarChart(
+        'chart-complaints-by-type',
+        sortedTypeEntries.map(([k]) => k),
+        sortedTypeEntries.map(([, v]) => v),
+        colors.danger
+      );
 
-      // 2. By type × reporter gender — grouped bar (one dataset per gender)
+      // 2. By type × reporter gender — horizontal grouped bar
       const byTypeReporter = ttg.by_type_reporter_gender || {};
       const reporterGenders = Object.keys(byTypeReporter);
       const allTypeLabelsR = [...new Set(reporterGenders.flatMap(g => Object.keys(byTypeReporter[g] || {})))];
@@ -1011,10 +1009,10 @@
           data: allTypeLabelsR.map(t => (byTypeReporter[g] || {})[t] || 0),
           backgroundColor: genderColors[i % genderColors.length]
         }));
-        renderGroupedBarChart('chart-complaints-type-reporter-gender', allTypeLabelsR, repDatasets);
+        renderGroupedBarChart('chart-complaints-type-reporter-gender', allTypeLabelsR, repDatasets, true);
       }
 
-      // 3. By type × reported gender — grouped bar (one dataset per gender)
+      // 3. By type × reported gender — horizontal grouped bar
       const byTypeReported = ttg.by_type_reported_gender || {};
       const reportedGenders = Object.keys(byTypeReported);
       const allTypeLabelsD = [...new Set(reportedGenders.flatMap(g => Object.keys(byTypeReported[g] || {})))];
@@ -1024,7 +1022,7 @@
           data: allTypeLabelsD.map(t => (byTypeReported[g] || {})[t] || 0),
           backgroundColor: genderColors[i % genderColors.length]
         }));
-        renderGroupedBarChart('chart-complaints-type-reported-gender', allTypeLabelsD, repdDatasets);
+        renderGroupedBarChart('chart-complaints-type-reported-gender', allTypeLabelsD, repdDatasets, true);
       }
 
       // 4. Full matrix: reporter gender × reported gender × type — nested HTML tables
@@ -1171,7 +1169,7 @@
   }
   window.toggleHTMLBarChartExtra = toggleHTMLBarChartExtra;
 
-  function renderGroupedBarChart(canvasId, labels, datasets) {
+  function renderGroupedBarChart(canvasId, labels, datasets, horizontal = false) {
     destroyChart(canvasId);
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -1180,13 +1178,17 @@
       type: 'bar',
       data: { labels, datasets },
       options: {
+        indexAxis: horizontal ? 'y' : 'x',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: { display: true, position: 'top' },
           tooltip: { mode: 'index', intersect: false }
         },
-        scales: {
+        scales: horizontal ? {
+          x: { beginAtZero: true },
+          y: { grid: { display: false }, ticks: { autoSkip: false } }
+        } : {
           x: { grid: { display: false } },
           y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }
         }

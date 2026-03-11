@@ -659,11 +659,14 @@ class AnalyticsService
     full_matrix             = {}
 
     rows.each do |reason, reporter_id, reported_id|
-      type_label          = Complaint::REASON_KEY_LABELS[reason.to_s] || reason.to_s
-      reporter_gender_int = gender_enum[reporter_genders[reporter_id].to_s]
-      reported_gender_int = gender_enum[reported_genders[reported_id].to_s]
-      reporter_gender     = gender_names[reporter_gender_int] || 'Desconocido'
-      reported_gender     = gender_names[reported_gender_int] || 'Desconocido'
+      type_label = Complaint::REASON_KEY_LABELS[reason.to_s] || reason.to_s
+      # pluck(:gender) may return an Integer (MySQL) or a String enum name (Rails)
+      reporter_gender_raw = reporter_genders[reporter_id]
+      reported_gender_raw = reported_genders[reported_id]
+      reporter_gender_int = reporter_gender_raw.nil? ? nil : (gender_enum[reporter_gender_raw.to_s] || reporter_gender_raw.to_i)
+      reported_gender_int = reported_gender_raw.nil? ? nil : (gender_enum[reported_gender_raw.to_s] || reported_gender_raw.to_i)
+      reporter_gender = gender_names[reporter_gender_int] || 'Desconocido'
+      reported_gender = gender_names[reported_gender_int] || 'Desconocido'
 
       by_type[type_label] = (by_type[type_label] || 0) + 1
 
@@ -887,9 +890,12 @@ class AnalyticsService
   end
 
   # Restricts a Complaint scope to only complaints whose reporter (user_id) belongs
-  # to the filtered user set. Respects bot/account-status/gender/country/etc. filters.
+  # to the filtered user set. Intentionally ignores bot/account-status defaults so
+  # that every complaint is counted regardless of the reporter's account flags —
+  # only explicit contextual filters (gender, country, subscription) are applied.
   def self.apply_user_filters_to_complaints(complaint_scope, filters)
-    user_scope = apply_filters(User.all, filters)
+    complaint_filters = filters.except(:exclude_bots, :only_bots, :exclude_deleted, :only_deleted)
+    user_scope = apply_filters(User.all, complaint_filters)
     user_ids = user_scope.pluck(:id)
     complaint_scope.where(user_id: user_ids)
   end
