@@ -518,7 +518,7 @@ class AnalyticsService
     scope = apply_date_range(scope, filters, :created_at)
     case group_by
     when :day   then scope.group("DATE(complaints.created_at)").count
-    when :week  then scope.group("YEARWEEK(complaints.created_at)").count
+    when :week  then scope.group("DATE_FORMAT(DATE_SUB(complaints.created_at, INTERVAL WEEKDAY(complaints.created_at) DAY), '%Y-%m-%d')").count
     when :month then scope.group("DATE_FORMAT(complaints.created_at, '%Y-%m')").count
     end
   end
@@ -533,8 +533,9 @@ class AnalyticsService
   end
 
   def self.complaints_by_reported_gender(filters = {})
-    scope = apply_user_filters_to_complaints(Complaint.all, filters)
-    to_user_ids = scope.where.not(to_user_id: nil).pluck(:to_user_id)
+    user_scope  = apply_filters(User.all, filters)
+    user_ids    = user_scope.pluck(:id)
+    to_user_ids = Complaint.where(to_user_id: user_ids).where.not(to_user_id: nil).pluck(:to_user_id)
     return {} if to_user_ids.empty?
 
     gender_enum  = User.genders
@@ -643,6 +644,7 @@ class AnalyticsService
 
   def self.complaints_by_type_and_gender(filters = {})
     gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+    gender_enum  = User.genders
     complaint_scope = apply_user_filters_to_complaints(Complaint.all, filters)
     rows = complaint_scope.pluck(:reason, :user_id, :to_user_id)
 
@@ -657,9 +659,11 @@ class AnalyticsService
     full_matrix             = {}
 
     rows.each do |reason, reporter_id, reported_id|
-      type_label      = Complaint::REASON_KEY_LABELS[reason.to_s] || reason.to_s
-      reporter_gender = gender_names[reporter_genders[reporter_id]] || 'Desconocido'
-      reported_gender = gender_names[reported_genders[reported_id]] || 'Desconocido'
+      type_label          = Complaint::REASON_KEY_LABELS[reason.to_s] || reason.to_s
+      reporter_gender_int = gender_enum[reporter_genders[reporter_id].to_s]
+      reported_gender_int = gender_enum[reported_genders[reported_id].to_s]
+      reporter_gender     = gender_names[reporter_gender_int] || 'Desconocido'
+      reported_gender     = gender_names[reported_gender_int] || 'Desconocido'
 
       by_type[type_label] = (by_type[type_label] || 0) + 1
 
