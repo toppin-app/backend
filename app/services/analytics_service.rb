@@ -534,34 +534,47 @@ class AnalyticsService
 
   def self.complaints_by_reported_gender(filters = {})
     scope = apply_user_filters_to_complaints(Complaint.all, filters)
-    gender_enum = User.genders
-    scope.joins("INNER JOIN users AS reported ON reported.id = complaints.to_user_id")
-         .where.not(to_user_id: nil)
-         .group("reported.gender")
-         .count
-         .transform_keys { |k| gender_enum[k.to_s] || k }
+    to_user_ids = scope.where.not(to_user_id: nil).pluck(:to_user_id)
+    return {} if to_user_ids.empty?
+
+    gender_enum  = User.genders
+    counts_per_user = to_user_ids.tally
+    user_genders    = User.where(id: counts_per_user.keys).pluck(:id, :gender).to_h
+
+    distribution = {}
+    counts_per_user.each do |uid, count|
+      g = user_genders[uid]
+      next if g.nil?
+      int_key = gender_enum[g.to_s] || g.to_i
+      distribution[int_key] ||= 0
+      distribution[int_key] += count
+    end
+    distribution.sort_by { |k, _| k }.to_h
   end
 
   def self.complaints_gender_matrix(filters = {})
     scope = apply_user_filters_to_complaints(Complaint.all, filters)
-    gender_enum = User.genders
-    gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
-    rows = scope
-      .joins("INNER JOIN users AS reporters ON reporters.id = complaints.user_id")
-      .joins("INNER JOIN users AS reported  ON reported.id  = complaints.to_user_id")
-      .where.not(to_user_id: nil)
-      .group("reporters.gender", "reported.gender")
-      .count
+    pairs = scope.where.not(to_user_id: nil).pluck(:user_id, :to_user_id)
+    return {} if pairs.empty?
 
-    # Convert {["female","female"] => N} → {reporter_label => {reported_label => N}}
+    gender_enum  = User.genders
+    gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+    user_genders = User.where(id: pairs.flatten.uniq).pluck(:id, :gender).to_h
+
     matrix = {}
-    rows.each do |(rg, dg), count|
-      r_key = gender_enum[rg.to_s] || rg.to_i
-      d_key = gender_enum[dg.to_s] || dg.to_i
-      r_name = gender_names[r_key] || rg.to_s
-      d_name = gender_names[d_key] || dg.to_s
+    pairs.each do |reporter_id, reported_id|
+      rg_raw = user_genders[reporter_id]
+      dg_raw = user_genders[reported_id]
+      next if rg_raw.nil? || dg_raw.nil?
+
+      r_int  = gender_enum[rg_raw.to_s] || rg_raw.to_i
+      d_int  = gender_enum[dg_raw.to_s] || dg_raw.to_i
+      r_name = gender_names[r_int] || rg_raw.to_s
+      d_name = gender_names[d_int] || dg_raw.to_s
+
       matrix[r_name] ||= {}
-      matrix[r_name][d_name] = count
+      matrix[r_name][d_name] ||= 0
+      matrix[r_name][d_name] += 1
     end
     matrix
   end
