@@ -517,6 +517,56 @@ class AnalyticsService
     scope.group(:language).count.sort_by { |_, v| -v }.to_h
   end
 
+  LANGUAGE_NAMES = {
+    '1' => 'Abjasio', '2' => 'Afar', '3' => 'Afrikáans', '4' => 'Akan',
+    '5' => 'Albanés', '6' => 'Amárico', '7' => 'Árabe', '8' => 'Aragonés',
+    '9' => 'Armenio', '10' => 'Asamés', '11' => 'Avar', '12' => 'Avéstico',
+    '13' => 'Aimara', '14' => 'Azerí', '15' => 'Bambara', '16' => 'Baskir',
+    '17' => 'Euskera', '18' => 'Bielorruso', '19' => 'Bengalí', '20' => 'Bihari',
+    '21' => 'Bislama', '22' => 'Bosnio', '23' => 'Bretón', '24' => 'Búlgaro',
+    '25' => 'Birmano', '26' => 'Catalán', '27' => 'Chamorro', '28' => 'Checheno',
+    '29' => 'Chichewa', '30' => 'Chino', '31' => 'Chuvasio', '32' => 'Córnico',
+    '33' => 'Corso', '34' => 'Cree', '35' => 'Croata', '36' => 'Checo',
+    '37' => 'Danés', '38' => 'Maldivo', '39' => 'Neerlandés', '40' => 'Dzongkha',
+    '41' => 'Inglés', '42' => 'Esperanto', '43' => 'Estonio', '44' => 'Ewé',
+    '45' => 'Feroés', '46' => 'Fiyiano', '47' => 'Finés', '48' => 'Francés',
+    '49' => 'Fula', '50' => 'Gallego', '51' => 'Georgiano', '52' => 'Alemán',
+    '53' => 'Griego', '54' => 'Guaraní', '55' => 'Guyaratí', '56' => 'Haitiano',
+    '57' => 'Hausa', '58' => 'Hebreo', '59' => 'Herero', '60' => 'Hindi',
+    '61' => 'Hiri Motu', '62' => 'Húngaro', '63' => 'Interlingua', '64' => 'Indonesio',
+    '65' => 'Interlingue', '66' => 'Irlandés', '67' => 'Igbo', '68' => 'Inupiaq',
+    '69' => 'Ido', '70' => 'Islandés', '71' => 'Italiano', '72' => 'Inuktitut',
+    '73' => 'Japonés', '74' => 'Javanés', '75' => 'Groenlandés', '76' => 'Canarés',
+    '77' => 'Kanuri', '78' => 'Cachemir', '79' => 'Kazajo', '80' => 'Jemer',
+    '81' => 'Kikuyu', '82' => 'Kinyarwanda', '83' => 'Kirguís', '84' => 'Komi',
+    '85' => 'Kongo', '86' => 'Coreano', '87' => 'Kurdo', '88' => 'Kuanyama',
+    '89' => 'Latín', '90' => 'Luxemburgués', '91' => 'Ganda', '92' => 'Limburgués',
+    '93' => 'Lingala', '94' => 'Lao', '95' => 'Lituano', '96' => 'Luba-Katanga',
+    '97' => 'Letón', '98' => 'Manés', '99' => 'Macedonio', '100' => 'Malgache',
+    '101' => 'Malayo', '102' => 'Malabar', '103' => 'Maltés', '104' => 'Maorí',
+    '105' => 'Maratí', '106' => 'Marshalés', '107' => 'Mongol', '108' => 'Nauruano',
+    '109' => 'Navajo', '110' => 'Ndebele del norte', '111' => 'Nepalí', '112' => 'Ndonga',
+    '113' => 'Noruego Bokmål', '114' => 'Noruego Nynorsk', '115' => 'Noruego',
+    '116' => 'Yi de Sichuán', '117' => 'Ndebele del sur', '118' => 'Occitano',
+    '119' => 'Ojibwa', '120' => 'Eslavo eclesiástico', '121' => 'Oromo', '122' => 'Oriya',
+    '123' => 'Osetio', '124' => 'Punyabí', '125' => 'Pali', '126' => 'Persa',
+    '127' => 'Polaco', '128' => 'Pastún', '129' => 'Portugués', '130' => 'Quechua',
+    '131' => 'Romanche', '132' => 'Kirundi', '133' => 'Rumano', '134' => 'Ruso',
+    '135' => 'Sánscrito', '136' => 'Sardo', '137' => 'Sindhi', '138' => 'Sami septentrional',
+    '139' => 'Samoano', '140' => 'Sango', '141' => 'Serbio', '142' => 'Gaélico escocés',
+    '143' => 'Shona', '144' => 'Cingalés', '145' => 'Eslovaco', '146' => 'Esloveno',
+    '147' => 'Somalí', '148' => 'Sesoto', '149' => 'Español', '150' => 'Sundanés',
+    '151' => 'Suajili', '152' => 'Suazi', '153' => 'Sueco', '154' => 'Tamil',
+    '155' => 'Telugú', '156' => 'Tayiko', '157' => 'Tailandés', '158' => 'Tigriña',
+    '159' => 'Tibetano', '160' => 'Turcomano', '161' => 'Tagalo', '162' => 'Tswana',
+    '163' => 'Tongano', '164' => 'Turco', '165' => 'Tsonga', '166' => 'Tártaro',
+    '167' => 'Twi', '168' => 'Tahitiano', '169' => 'Uigur', '170' => 'Ucraniano',
+    '171' => 'Urdu', '172' => 'Uzbeko', '173' => 'Venda', '174' => 'Vietnamita',
+    '175' => 'Volapük', '176' => 'Valón', '177' => 'Galés', '178' => 'Wólof',
+    '179' => 'Frisón occidental', '180' => 'Xhosa', '181' => 'Yidis', '182' => 'Yoruba',
+    '183' => 'Zhuang', '184' => 'Zulú', '185' => 'Valenciano'
+  }.freeze
+
   def self.profile_languages_distribution(filters = {})
     scope = User.all
     scope = apply_filters(scope, filters)
@@ -526,8 +576,9 @@ class AnalyticsService
     scope.pluck(:favorite_languages).each do |raw|
       next if raw.blank?
       parse_favorite_languages(raw).each do |lang|
-        distribution[lang] ||= 0
-        distribution[lang] += 1
+        name = LANGUAGE_NAMES[lang.to_s] || lang
+        distribution[name] ||= 0
+        distribution[name] += 1
       end
     end
 
