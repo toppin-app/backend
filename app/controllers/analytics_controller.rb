@@ -37,6 +37,8 @@ class AnalyticsController < ApplicationController
       interests_data
     when 'spotify'
       spotify_data
+    when 'languages'
+      languages_data
     else
       { error: 'Invalid section' }
     end
@@ -207,6 +209,14 @@ class AnalyticsController < ApplicationController
     {
       artists_count_distribution: AnalyticsService.spotify_artists_count_distribution(@filters),
       top_artists: AnalyticsService.top_spotify_artists(@filters, 10)
+    }
+  end
+
+  def languages_data
+    {
+      app_language_distribution: AnalyticsService.app_language_distribution(@filters),
+      profile_languages_distribution: AnalyticsService.profile_languages_distribution(@filters),
+      profile_languages_count_distribution: AnalyticsService.profile_languages_count_distribution(@filters)
     }
   end
 

@@ -121,19 +121,20 @@
         applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
       }
       
-      // Load only the sections that exist now (growth, demographics, insights, media, interests, spotify)
+      // Load only the sections that exist now (growth, demographics, insights, media, interests, spotify, languages)
       const results = await Promise.allSettled([
         loadGrowthData(),
         loadDemographicsData(),
         loadInsightsData(),
         loadMediaData(),
         loadInterestsData(),
-        loadSpotifyData()
+        loadSpotifyData(),
+        loadLanguagesData()
       ]);
       
       // Log any failures
       results.forEach((result, index) => {
-        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify'];
+        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages'];
         if (result.status === 'rejected') {
           console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
         }
@@ -777,6 +778,63 @@
 
     } catch (e) {
       console.error('[Analytics] Error loading Spotify data:', e);
+    }
+  }
+
+  // ===== LANGUAGES DATA =====
+
+  async function loadLanguagesData() {
+    try {
+      const data = await fetchData('languages');
+      if (!data) {
+        console.warn('[Analytics] No data returned for languages section');
+        return;
+      }
+
+      // --- App language distribution (doughnut) ---
+      const appLangData = data.app_language_distribution || {};
+      renderPieChart('chart-app-language', {
+        labels: Object.keys(appLangData),
+        datasets: [{
+          data: Object.values(appLangData),
+          backgroundColor: [
+            colors.primary, colors.success, colors.warning,
+            colors.danger, colors.info, colors.purple,
+            colors.pink, colors.teal, colors.orange, colors.gray
+          ]
+        }]
+      });
+
+      // --- Profile languages distribution (HTML bar chart) ---
+      const profileLangData = data.profile_languages_distribution || {};
+      const profileLangLabels = Object.keys(profileLangData);
+      const profileLangCounts = Object.values(profileLangData);
+      renderHTMLBarChart('chart-profile-languages', profileLangLabels, profileLangCounts, colors.teal);
+
+      // --- Profile languages count per user (bar chart) ---
+      const countData = data.profile_languages_count_distribution || {};
+      const countLabels = Object.keys(countData).map(k => k === '0' ? '0 idiomas' : k === '1' ? '1 idioma' : `${k} idiomas`);
+      const countValues = Object.values(countData);
+
+      renderBarChart('chart-profile-languages-count', {
+        labels: countLabels,
+        datasets: [{
+          label: 'Usuarios',
+          data: countValues,
+          backgroundColor: colors.purple
+        }]
+      }, {
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { title: { display: true, text: 'Nº de idiomas en el perfil' } },
+          y: { beginAtZero: true, title: { display: true, text: 'Usuarios' } }
+        }
+      });
+
+    } catch (e) {
+      console.error('[Analytics] Error loading languages data:', e);
     }
   }
 

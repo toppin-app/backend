@@ -506,10 +506,74 @@ class AnalyticsService
     ActiveRecord::Base.connection.table_exists?(table_name)
   end
 
+  # ===== LANGUAGES ANALYTICS =====
+
+  def self.app_language_distribution(filters = {})
+    scope = User.all
+    scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    scope = scope.where.not(language: nil)
+
+    scope.group(:language).count.sort_by { |_, v| -v }.to_h
+  end
+
+  def self.profile_languages_distribution(filters = {})
+    scope = User.all
+    scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+
+    distribution = {}
+    scope.pluck(:favorite_languages).each do |raw|
+      next if raw.blank?
+      parse_favorite_languages(raw).each do |lang|
+        distribution[lang] ||= 0
+        distribution[lang] += 1
+      end
+    end
+
+    distribution.sort_by { |_, v| -v }.to_h
+  end
+
+  def self.profile_languages_count_distribution(filters = {})
+    scope = User.all
+    scope = apply_filters(scope, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+
+    distribution = {}
+    scope.pluck(:favorite_languages).each do |raw|
+      count = raw.blank? ? 0 : parse_favorite_languages(raw).length
+      key = count.to_s
+      distribution[key] ||= 0
+      distribution[key] += 1
+    end
+
+    distribution.sort_by { |k, _| k.to_i }.to_h
+  end
+
   # ===== HELPER METHODS =====
   
   private
   
+  def self.parse_favorite_languages(raw)
+    return [] if raw.blank?
+
+    if raw.is_a?(Array)
+      return raw.map(&:to_s).map(&:strip).reject(&:blank?)
+    end
+
+    if raw.is_a?(String)
+      begin
+        parsed = JSON.parse(raw)
+        return parsed.map(&:to_s).map(&:strip).reject(&:blank?) if parsed.is_a?(Array)
+      rescue JSON::ParserError
+        # continue with comma split
+      end
+      return raw.split(',').map(&:strip).reject(&:blank?)
+    end
+
+    []
+  end
+
   def self.apply_date_range(scope, filters, column)
     if filters[:start_date].present? && filters[:end_date].present?
       scope.where("#{column} >= ? AND #{column} <= ?", filters[:start_date], filters[:end_date])

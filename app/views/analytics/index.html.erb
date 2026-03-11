@@ -618,6 +618,54 @@
   </div>
 </div>
 
+<!-- Sección 8: Idiomas -->
+<div class="analytics-section mb-5">
+  <h3 class="mb-3"><i class="fas fa-language text-primary"></i> Idiomas</h3>
+
+  <div class="row">
+    <!-- Distribución de idioma configurado en la app -->
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Idioma Configurado en la App por los Usuarios</h6>
+          <small class="text-muted">Idioma que el usuario tiene seleccionado como idioma principal de la aplicación (también usado para push notifications)</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-app-language" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Distribución de idiomas del perfil -->
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Idiomas Guardados en el Perfil de los Usuarios</h6>
+          <small class="text-muted">Idiomas que los usuarios declaran hablar y muestran a otros usuarios en su perfil</small>
+        </div>
+        <div class="card-body p-0" style="overflow-x: auto;">
+          <div id="chart-profile-languages"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Distribución de cantidad de idiomas en el perfil -->
+    <div class="col-md-12 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Distribución de Cantidad de Idiomas Guardados por Usuario</h6>
+          <small class="text-muted">Cuántos idiomas tiene guardados cada usuario en su perfil</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-profile-languages-count" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
