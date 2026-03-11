@@ -831,6 +831,70 @@
   </div>
 </div>
 
+<!-- Sección 9b: Tipo de Denuncia × Géneros -->
+<div class="analytics-section mb-5" id="section-complaints-type">
+  <div class="section-header mb-4">
+    <h4 class="font-weight-bold">Correlación Tipo de Denuncia × Género</h4>
+    <p class="text-muted">Distribución de tipos de denuncia cruzada con el género del denunciante y del denunciado</p>
+  </div>
+
+  <!-- Row 1: by type total + by type × reporter gender -->
+  <div class="row">
+    <div class="col-md-5 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Total por Tipo de Denuncia</h6>
+          <small class="text-muted">Frecuencia de cada motivo de denuncia</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-complaints-by-type" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-7 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Tipos de Denuncia por Género del Denunciante</h6>
+          <small class="text-muted">Comparativa de motivos según quién denuncia</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-complaints-type-reporter-gender" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: by type × reported gender + full matrix tables -->
+  <div class="row">
+    <div class="col-md-7 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Tipos de Denuncia por Género del Denunciado</h6>
+          <small class="text-muted">Comparativa de motivos según quién recibe la denuncia</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-complaints-type-reported-gender" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-5 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Matriz: Denunciante × Denunciado × Tipo</h6>
+          <small class="text-muted">Distribución de motivos por cada combinación de géneros</small>
+        </div>
+        <div class="card-body" style="overflow-x:auto; max-height:340px; overflow-y:auto;">
+          <div id="chart-complaints-type-matrix">
+            <p class="text-muted text-center mt-3">Cargando datos...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 

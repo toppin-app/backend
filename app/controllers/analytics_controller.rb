@@ -235,7 +235,8 @@ class AnalyticsController < ApplicationController
       gender_matrix: AnalyticsService.complaints_gender_matrix(@filters),
       made_distribution: AnalyticsService.complaints_made_distribution(@filters),
       received_distribution: AnalyticsService.complaints_received_distribution(@filters),
-      avg_received_by_gender: AnalyticsService.avg_complaints_received_by_gender(@filters)
+      avg_received_by_gender: AnalyticsService.avg_complaints_received_by_gender(@filters),
+      by_type_and_gender: AnalyticsService.complaints_by_type_and_gender(@filters)
     }
   end
 

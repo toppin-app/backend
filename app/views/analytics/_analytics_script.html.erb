@@ -965,6 +965,78 @@
         datasets: [{ label: 'Promedio', data: Object.values(avgByGender), backgroundColor: genderColors.slice(0, Object.keys(avgByGender).length) }]
       }, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Promedio denuncias recibidas' } } } });
 
+      // ===== TYPE × GENDER =====
+      const ttg = data.by_type_and_gender || {};
+      const typeColorPalette = [colors.primary, colors.danger, colors.warning, colors.success, colors.purple, colors.teal];
+
+      // 1. Total by type — horizontal bar
+      const byType = ttg.by_type || {};
+      const typeLabels = Object.keys(byType);
+      renderBarChart('chart-complaints-by-type', {
+        labels: typeLabels,
+        datasets: [{ label: 'Total', data: typeLabels.map(k => byType[k] || 0), backgroundColor: typeColorPalette }]
+      }, {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true }, y: { grid: { display: false } } }
+      });
+
+      // 2. By type × reporter gender — grouped bar (one dataset per gender)
+      const byTypeReporter = ttg.by_type_reporter_gender || {};
+      const reporterGenders = Object.keys(byTypeReporter);
+      const allTypeLabelsR = [...new Set(reporterGenders.flatMap(g => Object.keys(byTypeReporter[g] || {})))];
+      if (allTypeLabelsR.length > 0) {
+        const repDatasets = reporterGenders.map((g, i) => ({
+          label: g,
+          data: allTypeLabelsR.map(t => (byTypeReporter[g] || {})[t] || 0),
+          backgroundColor: genderColors[i % genderColors.length]
+        }));
+        renderGroupedBarChart('chart-complaints-type-reporter-gender', allTypeLabelsR, repDatasets);
+      }
+
+      // 3. By type × reported gender — grouped bar (one dataset per gender)
+      const byTypeReported = ttg.by_type_reported_gender || {};
+      const reportedGenders = Object.keys(byTypeReported);
+      const allTypeLabelsD = [...new Set(reportedGenders.flatMap(g => Object.keys(byTypeReported[g] || {})))];
+      if (allTypeLabelsD.length > 0) {
+        const repdDatasets = reportedGenders.map((g, i) => ({
+          label: g,
+          data: allTypeLabelsD.map(t => (byTypeReported[g] || {})[t] || 0),
+          backgroundColor: genderColors[i % genderColors.length]
+        }));
+        renderGroupedBarChart('chart-complaints-type-reported-gender', allTypeLabelsD, repdDatasets);
+      }
+
+      // 4. Full matrix: reporter gender × reported gender × type — nested HTML tables
+      const fullMatrix = ttg.full_matrix || {};
+      const matrixEl = document.getElementById('chart-complaints-type-matrix');
+      if (matrixEl) {
+        const rptGenders = Object.keys(fullMatrix);
+        if (rptGenders.length === 0) {
+          matrixEl.innerHTML = '<p class="text-muted text-center">Sin datos</p>';
+        } else {
+          const allRepdG = [...new Set(rptGenders.flatMap(r => Object.keys(fullMatrix[r] || {})))];
+          const allTypes = [...new Set(rptGenders.flatMap(r => allRepdG.flatMap(d => Object.keys((fullMatrix[r] || {})[d] || {}))))];
+          let html = '';
+          rptGenders.forEach(reporter => {
+            html += `<h6 class="mt-3 mb-1 font-weight-bold" style="font-size:13px">Denunciante: ${reporter}</h6>`;
+            html += '<table class="table table-bordered table-sm text-center mb-2" style="font-size:12px">';
+            html += '<thead><tr><th style="font-size:11px">Denunciado →</th>' + allRepdG.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
+            allTypes.forEach(type => {
+              html += `<tr><td class="text-left font-weight-bold" style="font-size:11px; white-space:nowrap">${type}</td>`;
+              allRepdG.forEach(reported => {
+                const val = ((fullMatrix[reporter] || {})[reported] || {})[type] || 0;
+                const intensity = val > 0 ? Math.min(0.12 + (val / 150), 0.85) : 0;
+                html += `<td style="background:rgba(220,53,69,${intensity}); color:${intensity > 0.4 ? '#fff' : '#333'}">${val || ''}</td>`;
+              });
+              html += '</tr>';
+            });
+            html += '</tbody></table>';
+          });
+          matrixEl.innerHTML = html;
+        }
+      }
+
     } catch (e) {
       console.error('[Analytics] Error loading complaints data:', e);
     }

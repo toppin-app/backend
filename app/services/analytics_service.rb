@@ -641,6 +641,47 @@ class AnalyticsService
     result
   end
 
+  def self.complaints_by_type_and_gender(filters = {})
+    gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+    complaint_scope = apply_user_filters_to_complaints(Complaint.all, filters)
+    rows = complaint_scope.pluck(:reason, :user_id, :to_user_id)
+
+    reporter_ids     = rows.map { |_r, uid, _t| uid }.uniq.compact
+    reported_ids     = rows.map { |_r, _u, tid| tid }.uniq.compact
+    reporter_genders = User.where(id: reporter_ids).pluck(:id, :gender).to_h
+    reported_genders = User.where(id: reported_ids).pluck(:id, :gender).to_h
+
+    by_type                 = {}
+    by_type_reporter_gender = {}
+    by_type_reported_gender = {}
+    full_matrix             = {}
+
+    rows.each do |reason, reporter_id, reported_id|
+      type_label      = Complaint::REASON_KEY_LABELS[reason.to_s] || reason.to_s
+      reporter_gender = gender_names[reporter_genders[reporter_id]] || 'Desconocido'
+      reported_gender = gender_names[reported_genders[reported_id]] || 'Desconocido'
+
+      by_type[type_label] = (by_type[type_label] || 0) + 1
+
+      by_type_reporter_gender[reporter_gender] ||= {}
+      by_type_reporter_gender[reporter_gender][type_label] = (by_type_reporter_gender[reporter_gender][type_label] || 0) + 1
+
+      by_type_reported_gender[reported_gender] ||= {}
+      by_type_reported_gender[reported_gender][type_label] = (by_type_reported_gender[reported_gender][type_label] || 0) + 1
+
+      full_matrix[reporter_gender] ||= {}
+      full_matrix[reporter_gender][reported_gender] ||= {}
+      full_matrix[reporter_gender][reported_gender][type_label] = (full_matrix[reporter_gender][reported_gender][type_label] || 0) + 1
+    end
+
+    {
+      by_type:                 by_type,
+      by_type_reporter_gender: by_type_reporter_gender,
+      by_type_reported_gender: by_type_reported_gender,
+      full_matrix:             full_matrix
+    }
+  end
+
   # ===== LANGUAGES ANALYTICS =====
 
   def self.subscription_distribution(filters = {})
