@@ -168,6 +168,9 @@ class AnalyticsController < ApplicationController
       users_by_type: AnalyticsService.users_by_type(@filters),
       verified_distribution: AnalyticsService.verified_distribution(@filters),
       subscription_distribution: AnalyticsService.subscription_distribution(@filters),
+      subscription_by_gender: AnalyticsService.subscription_by_gender(@filters),
+      subscription_by_verified: AnalyticsService.subscription_by_verified(@filters),
+      verified_by_gender: AnalyticsService.verified_by_gender(@filters),
       deletions: AnalyticsService.deletions_over_time(@filters)
     }
   end

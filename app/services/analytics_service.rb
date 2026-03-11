@@ -520,6 +520,46 @@ class AnalyticsService
     }
   end
 
+  def self.subscription_by_gender(filters = {})
+    scope = User.all
+    scope = apply_filters(scope, filters.except(:gender, :subscription_type))
+    scope = apply_date_range(scope, filters, :created_at)
+
+    result = {}
+    [['Gratuito', nil], ['Premium', 'premium'], ['Supreme', 'supreme']].each do |label, sub|
+      sub_scope = sub.nil? ? scope.where(current_subscription_name: nil) : scope.where(current_subscription_name: sub)
+      result[label] = sub_scope.group(:gender).count
+    end
+    result
+  end
+
+  def self.subscription_by_verified(filters = {})
+    scope = User.all
+    scope = apply_filters(scope, filters.except(:verified, :subscription_type))
+    scope = apply_date_range(scope, filters, :created_at)
+
+    result = {}
+    [['Gratuito', nil], ['Premium', 'premium'], ['Supreme', 'supreme']].each do |label, sub|
+      sub_scope = sub.nil? ? scope.where(current_subscription_name: nil) : scope.where(current_subscription_name: sub)
+      result[label] = {
+        verified:     sub_scope.where(verified: true).count,
+        non_verified: sub_scope.where(verified: false).count
+      }
+    end
+    result
+  end
+
+  def self.verified_by_gender(filters = {})
+    scope = User.all
+    scope = apply_filters(scope, filters.except(:gender, :verified))
+    scope = apply_date_range(scope, filters, :created_at)
+
+    {
+      verified:     scope.where(verified: true).group(:gender).count,
+      non_verified: scope.where(verified: false).group(:gender).count
+    }
+  end
+
   def self.app_language_distribution(filters = {})
     scope = User.all
     scope = apply_filters(scope, filters)

@@ -239,6 +239,38 @@
       }]
     });
 
+    // Subscription × Gender
+    const subByGender = data.subscription_by_gender || {};
+    const genderLabels = { 0: 'Mujer', 1: 'Hombre', 2: 'No binario', 3: 'Pareja' };
+    const genderColors = [colors.pink, colors.primary, colors.purple, colors.teal];
+    const subLevels = ['Gratuito', 'Premium', 'Supreme'];
+    const genderDatasets = [0, 1, 2, 3].map((g, i) => ({
+      label: genderLabels[g],
+      data: subLevels.map(sl => (subByGender[sl] || {})[g] || 0),
+      backgroundColor: genderColors[i]
+    }));
+    renderGroupedBarChart('chart-subscription-by-gender', subLevels, genderDatasets);
+
+    // Subscription × Verified
+    const subByVerified = data.subscription_by_verified || {};
+    renderGroupedBarChart('chart-subscription-by-verified', subLevels, [
+      { label: 'Verificado',     data: subLevels.map(sl => (subByVerified[sl] || {}).verified     || 0), backgroundColor: colors.info },
+      { label: 'No Verificado',  data: subLevels.map(sl => (subByVerified[sl] || {}).non_verified || 0), backgroundColor: colors.gray }
+    ]);
+
+    // Verified × Gender
+    const verByGender = data.verified_by_gender || {};
+    const verLabels = ['Verificado', 'No Verificado'];
+    const verGenderDatasets = [0, 1, 2, 3].map((g, i) => ({
+      label: genderLabels[g],
+      data: [
+        (verByGender.verified     || {})[g] || 0,
+        (verByGender.non_verified || {})[g] || 0
+      ],
+      backgroundColor: genderColors[i]
+    }));
+    renderGroupedBarChart('chart-verified-by-gender', verLabels, verGenderDatasets);
+
     // Deletions Over Time
     renderLineChart('chart-deletions', {
       labels: Object.keys(data.deletions || {}),
@@ -957,6 +989,28 @@
   }
   window.toggleHTMLBarChartExtra = toggleHTMLBarChartExtra;
 
+  function renderGroupedBarChart(canvasId, labels, datasets) {
+    destroyChart(canvasId);
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    charts[canvasId] = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top' },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }
+        }
+      }
+    });
+  }
 
   function renderBarChart(canvasId, data, options = {}) {
     destroyChart(canvasId);
