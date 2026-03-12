@@ -825,11 +825,15 @@ class AnalyticsService
   def self.blocks_given_by_gender(filters = {})
     scope = apply_user_filters_to_blocks(Block.all, filters)
     scope = apply_date_range(scope, filters, :created_at)
-    gender_enum = User.genders
+    gender_enum    = User.genders
+    gender_display = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
     scope.joins("INNER JOIN users ON users.id = blocks.user_id")
          .group("users.gender")
          .count
-         .transform_keys { |k| gender_enum[k.to_s] || k }
+         .transform_keys { |k|
+           int_key = gender_enum[k.to_s] || k.to_i
+           gender_display[int_key] || k.to_s
+         }
   end
 
   def self.blocks_received_by_gender(filters = {})
@@ -838,7 +842,8 @@ class AnalyticsService
     blocked_ids = scope.pluck(:blocked_user_id)
     return {} if blocked_ids.empty?
 
-    gender_enum      = User.genders
+    gender_enum    = User.genders
+    gender_display = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
     counts_per_user  = blocked_ids.tally
     user_genders     = User.where(id: counts_per_user.keys).pluck(:id, :gender).to_h
 
@@ -847,10 +852,14 @@ class AnalyticsService
       g = user_genders[uid]
       next if g.nil?
       int_key = gender_enum[g.to_s] || g.to_i
-      distribution[int_key] ||= 0
-      distribution[int_key] += count
+      name    = gender_display[int_key] || int_key.to_s
+      distribution[name] ||= 0
+      distribution[name] += count
     end
-    distribution.sort_by { |k, _| k }.to_h
+    # Return in canonical gender order
+    %w[Mujer Hombre No\ binario Pareja].each_with_object({}) do |name, h|
+      h[name] = distribution[name] if distribution.key?(name)
+    end.merge(distribution.reject { |k, _| %w[Mujer Hombre No\ binario Pareja].include?(k) })
   end
 
   def self.blocks_given_distribution(filters = {})
