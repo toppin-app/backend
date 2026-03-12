@@ -427,6 +427,29 @@ class AdminUtilitiesController < ApplicationController
     redirect_to validate_tmdb_admin_utilities_path(content_type: content_type)
   end
 
+  def cleanup_is_connected
+    begin
+      # Obtener IDs de usuarios realmente conectados vía WebSocket
+      redis = Redis.new(url: ENV["REDIS_URL"])
+      online_user_ids = redis.smembers("online_users").map(&:to_i)
+      
+      # Marcar como desconectados a TODOS excepto los que están en Redis
+      disconnected_count = User.where.not(id: online_user_ids).update_all(is_connected: false)
+      
+      # Asegurar que los que están en Redis estén marcados como conectados
+      connected_count = 0
+      if online_user_ids.any?
+        connected_count = User.where(id: online_user_ids).update_all(is_connected: true, last_connection: DateTime.now)
+      end
+      
+      flash[:notice] = "✅ Limpieza completada: #{disconnected_count} usuarios marcados como desconectados, #{connected_count} usuarios confirmados como conectados."
+    rescue => e
+      flash[:alert] = "❌ Error durante la limpieza: #{e.message}"
+    end
+    
+    redirect_to admin_utilities_path
+  end
+
   private
 
   def find_problematic_movie_ids
@@ -559,29 +582,6 @@ class AdminUtilitiesController < ApplicationController
     
     # Ordenar por número de usuarios afectados (descendente)
     @tmdb_problems.sort_by! { |p| -p.user_count }
-  end
-
-  def cleanup_is_connected
-    begin
-      # Obtener IDs de usuarios realmente conectados vía WebSocket
-      redis = Redis.new(url: ENV["REDIS_URL"])
-      online_user_ids = redis.smembers("online_users").map(&:to_i)
-      
-      # Marcar como desconectados a TODOS excepto los que están en Redis
-      disconnected_count = User.where.not(id: online_user_ids).update_all(is_connected: false)
-      
-      # Asegurar que los que están en Redis estén marcados como conectados
-      connected_count = 0
-      if online_user_ids.any?
-        connected_count = User.where(id: online_user_ids).update_all(is_connected: true, last_connection: DateTime.now)
-      end
-      
-      flash[:notice] = "✅ Limpieza completada: #{disconnected_count} usuarios marcados como desconectados, #{connected_count} usuarios confirmados como conectados."
-    rescue => e
-      flash[:alert] = "❌ Error durante la limpieza: #{e.message}"
-    end
-    
-    redirect_to admin_utilities_path
   end
 
   def check_admin
