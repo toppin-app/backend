@@ -533,9 +533,8 @@ class AnalyticsService
   end
 
   def self.complaints_by_reported_gender(filters = {})
-    user_scope  = apply_filters(User.all, filters)
-    user_ids    = user_scope.pluck(:id)
-    to_user_ids = Complaint.where(to_user_id: user_ids).where.not(to_user_id: nil).pluck(:to_user_id)
+    scope = apply_user_filters_to_complaints(Complaint.all, filters)
+    to_user_ids = scope.where.not(to_user_id: nil).pluck(:to_user_id)
     return {} if to_user_ids.empty?
 
     gender_enum  = User.genders
@@ -889,14 +888,22 @@ class AnalyticsService
     end
   end
 
-  # Restricts a Complaint scope to only complaints whose reporter (user_id) belongs
-  # to the filtered user set. Intentionally ignores bot/account-status defaults so
-  # that every complaint is counted regardless of the reporter's account flags —
-  # only explicit contextual filters (gender, country, subscription) are applied.
+  # Restricts a Complaint scope to complaints involving the filtered user set.
+  # A complaint is included if the reporter (user_id) OR the reported (to_user_id)
+  # belongs to the filtered users. Bot/account-status flags are intentionally
+  # excluded from the filter so that complaints from/to deleted or bot accounts
+  # are still counted when the user explicitly asks for all complaints.
   def self.apply_user_filters_to_complaints(complaint_scope, filters)
     complaint_filters = filters.except(:exclude_bots, :only_bots, :exclude_deleted, :only_deleted)
-    user_scope = apply_filters(User.all, complaint_filters)
-    user_ids = user_scope.pluck(:id)
-    complaint_scope.where(user_id: user_ids)
+
+    # If no meaningful filter is active just return the full scope unchanged
+    # to avoid fetching the full user table unnecessarily.
+    meaningful_keys = %i[gender device_platform verified country city subscription_type start_date end_date]
+    return complaint_scope unless complaint_filters.slice(*meaningful_keys).any? { |_, v| v.present? }
+
+    user_ids = apply_filters(User.all, complaint_filters).pluck(:id)
+    return complaint_scope.none if user_ids.empty?
+
+    complaint_scope.where(user_id: user_ids).or(complaint_scope.where(to_user_id: user_ids))
   end
 end
