@@ -1028,26 +1028,18 @@
 
   <!-- Métricas principales -->
   <div class="row mb-4">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-6 mb-3">
       <div class="card shadow-sm text-center">
         <div class="card-body">
-          <h6 class="text-muted">Modo Invisible Activado</h6>
+          <h6 class="text-muted">Usuarios con Modo Invisible Activado</h6>
           <h2 class="text-dark mb-0" id="metric-invisible-on">-</h2>
         </div>
       </div>
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-6 mb-3">
       <div class="card shadow-sm text-center">
         <div class="card-body">
-          <h6 class="text-muted">Modo Invisible Desactivado</h6>
-          <h2 class="text-success mb-0" id="metric-invisible-off">-</h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4 mb-3">
-      <div class="card shadow-sm text-center">
-        <div class="card-body">
-          <h6 class="text-muted">% Usan Modo Invisible</h6>
+          <h6 class="text-muted">% del Total que Usa Modo Invisible</h6>
           <h2 class="text-warning mb-0" id="metric-invisible-pct">-</h2>
         </div>
       </div>
@@ -1059,11 +1051,11 @@
     <div class="col-md-5 mb-4">
       <div class="card shadow-sm">
         <div class="card-header bg-light">
-          <h6 class="mb-0">Distribución: Invisible vs. Visible</h6>
-          <small class="text-muted">Proporción de usuarios con modo invisible activado</small>
+          <h6 class="mb-0">¿Qué géneros usan el modo invisible?</h6>
+          <small class="text-muted">Distribución de los usuarios con modo invisible activado, por género</small>
         </div>
         <div class="card-body">
-          <div style="position:relative; height:260px;">
+          <div style="position:relative; height:260px; width:100%;">
             <canvas id="chart-invisible-donut"></canvas>
           </div>
         </div>
@@ -1072,11 +1064,11 @@
     <div class="col-md-7 mb-4">
       <div class="card shadow-sm">
         <div class="card-header bg-light">
-          <h6 class="mb-0">Uso del Modo Invisible por Género</h6>
-          <small class="text-muted">Comparativa de activado vs. desactivado por género</small>
+          <h6 class="mb-0">% de cada género que activa el modo invisible</h6>
+          <small class="text-muted">Del total de usuarios de cada género, qué porcentaje tiene el modo invisible activado</small>
         </div>
         <div class="card-body">
-          <div style="position:relative; height:260px;">
+          <div style="position:relative; height:260px; width:100%;">
             <canvas id="chart-invisible-by-gender"></canvas>
           </div>
         </div>

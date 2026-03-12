@@ -1202,26 +1202,32 @@
       const s = data.summary || {};
       const setMetric = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       setMetric('metric-invisible-on',  formatNumber(s.invisible || 0));
-      setMetric('metric-invisible-off', formatNumber(s.visible   || 0));
       setMetric('metric-invisible-pct', (s.invisible_pct || 0).toFixed(1) + '%');
 
-      // Donut: invisible vs visible
-      renderPieChart('chart-invisible-donut', {
-        labels: ['Invisible activado', 'Visible'],
-        datasets: [{
-          data: [s.invisible || 0, s.visible || 0],
-          backgroundColor: ['#495057', colors.success]
-        }]
-      }, { plugins: { legend: { position: 'bottom' } }, cutout: '55%' });
-
-      // Grouped bar: invisible vs visible by gender
       const byGender = data.by_gender || {};
       const genderNames = Object.keys(byGender);
+      const genderColors = [colors.pink, colors.primary, colors.purple, colors.teal, colors.orange, colors.info];
+
+      // Donut: distribution of invisible users by gender
+      const invisibleCounts = genderNames.map(g => (byGender[g] || {}).invisible || 0);
+      if (invisibleCounts.some(v => v > 0)) {
+        renderPieChart('chart-invisible-donut', {
+          labels: genderNames,
+          datasets: [{ data: invisibleCounts, backgroundColor: genderColors.slice(0, genderNames.length) }]
+        }, { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } });
+      }
+
+      // Horizontal bar: % of each gender that uses invisible mode
       if (genderNames.length > 0) {
+        const pctData = genderNames.map(g => {
+          const inv = (byGender[g] || {}).invisible || 0;
+          const vis = (byGender[g] || {}).visible   || 0;
+          const total = inv + vis;
+          return total > 0 ? parseFloat((inv / total * 100).toFixed(1)) : 0;
+        });
         renderGroupedBarChart('chart-invisible-by-gender', genderNames, [
-          { label: 'Invisible activado', data: genderNames.map(g => (byGender[g] || {}).invisible || 0), backgroundColor: '#495057' },
-          { label: 'Visible',            data: genderNames.map(g => (byGender[g] || {}).visible   || 0), backgroundColor: colors.success }
-        ]);
+          { label: '% con modo invisible activado', data: pctData, backgroundColor: '#495057' }
+        ], true);
       }
 
     } catch (e) {
