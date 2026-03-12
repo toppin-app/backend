@@ -2,7 +2,7 @@ class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
   before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes, :sync_stripe_purchases]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
-  skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet]
+  skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet, :cleanup_is_connected]
 
 
   CRON_TOKEN = "8b645d9b-2679-4a9d-a295-faa88e9dca8c"
@@ -1543,9 +1543,34 @@ end
       unless params[:token] == CRON_TOKEN
     render plain: "Unauthorized", status: :unauthorized and return
       end    
-    User.where(last_connection: false).update(is_connected: false)
-    User.where(last_connection: DateTime.now-100.years..DateTime.now-30.seconds).update(is_connected: false)
+    # Marcar como desconectados a usuarios sin last_connection o con conexión antigua
+    User.where(last_connection: nil).update_all(is_connected: false)
+    User.where("last_connection < ?", DateTime.now-30.seconds).update_all(is_connected: false)
     render json: { status: "OK" }
+  end
+
+  # Método de limpieza one-time para resetear todos los is_connected incorrectos
+  def cleanup_is_connected
+      unless params[:token] == CRON_TOKEN
+    render plain: "Unauthorized", status: :unauthorized and return
+      end
+    
+    # Obtener IDs de usuarios realmente conectados vía WebSocket
+    redis = Redis.new(url: ENV["REDIS_URL"])
+    online_user_ids = redis.smembers("online_users").map(&:to_i)
+    
+    # Marcar como desconectados a TODOS excepto los que están en Redis
+    disconnected_count = User.where.not(id: online_user_ids).update_all(is_connected: false)
+    
+    # Asegurar que los que están en Redis estén marcados como conectados
+    connected_count = User.where(id: online_user_ids).update_all(is_connected: true, last_connection: DateTime.now)
+    
+    render json: { 
+      status: "OK", 
+      disconnected: disconnected_count,
+      connected: connected_count,
+      online_ids: online_user_ids 
+    }
   end
 
 # Método cron para quitar el high_visibility a aquellos usuarios que lo tengan caducado.

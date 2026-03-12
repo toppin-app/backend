@@ -61,7 +61,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
 
 
             # Set default params
-            resource.is_connected = true # Set user online
+            resource.is_connected = false # Se marcará como conectado cuando abra WebSocket
 
 
             # seteamos el user_name a partir del name y el lastname

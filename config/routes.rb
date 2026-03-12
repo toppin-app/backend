@@ -69,6 +69,7 @@ Rails.application.routes.draw do
   get 'users/cron_regenerate_likes', to: 'users#cron_regenerate_likes'
   get 'users/cron_regenerate_superlike', to: 'users#cron_regenerate_superlike'
   get 'users/cron_check_online_users', to: 'users#cron_check_online_users'
+  get 'users/cleanup_is_connected', to: 'users#cleanup_is_connected'
   get 'cron_regenerate_monthly_boost', to: 'users#cron_regenerate_monthly_boost'
   get 'cron_regenerate_weekly_super_sweet', to: 'users#cron_regenerate_weekly_super_sweet'
 
@@ -97,6 +98,7 @@ Rails.application.routes.draw do
   get '/admin/utilities/validate_tmdb', to: 'admin_utilities#validate_tmdb', as: :validate_tmdb_admin_utilities
   post '/admin/utilities/fix_tmdb_problem', to: 'admin_utilities#fix_tmdb_problem', as: :fix_tmdb_problem_admin_utilities
   post '/admin/utilities/fix_all_tmdb', to: 'admin_utilities#fix_all_tmdb', as: :fix_all_tmdb_admin_utilities
+  post '/admin/utilities/cleanup_is_connected', to: 'admin_utilities#cleanup_is_connected', as: :cleanup_is_connected_admin_utilities
   
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user
@@ -232,6 +234,7 @@ Rails.application.routes.draw do
   get '/cron_recalculate_popularity', to: "users#cron_recalculate_popularity"
   post '/cron_randomize_bundled_users_geolocation', to: 'users#cron_randomize_bundled_users_geolocation'
   get '/cron_check_online_users', to: 'users#cron_check_online_users'
+  get '/cleanup_is_connected', to: 'users#cleanup_is_connected'
   # Registrar dispositivo para notificaciones push.
   # user_id, token, so, device_uid
   post '/register_device' => 'users#register_device'

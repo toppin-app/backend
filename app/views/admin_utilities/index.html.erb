@@ -619,6 +619,48 @@
     </div>
     <!-- Fin de Utilidad: Poblar Device Platform -->
     
+    <!-- Utilidad: Limpiar Estado de Conexión -->
+    <div class="utility-card">
+      <h3><i class="fas fa-wifi"></i> Limpiar Estado de Conexión (is_connected)</h3>
+      <p>
+        Sincroniza el campo is_connected en la base de datos con el estado real de conexión WebSocket en Redis.
+        Útil para corregir usuarios que quedaron marcados como conectados incorrectamente.
+      </p>
+      
+      <div class="info-badge">
+        <i class="fas fa-database"></i> 
+        <div>
+          <strong>Usuarios marcados como conectados en BD:</strong> <%= @users_connected %> usuarios
+        </div>
+      </div>
+
+      <div class="info-badge" style="margin-top: 10px;">
+        <i class="fas fa-server"></i> 
+        <div>
+          <strong>Usuarios realmente conectados (Redis):</strong> <%= @users_connected_redis %> usuarios
+        </div>
+      </div>
+
+      <% if @users_with_stale_connection > 0 %>
+        <div class="warning-badge" style="margin-top: 10px;">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div>
+            <strong>Usuarios con conexión obsoleta:</strong> <%= @users_with_stale_connection %> usuarios
+            <br><small style="opacity: 0.8;">Marcados como conectados pero sin actividad reciente</small>
+          </div>
+        </div>
+      <% end %>
+
+      <%= button_to cleanup_is_connected_admin_utilities_path, 
+          method: :post,
+          data: { confirm: "¿Estás seguro? Esto sincronizará is_connected con el estado real de WebSocket." },
+          class: 'btn-start',
+          style: 'margin-top: 10px;' do %>
+        <i class="fas fa-sync-alt"></i> Ejecutar Limpieza
+      <% end %>
+    </div>
+    <!-- Fin de Utilidad: Limpiar Estado de Conexión -->
+    
     <!-- Utilidad: Validar Usuarios Incompletos -->
     <div class="utility-card">
       <h3><i class="fas fa-user-check"></i> Validar Datos de Usuarios</h3>

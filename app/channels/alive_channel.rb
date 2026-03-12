@@ -2,12 +2,16 @@ class AliveChannel < ApplicationCable::Channel
   def subscribed
     stream_for current_user
     redis.sadd("online_users", current_user.id)
+    # Sincronizar estado de conexión con la base de datos
+    current_user.update_columns(is_connected: true, last_connection: DateTime.now)
     Rails.logger.info("[AliveChannel] Usuario conectado: #{current_user.id}")
     notify_matches_about_status_change
   end
 
   def unsubscribed
     redis.srem("online_users", current_user.id)
+    # Sincronizar desconexión con la base de datos
+    current_user.update_columns(is_connected: false, last_connection: DateTime.now)
     Rails.logger.info("[AliveChannel] Usuario desconectado: #{current_user.id}")
     notify_matches_about_status_change
   end
