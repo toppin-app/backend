@@ -41,6 +41,8 @@ class AnalyticsController < ApplicationController
       languages_data
     when 'complaints'
       complaints_data
+    when 'interactions'
+      interactions_data
     else
       { error: 'Invalid section' }
     end
@@ -223,6 +225,17 @@ class AnalyticsController < ApplicationController
       app_language_distribution: AnalyticsService.app_language_distribution(@filters),
       profile_languages_distribution: AnalyticsService.profile_languages_distribution(@filters),
       profile_languages_count_distribution: AnalyticsService.profile_languages_count_distribution(@filters)
+    }
+  end
+
+  def interactions_data
+    {
+      totals:                    AnalyticsService.interactions_totals(@filters),
+      over_time:                 AnalyticsService.interactions_over_time(@filters),
+      by_gender:                 AnalyticsService.interactions_by_gender(@filters),
+      match_rate_by_gender:      AnalyticsService.match_rate_by_gender(@filters),
+      likes_given_distribution:  AnalyticsService.likes_given_distribution(@filters),
+      likes_received_distribution: AnalyticsService.likes_received_distribution(@filters)
     }
   end
 

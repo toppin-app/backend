@@ -688,6 +688,107 @@ class AnalyticsService
     }
   end
 
+  # ===== INTERACTIONS ANALYTICS (Likes / Superlikes / Dislikes) =====
+
+  # Restricts a UMR scope to actions GIVEN by users in the filtered set.
+  def self.apply_user_filters_to_interactions(umr_scope, filters)
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    return umr_scope.none if user_ids.empty?
+    umr_scope.where(user_id: user_ids)
+  end
+
+  def self.interactions_totals(filters = {})
+    scope = apply_user_filters_to_interactions(UserMatchRequest.all, filters)
+    {
+      likes:      scope.where(is_like: true, is_superlike: [nil, false]).count,
+      superlikes: scope.where(is_superlike: true).count,
+      dislikes:   scope.where(is_rejected: true).where(is_like: [false, nil]).count,
+      matches:    scope.where(is_match: true).count
+    }
+  end
+
+  def self.interactions_over_time(filters = {})
+    scope = apply_user_filters_to_interactions(UserMatchRequest.all, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    week_sql = "DATE_FORMAT(DATE_SUB(user_match_requests.created_at, INTERVAL WEEKDAY(user_match_requests.created_at) DAY), '%Y-%m-%d')"
+
+    likes_weeks      = scope.where(is_like: true).group(week_sql).count
+    superlikes_weeks = scope.where(is_superlike: true).group(week_sql).count
+    dislikes_weeks   = scope.where(is_rejected: true).where(is_like: [false, nil]).group(week_sql).count
+
+    all_weeks = (likes_weeks.keys + superlikes_weeks.keys + dislikes_weeks.keys).uniq.sort
+    all_weeks.map do |w|
+      [w, { likes: likes_weeks[w] || 0, superlikes: superlikes_weeks[w] || 0, dislikes: dislikes_weeks[w] || 0 }]
+    end.to_h
+  end
+
+  def self.interactions_by_gender(filters = {})
+    gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+    gender_enum  = User.genders
+    scope = apply_user_filters_to_interactions(UserMatchRequest.all, filters)
+    user_genders = apply_filters(User.all, filters).pluck(:id, :gender).to_h
+
+    result = {}
+    scope.pluck(:user_id, :is_like, :is_superlike, :is_rejected).each do |uid, is_like, is_superlike, is_rejected|
+      g_raw = user_genders[uid]
+      next if g_raw.nil?
+      g_int = gender_enum[g_raw.to_s] || g_raw.to_i
+      name  = gender_names[g_int] || 'Desconocido'
+      result[name] ||= { likes: 0, superlikes: 0, dislikes: 0 }
+      if is_superlike
+        result[name][:superlikes] += 1
+      elsif is_like
+        result[name][:likes] += 1
+      elsif is_rejected
+        result[name][:dislikes] += 1
+      end
+    end
+    result.reject { |_, v| v.values.all?(&:zero?) }
+  end
+
+  def self.match_rate_by_gender(filters = {})
+    gender_names = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+    gender_enum  = User.genders
+    scope = apply_user_filters_to_interactions(UserMatchRequest.all, filters)
+    user_genders = apply_filters(User.all, filters).pluck(:id, :gender).to_h
+
+    totals = {}; matched = {}
+    scope.where(is_like: true).pluck(:user_id, :is_match).each do |uid, is_match|
+      g_raw = user_genders[uid]
+      next if g_raw.nil?
+      g_int = gender_enum[g_raw.to_s] || g_raw.to_i
+      name  = gender_names[g_int] || 'Desconocido'
+      totals[name]  = (totals[name]  || 0) + 1
+      matched[name] = (matched[name] || 0) + (is_match ? 1 : 0)
+    end
+    totals.map { |name, total| [name, total > 0 ? (matched[name].to_f / total * 100).round(1) : 0] }.to_h
+  end
+
+  def self.likes_given_distribution(filters = {})
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    counts   = apply_user_filters_to_interactions(UserMatchRequest.all, filters)
+                 .where(is_like: true).group(:user_id).count
+    buckets  = Hash.new(0)
+    user_ids.each do |uid|
+      c = counts[uid] || 0
+      b = c == 0 ? '0' : c <= 5 ? '1-5' : c <= 10 ? '6-10' : c <= 20 ? '11-20' : c <= 50 ? '21-50' : '>50'
+      buckets[b] += 1
+    end
+    %w[0 1-5 6-10 11-20 21-50 >50].map { |k| [k, buckets[k]] }.to_h
+  end
+
+  def self.likes_received_distribution(filters = {})
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    counts   = UserMatchRequest.where(target_user: user_ids, is_like: true).group(:target_user).count
+    buckets  = Hash.new(0)
+    user_ids.each do |uid|
+      c = counts[uid] || 0
+      b = c == 0 ? '0' : c <= 5 ? '1-5' : c <= 10 ? '6-10' : c <= 20 ? '11-20' : c <= 50 ? '21-50' : '>50'
+      buckets[b] += 1
+    end
+    %w[0 1-5 6-10 11-20 21-50 >50].map { |k| [k, buckets[k]] }.to_h
+  end
+
   # ===== LANGUAGES ANALYTICS =====
 
   def self.subscription_distribution(filters = {})

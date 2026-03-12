@@ -130,12 +130,13 @@
         loadInterestsData(),
         loadSpotifyData(),
         loadLanguagesData(),
-        loadComplaintsData()
+        loadComplaintsData(),
+        loadInteractionsData()
       ]);
       
       // Log any failures
       results.forEach((result, index) => {
-        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages', 'complaints'];
+        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages', 'complaints', 'interactions'];
         if (result.status === 'rejected') {
           console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
         }
@@ -1057,6 +1058,73 @@
 
     } catch (e) {
       console.error('[Analytics] Error loading complaints data:', e);
+    }
+  }
+
+  // ===== INTERACTIONS DATA =====
+
+  async function loadInteractionsData() {
+    try {
+      const data = await fetchData('interactions');
+      if (!data) return;
+
+      const t = data.totals || {};
+      const setMetric = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(val || 0); };
+      setMetric('metric-likes-total',          t.likes);
+      setMetric('metric-superlikes-total',      t.superlikes);
+      setMetric('metric-dislikes-total',        t.dislikes);
+      setMetric('metric-interactions-matches',  t.matches);
+
+      // Over time — multi-dataset line chart
+      const ot = data.over_time || {};
+      const weeks = Object.keys(ot).map(formatWeekLabel);
+      renderLineChart('chart-interactions-over-time', {
+        labels: weeks,
+        datasets: [
+          { label: 'Likes',      data: Object.values(ot).map(v => v.likes      || 0), borderColor: colors.success,  backgroundColor: colors.success  + '20', fill: false, tension: 0.4 },
+          { label: 'Superlikes', data: Object.values(ot).map(v => v.superlikes || 0), borderColor: colors.warning,  backgroundColor: colors.warning  + '20', fill: false, tension: 0.4 },
+          { label: 'Dislikes',   data: Object.values(ot).map(v => v.dislikes   || 0), borderColor: colors.danger,   backgroundColor: colors.danger   + '20', fill: false, tension: 0.4 }
+        ]
+      }, { plugins: { legend: { display: true } } });
+
+      // Interactions by gender — grouped horizontal bar
+      const byGender = data.by_gender || {};
+      const genderNames = Object.keys(byGender);
+      if (genderNames.length > 0) {
+        renderGroupedBarChart('chart-interactions-by-gender', genderNames, [
+          { label: 'Likes',      data: genderNames.map(g => (byGender[g] || {}).likes      || 0), backgroundColor: colors.success },
+          { label: 'Superlikes', data: genderNames.map(g => (byGender[g] || {}).superlikes || 0), backgroundColor: colors.warning },
+          { label: 'Dislikes',   data: genderNames.map(g => (byGender[g] || {}).dislikes   || 0), backgroundColor: colors.danger  }
+        ]);
+      }
+
+      // Match rate by gender — bar chart
+      const matchRateData = data.match_rate_by_gender || {};
+      renderBarChart('chart-interactions-match-rate', {
+        labels: Object.keys(matchRateData),
+        datasets: [{ label: '% Match', data: Object.values(matchRateData), backgroundColor: [colors.pink, colors.primary, colors.purple, colors.teal] }]
+      }, {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: '% de likes que hacen match' } } }
+      });
+
+      // Likes given distribution
+      const givenDist = data.likes_given_distribution || {};
+      const distLabels = ['0', '1-5', '6-10', '11-20', '21-50', '>50'];
+      renderBarChart('chart-likes-given-dist', {
+        labels: distLabels,
+        datasets: [{ label: 'Usuarios', data: distLabels.map(k => givenDist[k] || 0), backgroundColor: colors.success }]
+      }, { plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Likes dados' } }, y: { beginAtZero: true } } });
+
+      // Likes received distribution
+      const recvDist = data.likes_received_distribution || {};
+      renderBarChart('chart-likes-received-dist', {
+        labels: distLabels,
+        datasets: [{ label: 'Usuarios', data: distLabels.map(k => recvDist[k] || 0), backgroundColor: colors.primary }]
+      }, { plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Likes recibidos' } }, y: { beginAtZero: true } } });
+
+    } catch (e) {
+      console.error('[Analytics] Error loading interactions data:', e);
     }
   }
 

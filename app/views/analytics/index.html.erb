@@ -904,6 +904,121 @@
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
+<!-- Sección 10: Interacciones (Likes / Superlikes / Dislikes) -->
+<div class="analytics-section mb-5" id="section-interactions">
+  <div class="section-header mb-4">
+    <h4 class="font-weight-bold"><i class="fas fa-heart text-danger mr-2"></i>Interacciones — Likes, Superlikes y Dislikes</h4>
+    <p class="text-muted">Análisis de las interacciones enviadas por los usuarios filtrados</p>
+  </div>
+
+  <!-- Metric cards -->
+  <div class="row mb-3">
+    <div class="col-6 col-md-3 mb-3">
+      <div class="card border-success shadow-sm h-100">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Likes Dados</h6>
+          <h2 class="text-success mb-0" id="metric-likes-total">-</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 mb-3">
+      <div class="card border-warning shadow-sm h-100">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Superlikes Dados</h6>
+          <h2 class="text-warning mb-0" id="metric-superlikes-total">-</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 mb-3">
+      <div class="card border-danger shadow-sm h-100">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Dislikes Dados</h6>
+          <h2 class="text-danger mb-0" id="metric-dislikes-total">-</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 mb-3">
+      <div class="card border-primary shadow-sm h-100">
+        <div class="card-body text-center">
+          <h6 class="text-muted">Matches Generados</h6>
+          <h2 class="text-primary mb-0" id="metric-interactions-matches">-</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evolución temporal -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Evolución de Interacciones en el Tiempo (por semana)</h6>
+          <small class="text-muted">Likes, superlikes y dislikes enviados por los usuarios filtrados</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-interactions-over-time" height="60"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interacciones por género + tasa de match -->
+  <div class="row">
+    <div class="col-md-7 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Interacciones Dadas por Género</h6>
+          <small class="text-muted">Likes, superlikes y dislikes enviados según género del remitente</small>
+        </div>
+        <div class="card-body p-2">
+          <div style="position:relative; height:240px;">
+            <canvas id="chart-interactions-by-gender"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-5 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Tasa de Match por Género</h6>
+          <small class="text-muted">% de likes que se convierten en match, por género del emisor</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-interactions-match-rate" height="140"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Distribuciones -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Distribución de Likes Dados por Usuario</h6>
+          <small class="text-muted">Agrupación de usuarios según cuántos likes han enviado</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-likes-given-dist" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Distribución de Likes Recibidos por Usuario</h6>
+          <small class="text-muted">Agrupación de usuarios según cuántos likes han recibido</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-likes-received-dist" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <%= javascript_tag do %>
   <%= render 'analytics_script' %>
 <% end %>
