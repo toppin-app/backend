@@ -371,6 +371,9 @@
     (topUsers.most_matches || []).forEach(user => {
       html += `<li>Usuario #${user[0]} (${user[1]}) - ${formatNumber(user[2])} matches</li>`;
     });
+    if ((topUsers.most_matches || []).length === 0) {
+      html += '<li class="text-muted">Sin datos para este período</li>';
+    }
     html += '</ol>';
     document.getElementById('top-matches-list').innerHTML = html;
 
@@ -379,6 +382,9 @@
     (topUsers.most_liked || []).forEach(user => {
       html += `<li>User #${user[0]} (${user[1]}) - ${formatNumber(user[2])} likes</li>`;
     });
+    if ((topUsers.most_liked || []).length === 0) {
+      html += '<li class="text-muted">Sin datos para este período</li>';
+    }
     html += '</ol>';
     document.getElementById('top-liked-list').innerHTML = html;
 
@@ -388,8 +394,22 @@
     topCities.forEach(city => {
       html += `<li>${city.city} - ${formatNumber(city.users)} usuarios, promedio ${city.avg_matches} matches</li>`;
     });
+    if (topCities.length === 0) {
+      html += '<li class="text-muted">Sin datos para este período</li>';
+    }
     html += '</ol>';
     document.getElementById('top-cities-list').innerHTML = html;
+
+    // Top Ranking
+    html = '<ol class="pl-3">';
+    (topUsers.highest_ranking || []).forEach(user => {
+      html += `<li>Usuario #${user[0]} (${user[1]}) - ranking ${formatNumber(user[2])}</li>`;
+    });
+    if ((topUsers.highest_ranking || []).length === 0) {
+      html += '<li class="text-muted">Sin datos para este período</li>';
+    }
+    html += '</ol>';
+    document.getElementById('top-ranking-list').innerHTML = html;
     } catch (error) {
       console.error('[Analytics] Error rendering insights:', error);
     }

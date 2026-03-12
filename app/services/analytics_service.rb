@@ -235,6 +235,7 @@ class AnalyticsService
   def self.top_users(filters = {}, limit = 10)
     scope    = User.all
     scope    = apply_filters(scope, filters)
+    scope    = apply_date_range(scope, filters, :created_at)
     user_ids = scope.pluck(:id)
     return { most_matches: [], most_liked: [], highest_ranking: [] } if user_ids.empty?
 
@@ -260,6 +261,7 @@ class AnalyticsService
   def self.top_performing_cities(filters = {}, limit = 10)
     scope = User.all
     scope = apply_filters(scope, filters.except(:city))
+    scope = apply_date_range(scope, filters, :created_at)
     scope = scope.where.not(location_city: nil)
 
     cities = scope.group(:location_city).count.sort_by { |_, v| -v }.first(limit)
