@@ -132,12 +132,13 @@
         loadLanguagesData(),
         loadComplaintsData(),
         loadInteractionsData(),
-        loadBlocksData()
+        loadBlocksData(),
+        loadInvisibleModeData()
       ]);
       
       // Log any failures
       results.forEach((result, index) => {
-        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages', 'complaints', 'interactions', 'blocks'];
+        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages', 'complaints', 'interactions', 'blocks', 'invisible_mode'];
         if (result.status === 'rejected') {
           console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
         }
@@ -1188,6 +1189,43 @@
 
     } catch (e) {
       console.error('[Analytics] Error loading blocks data:', e);
+    }
+  }
+
+  // ===== INVISIBLE MODE DATA =====
+
+  async function loadInvisibleModeData() {
+    try {
+      const data = await fetchData('invisible_mode');
+      if (!data) return;
+
+      const s = data.summary || {};
+      const setMetric = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setMetric('metric-invisible-on',  formatNumber(s.invisible || 0));
+      setMetric('metric-invisible-off', formatNumber(s.visible   || 0));
+      setMetric('metric-invisible-pct', (s.invisible_pct || 0).toFixed(1) + '%');
+
+      // Donut: invisible vs visible
+      renderPieChart('chart-invisible-donut', {
+        labels: ['Invisible activado', 'Visible'],
+        datasets: [{
+          data: [s.invisible || 0, s.visible || 0],
+          backgroundColor: ['#495057', colors.success]
+        }]
+      }, { plugins: { legend: { position: 'bottom' } }, cutout: '55%' });
+
+      // Grouped bar: invisible vs visible by gender
+      const byGender = data.by_gender || {};
+      const genderNames = Object.keys(byGender);
+      if (genderNames.length > 0) {
+        renderGroupedBarChart('chart-invisible-by-gender', genderNames, [
+          { label: 'Invisible activado', data: genderNames.map(g => (byGender[g] || {}).invisible || 0), backgroundColor: '#495057' },
+          { label: 'Visible',            data: genderNames.map(g => (byGender[g] || {}).visible   || 0), backgroundColor: colors.success }
+        ]);
+      }
+
+    } catch (e) {
+      console.error('[Analytics] Error loading invisible mode data:', e);
     }
   }
 

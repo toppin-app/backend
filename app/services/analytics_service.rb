@@ -789,6 +789,41 @@ class AnalyticsService
     %w[0 1-5 6-10 11-20 21-50 >50].map { |k| [k, buckets[k]] }.to_h
   end
 
+  # ===== INVISIBLE MODE ANALYTICS =====
+
+  def self.invisible_mode_summary(filters = {})
+    scope = apply_filters(User.all, filters)
+    total     = scope.count
+    invisible = scope.where(hidden_by_user: true).count
+    visible   = total - invisible
+    pct       = total > 0 ? (invisible.to_f / total * 100).round(1) : 0.0
+    { total: total, invisible: invisible, visible: visible, invisible_pct: pct }
+  end
+
+  def self.invisible_mode_by_gender(filters = {})
+    scope          = apply_filters(User.all, filters)
+    gender_enum    = User.genders
+    gender_display = { 0 => 'Mujer', 1 => 'Hombre', 2 => 'No binario', 3 => 'Pareja' }
+
+    rows = scope.pluck(:gender, :hidden_by_user)
+    result = {}
+    rows.each do |g_raw, hidden|
+      int_key = gender_enum[g_raw.to_s] || g_raw.to_i
+      name    = gender_display[int_key] || int_key.to_s
+      result[name] ||= { invisible: 0, visible: 0 }
+      if hidden
+        result[name][:invisible] += 1
+      else
+        result[name][:visible] += 1
+      end
+    end
+    # Return in canonical gender order
+    ordered = {}
+    ['Mujer', 'Hombre', 'No binario', 'Pareja'].each { |n| ordered[n] = result[n] if result.key?(n) }
+    result.each { |k, v| ordered[k] = v unless ordered.key?(k) }
+    ordered
+  end
+
   # ===== BLOCKS ANALYTICS =====
 
   def self.apply_user_filters_to_blocks(block_scope, filters)

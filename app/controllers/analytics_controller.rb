@@ -45,6 +45,8 @@ class AnalyticsController < ApplicationController
       interactions_data
     when 'blocks'
       blocks_data
+    when 'invisible_mode'
+      invisible_mode_data
     else
       { error: 'Invalid section' }
     end
@@ -227,6 +229,13 @@ class AnalyticsController < ApplicationController
       app_language_distribution: AnalyticsService.app_language_distribution(@filters),
       profile_languages_distribution: AnalyticsService.profile_languages_distribution(@filters),
       profile_languages_count_distribution: AnalyticsService.profile_languages_count_distribution(@filters)
+    }
+  end
+
+  def invisible_mode_data
+    {
+      summary:    AnalyticsService.invisible_mode_summary(@filters),
+      by_gender:  AnalyticsService.invisible_mode_by_gender(@filters)
     }
   end
 
