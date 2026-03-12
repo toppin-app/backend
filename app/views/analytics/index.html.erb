@@ -1019,6 +1019,106 @@
   </div>
 </div>
 
+<!-- ===== SECCIÓN 11: BLOQUEOS ENTRE USUARIOS ===== -->
+<div class="analytics-section mb-5" id="section-blocks">
+  <div class="section-header mb-4">
+    <h4 class="text-dark font-weight-bold"><i class="fas fa-ban mr-2"></i>Bloqueos entre Usuarios</h4>
+    <p class="text-muted">Análisis de los bloqueos realizados entre usuarios de la plataforma.</p>
+  </div>
+
+  <!-- Métricas principales -->
+  <div class="row mb-4">
+    <div class="col-md-6 mb-3">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Total Bloqueos</h6>
+          <h2 class="text-danger mb-0" id="metric-blocks-total">-</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="card shadow-sm text-center">
+        <div class="card-body">
+          <h6 class="text-muted">Bloqueos Mutuos</h6>
+          <h2 class="text-warning mb-0" id="metric-blocks-mutual">-</h2>
+          <small class="text-muted">Pares donde A bloquea a B y B bloquea a A</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bloqueos a lo largo del tiempo -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Bloqueos a lo Largo del Tiempo</h6>
+          <small class="text-muted">Nuevos bloqueos por semana</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-blocks-over-time" height="60"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bloqueos por género -->
+  <div class="row mb-4">
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Bloqueos Dados por Género</h6>
+          <small class="text-muted">Cuántos bloqueos realizó cada género</small>
+        </div>
+        <div class="card-body">
+          <div style="position:relative; height:220px;">
+            <canvas id="chart-blocks-given-by-gender"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Bloqueos Recibidos por Género</h6>
+          <small class="text-muted">Cuántos bloqueos recibió cada género</small>
+        </div>
+        <div class="card-body">
+          <div style="position:relative; height:220px;">
+            <canvas id="chart-blocks-received-by-gender"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Distribuciones -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Distribución de Bloqueos Dados por Usuario</h6>
+          <small class="text-muted">Agrupación de usuarios según cuántos bloqueos han realizado</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-blocks-given-dist" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">Distribución de Bloqueos Recibidos por Usuario</h6>
+          <small class="text-muted">Agrupación de usuarios según cuántos bloqueos han recibido</small>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-blocks-received-dist" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <%= javascript_tag do %>
   <%= render 'analytics_script' %>
 <% end %>

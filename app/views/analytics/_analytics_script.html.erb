@@ -131,12 +131,13 @@
         loadSpotifyData(),
         loadLanguagesData(),
         loadComplaintsData(),
-        loadInteractionsData()
+        loadInteractionsData(),
+        loadBlocksData()
       ]);
       
       // Log any failures
       results.forEach((result, index) => {
-        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages', 'complaints', 'interactions'];
+        const sections = ['growth', 'demographics', 'insights', 'media', 'interests', 'spotify', 'languages', 'complaints', 'interactions', 'blocks'];
         if (result.status === 'rejected') {
           console.error(`[Analytics] Failed to load ${sections[index]}:`, result.reason);
         }
@@ -1125,6 +1126,68 @@
 
     } catch (e) {
       console.error('[Analytics] Error loading interactions data:', e);
+    }
+  }
+
+  // ===== BLOCKS DATA =====
+
+  async function loadBlocksData() {
+    try {
+      const data = await fetchData('blocks');
+      if (!data) return;
+
+      const t = data.totals || {};
+      const setMetric = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = formatNumber(val || 0); };
+      setMetric('metric-blocks-total',  t.total);
+      setMetric('metric-blocks-mutual', t.mutual);
+
+      // Over time — line chart
+      const ot = data.over_time || {};
+      const weeks = Object.keys(ot).map(formatWeekLabel);
+      renderLineChart('chart-blocks-over-time', {
+        labels: weeks,
+        datasets: [
+          { label: 'Bloqueos', data: Object.values(ot), borderColor: colors.danger, backgroundColor: colors.danger + '20', fill: true, tension: 0.4 }
+        ]
+      }, { plugins: { legend: { display: false } } });
+
+      // Blocks given by gender — bar chart
+      const givenGender = data.given_by_gender || {};
+      const givenLabels = Object.keys(givenGender);
+      if (givenLabels.length > 0) {
+        renderBarChart('chart-blocks-given-by-gender', {
+          labels: givenLabels,
+          datasets: [{ label: 'Bloqueos dados', data: givenLabels.map(g => givenGender[g] || 0), backgroundColor: [colors.danger, colors.primary, colors.purple, colors.teal] }]
+        }, { plugins: { legend: { display: false } } });
+      }
+
+      // Blocks received by gender — bar chart
+      const recvGender = data.received_by_gender || {};
+      const recvLabels = Object.keys(recvGender);
+      if (recvLabels.length > 0) {
+        renderBarChart('chart-blocks-received-by-gender', {
+          labels: recvLabels,
+          datasets: [{ label: 'Bloqueos recibidos', data: recvLabels.map(g => recvGender[g] || 0), backgroundColor: [colors.warning, colors.success, colors.pink, colors.teal] }]
+        }, { plugins: { legend: { display: false } } });
+      }
+
+      // Blocks given distribution
+      const givenDist = data.given_distribution || {};
+      const distLabels = ['0', '1-5', '6-10', '11-20', '21-50', '>50'];
+      renderBarChart('chart-blocks-given-dist', {
+        labels: distLabels,
+        datasets: [{ label: 'Usuarios', data: distLabels.map(k => givenDist[k] || 0), backgroundColor: colors.danger }]
+      }, { plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Bloqueos dados' } }, y: { beginAtZero: true } } });
+
+      // Blocks received distribution
+      const recvDist = data.received_distribution || {};
+      renderBarChart('chart-blocks-received-dist', {
+        labels: distLabels,
+        datasets: [{ label: 'Usuarios', data: distLabels.map(k => recvDist[k] || 0), backgroundColor: colors.warning }]
+      }, { plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Bloqueos recibidos' } }, y: { beginAtZero: true } } });
+
+    } catch (e) {
+      console.error('[Analytics] Error loading blocks data:', e);
     }
   }
 

@@ -789,6 +789,94 @@ class AnalyticsService
     %w[0 1-5 6-10 11-20 21-50 >50].map { |k| [k, buckets[k]] }.to_h
   end
 
+  # ===== BLOCKS ANALYTICS =====
+
+  def self.apply_user_filters_to_blocks(block_scope, filters)
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    block_scope.where(user_id: user_ids)
+  end
+
+  def self.blocks_total(filters = {})
+    scope = apply_user_filters_to_blocks(Block.all, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    total = scope.count
+
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    mutual = if user_ids.any?
+      Block.where(user_id: user_ids)
+           .where("EXISTS (SELECT 1 FROM blocks b2 WHERE b2.user_id = blocks.blocked_user_id AND b2.blocked_user_id = blocks.user_id)")
+           .count / 2
+    else
+      0
+    end
+
+    { total: total, mutual: mutual }
+  end
+
+  def self.blocks_over_time(filters = {})
+    scope = apply_user_filters_to_blocks(Block.all, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    scope
+      .group("DATE_FORMAT(DATE_SUB(created_at, INTERVAL WEEKDAY(created_at) DAY), '%Y-%m-%d')")
+      .order(Arel.sql("DATE_FORMAT(DATE_SUB(created_at, INTERVAL WEEKDAY(created_at) DAY), '%Y-%m-%d')"))
+      .count
+  end
+
+  def self.blocks_given_by_gender(filters = {})
+    scope = apply_user_filters_to_blocks(Block.all, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    gender_enum = User.genders
+    scope.joins("INNER JOIN users ON users.id = blocks.user_id")
+         .group("users.gender")
+         .count
+         .transform_keys { |k| gender_enum[k.to_s] || k }
+  end
+
+  def self.blocks_received_by_gender(filters = {})
+    scope = apply_user_filters_to_blocks(Block.all, filters)
+    scope = apply_date_range(scope, filters, :created_at)
+    blocked_ids = scope.pluck(:blocked_user_id)
+    return {} if blocked_ids.empty?
+
+    gender_enum      = User.genders
+    counts_per_user  = blocked_ids.tally
+    user_genders     = User.where(id: counts_per_user.keys).pluck(:id, :gender).to_h
+
+    distribution = {}
+    counts_per_user.each do |uid, count|
+      g = user_genders[uid]
+      next if g.nil?
+      int_key = gender_enum[g.to_s] || g.to_i
+      distribution[int_key] ||= 0
+      distribution[int_key] += count
+    end
+    distribution.sort_by { |k, _| k }.to_h
+  end
+
+  def self.blocks_given_distribution(filters = {})
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    counts   = Block.where(user_id: user_ids).group(:user_id).count
+    buckets  = Hash.new(0)
+    user_ids.each do |uid|
+      c = counts[uid] || 0
+      b = c == 0 ? '0' : c <= 5 ? '1-5' : c <= 10 ? '6-10' : c <= 20 ? '11-20' : c <= 50 ? '21-50' : '>50'
+      buckets[b] += 1
+    end
+    %w[0 1-5 6-10 11-20 21-50 >50].map { |k| [k, buckets[k]] }.to_h
+  end
+
+  def self.blocks_received_distribution(filters = {})
+    user_ids = apply_filters(User.all, filters).pluck(:id)
+    counts   = Block.where(blocked_user_id: user_ids).group(:blocked_user_id).count
+    buckets  = Hash.new(0)
+    user_ids.each do |uid|
+      c = counts[uid] || 0
+      b = c == 0 ? '0' : c <= 5 ? '1-5' : c <= 10 ? '6-10' : c <= 20 ? '11-20' : c <= 50 ? '21-50' : '>50'
+      buckets[b] += 1
+    end
+    %w[0 1-5 6-10 11-20 21-50 >50].map { |k| [k, buckets[k]] }.to_h
+  end
+
   # ===== LANGUAGES ANALYTICS =====
 
   def self.subscription_distribution(filters = {})

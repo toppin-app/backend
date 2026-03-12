@@ -43,6 +43,8 @@ class AnalyticsController < ApplicationController
       complaints_data
     when 'interactions'
       interactions_data
+    when 'blocks'
+      blocks_data
     else
       { error: 'Invalid section' }
     end
@@ -225,6 +227,17 @@ class AnalyticsController < ApplicationController
       app_language_distribution: AnalyticsService.app_language_distribution(@filters),
       profile_languages_distribution: AnalyticsService.profile_languages_distribution(@filters),
       profile_languages_count_distribution: AnalyticsService.profile_languages_count_distribution(@filters)
+    }
+  end
+
+  def blocks_data
+    {
+      totals:                AnalyticsService.blocks_total(@filters),
+      over_time:             AnalyticsService.blocks_over_time(@filters),
+      given_by_gender:       AnalyticsService.blocks_given_by_gender(@filters),
+      received_by_gender:    AnalyticsService.blocks_received_by_gender(@filters),
+      given_distribution:    AnalyticsService.blocks_given_distribution(@filters),
+      received_distribution: AnalyticsService.blocks_received_distribution(@filters)
     }
   end
 
