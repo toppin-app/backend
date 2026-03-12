@@ -227,6 +227,30 @@ class AnalyticsController < ApplicationController
   end
 
   def complaints_data
+    # ===== DIAGNOSTIC LOG =====
+    filtered_user_ids = User.all.then { |s| AnalyticsService.send(:apply_filters, s, @filters) }.pluck(:id)
+    raw_complaints    = AnalyticsService.send(:apply_user_filters_to_complaints, Complaint.all, @filters)
+    complaint_rows    = raw_complaints.pluck(:id, :user_id, :to_user_id, :reason)
+
+    Rails.logger.info "\n" + "="*100
+    Rails.logger.info "[COMPLAINTS ANALYTICS] Diagnostic log"
+    Rails.logger.info JSON.pretty_generate({
+      filters_received: @filters,
+      filtered_users: {
+        count:  filtered_user_ids.size,
+        ids:    filtered_user_ids
+      },
+      complaint_scope_sql: raw_complaints.to_sql,
+      complaints_found: {
+        count: complaint_rows.size,
+        rows:  complaint_rows.map { |id, uid, tuid, reason|
+          { id: id, reporter_id: uid, reported_id: tuid, reason: reason }
+        }
+      }
+    })
+    Rails.logger.info "="*100 + "\n"
+    # ===== END DIAGNOSTIC LOG =====
+
     {
       total: AnalyticsService.complaints_total(@filters),
       over_time: AnalyticsService.complaints_over_time(@filters, :week),

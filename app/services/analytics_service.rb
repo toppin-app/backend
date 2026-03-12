@@ -890,18 +890,11 @@ class AnalyticsService
 
   # Restricts a Complaint scope to complaints involving the filtered user set.
   # A complaint is included if the reporter (user_id) OR the reported (to_user_id)
-  # belongs to the filtered users. Bot/account-status flags are intentionally
-  # excluded from the filter so that complaints from/to deleted or bot accounts
-  # are still counted when the user explicitly asks for all complaints.
+  # belongs to the users that result from applying ALL active filters (including
+  # bot/account-status flags) — so the complaint set always matches what the
+  # analytics screen is showing.
   def self.apply_user_filters_to_complaints(complaint_scope, filters)
-    complaint_filters = filters.except(:exclude_bots, :only_bots, :exclude_deleted, :only_deleted)
-
-    # If no meaningful filter is active just return the full scope unchanged
-    # to avoid fetching the full user table unnecessarily.
-    meaningful_keys = %i[gender device_platform verified country city subscription_type start_date end_date]
-    return complaint_scope unless complaint_filters.slice(*meaningful_keys).any? { |_, v| v.present? }
-
-    user_ids = apply_filters(User.all, complaint_filters).pluck(:id)
+    user_ids = apply_filters(User.all, filters).pluck(:id)
     return complaint_scope.none if user_ids.empty?
 
     complaint_scope.where(user_id: user_ids).or(complaint_scope.where(to_user_id: user_ids))
