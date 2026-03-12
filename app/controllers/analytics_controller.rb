@@ -6,19 +6,18 @@ class AnalyticsController < ApplicationController
   def index
     @title = "User Analytics Dashboard"
     
-    # Pre-load key metrics for initial page load
-    # DEFAULT: Exclude bots and deleted accounts (show only real active users)
-    default_user_scope = User.where(deleted_account: false, fake_user: false)
-    
+    # Pre-load key metrics for initial page load using default filters
+    default_filters = { exclude_bots: true, only_bots: false, exclude_deleted: false, only_deleted: false }
+    _metrics = AnalyticsService.user_count_metrics(default_filters)
     @key_metrics = {
-      total_users: default_user_scope.count,
-      total_matches: UserMatchRequest.where(is_match: true).count,
-      active_users_today: default_user_scope.where('last_sign_in_at >= ?', 24.hours.ago).count
+      total_users:        _metrics[:total_users],
+      total_matches:      _metrics[:total_matches],
+      active_users_today: _metrics[:active_today]
     }
     
     # Filter options - show ALL countries and cities (no filters)
     @countries = User.where.not(location_country: nil).distinct.pluck(:location_country).sort
-    @cities = User.where.not(location_city: nil).distinct.pluck(:location_city).sort
+    @cities    = User.where.not(location_city: nil).distinct.pluck(:location_city).sort
   end
 
   def data

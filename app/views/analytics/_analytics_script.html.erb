@@ -186,6 +186,12 @@
     if (userMetrics.total_users !== undefined) {
       document.getElementById('metric-total-users').textContent = formatNumber(userMetrics.total_users);
     }
+    if (userMetrics.total_matches !== undefined) {
+      document.getElementById('metric-total-matches').textContent = formatNumber(userMetrics.total_matches);
+    }
+    if (userMetrics.active_today !== undefined) {
+      document.getElementById('metric-active-today').textContent = formatNumber(userMetrics.active_today);
+    }
 
     // New Users Over Time
     renderLineChart('chart-new-users', {

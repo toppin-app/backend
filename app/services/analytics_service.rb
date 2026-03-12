@@ -94,19 +94,26 @@ class AnalyticsService
     total_users = scope.count
     
     # Breakdown by type - counts within filtered dataset
-    # Note: If user selected "Only Bots", real_users will be 0
-    # Note: If user selected "Exclude Bots", bot_users will be 0
-    real_users = scope.where(fake_user: false, deleted_account: false).count
-    bot_users = scope.where(fake_user: true).count
+    real_users    = scope.where(fake_user: false, deleted_account: false).count
+    bot_users     = scope.where(fake_user: true).count
     verified_users = scope.where(verified: true, deleted_account: false).count
     deleted_users = scope.where(deleted_account: true).count
     
+    # Matches involving filtered users (via user_match_requests, real live data)
+    user_ids      = scope.pluck(:id)
+    total_matches = user_ids.empty? ? 0 : UserMatchRequest.where(is_match: true, user_id: user_ids).count
+
+    # Active today: filtered users who signed in in the last 24 hours
+    active_today  = scope.where('last_sign_in_at >= ?', 24.hours.ago).count
+
     {
-      total_users: total_users,
-      real_users: real_users,
-      bot_users: bot_users,
+      total_users:    total_users,
+      real_users:     real_users,
+      bot_users:      bot_users,
       verified_users: verified_users,
-      deleted_users: deleted_users
+      deleted_users:  deleted_users,
+      total_matches:  total_matches,
+      active_today:   active_today
     }
   end
 
@@ -226,13 +233,27 @@ class AnalyticsService
   # ===== TOP INSIGHTS =====
   
   def self.top_users(filters = {}, limit = 10)
-    scope = User.all
-    scope = apply_filters(scope, filters)
-    
+    scope    = User.all
+    scope    = apply_filters(scope, filters)
+    user_ids = scope.pluck(:id)
+    return { most_matches: [], most_liked: [], highest_ranking: [] } if user_ids.empty?
+
+    # Real match counts from user_match_requests (not stale cached column)
+    match_counts   = UserMatchRequest.where(is_match: true, user_id: user_ids).group(:user_id).count
+    top_match_ids  = match_counts.sort_by { |_, v| -v }.first(limit).map(&:first)
+    names_for_matches = User.where(id: top_match_ids).pluck(:id, :name).to_h
+    most_matches   = top_match_ids.map { |id| [id, names_for_matches[id], match_counts[id] || 0] }
+
+    # Real incoming-like counts from user_match_requests (not stale cached column)
+    like_counts    = UserMatchRequest.where(is_like: true, target_user: user_ids).group(:target_user).count
+    top_liked_ids  = like_counts.sort_by { |_, v| -v }.first(limit).map(&:first)
+    names_for_liked = User.where(id: top_liked_ids).pluck(:id, :name).to_h
+    most_liked     = top_liked_ids.map { |id| [id, names_for_liked[id], like_counts[id] || 0] }
+
     {
-      most_matches: scope.order(matches_number: :desc).limit(limit).pluck(:id, :name, :matches_number),
-      most_liked: scope.order(incoming_likes_number: :desc).limit(limit).pluck(:id, :name, :incoming_likes_number),
-      highest_ranking: scope.order(ranking: :desc).limit(limit).pluck(:id, :name, :ranking)
+      most_matches:     most_matches,
+      most_liked:       most_liked,
+      highest_ranking:  scope.order(ranking: :desc).limit(limit).pluck(:id, :name, :ranking)
     }
   end
 
@@ -240,20 +261,16 @@ class AnalyticsService
     scope = User.all
     scope = apply_filters(scope, filters.except(:city))
     scope = scope.where.not(location_city: nil)
-    
+
     cities = scope.group(:location_city).count.sort_by { |_, v| -v }.first(limit)
-    
+
     city_stats = cities.map do |city, count|
-      city_users = scope.where(location_city: city)
-      avg_matches = city_users.average(:matches_number).to_f.round(2)
-      
-      {
-        city: city,
-        users: count,
-        avg_matches: avg_matches
-      }
+      city_user_ids = scope.where(location_city: city).pluck(:id)
+      match_count   = city_user_ids.empty? ? 0 : UserMatchRequest.where(is_match: true, user_id: city_user_ids).count
+      avg_matches   = count > 0 ? (match_count.to_f / count).round(2) : 0.0
+      { city: city, users: count, avg_matches: avg_matches }
     end
-    
+
     city_stats
   end
   
