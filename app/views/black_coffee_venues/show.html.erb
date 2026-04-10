@@ -1,0 +1,124 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Local</p>
+    <h2 class="mb-0"><%= @venue.name %></h2>
+  </div>
+  <div>
+    <%= link_to 'Volver', black_coffee_venues_path, class: 'btn btn-outline-secondary mr-2' %>
+    <%= link_to 'Editar', edit_black_coffee_venue_path(@venue), class: 'btn btn-primary text-white' %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8">
+            <p class="text-muted text-uppercase mb-2">Descripcion</p>
+            <p><%= @venue.description %></p>
+          </div>
+          <div class="col-md-4">
+            <p class="text-muted text-uppercase mb-2">Estado editorial</p>
+            <% if @venue.featured? %>
+              <span class="badge badge-success p-2">Destacado</span>
+            <% else %>
+              <span class="badge badge-light p-2">No destacado</span>
+            <% end %>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <p class="text-muted text-uppercase mb-2">Categoria</p>
+            <strong><%= @venue.category %></strong>
+          </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted text-uppercase mb-2">Subcategoria</p>
+            <strong><%= @venue.subcategory_name.presence || 'Sin subcategoria' %></strong>
+          </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted text-uppercase mb-2">Favoritos</p>
+            <strong><%= @venue.favorites_count %></strong>
+          </div>
+          <div class="col-md-6 mb-3">
+            <p class="text-muted text-uppercase mb-2">Direccion</p>
+            <strong><%= @venue.address %></strong>
+          </div>
+          <div class="col-md-3 mb-3">
+            <p class="text-muted text-uppercase mb-2">Ciudad</p>
+            <strong><%= @venue.city %></strong>
+          </div>
+          <div class="col-md-3 mb-3">
+            <p class="text-muted text-uppercase mb-2">Coordenadas</p>
+            <strong><%= number_with_precision(@venue.latitude, precision: 6) %>, <%= number_with_precision(@venue.longitude, precision: 6) %></strong>
+          </div>
+        </div>
+
+        <p class="text-muted text-uppercase mb-2">Tags</p>
+        <div class="mb-0">
+          <% if Array(@venue.tags).any? %>
+            <% Array(@venue.tags).each do |tag| %>
+              <span class="badge badge-dark mr-2 mb-2 p-2"><%= tag %></span>
+            <% end %>
+          <% else %>
+            <p class="text-muted mb-0">Sin tags.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header bg-white">
+        <h4 class="mb-0">Horarios</h4>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Franja</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @venue.weekly_schedule.each do |entry| %>
+              <tr>
+                <td style="width: 180px;"><strong><%= Venue.day_name(entry[:day]) %></strong></td>
+                <td>
+                  <% if entry[:closed] %>
+                    <span class="text-muted">Cerrado</span>
+                  <% else %>
+                    <% entry[:slots].each do |slot| %>
+                      <span class="badge badge-light mr-2 mb-2 p-2"><%= slot[:open] %> - <%= slot[:close] %></span>
+                    <% end %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header bg-white">
+        <h4 class="mb-0">Imagenes</h4>
+      </div>
+      <div class="card-body">
+        <% if @venue.image_urls.any? %>
+          <% @venue.image_urls.each do |image_url| %>
+            <div class="mb-3">
+              <%= image_tag image_url, class: 'img-fluid rounded border', style: 'width: 100%; max-height: 220px; object-fit: cover;' %>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-muted mb-0">Este local todavia no tiene imagenes.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

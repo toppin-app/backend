@@ -1,0 +1,51 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Subcategorias</p>
+    <h2 class="mb-0"><%= @subcategory.persisted? ? "Editar #{@subcategory.name}" : 'Nueva subcategoria' %></h2>
+  </div>
+  <div>
+    <%= link_to 'Volver', black_coffee_subcategories_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>
+
+<%= form_with model: @subcategory, url: @subcategory.persisted? ? black_coffee_subcategory_path(@subcategory) : black_coffee_subcategories_path, local: true do |form| %>
+  <% if @subcategory.errors.any? %>
+    <div class="alert alert-danger">
+      <h4 class="mb-3"><%= pluralize(@subcategory.errors.count, 'error') %> impidieron guardar la subcategoria:</h4>
+      <ul class="mb-0">
+        <% @subcategory.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <%= form.label :name, 'Nombre *' %>
+            <%= form.text_field :name, class: 'form-control', required: true, placeholder: 'Ej: japonesa, cocteleria, artesanal' %>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <%= form.label :category, 'Categoria asociada *' %>
+            <% if @subcategory.persisted? %>
+              <%= form.select :category, options_for_select(@categories.map { |category| [category, category] }, @subcategory.category), {}, class: 'form-control', disabled: true %>
+              <small class="form-text text-muted">La edicion solo permite renombrar para evitar inconsistencias entre locales y categoria.</small>
+            <% else %>
+              <%= form.select :category, options_for_select(@categories.map { |category| [category, category] }, @subcategory.category), { include_blank: 'Selecciona una categoria' }, class: 'form-control', required: true %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <%= form.submit(@subcategory.persisted? ? 'Actualizar subcategoria' : 'Crear subcategoria', class: 'btn btn-success text-white') %>
+    <%= link_to 'Cancelar', black_coffee_subcategories_path, class: 'btn btn-secondary text-white' %>
+  </div>
+<% end %>

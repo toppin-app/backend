@@ -28,6 +28,30 @@ Rails.application.routes.draw do
   resources :app_versions, only: [:index, :edit, :update]
   resources :user_watchlists, only: [:create, :show]
 
+  scope :black_coffee, as: :black_coffee do
+    resources :venues, controller: 'black_coffee_venues'
+    resources :subcategories, controller: 'black_coffee_subcategories', except: [:show]
+  end
+
+  namespace :api, defaults: { format: :json } do
+    scope module: 'black_coffee', path: 'blackcoffee' do
+      resources :venues, only: [:index, :show] do
+        collection do
+          get :featured
+          get :nearby
+          get :popular
+          get 'category/:category', action: :category, as: :category
+        end
+
+        member do
+          post :favorite
+        end
+      end
+
+      resources :subcategories, only: [:index, :create, :update, :destroy]
+    end
+  end
+
   # Spotify para los administradores
   resources :users, except: [:index, :show, :new, :edit, :create, :update, :destroy] do
     resources :admin_spotify_user_data, module: 'spotify', only: [:index, :show, :new, :create, :edit, :update, :destroy]

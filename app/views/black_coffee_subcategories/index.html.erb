@@ -1,0 +1,68 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Subcategorias</p>
+    <h2 class="mb-0">Gestion de subcategorias</h2>
+  </div>
+  <div>
+    <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-secondary mr-2' %>
+    <%= link_to 'Nueva subcategoria', new_black_coffee_subcategory_path, class: 'btn btn-success text-white' %>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: black_coffee_subcategories_path, method: :get, local: true do %>
+      <div class="row">
+        <div class="col-md-5 mb-3">
+          <%= text_field_tag :q, params[:q], class: 'form-control', placeholder: 'Buscar por nombre' %>
+        </div>
+        <div class="col-md-4 mb-3">
+          <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, params[:category]), class: 'form-control' %>
+        </div>
+        <div class="col-md-3 mb-3">
+          <%= submit_tag 'Filtrar', class: 'btn btn-primary btn-block text-white' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Categoria</th>
+          <th>Locales asociados</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @subcategories.any? %>
+          <% @subcategories.each do |subcategory| %>
+            <tr>
+              <td><strong><%= subcategory.name %></strong></td>
+              <td><span class="badge badge-secondary"><%= subcategory.category %></span></td>
+              <td><%= subcategory.try(:venues_count).to_i %></td>
+              <td class="text-right text-nowrap">
+                <%= link_to edit_black_coffee_subcategory_path(subcategory), class: 'btn btn-sm btn-primary text-white' do %>
+                  <i class="fas fa-edit"></i>
+                <% end %>
+                <%= link_to black_coffee_subcategory_path(subcategory), method: :delete, data: { confirm: '¿Eliminar esta subcategoria? Los locales afectados quedaran sin subcategoria.' }, class: 'btn btn-sm btn-danger text-white' do %>
+                  <i class="fas fa-trash"></i>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="4" class="text-center text-muted py-5">
+              No hay subcategorias con los filtros actuales.
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

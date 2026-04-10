@@ -190,6 +190,15 @@
           </li>
 
           <li class="nav-item">
+            <%= link_to black_coffee_venues_path, class: "nav-link #{'active' if request.path.start_with?(black_coffee_venues_path) || request.path.start_with?(black_coffee_subcategories_path)}" do %>
+              <i class="nav-icon fas fa-coffee"></i>
+              <p>
+                Black Coffee
+              </p>
+            <% end %>
+          </li>
+
+          <li class="nav-item">
             <%= link_to app_versions_path, class: "nav-link" do %>
               <i class="fas fa-mobile-alt"></i>
               <p>

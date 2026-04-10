@@ -1,0 +1,357 @@
+<%= form_with model: @venue, url: @venue.persisted? ? black_coffee_venue_path(@venue) : black_coffee_venues_path, local: true, data: { black_coffee_venue_form: true, subcategories: @subcategory_options_json } do |form| %>
+  <% if @venue.errors.any? %>
+    <div class="alert alert-danger">
+      <h4 class="mb-3"><%= pluralize(@venue.errors.count, 'error') %> impidieron guardar el local:</h4>
+      <ul class="mb-0">
+        <% @venue.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <p class="text-muted mb-1">Black Coffee / Editor</p>
+      <h2 class="mb-0"><%= @venue.persisted? ? "Editar #{@venue.name}" : 'Nuevo local' %></h2>
+    </div>
+    <div>
+      <%= link_to 'Volver', black_coffee_venues_path, class: 'btn btn-outline-secondary' %>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <%= form.label :name, 'Nombre del local *' %>
+            <%= form.text_field :name, class: 'form-control', required: true %>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <%= form.label :category, 'Categoria *' %>
+            <%= form.select :category, options_for_select(@categories.map { |category| [category, category] }, @venue.category), { include_blank: 'Selecciona una categoria' }, class: 'form-control', required: true, id: 'venue-category-select' %>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <%= label_tag 'venue_subcategory_name', 'Subcategoria' %>
+            <%= text_field_tag 'venue[subcategory_name]', @subcategory_input, class: 'form-control', list: 'venue-subcategories-list', id: 'venue-subcategory-input', placeholder: 'Ej: brunch, cocteleria, artesanal' %>
+            <small class="form-text text-muted">
+              Puedes escribir una nueva subcategoria o elegir una existente.
+              <%= link_to 'Gestionarlas', black_coffee_subcategories_path %>
+            </small>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="mb-3">
+            <%= form.label :description, 'Descripcion *' %>
+            <%= form.text_area :description, class: 'form-control', rows: 3, required: true, placeholder: 'Describe el local en una o dos frases' %>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <%= form.label :address, 'Direccion *' %>
+            <%= form.text_field :address, class: 'form-control', required: true %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <%= form.label :city, 'Ciudad *' %>
+            <%= form.text_field :city, class: 'form-control', required: true %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <%= form.label :latitude, 'Latitud *' %>
+            <%= form.number_field :latitude, class: 'form-control', step: '0.0000001', required: true %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <%= form.label :longitude, 'Longitud *' %>
+            <%= form.number_field :longitude, class: 'form-control', step: '0.0000001', required: true %>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="mb-0">
+            <%= label_tag 'venue_tag_list', 'Tags' %>
+            <%= text_field_tag 'venue[tag_list]', @tag_list_input, class: 'form-control', id: 'venue-tag-list', placeholder: 'romantico, terraza, craft beer' %>
+            <small class="form-text text-muted">Introduce etiquetas separadas por coma.</small>
+          </div>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="form-check mb-3">
+            <%= form.check_box :featured, class: 'form-check-input' %>
+            <%= form.label :featured, 'Destacar editorialmente', class: 'form-check-label' %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-0">Imagenes del local</h4>
+        <small class="text-muted">La primera URL se usara como portada.</small>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-sm" id="add-image-url-button">
+        <i class="fas fa-plus mr-1"></i>Añadir imagen
+      </button>
+    </div>
+    <div class="card-body">
+      <div id="image-urls-container">
+        <% @image_urls.each_with_index do |image_url, index| %>
+          <div class="input-group mb-3 image-url-row">
+            <div class="input-group-prepend">
+              <span class="input-group-text"><%= index.zero? ? 'Portada' : "Imagen #{index + 1}" %></span>
+            </div>
+            <%= text_field_tag 'venue[image_urls][]', image_url, class: 'form-control', placeholder: 'https://...' %>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-outline-danger remove-image-url-button">Quitar</button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-white">
+      <h4 class="mb-0">Horario semanal</h4>
+      <small class="text-muted">Permite franjas multiples por dia para soportar horario partido.</small>
+    </div>
+    <div class="card-body">
+      <%= hidden_field_tag 'venue[schedule_payload]', @schedule_payload, id: 'venue-schedule-payload', data: { initial_schedule: @schedule_payload } %>
+      <div id="schedule-editor"></div>
+    </div>
+  </div>
+
+  <datalist id="venue-subcategories-list"></datalist>
+
+  <div class="pb-5">
+    <%= form.submit(@venue.persisted? ? 'Actualizar local' : 'Crear local', class: 'btn btn-success text-white') %>
+    <%= link_to 'Cancelar', black_coffee_venues_path, class: 'btn btn-secondary text-white' %>
+  </div>
+<% end %>
+
+<script>
+  document.addEventListener('turbolinks:load', function () {
+    var form = document.querySelector('[data-black-coffee-venue-form="true"]');
+    if (!form || form.dataset.initialized === 'true') {
+      return;
+    }
+
+    form.dataset.initialized = 'true';
+
+    var imageContainer = document.getElementById('image-urls-container');
+    var addImageButton = document.getElementById('add-image-url-button');
+    var categorySelect = document.getElementById('venue-category-select');
+    var subcategoryInput = document.getElementById('venue-subcategory-input');
+    var subcategoriesList = document.getElementById('venue-subcategories-list');
+    var scheduleField = document.getElementById('venue-schedule-payload');
+    var scheduleEditor = document.getElementById('schedule-editor');
+    var scheduleData = [];
+
+    try {
+      scheduleData = JSON.parse(scheduleField.dataset.initialSchedule || '[]');
+    } catch (error) {
+      scheduleData = [];
+    }
+
+    function refreshImageLabels() {
+      Array.prototype.slice.call(imageContainer.querySelectorAll('.image-url-row')).forEach(function (row, index) {
+        var label = row.querySelector('.input-group-text');
+        if (!label) {
+          return;
+        }
+
+        label.textContent = index === 0 ? 'Portada' : 'Imagen ' + (index + 1);
+      });
+    }
+
+    function addImageRow(value) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'input-group mb-3 image-url-row';
+      wrapper.innerHTML = '' +
+        '<div class="input-group-prepend">' +
+          '<span class="input-group-text">Imagen</span>' +
+        '</div>' +
+        '<input type="text" name="venue[image_urls][]" class="form-control" placeholder="https://..." value="' + (value || '') + '">' +
+        '<div class="input-group-append">' +
+          '<button type="button" class="btn btn-outline-danger remove-image-url-button">Quitar</button>' +
+        '</div>';
+      imageContainer.appendChild(wrapper);
+      refreshImageLabels();
+    }
+
+    imageContainer.addEventListener('click', function (event) {
+      if (!event.target.classList.contains('remove-image-url-button')) {
+        return;
+      }
+
+      var rows = imageContainer.querySelectorAll('.image-url-row');
+      if (rows.length === 1) {
+        rows[0].querySelector('input').value = '';
+      } else {
+        event.target.closest('.image-url-row').remove();
+      }
+
+      refreshImageLabels();
+    });
+
+    addImageButton.addEventListener('click', function () {
+      addImageRow('');
+    });
+
+    function updateSubcategoryOptions() {
+      var currentCategory = categorySelect.value;
+      var allSubcategories = [];
+
+      try {
+        allSubcategories = JSON.parse(form.dataset.subcategories || '[]');
+      } catch (error) {
+        allSubcategories = [];
+      }
+
+      var filtered = allSubcategories.filter(function (subcategory) {
+        return !currentCategory || subcategory.category === currentCategory;
+      });
+
+      subcategoriesList.innerHTML = '';
+      filtered.forEach(function (subcategory) {
+        var option = document.createElement('option');
+        option.value = subcategory.name;
+        subcategoriesList.appendChild(option);
+      });
+    }
+
+    categorySelect.addEventListener('change', function () {
+      updateSubcategoryOptions();
+      if (subcategoryInput.value) {
+        subcategoryInput.value = '';
+      }
+    });
+
+    function normalizeScheduleData() {
+      var dayOrder = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+      return dayOrder.map(function (dayKey) {
+        var existing = scheduleData.find(function (entry) { return entry.day === dayKey; });
+        return existing || { day: dayKey, closed: true, slots: [] };
+      });
+    }
+
+    function slotRow(dayKey, slot) {
+      var row = document.createElement('div');
+      row.className = 'd-flex align-items-center mb-2 slot-row';
+      row.innerHTML = '' +
+        '<input type="time" class="form-control mr-2 slot-open" value="' + (slot.open || '') + '">' +
+        '<input type="time" class="form-control mr-2 slot-close" value="' + (slot.close || '') + '">' +
+        '<button type="button" class="btn btn-outline-danger btn-sm remove-slot-button">Quitar</button>';
+
+      row.querySelector('.remove-slot-button').addEventListener('click', function () {
+        row.remove();
+      });
+
+      return row;
+    }
+
+    function renderScheduleEditor() {
+      var labels = {
+        'L': 'Lunes',
+        'M': 'Martes',
+        'X': 'Miercoles',
+        'J': 'Jueves',
+        'V': 'Viernes',
+        'S': 'Sabado',
+        'D': 'Domingo'
+      };
+
+      scheduleEditor.innerHTML = '';
+
+      normalizeScheduleData().forEach(function (entry) {
+        var card = document.createElement('div');
+        card.className = 'border rounded p-3 mb-3 schedule-day-card';
+        card.dataset.day = entry.day;
+        card.innerHTML = '' +
+          '<div class="d-flex justify-content-between align-items-center mb-3">' +
+            '<div>' +
+              '<h5 class="mb-1">' + labels[entry.day] + '</h5>' +
+              '<small class="text-muted">Clave: ' + entry.day + '</small>' +
+            '</div>' +
+            '<div class="form-check">' +
+              '<input type="checkbox" class="form-check-input day-closed-toggle" ' + (entry.closed ? 'checked' : '') + '>' +
+              '<label class="form-check-label">Cerrado</label>' +
+            '</div>' +
+          '</div>' +
+          '<div class="slots-container"></div>' +
+          '<button type="button" class="btn btn-outline-primary btn-sm add-slot-button mt-2">Agregar franja</button>';
+
+        var slotsContainer = card.querySelector('.slots-container');
+        var closedToggle = card.querySelector('.day-closed-toggle');
+        var addSlotButton = card.querySelector('.add-slot-button');
+
+        function syncClosedState() {
+          var closed = closedToggle.checked;
+          slotsContainer.style.display = closed ? 'none' : 'block';
+          addSlotButton.style.display = closed ? 'none' : 'inline-block';
+
+          if (!closed && slotsContainer.children.length === 0) {
+            slotsContainer.appendChild(slotRow(entry.day, { open: '', close: '' }));
+          }
+        }
+
+        (entry.slots || []).forEach(function (slot) {
+          slotsContainer.appendChild(slotRow(entry.day, slot));
+        });
+
+        closedToggle.addEventListener('change', syncClosedState);
+        addSlotButton.addEventListener('click', function () {
+          slotsContainer.appendChild(slotRow(entry.day, { open: '', close: '' }));
+          syncClosedState();
+        });
+
+        scheduleEditor.appendChild(card);
+        syncClosedState();
+      });
+    }
+
+    function collectSchedulePayload() {
+      var payload = [];
+
+      Array.prototype.slice.call(scheduleEditor.querySelectorAll('.schedule-day-card')).forEach(function (card) {
+        var closed = card.querySelector('.day-closed-toggle').checked;
+        var slots = [];
+
+        if (!closed) {
+          Array.prototype.slice.call(card.querySelectorAll('.slot-row')).forEach(function (row) {
+            var openInput = row.querySelector('.slot-open').value;
+            var closeInput = row.querySelector('.slot-close').value;
+            if (openInput && closeInput) {
+              slots.push({ open: openInput, close: closeInput });
+            }
+          });
+        }
+
+        payload.push({
+          day: card.dataset.day,
+          closed: closed || slots.length === 0,
+          slots: closed ? [] : slots
+        });
+      });
+
+      scheduleField.value = JSON.stringify(payload);
+    }
+
+    form.addEventListener('submit', function () {
+      collectSchedulePayload();
+    });
+
+    updateSubcategoryOptions();
+    refreshImageLabels();
+    renderScheduleEditor();
+  });
+</script>

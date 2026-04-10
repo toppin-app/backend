@@ -13,6 +13,8 @@ class User < ApplicationRecord
   has_one :user_filter_preference, dependent: :destroy
   has_many :user_info_item_values, dependent: :destroy
   has_many :purchases, dependent: :destroy
+  has_many :user_favorites, dependent: :destroy
+  has_many :favorite_venues, through: :user_favorites, source: :venue
   has_many :user_publis, dependent: :destroy
   has_many :viewed_publis, through: :user_publis, source: :publi
   has_many :banner_users, dependent: :destroy

@@ -1,0 +1,150 @@
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Locales</p>
+        <h2 class="mb-0"><%= @stats[:venues] %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Destacados</p>
+        <h2 class="mb-0"><%= @stats[:featured] %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Subcategorias</p>
+        <h2 class="mb-0"><%= @stats[:subcategories] %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Favoritos acumulados</p>
+        <h2 class="mb-0"><%= @stats[:favorites] %></h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <h4 class="mb-1">Panel de locales</h4>
+        <p class="text-muted mb-0">Gestiona los venues que consume el nuevo modulo Black Coffee.</p>
+      </div>
+      <div class="mt-3 mt-md-0">
+        <%= link_to 'Gestionar subcategorias', black_coffee_subcategories_path, class: 'btn btn-outline-dark mr-2' %>
+        <%= link_to 'Nuevo local', new_black_coffee_venue_path, class: 'btn btn-success text-white' %>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <% @categories.each do |category| %>
+        <span class="badge badge-light mr-2 mb-2 p-2">
+          <strong><%= category %></strong>: <%= @category_counts[category].to_i %>
+        </span>
+      <% end %>
+    </div>
+
+    <%= form_with url: black_coffee_venues_path, method: :get, local: true do %>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <%= text_field_tag :q, params[:q], class: 'form-control', placeholder: 'Buscar por nombre, ciudad o direccion' %>
+        </div>
+        <div class="col-md-3 mb-3">
+          <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, params[:category]), class: 'form-control' %>
+        </div>
+        <div class="col-md-3 mb-3">
+          <%= text_field_tag :subcategory, params[:subcategory], class: 'form-control', placeholder: 'Filtrar por subcategoria' %>
+        </div>
+        <div class="col-md-2 mb-3">
+          <div class="d-flex">
+            <%= submit_tag 'Filtrar', class: 'btn btn-primary flex-fill text-white' %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Portada</th>
+          <th>Nombre</th>
+          <th>Categoria</th>
+          <th>Subcategoria</th>
+          <th>Ciudad</th>
+          <th>Favoritos</th>
+          <th>Destacado</th>
+          <th>Actualizado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @venues.any? %>
+          <% @venues.each do |venue| %>
+            <tr>
+              <td style="width: 120px;">
+                <% if venue.cover_image_url.present? %>
+                  <%= image_tag venue.cover_image_url, class: 'img-thumbnail', style: 'width: 96px; height: 64px; object-fit: cover;' %>
+                <% else %>
+                  <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 96px; height: 64px;">
+                    <i class="fas fa-image text-muted"></i>
+                  </div>
+                <% end %>
+              </td>
+              <td>
+                <strong><%= venue.name %></strong>
+                <div class="text-muted small"><%= venue.address %></div>
+              </td>
+              <td><span class="badge badge-secondary"><%= venue.category %></span></td>
+              <td><%= venue.subcategory_name.presence || 'Sin subcategoria' %></td>
+              <td><%= venue.city %></td>
+              <td><%= venue.favorites_count %></td>
+              <td>
+                <% if venue.featured? %>
+                  <span class="badge badge-success">Si</span>
+                <% else %>
+                  <span class="badge badge-light">No</span>
+                <% end %>
+              </td>
+              <td><%= venue.updated_at.strftime('%d/%m/%Y %H:%M') %></td>
+              <td class="text-right text-nowrap">
+                <%= link_to black_coffee_venue_path(venue), class: 'btn btn-sm btn-info text-white' do %>
+                  <i class="fas fa-eye"></i>
+                <% end %>
+                <%= link_to edit_black_coffee_venue_path(venue), class: 'btn btn-sm btn-primary text-white' do %>
+                  <i class="fas fa-edit"></i>
+                <% end %>
+                <%= link_to black_coffee_venue_path(venue), method: :delete, data: { confirm: '¿Eliminar este local?' }, class: 'btn btn-sm btn-danger text-white' do %>
+                  <i class="fas fa-trash"></i>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="9" class="text-center text-muted py-5">
+              No hay locales que coincidan con los filtros actuales.
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mt-4">
+  <%= will_paginate @venues if @venues.respond_to?(:total_pages) %>
+</div>
