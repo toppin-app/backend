@@ -93,12 +93,12 @@ class Venue < ApplicationRecord
     venue_subcategory&.name
   end
 
-  def cover_image_url
-    image_urls.first
+  def cover_image_url(base_url: nil)
+    image_urls(base_url: base_url).first
   end
 
-  def image_urls
-    venue_images.to_a.sort_by(&:position).map(&:url)
+  def image_urls(base_url: nil)
+    venue_images.to_a.sort_by(&:position).map { |image| image.public_url(base_url: base_url) }.compact
   end
 
   def weekly_schedule
@@ -116,11 +116,11 @@ class Venue < ApplicationRecord
     end
   end
 
-  def as_black_coffee_json(favorite_venue_ids: [])
+  def as_black_coffee_json(favorite_venue_ids: [], base_url: nil)
     {
       id: id,
       name: name,
-      images: image_urls,
+      images: image_urls(base_url: base_url),
       category: category,
       subcategory: subcategory_name,
       description: description,
@@ -140,12 +140,24 @@ class Venue < ApplicationRecord
     }
   end
 
-  def sync_images!(urls)
-    normalized_urls = Array(urls).map { |url| url.to_s.strip }.reject(&:blank?).uniq
+  def sync_images!(existing_image_ids: [], new_files: [])
+    persisted_image_ids = Array(existing_image_ids).map(&:to_i)
+    uploaded_files = Array(new_files).reject(&:blank?)
+    current_images = venue_images.to_a.sort_by(&:position)
 
-    venue_images.destroy_all
-    normalized_urls.each_with_index do |url, index|
-      venue_images.create!(url: url, position: index)
+    kept_images = current_images.select { |image| persisted_image_ids.include?(image.id) }
+    removable_images = current_images.reject { |image| persisted_image_ids.include?(image.id) }
+    removable_images.each(&:destroy!)
+
+    next_position = (current_images.map(&:position).max || -1) + 1
+    created_images = uploaded_files.each_with_index.map do |file, index|
+      venue_images.create!(image: file, position: next_position + index)
+    end
+
+    (kept_images + created_images).each_with_index do |image, index|
+      next if image.position == index
+
+      image.update!(position: index)
     end
   end
 

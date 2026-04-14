@@ -96,8 +96,8 @@
           <% @venues.each do |venue| %>
             <tr>
               <td style="width: 120px;">
-                <% if venue.cover_image_url.present? %>
-                  <%= image_tag venue.cover_image_url, class: 'img-thumbnail', style: 'width: 96px; height: 64px; object-fit: cover;' %>
+                <% if venue.cover_image_url(base_url: request.base_url).present? %>
+                  <%= image_tag venue.cover_image_url(base_url: request.base_url), class: 'img-thumbnail', style: 'width: 96px; height: 64px; object-fit: cover;' %>
                 <% else %>
                   <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 96px; height: 64px;">
                     <i class="fas fa-image text-muted"></i>

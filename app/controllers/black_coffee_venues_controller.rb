@@ -85,9 +85,13 @@ class BlackCoffeeVenuesController < ApplicationController
     @subcategory_options = VenueSubcategory.order(:category, :name)
     @subcategory_options_json = @subcategory_options.map { |subcategory| { name: subcategory.name, category: subcategory.category } }.to_json
     @tag_list_input = params.dig(:venue, :tag_list).presence || Array(@venue.tags).join(', ')
-    @image_urls = Array(params.dig(:venue, :image_urls)).reject(&:blank?)
-    @image_urls = @venue.image_urls if @image_urls.empty?
-    @image_urls = [''] if @image_urls.empty?
+    @existing_images = @venue.venue_images.to_a.sort_by(&:position)
+    @kept_existing_image_ids =
+      if params.dig(:venue, :existing_image_ids).nil?
+        @existing_images.map(&:id)
+      else
+        Array(params.dig(:venue, :existing_image_ids)).map(&:to_i)
+      end
     @subcategory_input = params.dig(:venue, :subcategory_name).presence || @venue.subcategory_name
     @schedule_payload = params.dig(:venue, :schedule_payload).presence || @venue.weekly_schedule.to_json
   end
@@ -96,8 +100,8 @@ class BlackCoffeeVenuesController < ApplicationController
     @venue.assign_attributes(venue_params)
     @venue.tags = parse_tag_list
 
-    if image_urls.empty?
-      @venue.errors.add(:base, 'Debes indicar al menos una imagen del local')
+    if persisted_image_ids.empty? && new_images.empty?
+      @venue.errors.add(:base, 'Debes subir al menos una imagen del local')
       return false
     end
 
@@ -109,7 +113,7 @@ class BlackCoffeeVenuesController < ApplicationController
     ActiveRecord::Base.transaction do
       @venue.assign_subcategory_by_name!(subcategory_name)
       @venue.save!
-      @venue.sync_images!(image_urls)
+      @venue.sync_images!(existing_image_ids: persisted_image_ids, new_files: new_images)
       @venue.sync_schedule!(schedule_payload)
     end
 
@@ -141,8 +145,15 @@ class BlackCoffeeVenuesController < ApplicationController
     params.dig(:venue, :subcategory_name)
   end
 
-  def image_urls
-    Array(params.dig(:venue, :image_urls)).map(&:to_s).map(&:strip).reject(&:blank?)
+  def persisted_image_ids
+    return [] unless @venue.persisted?
+
+    requested_ids = Array(params.dig(:venue, :existing_image_ids)).reject(&:blank?).map(&:to_i)
+    @venue.venue_images.where(id: requested_ids).pluck(:id)
+  end
+
+  def new_images
+    Array(params.dig(:venue, :new_images)).reject(&:blank?)
   end
 
   def schedule_payload

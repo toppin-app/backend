@@ -1,4 +1,4 @@
-<%= form_with model: @venue, url: @venue.persisted? ? black_coffee_venue_path(@venue) : black_coffee_venues_path, local: true, data: { black_coffee_venue_form: true, subcategories: @subcategory_options_json } do |form| %>
+<%= form_with model: @venue, url: @venue.persisted? ? black_coffee_venue_path(@venue) : black_coffee_venues_path, local: true, html: { multipart: true }, data: { black_coffee_venue_form: true, subcategories: @subcategory_options_json } do |form| %>
   <% if @venue.errors.any? %>
     <div class="alert alert-danger">
       <h4 class="mb-3"><%= pluralize(@venue.errors.count, 'error') %> impidieron guardar el local:</h4>
@@ -93,29 +93,42 @@
   </div>
 
   <div class="card mb-4">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div class="card-header bg-white">
       <div>
         <h4 class="mb-0">Imagenes del local</h4>
-        <small class="text-muted">La primera URL se usara como portada.</small>
+        <small class="text-muted">La portada sera la primera imagen que conserves. Las nuevas se anaden al final.</small>
       </div>
-      <button type="button" class="btn btn-outline-primary btn-sm" id="add-image-url-button">
-        <i class="fas fa-plus mr-1"></i>Añadir imagen
-      </button>
     </div>
     <div class="card-body">
-      <div id="image-urls-container">
-        <% @image_urls.each_with_index do |image_url, index| %>
-          <div class="input-group mb-3 image-url-row">
-            <div class="input-group-prepend">
-              <span class="input-group-text"><%= index.zero? ? 'Portada' : "Imagen #{index + 1}" %></span>
+      <%= hidden_field_tag 'venue[existing_image_ids][]', '' %>
+
+      <% if @existing_images.any? %>
+        <div class="row mb-4">
+          <% @existing_images.each_with_index do |venue_image, index| %>
+            <div class="col-md-4 mb-3">
+              <div class="card h-100">
+                <%= image_tag venue_image.public_url(base_url: request.base_url), class: 'card-img-top', style: 'height: 180px; object-fit: cover;' %>
+                <div class="card-body py-3">
+                  <div class="form-check">
+                    <%= check_box_tag 'venue[existing_image_ids][]', venue_image.id, @kept_existing_image_ids.include?(venue_image.id), class: 'form-check-input', id: "venue_existing_image_ids_#{venue_image.id}" %>
+                    <%= label_tag "venue_existing_image_ids_#{venue_image.id}", index.zero? ? 'Mantener portada actual' : "Mantener imagen #{index + 1}", class: 'form-check-label' %>
+                  </div>
+                </div>
+              </div>
             </div>
-            <%= text_field_tag 'venue[image_urls][]', image_url, class: 'form-control', placeholder: 'https://...' %>
-            <div class="input-group-append">
-              <button type="button" class="btn btn-outline-danger remove-image-url-button">Quitar</button>
-            </div>
-          </div>
-        <% end %>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-muted">Este local todavia no tiene imagenes guardadas.</p>
+      <% end %>
+
+      <div class="mb-2">
+        <%= label_tag 'venue_new_images', 'Subir nuevas imagenes' %>
+        <%= file_field_tag 'venue[new_images][]', multiple: true, accept: 'image/*', class: 'form-control-file', id: 'venue_new_images' %>
       </div>
+      <small class="form-text text-muted">
+        Se almacenaran como binarios en el storage del proyecto. Si el formulario falla por otra validacion, tendras que volver a seleccionarlas.
+      </small>
     </div>
   </div>
 
@@ -147,8 +160,6 @@
 
     form.dataset.initialized = 'true';
 
-    var imageContainer = document.getElementById('image-urls-container');
-    var addImageButton = document.getElementById('add-image-url-button');
     var categorySelect = document.getElementById('venue-category-select');
     var subcategoryInput = document.getElementById('venue-subcategory-input');
     var subcategoriesList = document.getElementById('venue-subcategories-list');
@@ -161,51 +172,6 @@
     } catch (error) {
       scheduleData = [];
     }
-
-    function refreshImageLabels() {
-      Array.prototype.slice.call(imageContainer.querySelectorAll('.image-url-row')).forEach(function (row, index) {
-        var label = row.querySelector('.input-group-text');
-        if (!label) {
-          return;
-        }
-
-        label.textContent = index === 0 ? 'Portada' : 'Imagen ' + (index + 1);
-      });
-    }
-
-    function addImageRow(value) {
-      var wrapper = document.createElement('div');
-      wrapper.className = 'input-group mb-3 image-url-row';
-      wrapper.innerHTML = '' +
-        '<div class="input-group-prepend">' +
-          '<span class="input-group-text">Imagen</span>' +
-        '</div>' +
-        '<input type="text" name="venue[image_urls][]" class="form-control" placeholder="https://..." value="' + (value || '') + '">' +
-        '<div class="input-group-append">' +
-          '<button type="button" class="btn btn-outline-danger remove-image-url-button">Quitar</button>' +
-        '</div>';
-      imageContainer.appendChild(wrapper);
-      refreshImageLabels();
-    }
-
-    imageContainer.addEventListener('click', function (event) {
-      if (!event.target.classList.contains('remove-image-url-button')) {
-        return;
-      }
-
-      var rows = imageContainer.querySelectorAll('.image-url-row');
-      if (rows.length === 1) {
-        rows[0].querySelector('input').value = '';
-      } else {
-        event.target.closest('.image-url-row').remove();
-      }
-
-      refreshImageLabels();
-    });
-
-    addImageButton.addEventListener('click', function () {
-      addImageRow('');
-    });
 
     function updateSubcategoryOptions() {
       var currentCategory = categorySelect.value;

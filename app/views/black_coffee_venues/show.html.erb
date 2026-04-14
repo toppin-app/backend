@@ -109,8 +109,8 @@
         <h4 class="mb-0">Imagenes</h4>
       </div>
       <div class="card-body">
-        <% if @venue.image_urls.any? %>
-          <% @venue.image_urls.each do |image_url| %>
+        <% if @venue.image_urls(base_url: request.base_url).any? %>
+          <% @venue.image_urls(base_url: request.base_url).each do |image_url| %>
             <div class="mb-3">
               <%= image_tag image_url, class: 'img-fluid rounded border', style: 'width: 100%; max-height: 220px; object-fit: cover;' %>
             </div>

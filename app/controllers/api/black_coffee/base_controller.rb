@@ -74,7 +74,16 @@ module Api
 
       def serialize_venues(venues)
         favorite_ids = favorite_venue_ids_for(venues)
-        venues.map { |venue| venue.as_black_coffee_json(favorite_venue_ids: favorite_ids) }
+        venues.map do |venue|
+          venue.as_black_coffee_json(
+            favorite_venue_ids: favorite_ids,
+            base_url: public_base_url
+          )
+        end
+      end
+
+      def public_base_url
+        request.base_url.presence || "https://#{ENV['MAILJET_DEFAULT_URL_HOST'] || 'web-backend-ruby.uao3jo.easypanel.host'}"
       end
     end
   end

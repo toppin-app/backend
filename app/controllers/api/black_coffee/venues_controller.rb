@@ -98,7 +98,8 @@ module Api
 
         render json: {
           venue: @venue.as_black_coffee_json(
-            favorite_venue_ids: favorite_venue_ids_for([@venue])
+            favorite_venue_ids: favorite_venue_ids_for([@venue]),
+            base_url: public_base_url
           )
         }
       end
