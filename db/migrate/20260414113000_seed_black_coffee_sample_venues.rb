@@ -30,7 +30,7 @@ class SeedBlackCoffeeSampleVenues < ActiveRecord::Migration[6.0]
 
   def up
     reset_model_information!
-    now = current_time_from_proper_timezone
+    now = Time.current
 
     sample_venues.each do |venue_data|
       subcategory_id = ensure_subcategory!(venue_data, now)
