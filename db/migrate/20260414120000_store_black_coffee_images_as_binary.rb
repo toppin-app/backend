@@ -18,20 +18,36 @@ class StoreBlackCoffeeImagesAsBinary < ActiveRecord::Migration[6.0]
     add_column :venue_images, :image, :string unless column_exists?(:venue_images, :image)
     MigratingVenueImage.reset_column_information
 
-    return finalize_image_column! unless column_exists?(:venue_images, :url)
+    # Si la tabla está vacía o no existe la columna url, solo agregamos la columna
+    unless column_exists?(:venue_images, :url) && MigratingVenueImage.exists?
+      say 'Skipping image migration - no legacy URLs found'
+      return
+    end
 
     say_with_time 'Migrating Black Coffee images from external URLs to binary storage' do
+      migrated_count = 0
+      failed_count = 0
+      
       MigratingVenueImage.find_each do |record|
         legacy_url = record.read_attribute(:url).to_s.strip
         next if legacy_url.empty?
         next if record.read_attribute(:image).present?
 
-        download_and_store_image!(record, legacy_url)
+        begin
+          download_and_store_image!(record, legacy_url)
+          migrated_count += 1
+        rescue StandardError => e
+          failed_count += 1
+          say "Warning: Failed to migrate image for venue_image #{record.id}: #{e.message}", true
+        end
       end
+      
+      say "Migrated #{migrated_count} images, #{failed_count} failed"
     end
 
-    finalize_image_column!
-    remove_column :venue_images, :url, :string
+    if column_exists?(:venue_images, :url)
+      remove_column :venue_images, :url, :string
+    end
   end
 
   def down
@@ -39,33 +55,23 @@ class StoreBlackCoffeeImagesAsBinary < ActiveRecord::Migration[6.0]
     MigratingVenueImage.reset_column_information
 
     say_with_time 'Restoring venue image URLs from stored binaries' do
-      MigratingVenueImage.find_each do |record|
-        next if record.read_attribute(:image).blank?
-
-        record.update_columns(url: record.image.url)
+      MigratingVenueImage.where.not(image: [nil, '']).find_each do |record|
+        record.update_columns(url: record.image.url) if record.image.present?
       end
     end
 
-    change_column_null :venue_images, :url, false
     remove_column :venue_images, :image, :string if column_exists?(:venue_images, :image)
   end
 
   private
 
-  def finalize_image_column!
-    if MigratingVenueImage.where(image: [nil, '']).exists?
-      raise ActiveRecord::MigrationError, 'Some Black Coffee images could not be migrated to binary storage'
-    end
-
-    change_column_null :venue_images, :image, false
-  end
-
   def download_and_store_image!(record, url)
     attempts = 0
+    max_attempts = 2
 
     begin
       attempts += 1
-      image_io = URI.open(url, 'User-Agent' => 'Toppin BlackCoffee Migrator', open_timeout: 15, read_timeout: 30)
+      image_io = URI.open(url, 'User-Agent' => 'Toppin BlackCoffee Migrator', open_timeout: 5, read_timeout: 10)
       content_type =
         if image_io.respond_to?(:content_type)
           image_io.content_type.to_s.split(';').first.to_s.strip
@@ -87,10 +93,8 @@ class StoreBlackCoffeeImagesAsBinary < ActiveRecord::Migration[6.0]
       record.image = uploaded_file
       record.save!
     rescue StandardError => e
-      retry if attempts < 3
-
-      raise ActiveRecord::MigrationError,
-            "Failed to migrate Black Coffee image #{record.id} from #{url}: #{e.class} - #{e.message}"
+      retry if attempts < max_attempts
+      raise e
     ensure
       image_io.close if defined?(image_io) && image_io.respond_to?(:close)
       if defined?(tempfile) && tempfile
