@@ -9,7 +9,7 @@ class MoveBlackCoffeeVenuesToPaterna < ActiveRecord::Migration[6.0]
   TARGET_LONGITUDE = BigDecimal('-0.4431618').freeze
 
   def up
-    stats = execute(<<~SQL.squish).first
+    stats = connection.select_one(<<~SQL.squish) || {}
       SELECT AVG(latitude) AS avg_latitude, AVG(longitude) AS avg_longitude
       FROM venues
       WHERE latitude IS NOT NULL
