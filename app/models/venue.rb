@@ -140,24 +140,58 @@ class Venue < ApplicationRecord
     }
   end
 
-  def sync_images!(existing_image_ids: [], new_files: [])
-    persisted_image_ids = Array(existing_image_ids).map(&:to_i)
-    uploaded_files = Array(new_files).reject(&:blank?)
+  def sync_images!(entries:, uploaded_files_by_key: {})
+    normalized_entries = Array(entries)
     current_images = venue_images.to_a.sort_by(&:position)
+    current_images_by_id = current_images.index_by(&:id)
+    temporary_offset = (current_images.map(&:position).max || -1) + 1000
+    seen_existing_ids = {}
 
-    kept_images = current_images.select { |image| persisted_image_ids.include?(image.id) }
-    removable_images = current_images.reject { |image| persisted_image_ids.include?(image.id) }
+    kept_images = normalized_entries.filter_map do |entry|
+      next unless entry[:kind] == 'existing'
+      next if seen_existing_ids[entry[:id].to_i]
+
+      image_id = entry[:id].to_i
+      seen_existing_ids[image_id] = true
+      current_images_by_id[image_id]
+    end
+    removable_images = current_images.reject { |image| kept_images.include?(image) }
+
+    kept_images.each_with_index do |image, index|
+      image.update_columns(position: temporary_offset + index)
+    end
     removable_images.each(&:destroy!)
 
-    next_position = (current_images.map(&:position).max || -1) + 1
-    created_images = uploaded_files.each_with_index.map do |file, index|
-      venue_images.create!(image: file, position: next_position + index)
+    next_temporary_position = temporary_offset + kept_images.size
+    reused_existing_ids = {}
+    ordered_images = normalized_entries.filter_map do |entry|
+      case entry[:kind]
+      when 'existing'
+        image_id = entry[:id].to_i
+        next if reused_existing_ids[image_id]
+
+        reused_existing_ids[image_id] = true
+        current_images_by_id[image_id]
+      when 'remote'
+        next if entry[:url].blank?
+
+        image = venue_images.create!(url: entry[:url], position: next_temporary_position)
+        next_temporary_position += 1
+        image
+      when 'upload'
+        file = uploaded_files_by_key[entry[:upload_key].to_s]
+        next if file.blank?
+
+        image = venue_images.create!(image: file, position: next_temporary_position)
+        next_temporary_position += 1
+        image
+      end
     end
 
-    (kept_images + created_images).each_with_index do |image, index|
+    ordered_images.each_with_index do |image, index|
       next if image.position == index
 
-      image.update!(position: index)
+      image.update_columns(position: index)
     end
   end
 

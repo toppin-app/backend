@@ -96,38 +96,24 @@
     <div class="card-header bg-white">
       <div>
         <h4 class="mb-0">Imagenes del local</h4>
-        <small class="text-muted">La portada sera la primera imagen que conserves. Las nuevas se anaden al final.</small>
+        <small class="text-muted">Puedes mezclar links externos y archivos manuales. La primera imagen sera la portada en la app.</small>
       </div>
     </div>
     <div class="card-body">
-      <%= hidden_field_tag 'venue[existing_image_ids][]', '' %>
-
-      <% if @existing_images.any? %>
-        <div class="row mb-4">
-          <% @existing_images.each_with_index do |venue_image, index| %>
-            <div class="col-md-4 mb-3">
-              <div class="card h-100">
-                <%= image_tag venue_image.public_url(base_url: request.base_url), class: 'card-img-top', style: 'height: 180px; object-fit: cover;' %>
-                <div class="card-body py-3">
-                  <div class="form-check">
-                    <%= check_box_tag 'venue[existing_image_ids][]', venue_image.id, @kept_existing_image_ids.include?(venue_image.id), class: 'form-check-input', id: "venue_existing_image_ids_#{venue_image.id}" %>
-                    <%= label_tag "venue_existing_image_ids_#{venue_image.id}", index.zero? ? 'Mantener portada actual' : "Mantener imagen #{index + 1}", class: 'form-check-label' %>
-                  </div>
-                </div>
-              </div>
-            </div>
-          <% end %>
-        </div>
-      <% else %>
-        <p class="text-muted">Este local todavia no tiene imagenes guardadas.</p>
-      <% end %>
-
-      <div class="mb-2">
-        <%= label_tag 'venue_new_images', 'Subir nuevas imagenes' %>
-        <%= file_field_tag 'venue[new_images][]', multiple: true, accept: 'image/*', class: 'form-control-file', id: 'venue_new_images' %>
+      <div class="d-flex flex-wrap mb-3">
+        <button type="button" class="btn btn-outline-primary btn-sm mr-2 mb-2" id="add-remote-image-button">
+          Agregar link externo
+        </button>
+        <button type="button" class="btn btn-outline-dark btn-sm mb-2" id="add-upload-image-button">
+          Agregar imagen manual
+        </button>
       </div>
+
+      <%= hidden_field_tag 'venue[image_order_payload]', @image_order_payload, id: 'venue-image-order-payload' %>
+      <script type="application/json" id="venue-image-initial-state"><%= raw json_escape(@image_entries.to_json) %></script>
+      <div id="venue-image-list"></div>
       <small class="form-text text-muted">
-        Se almacenaran como binarios en el storage del proyecto. Si el formulario falla por otra validacion, tendras que volver a seleccionarlas.
+        Puedes subir archivos propios o usar links externos, por ejemplo los de Google Maps. Usa las flechas para reordenar y eliminar.
       </small>
     </div>
   </div>
@@ -163,6 +149,11 @@
     var categorySelect = document.getElementById('venue-category-select');
     var subcategoryInput = document.getElementById('venue-subcategory-input');
     var subcategoriesList = document.getElementById('venue-subcategories-list');
+    var imageList = document.getElementById('venue-image-list');
+    var imageOrderField = document.getElementById('venue-image-order-payload');
+    var imageInitialState = document.getElementById('venue-image-initial-state');
+    var addRemoteImageButton = document.getElementById('add-remote-image-button');
+    var addUploadImageButton = document.getElementById('add-upload-image-button');
     var scheduleField = document.getElementById('venue-schedule-payload');
     var scheduleEditor = document.getElementById('schedule-editor');
     var scheduleData = [];
@@ -172,6 +163,283 @@
     } catch (error) {
       scheduleData = [];
     }
+
+    function parseInitialImageEntries() {
+      if (!imageInitialState) {
+        return [];
+      }
+
+      try {
+        return JSON.parse(imageInitialState.textContent || '[]');
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function randomKey(prefix) {
+      return prefix + '_' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function rowTitle(index) {
+      return index === 0 ? 'Portada' : 'Imagen ' + (index + 1);
+    }
+
+    function syncImagePayload() {
+      if (!imageOrderField) {
+        return;
+      }
+
+      var payload = Array.prototype.slice.call(imageList.querySelectorAll('.venue-image-row')).map(function (row) {
+        var kind = row.dataset.kind;
+
+        if (kind === 'existing') {
+          return { kind: 'existing', id: Number(row.dataset.imageId) };
+        }
+
+        if (kind === 'remote') {
+          return {
+            kind: 'remote',
+            url: (row.querySelector('.remote-image-url-input').value || '').trim()
+          };
+        }
+
+        if (kind === 'upload') {
+          return {
+            kind: 'upload',
+            upload_key: row.dataset.uploadKey
+          };
+        }
+
+        return null;
+      }).filter(function (entry) {
+        if (!entry) {
+          return false;
+        }
+
+        if (entry.kind === 'remote') {
+          return entry.url.length > 0;
+        }
+
+        return true;
+      });
+
+      imageOrderField.value = JSON.stringify(payload);
+    }
+
+    function refreshImageRows() {
+      var rows = Array.prototype.slice.call(imageList.querySelectorAll('.venue-image-row'));
+
+      if (rows.length === 0) {
+        imageList.innerHTML = '<div class="border rounded p-4 text-center text-muted">Todavia no has agregado imagenes para este local.</div>';
+        syncImagePayload();
+        return;
+      }
+
+      rows.forEach(function (row, index) {
+        var title = row.querySelector('.venue-image-title');
+        var moveUpButton = row.querySelector('.move-image-up-button');
+        var moveDownButton = row.querySelector('.move-image-down-button');
+
+        if (title) {
+          title.textContent = rowTitle(index);
+        }
+
+        if (moveUpButton) {
+          moveUpButton.disabled = index === 0;
+        }
+
+        if (moveDownButton) {
+          moveDownButton.disabled = index === rows.length - 1;
+        }
+      });
+
+      syncImagePayload();
+    }
+
+    function updatePreview(wrapper, previewUrl) {
+      var preview = wrapper.querySelector('.venue-image-preview');
+      var placeholder = wrapper.querySelector('.venue-image-placeholder');
+
+      if (previewUrl) {
+        preview.src = previewUrl;
+        preview.classList.remove('d-none');
+        placeholder.classList.add('d-none');
+      } else {
+        preview.removeAttribute('src');
+        preview.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+      }
+    }
+
+    function moveRow(wrapper, direction) {
+      var sibling = direction < 0 ? wrapper.previousElementSibling : wrapper.nextElementSibling;
+      if (!sibling) {
+        return;
+      }
+
+      if (direction < 0) {
+        imageList.insertBefore(wrapper, sibling);
+      } else {
+        imageList.insertBefore(sibling, wrapper);
+      }
+
+      refreshImageRows();
+    }
+
+    function buildImageRow(entry) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'card mb-3 venue-image-row';
+      wrapper.dataset.kind = entry.kind;
+
+      if (entry.kind === 'existing') {
+        wrapper.dataset.imageId = entry.id;
+      }
+
+      if (entry.kind === 'upload') {
+        wrapper.dataset.uploadKey = entry.upload_key || randomKey('upload');
+      }
+
+      wrapper.innerHTML = '' +
+        '<div class="card-body">' +
+          '<div class="row align-items-start">' +
+            '<div class="col-md-4 mb-3 mb-md-0">' +
+              '<div class="border rounded overflow-hidden" style="height: 180px; background: #f8f9fa;">' +
+                '<img class="venue-image-preview ' + (entry.preview_url ? '' : 'd-none') + '" src="' + escapeHtml(entry.preview_url || '') + '" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview de imagen">' +
+                '<div class="venue-image-placeholder d-flex align-items-center justify-content-center h-100 text-muted ' + (entry.preview_url ? 'd-none' : '') + '">' +
+                  '<span>Sin previsualizacion</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="col-md-8">' +
+              '<div class="d-flex justify-content-between align-items-start mb-2">' +
+                '<div>' +
+                  '<h5 class="mb-1 venue-image-title">Imagen</h5>' +
+                  '<span class="badge badge-light border">' + escapeHtml(entry.source_label || 'Imagen') + '</span>' +
+                '</div>' +
+                '<div class="text-nowrap">' +
+                  '<button type="button" class="btn btn-sm btn-outline-secondary move-image-up-button mr-1">Subir</button>' +
+                  '<button type="button" class="btn btn-sm btn-outline-secondary move-image-down-button mr-1">Bajar</button>' +
+                  '<button type="button" class="btn btn-sm btn-outline-danger remove-image-button">Quitar</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="venue-image-input-container"></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      var inputContainer = wrapper.querySelector('.venue-image-input-container');
+
+      if (entry.kind === 'existing') {
+        inputContainer.innerHTML = '' +
+          '<p class="text-muted mb-0">Imagen ya guardada. Si quieres cambiar la fuente, quitala y agrega una nueva.</p>';
+      }
+
+      if (entry.kind === 'remote') {
+        inputContainer.innerHTML = '' +
+          '<label class="mb-2">Link externo</label>' +
+          '<input type="url" class="form-control remote-image-url-input" placeholder="https://..." value="' + escapeHtml(entry.url || '') + '">' +
+          '<small class="form-text text-muted">Ideal para fotos remotas de Google Maps u otras fuentes externas.</small>';
+
+        var remoteInput = inputContainer.querySelector('.remote-image-url-input');
+        remoteInput.addEventListener('input', function () {
+          var value = remoteInput.value.trim();
+          updatePreview(wrapper, value);
+          syncImagePayload();
+        });
+      }
+
+      if (entry.kind === 'upload') {
+        var uploadKey = wrapper.dataset.uploadKey;
+        inputContainer.innerHTML = '' +
+          '<label class="mb-2">Archivo manual</label>' +
+          '<input type="file" name="venue[new_images][' + uploadKey + ']" accept="image/*" class="form-control-file upload-image-input">' +
+          '<small class="form-text text-muted upload-image-help">' + (entry.requires_selection ? 'Vuelve a seleccionar el archivo antes de guardar.' : 'Se almacenara en el storage propio de Black Coffee.') + '</small>';
+
+        var fileInput = inputContainer.querySelector('.upload-image-input');
+        var fileHelp = inputContainer.querySelector('.upload-image-help');
+
+        fileInput.addEventListener('change', function () {
+          var file = fileInput.files && fileInput.files[0];
+          if (!file) {
+            updatePreview(wrapper, null);
+            fileHelp.textContent = 'Selecciona un archivo para esta imagen manual.';
+            syncImagePayload();
+            return;
+          }
+
+          var reader = new FileReader();
+          reader.onload = function (loadEvent) {
+            updatePreview(wrapper, loadEvent.target.result);
+          };
+          reader.readAsDataURL(file);
+          fileHelp.textContent = 'Archivo listo para subirse.';
+          syncImagePayload();
+        });
+      }
+
+      wrapper.querySelector('.move-image-up-button').addEventListener('click', function () {
+        moveRow(wrapper, -1);
+      });
+
+      wrapper.querySelector('.move-image-down-button').addEventListener('click', function () {
+        moveRow(wrapper, 1);
+      });
+
+      wrapper.querySelector('.remove-image-button').addEventListener('click', function () {
+        wrapper.remove();
+        refreshImageRows();
+      });
+
+      return wrapper;
+    }
+
+    function ensureImageListContainer() {
+      if (imageList.querySelector('.venue-image-row')) {
+        return;
+      }
+
+      imageList.innerHTML = '';
+    }
+
+    function addImageRow(entry) {
+      ensureImageListContainer();
+      imageList.appendChild(buildImageRow(entry));
+      refreshImageRows();
+    }
+
+    parseInitialImageEntries().forEach(function (entry) {
+      addImageRow(entry);
+    });
+
+    refreshImageRows();
+
+    addRemoteImageButton.addEventListener('click', function () {
+      addImageRow({
+        kind: 'remote',
+        url: '',
+        preview_url: null,
+        source_label: 'Link externo'
+      });
+    });
+
+    addUploadImageButton.addEventListener('click', function () {
+      addImageRow({
+        kind: 'upload',
+        upload_key: randomKey('upload'),
+        preview_url: null,
+        source_label: 'Archivo manual',
+        requires_selection: false
+      });
+    });
 
     function updateSubcategoryOptions() {
       var currentCategory = categorySelect.value;

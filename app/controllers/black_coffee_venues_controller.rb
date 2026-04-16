@@ -1,4 +1,7 @@
 class BlackCoffeeVenuesController < ApplicationController
+  class InvalidImagePayloadError < StandardError; end
+  class InvalidSchedulePayloadError < StandardError; end
+
   before_action :check_admin
   before_action :set_venue, only: [:show, :edit, :update, :destroy]
 
@@ -85,13 +88,8 @@ class BlackCoffeeVenuesController < ApplicationController
     @subcategory_options = VenueSubcategory.order(:category, :name)
     @subcategory_options_json = @subcategory_options.map { |subcategory| { name: subcategory.name, category: subcategory.category } }.to_json
     @tag_list_input = params.dig(:venue, :tag_list).presence || Array(@venue.tags).join(', ')
-    @existing_images = @venue.venue_images.to_a.sort_by(&:position)
-    @kept_existing_image_ids =
-      if params.dig(:venue, :existing_image_ids).nil?
-        @existing_images.map(&:id)
-      else
-        Array(params.dig(:venue, :existing_image_ids)).map(&:to_i)
-      end
+    @image_entries = image_entries_for_form
+    @image_order_payload = image_order_payload_for(@image_entries)
     @subcategory_input = params.dig(:venue, :subcategory_name).presence || @venue.subcategory_name
     @schedule_payload = params.dig(:venue, :schedule_payload).presence || @venue.weekly_schedule.to_json
   end
@@ -99,9 +97,11 @@ class BlackCoffeeVenuesController < ApplicationController
   def persist_venue
     @venue.assign_attributes(venue_params)
     @venue.tags = parse_tag_list
+    image_entries = normalized_image_entries_from_payload
+    normalized_schedule = schedule_payload
 
-    if persisted_image_ids.empty? && new_images.empty?
-      @venue.errors.add(:base, 'Debes subir al menos una imagen del local')
+    if effective_image_entries(image_entries).empty?
+      @venue.errors.add(:base, 'Debes indicar al menos una imagen del local')
       return false
     end
 
@@ -113,12 +113,15 @@ class BlackCoffeeVenuesController < ApplicationController
     ActiveRecord::Base.transaction do
       @venue.assign_subcategory_by_name!(subcategory_name)
       @venue.save!
-      @venue.sync_images!(existing_image_ids: persisted_image_ids, new_files: new_images)
-      @venue.sync_schedule!(schedule_payload)
+      @venue.sync_images!(entries: image_entries, uploaded_files_by_key: uploaded_files_by_key)
+      @venue.sync_schedule!(normalized_schedule)
     end
 
     true
-  rescue JSON::ParserError
+  rescue InvalidImagePayloadError
+    @venue.errors.add(:base, 'Las imagenes enviadas no tienen un formato valido')
+    false
+  rescue InvalidSchedulePayloadError
     @venue.errors.add(:base, 'El horario enviado no es valido')
     false
   rescue ActiveRecord::RecordInvalid => e
@@ -145,25 +148,133 @@ class BlackCoffeeVenuesController < ApplicationController
     params.dig(:venue, :subcategory_name)
   end
 
-  def persisted_image_ids
-    return [] unless @venue.persisted?
-
-    requested_ids = Array(params.dig(:venue, :existing_image_ids)).reject(&:blank?).map(&:to_i)
-    @venue.venue_images.where(id: requested_ids).pluck(:id)
-  end
-
-  def new_images
-    Array(params.dig(:venue, :new_images)).reject(&:blank?)
-  end
-
   def schedule_payload
     raw_payload = params.dig(:venue, :schedule_payload)
     return [] if raw_payload.blank?
 
     JSON.parse(raw_payload)
+  rescue JSON::ParserError
+    raise InvalidSchedulePayloadError
   end
 
   def parse_tag_list
     params.dig(:venue, :tag_list).to_s.split(',').map(&:strip).reject(&:blank?).uniq
+  end
+
+  def image_entries_for_form
+    existing_images_by_id = @venue.venue_images.to_a.sort_by(&:position).index_by(&:id)
+    entries = normalized_image_entries_from_payload
+    return default_image_entries if entries.empty?
+
+    entries.filter_map do |entry|
+      case entry[:kind]
+      when 'existing'
+        image = existing_images_by_id[entry[:id].to_i]
+        next unless image
+
+        existing_image_entry(image)
+      when 'remote'
+        next if entry[:url].blank?
+
+        {
+          kind: 'remote',
+          url: entry[:url],
+          preview_url: entry[:url],
+          source_label: 'Link externo'
+        }
+      when 'upload'
+        {
+          kind: 'upload',
+          upload_key: entry[:upload_key],
+          preview_url: nil,
+          source_label: 'Archivo manual',
+          requires_selection: true
+        }
+      end
+    end
+  rescue InvalidImagePayloadError
+    default_image_entries
+  end
+
+  def default_image_entries
+    @venue.venue_images.to_a.sort_by(&:position).map { |image| existing_image_entry(image) }
+  end
+
+  def existing_image_entry(image)
+    {
+      kind: 'existing',
+      id: image.id,
+      preview_url: image.public_url(base_url: request.base_url),
+      source_label: image.external_image? ? 'Link externo' : 'Archivo manual'
+    }
+  end
+
+  def image_order_payload_for(entries)
+    Array(entries).map do |entry|
+      case entry[:kind]
+      when 'existing'
+        { kind: 'existing', id: entry[:id] }
+      when 'remote'
+        { kind: 'remote', url: entry[:url] }
+      when 'upload'
+        { kind: 'upload', upload_key: entry[:upload_key] }
+      end
+    end.compact.to_json
+  end
+
+  def normalized_image_entries_from_payload
+    raw_payload = params.dig(:venue, :image_order_payload).presence
+    return [] if raw_payload.blank?
+
+    Array(JSON.parse(raw_payload)).filter_map do |entry|
+      next unless entry.respond_to?(:to_h)
+
+      hash = entry.to_h.with_indifferent_access
+      kind = hash[:kind].to_s
+
+      case kind
+      when 'existing'
+        image_id = hash[:id].to_i
+        next if image_id.zero?
+
+        { kind: 'existing', id: image_id }
+      when 'remote'
+        url = hash[:url].to_s.strip
+        next if url.blank?
+
+        { kind: 'remote', url: url }
+      when 'upload'
+        upload_key = hash[:upload_key].to_s.strip
+        next if upload_key.blank?
+
+        { kind: 'upload', upload_key: upload_key }
+      end
+    end
+  rescue JSON::ParserError
+    raise InvalidImagePayloadError
+  end
+
+  def uploaded_files_by_key
+    raw_files = params.dig(:venue, :new_images)
+    return {} if raw_files.blank?
+
+    files_hash = raw_files.respond_to?(:to_unsafe_h) ? raw_files.to_unsafe_h : raw_files.to_h
+    files_hash.transform_keys(&:to_s).transform_values(&:presence).compact
+  end
+
+  def effective_image_entries(entries)
+    current_images = @venue.venue_images.to_a.index_by(&:id)
+    uploads = uploaded_files_by_key
+
+    Array(entries).filter_map do |entry|
+      case entry[:kind]
+      when 'existing'
+        current_images[entry[:id].to_i]
+      when 'remote'
+        entry[:url].presence
+      when 'upload'
+        uploads[entry[:upload_key].to_s]
+      end
+    end
   end
 end
