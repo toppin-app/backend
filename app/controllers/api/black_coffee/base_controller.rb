@@ -25,8 +25,8 @@ module Api
         [params[:offset].presence.to_i, default_value].max
       end
 
-      def parse_float_param(key, required: false)
-        raw_value = params[key]
+      def parse_float_param(keys, required: false)
+        raw_value = first_present_param(*Array(keys))
         return nil if raw_value.blank? && !required
 
         Float(raw_value)
@@ -35,9 +35,30 @@ module Api
       end
 
       def parse_max_distance(default_value = 25.0)
-        raw_value = params[:maxDistanceKm].presence || default_value
+        raw_value =
+          first_present_param(
+            :maxDistanceKm,
+            :max_distance_km,
+            :maxDistance,
+            :max_distance,
+            :radiusKm,
+            :radius_km,
+            :radius,
+            :distanceKm,
+            :distance_km,
+            :distanceRange,
+            :distance_range
+          ) || default_value
         distance = raw_value.to_f
         distance.positive? ? distance : default_value
+      end
+
+      def parse_latitude(required: false)
+        parse_float_param([:lat, :latitude, :userLat, :user_lat, :currentLat, :currentLatitude], required: required)
+      end
+
+      def parse_longitude(required: false)
+        parse_float_param([:lng, :lon, :longitude, :userLng, :user_lng, :currentLng, :currentLongitude], required: required)
       end
 
       def validated_category(value, allow_all: false)
@@ -84,6 +105,15 @@ module Api
 
       def public_base_url
         request.base_url.presence || "https://#{ENV['MAILJET_DEFAULT_URL_HOST'] || 'web-backend-ruby.uao3jo.easypanel.host'}"
+      end
+
+      def first_present_param(*keys)
+        Array(keys).each do |key|
+          value = params[key]
+          return value if value.present?
+        end
+
+        nil
       end
     end
   end

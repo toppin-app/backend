@@ -27,7 +27,11 @@ module Api
 
       def featured
         limit = parse_limit(5, max_value: 20)
-        relation = Venue.where(featured: true).order(favorites_count: :desc, created_at: :desc)
+        relation = Venue.where(featured: true)
+        relation = apply_distance_filter(relation)
+        return if performed?
+
+        relation = relation.order(favorites_count: :desc, created_at: :desc)
 
         render json: {
           venues: serialize_venues(fetch_venues(relation, limit: limit))
@@ -35,8 +39,8 @@ module Api
       end
 
       def nearby
-        lat = parse_float_param(:lat, required: true)
-        lng = parse_float_param(:lng, required: true)
+        lat = parse_latitude(required: true)
+        lng = parse_longitude(required: true)
         if lat.nil? || lng.nil?
           render json: { error: 'lat and lng are required' }, status: :bad_request
           return
@@ -61,6 +65,9 @@ module Api
 
         relation = Venue.all
         relation = Venue.filter_by_category(relation, category)
+        relation = apply_distance_filter(relation)
+        return if performed?
+
         relation = relation.order(favorites_count: :desc, created_at: :desc)
 
         render json: {
@@ -74,7 +81,10 @@ module Api
 
         relation = Venue.filter_by_category(Venue.all, category)
         relation = Venue.filter_by_subcategory(relation, params[:subcategory])
-                        .order(featured: :desc, favorites_count: :desc, created_at: :desc)
+        relation = apply_distance_filter(relation)
+        return if performed?
+
+        relation = relation.order(featured: :desc, favorites_count: :desc, created_at: :desc)
 
         limit = parse_limit(20)
         offset = parse_offset
@@ -179,12 +189,12 @@ module Api
       end
 
       def apply_distance_filter(relation)
-        lat_present = params[:lat].present?
-        lng_present = params[:lng].present?
+        lat_present = first_present_param(:lat, :latitude, :userLat, :user_lat, :currentLat, :currentLatitude).present?
+        lng_present = first_present_param(:lng, :lon, :longitude, :userLng, :user_lng, :currentLng, :currentLongitude).present?
         return relation unless lat_present || lng_present
 
-        lat = parse_float_param(:lat, required: true)
-        lng = parse_float_param(:lng, required: true)
+        lat = parse_latitude(required: true)
+        lng = parse_longitude(required: true)
         if lat.nil? || lng.nil?
           render json: { error: 'lat and lng must be valid numbers' }, status: :bad_request
           return relation
