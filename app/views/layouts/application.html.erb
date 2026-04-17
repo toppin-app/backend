@@ -90,11 +90,11 @@
 
       <!-- Sidebar Menu -->
       <nav class="mt-2">
-        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+        <ul class="nav nav-pills nav-sidebar flex-column admin-sidebar-nav" data-widget="treeview" role="menu" data-accordion="false">
           
           <li class="nav-item">
             <%= link_to admin_metrics_path, class: "nav-link #{'active' if request.path == admin_metrics_path}" do %>
-              <i class="nav-icon fas fa-chart-line"></i>
+              <i class="nav-icon fas fa-chart-line fa-fw"></i>
               <p>
                 Métricas
               </p>
@@ -103,7 +103,7 @@
           
           <li class="nav-item">
             <%= link_to analytics_path, class: "nav-link #{'active' if request.path == analytics_path}" do %>
-              <i class="nav-icon fas fa-chart-area"></i>
+              <i class="nav-icon fas fa-chart-pie fa-fw"></i>
               <p>
                 Analytics
               </p>
@@ -111,8 +111,8 @@
           </li>
           
           <li class="nav-item">
-            <%= link_to users_path, class: "nav-link #{'active' if request.path == users_path}" do %>
-              <i class="nav-icon far fa-user"></i>
+            <%= link_to users_path, class: "nav-link #{'active' if request.path.start_with?(users_path)}" do %>
+              <i class="nav-icon fas fa-user-circle fa-fw"></i>
               <p>
                 Usuarios
               </p>
@@ -120,8 +120,8 @@
           </li>
           
           <li class="nav-item">
-            <%= link_to fake_users_path, class: "nav-link" do %>
-              <i class="nav-icon fas fa-robot"></i>
+            <%= link_to fake_users_path, class: "nav-link #{'active' if request.path.start_with?(fake_users_path)}" do %>
+              <i class="nav-icon fas fa-robot fa-fw"></i>
               <p>
                 Usuarios Fake (BOT)
               </p>
@@ -142,8 +142,8 @@
 
 
           <li class="nav-item">
-            <%= link_to interests_path, class: "nav-link" do %>
-              <i class="fas fa-users-cog"></i>
+            <%= link_to interests_path, class: "nav-link #{'active' if request.path.start_with?(interests_path)}" do %>
+              <i class="nav-icon fas fa-heart fa-fw"></i>
               <p>
                 Intereses
               </p>
@@ -151,8 +151,8 @@
           </li>
 
           <li class="nav-item">
-            <%= link_to info_item_categories_path, class: "nav-link" do %>
-              <i class="fas fa-users-cog"></i>
+            <%= link_to info_item_categories_path, class: "nav-link #{'active' if request.path.start_with?(info_item_categories_path)}" do %>
+              <i class="nav-icon fas fa-tags fa-fw"></i>
               <p>
                 Categorías de perfil
               </p>
@@ -161,8 +161,8 @@
 
 
           <li class="nav-item">
-            <%= link_to complaints_path, class: "nav-link" do %>
-              <i class="far fa-id-badge"></i>
+            <%= link_to complaints_path, class: "nav-link #{'active' if request.path.start_with?(complaints_path)}" do %>
+              <i class="nav-icon fas fa-shield-alt fa-fw"></i>
               <p>
                 Denuncias
               </p>
@@ -172,8 +172,8 @@
 
 
           <li class="nav-item">
-            <%= link_to publis_path, class: "nav-link" do %>
-              <i class="fab fa-adversal"></i>
+            <%= link_to publis_path, class: "nav-link #{'active' if request.path.start_with?(publis_path)}" do %>
+              <i class="nav-icon fas fa-bullhorn fa-fw"></i>
               <p>
                 Publicidad
               </p>
@@ -181,8 +181,8 @@
           </li>
 
           <li class="nav-item">
-            <%= link_to banners_path, class: "nav-link" do %>
-              <i class="fas fa-ad"></i>
+            <%= link_to banners_path, class: "nav-link #{'active' if request.path.start_with?(banners_path)}" do %>
+              <i class="nav-icon fas fa-images fa-fw"></i>
               <p>
                 Banners
               </p>
@@ -191,7 +191,7 @@
 
           <li class="nav-item">
             <%= link_to black_coffee_venues_path, class: "nav-link #{'active' if request.path.start_with?(black_coffee_venues_path) || request.path.start_with?(black_coffee_subcategories_path)}" do %>
-              <i class="nav-icon fas fa-coffee"></i>
+              <i class="nav-icon fas fa-mug-hot fa-fw"></i>
               <p>
                 Black Coffee
               </p>
@@ -199,8 +199,8 @@
           </li>
 
           <li class="nav-item">
-            <%= link_to app_versions_path, class: "nav-link" do %>
-              <i class="fas fa-mobile-alt"></i>
+            <%= link_to app_versions_path, class: "nav-link #{'active' if request.path.start_with?(app_versions_path)}" do %>
+              <i class="nav-icon fas fa-mobile-alt fa-fw"></i>
               <p>
                 Versiones de la App
               </p>
@@ -208,8 +208,8 @@
           </li>
 
           <li class="nav-item">
-            <%= link_to admin_utilities_path, class: "nav-link" do %>
-              <i class="fas fa-tools"></i>
+            <%= link_to admin_utilities_path, class: "nav-link #{'active' if request.path.start_with?(admin_utilities_path)}" do %>
+              <i class="nav-icon fas fa-sliders-h fa-fw"></i>
               <p>
                 Configuración y Utilidades
               </p>
@@ -219,7 +219,7 @@
           <li class="nav-item">
 
             <%= link_to logout_path, class: 'nav-link' do %>
-              <i class="fas fa-sign-out-alt"></i>
+              <i class="nav-icon fas fa-sign-out-alt fa-fw"></i>
               <p>
                 Salir
               </p>
