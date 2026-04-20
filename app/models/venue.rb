@@ -1,5 +1,16 @@
 class Venue < ApplicationRecord
-  CATEGORIES = %w[bar restaurante escape_room cine cafeteria].freeze
+  CATEGORIES = %w[
+    restaurante
+    hotel
+    pub
+    cine
+    cafeteria
+    concierto
+    festival
+    discoteca
+    deportivo
+    escape_room
+  ].freeze
   DAY_ORDER = %w[L M X J V S D].freeze
   DAY_LABELS = {
     'L' => 'Lunes',
@@ -12,11 +23,16 @@ class Venue < ApplicationRecord
   }.freeze
 
   enum category: {
-    bar: 'bar',
     restaurante: 'restaurante',
-    escape_room: 'escape_room',
+    hotel: 'hotel',
+    pub: 'pub',
     cine: 'cine',
-    cafeteria: 'cafeteria'
+    cafeteria: 'cafeteria',
+    concierto: 'concierto',
+    festival: 'festival',
+    discoteca: 'discoteca',
+    deportivo: 'deportivo',
+    escape_room: 'escape_room'
   }
 
   belongs_to :venue_subcategory, optional: true

@@ -2,11 +2,16 @@ class VenueSubcategory < ApplicationRecord
   CATEGORIES = Venue::CATEGORIES
 
   enum category: {
-    bar: 'bar',
     restaurante: 'restaurante',
-    escape_room: 'escape_room',
+    hotel: 'hotel',
+    pub: 'pub',
     cine: 'cine',
-    cafeteria: 'cafeteria'
+    cafeteria: 'cafeteria',
+    concierto: 'concierto',
+    festival: 'festival',
+    discoteca: 'discoteca',
+    deportivo: 'deportivo',
+    escape_room: 'escape_room'
   }
 
   has_many :venues, dependent: :nullify
