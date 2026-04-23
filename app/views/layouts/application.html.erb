@@ -199,6 +199,15 @@
           </li>
 
           <li class="nav-item">
+            <%= link_to black_coffee_google_imports_path, class: "nav-link #{'active' if request.path.start_with?(black_coffee_google_imports_path)}" do %>
+              <i class="nav-icon fas fa-map-marked-alt fa-fw"></i>
+              <p>
+                Importar Google
+              </p>
+            <% end %>
+          </li>
+
+          <li class="nav-item">
             <%= link_to app_versions_path, class: "nav-link #{'active' if request.path.start_with?(app_versions_path)}" do %>
               <i class="nav-icon fas fa-mobile-alt fa-fw"></i>
               <p>

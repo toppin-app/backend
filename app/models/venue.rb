@@ -44,6 +44,7 @@ class Venue < ApplicationRecord
 
   validates :name, :category, :description, :address, :city, presence: true
   validates :category, inclusion: { in: CATEGORIES }
+  validates :google_place_id, uniqueness: true, allow_blank: true, if: -> { has_attribute?(:google_place_id) }
   validates :latitude, :longitude, numericality: true
   validates :favorites_count, numericality: { greater_than_or_equal_to: 0, only_integer: true }
 

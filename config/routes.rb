@@ -31,6 +31,14 @@ Rails.application.routes.draw do
   scope :black_coffee, as: :black_coffee do
     resources :venues, controller: 'black_coffee_venues'
     resources :subcategories, controller: 'black_coffee_subcategories', except: [:show]
+    resources :google_imports, controller: 'black_coffee_google_imports', only: [:index, :create, :show] do
+      member do
+        post :approve_selected
+        post :reject_selected
+        post 'candidates/:candidate_id/approve', action: :approve_candidate, as: :approve_candidate
+        post 'candidates/:candidate_id/reject', action: :reject_candidate, as: :reject_candidate
+      end
+    end
   end
 
   namespace :api, defaults: { format: :json } do
