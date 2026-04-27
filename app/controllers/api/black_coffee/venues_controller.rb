@@ -7,7 +7,7 @@ module Api
         category = validated_category(params[:category], allow_all: true)
         return if performed?
 
-        relation = Venue.all
+        relation = visible_venues
         relation = Venue.filter_by_category(relation, category)
         relation = Venue.filter_by_subcategory(relation, params[:subcategory])
         relation = apply_distance_filter(relation)
@@ -27,7 +27,7 @@ module Api
 
       def featured
         limit = parse_limit(5, max_value: 20)
-        relation = Venue.where(featured: true)
+        relation = visible_venues.where(featured: true)
         relation = apply_distance_filter(relation)
         return if performed?
 
@@ -49,7 +49,7 @@ module Api
         category = validated_category(params[:category], allow_all: false)
         return if performed?
 
-        relation = Venue.all
+        relation = visible_venues
         relation = Venue.filter_by_category(relation, category)
         relation = Venue.within_distance(relation, lat, lng, parse_max_distance)
                         .order(Arel.sql('distance_km ASC'))
@@ -63,7 +63,7 @@ module Api
         category = validated_category(params[:category], allow_all: false)
         return if performed?
 
-        relation = Venue.all
+        relation = visible_venues
         relation = Venue.filter_by_category(relation, category)
         relation = apply_distance_filter(relation)
         return if performed?
@@ -79,7 +79,7 @@ module Api
         category = validated_category(params[:category], allow_all: false)
         return if performed?
 
-        relation = Venue.filter_by_category(Venue.all, category)
+        relation = Venue.filter_by_category(visible_venues, category)
         relation = Venue.filter_by_subcategory(relation, params[:subcategory])
         relation = apply_distance_filter(relation)
         return if performed?
@@ -185,7 +185,11 @@ module Api
       private
 
       def set_venue
-        @venue = Venue.includes(:venue_subcategory, :venue_images, :venue_schedules).find_by(id: params[:id])
+        @venue = visible_venues.includes(:venue_subcategory, :venue_images, :venue_schedules).find_by(id: params[:id])
+      end
+
+      def visible_venues
+        Venue.visible_to_app
       end
 
       def apply_distance_filter(relation)

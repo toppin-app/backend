@@ -70,6 +70,9 @@ class BlackCoffeeImportCandidate < ApplicationRecord
         featured: false,
         tags: default_tags
       )
+      venue.internal_test = false if venue.has_attribute?(:internal_test)
+      venue.payment_current = true if venue.has_attribute?(:payment_current)
+      venue.visible = true if venue.has_attribute?(:visible)
       venue.google_place_id = google_place_id if venue.has_attribute?(:google_place_id)
       venue.assign_subcategory_by_name!(subcategory) if subcategory.present?
       venue.save!

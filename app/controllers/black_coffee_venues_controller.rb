@@ -140,7 +140,10 @@ class BlackCoffeeVenuesController < ApplicationController
       :city,
       :latitude,
       :longitude,
-      :featured
+      :featured,
+      :internal_test,
+      :payment_current,
+      :visible
     )
   end
 

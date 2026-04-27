@@ -73,6 +73,10 @@ class Venue < ApplicationRecord
          .where('LOWER(venue_subcategories.name) = ?', normalized_subcategory)
   end
 
+  def self.visible_to_app
+    column_names.include?('visible') ? where(visible: true) : all
+  end
+
   def self.distance_sql(lat, lng)
     sanitize_sql_array([
       <<~SQL.squish,
@@ -108,6 +112,18 @@ class Venue < ApplicationRecord
 
   def subcategory_name
     venue_subcategory&.name
+  end
+
+  def visible_to_app?
+    has_attribute?(:visible) ? visible? : true
+  end
+
+  def payment_current_for_dashboard?
+    has_attribute?(:payment_current) ? payment_current? : true
+  end
+
+  def internal_test_for_dashboard?
+    has_attribute?(:internal_test) ? internal_test? : false
   end
 
   def cover_image_url(base_url: nil)
@@ -153,7 +169,8 @@ class Venue < ApplicationRecord
       isFavorite: favorite_venue_ids.include?(id),
       schedule: weekly_schedule,
       tags: Array(tags),
-      featured: featured
+      featured: featured,
+      visible: visible_to_app?
     }
   end
 

@@ -88,6 +88,9 @@
           <th>Ciudad</th>
           <th>Favoritos</th>
           <th>Destacado</th>
+          <th>Visible</th>
+          <th>Pago</th>
+          <th>Interno</th>
           <th>Actualizado</th>
           <th class="text-right">Acciones</th>
         </tr>
@@ -120,6 +123,27 @@
                   <span class="badge badge-light">No</span>
                 <% end %>
               </td>
+              <td>
+                <% if venue.visible_to_app? %>
+                  <span class="badge badge-success">Visible</span>
+                <% else %>
+                  <span class="badge badge-danger">Oculto</span>
+                <% end %>
+              </td>
+              <td>
+                <% if venue.payment_current_for_dashboard? %>
+                  <span class="badge badge-success">Al dia</span>
+                <% else %>
+                  <span class="badge badge-warning">Pendiente</span>
+                <% end %>
+              </td>
+              <td>
+                <% if venue.internal_test_for_dashboard? %>
+                  <span class="badge badge-info">Interno</span>
+                <% else %>
+                  <span class="badge badge-light">No</span>
+                <% end %>
+              </td>
               <td><%= venue.updated_at.strftime('%d/%m/%Y %H:%M') %></td>
               <td class="text-right text-nowrap">
                 <%= link_to black_coffee_venue_path(venue), class: 'btn btn-sm btn-info text-white' do %>
@@ -136,7 +160,7 @@
           <% end %>
         <% else %>
           <tr>
-            <td colspan="9" class="text-center text-muted py-5">
+            <td colspan="12" class="text-center text-muted py-5">
               No hay locales que coincidan con los filtros actuales.
             </td>
           </tr>

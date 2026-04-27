@@ -82,10 +82,25 @@
             <small class="form-text text-muted">Introduce etiquetas separadas por coma.</small>
           </div>
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-          <div class="form-check mb-3">
-            <%= form.check_box :featured, class: 'form-check-input' %>
-            <%= form.label :featured, 'Destacar editorialmente', class: 'form-check-label' %>
+        <div class="col-md-4">
+          <div class="border rounded p-3 bg-light">
+            <p class="text-muted text-uppercase mb-2">Estados</p>
+            <div class="form-check mb-2">
+              <%= form.check_box :featured, class: 'form-check-input' %>
+              <%= form.label :featured, 'Destacar editorialmente', class: 'form-check-label' %>
+            </div>
+            <div class="form-check mb-2">
+              <%= form.check_box :visible, class: 'form-check-input' %>
+              <%= form.label :visible, 'Visible en la app', class: 'form-check-label' %>
+            </div>
+            <div class="form-check mb-2">
+              <%= form.check_box :payment_current, class: 'form-check-input' %>
+              <%= form.label :payment_current, 'Pago al dia', class: 'form-check-label' %>
+            </div>
+            <div class="form-check">
+              <%= form.check_box :internal_test, class: 'form-check-input' %>
+              <%= form.label :internal_test, 'Sitio de prueba interno', class: 'form-check-label' %>
+            </div>
           </div>
         </div>
       </div>
