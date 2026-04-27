@@ -17,6 +17,22 @@ class BlackCoffeeImportRegionCategory < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :category, uniqueness: { scope: :black_coffee_import_region_id }
 
+  def google_total_known?
+    has_attribute?(:google_total_count) && google_total_count.present?
+  end
+
+  def google_missing_count
+    return unless google_total_known?
+
+    [google_total_count.to_i - approved_count.to_i, 0].max
+  end
+
+  def google_import_percentage
+    return unless google_total_count.to_i.positive?
+
+    ((approved_count.to_f / google_total_count.to_i) * 100).round
+  end
+
   def refresh_counts!
     counts = import_candidates.group(:status).count
     next_status =

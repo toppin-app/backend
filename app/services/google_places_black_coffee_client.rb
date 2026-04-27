@@ -35,6 +35,7 @@ class GooglePlacesBlackCoffeeClient
       query: 'restaurantes',
       included_type: 'restaurant',
       google_types: %w[restaurant food],
+      aggregate_types: %w[restaurant],
       subcategory: 'restaurante'
     },
     'hotel' => {
@@ -42,6 +43,7 @@ class GooglePlacesBlackCoffeeClient
       query: 'hoteles',
       included_type: 'lodging',
       google_types: %w[lodging],
+      aggregate_types: %w[hotel hostel guest_house bed_and_breakfast motel resort_hotel lodging],
       subcategory: 'hotel'
     },
     'pub' => {
@@ -49,6 +51,7 @@ class GooglePlacesBlackCoffeeClient
       query: 'pubs bares coctelerias',
       included_type: 'bar',
       google_types: %w[bar],
+      aggregate_types: %w[pub bar bar_and_grill wine_bar],
       subcategory: 'pub'
     },
     'cine' => {
@@ -56,6 +59,7 @@ class GooglePlacesBlackCoffeeClient
       query: 'cines',
       included_type: 'movie_theater',
       google_types: %w[movie_theater],
+      aggregate_types: %w[movie_theater],
       subcategory: 'cine'
     },
     'cafeteria' => {
@@ -63,18 +67,21 @@ class GooglePlacesBlackCoffeeClient
       query: 'cafeterias',
       included_type: 'cafe',
       google_types: %w[cafe],
+      aggregate_types: %w[cafe coffee_shop cafeteria],
       subcategory: 'cafeteria'
     },
     'concierto' => {
       label: 'Conciertos',
       query: 'salas de conciertos musica en vivo',
       google_types: %w[event_venue performing_arts_theater],
+      aggregate_types: %w[concert_hall event_venue performing_arts_theater auditorium],
       subcategory: 'musica en vivo'
     },
     'festival' => {
       label: 'Festivales',
       query: 'festivales eventos',
       google_types: %w[event_venue],
+      aggregate_types: %w[event_venue amphitheatre convention_center cultural_center],
       subcategory: 'festival'
     },
     'discoteca' => {
@@ -82,6 +89,7 @@ class GooglePlacesBlackCoffeeClient
       query: 'discotecas clubs nocturnos',
       included_type: 'night_club',
       google_types: %w[night_club],
+      aggregate_types: %w[night_club dance_hall],
       subcategory: 'discoteca'
     },
     'deportivo' => {
@@ -89,12 +97,14 @@ class GooglePlacesBlackCoffeeClient
       query: 'planes deportivos centros deportivos',
       included_type: 'gym',
       google_types: %w[gym stadium sports_complex],
+      aggregate_types: %w[sports_complex stadium arena gym fitness_center sports_club athletic_field sports_activity_location],
       subcategory: 'deporte'
     },
     'escape_room' => {
       label: 'Escape rooms',
       query: 'escape room',
       google_types: %w[amusement_center],
+      aggregate_types: %w[amusement_center],
       subcategory: 'escape room'
     }
   }.freeze

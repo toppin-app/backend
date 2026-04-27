@@ -4,7 +4,7 @@
   <div class="alert alert-info mb-3 mb-md-0 flex-grow-1 mr-md-3">
     <strong>Alcance actual: Espana.</strong>
     Este importador trabaja por comunidades autonomas y categorias de Black Coffee. Nada se publica hasta aprobarlo.
-    Los contadores son internos: candidatos ya encontrados en nuestra base de datos, no el total vivo de Google Maps.
+    Los totales reales de Google se calculan bajo demanda con Places Aggregate API: 1 peticion por comunidad y categoria, mas 1 resolucion inicial si la comunidad aun no tiene Google Place ID guardado.
   </div>
   <div class="mt-3 mt-md-0">
     <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-dark' %>
@@ -13,7 +13,7 @@
 
 <% unless @api_key_present %>
   <div class="alert alert-warning">
-    Falta configurar <strong>GOOGLE_PLACES_API_KEY</strong> o <strong>GOOGLE_MAPS_API_KEY</strong> en el servidor. Puedes ver el util, pero las busquedas fallaran hasta agregar la clave.
+    Falta configurar <strong>GOOGLE_PLACES_API_KEY</strong> o <strong>GOOGLE_MAPS_API_KEY</strong> en el servidor. Puedes ver el util, pero las busquedas fallaran hasta agregar la clave. Para los totales tambien debe estar habilitada Places Aggregate API.
   </div>
 <% end %>
 
@@ -23,7 +23,7 @@
       <div>
         <strong>Progreso total del importador</strong>
         <div class="text-muted small">
-          No hacemos consultas extra a Google para calcular el universo total y evitar coste.
+          Si hay total Google calculado, el porcentaje usa ese denominador. Si no, cae al avance interno de candidatos encontrados.
         </div>
       </div>
       <span class="badge badge-primary p-2"><%= @overall_progress[:completion_percentage] %>% importado</span>
@@ -35,20 +35,34 @@
 
     <div class="row text-center">
       <div class="col-md-3 col-6 mb-3 mb-md-0">
-        <div class="text-muted small text-uppercase">Candidatos encontrados</div>
-        <h4 class="mb-0"><%= number_with_delimiter(@overall_progress[:total_candidates]) %></h4>
+        <div class="text-muted small text-uppercase">Total Google calculado</div>
+        <h4 class="mb-0">
+          <% if @overall_progress[:google_counted_categories].to_i.positive? %>
+            <%= number_with_delimiter(@overall_progress[:google_total_count]) %>
+          <% else %>
+            -
+          <% end %>
+        </h4>
+        <div class="text-muted small"><%= @overall_progress[:google_counted_categories] %>/<%= @regions.size * @categories.size %> categorias</div>
       </div>
       <div class="col-md-3 col-6 mb-3 mb-md-0">
         <div class="text-muted small text-uppercase">Importados</div>
         <h4 class="mb-0 text-success"><%= number_with_delimiter(@overall_progress[:approved_count]) %></h4>
       </div>
       <div class="col-md-3 col-6">
-        <div class="text-muted small text-uppercase">Pendientes de revisar</div>
-        <h4 class="mb-0 text-warning"><%= number_with_delimiter(@overall_progress[:remaining_count]) %></h4>
+        <div class="text-muted small text-uppercase">Faltan vs Google</div>
+        <h4 class="mb-0 text-warning">
+          <% if @overall_progress[:google_missing_count].present? %>
+            <%= number_with_delimiter(@overall_progress[:google_missing_count]) %>
+          <% else %>
+            -
+          <% end %>
+        </h4>
+        <div class="text-muted small"><%= number_with_delimiter(@overall_progress[:remaining_count]) %> pendientes internos</div>
       </div>
       <div class="col-md-3 col-6">
-        <div class="text-muted small text-uppercase">Rechazados / duplicados</div>
-        <h4 class="mb-0 text-secondary"><%= number_with_delimiter(@overall_progress[:rejected_count] + @overall_progress[:duplicate_count]) %></h4>
+        <div class="text-muted small text-uppercase">Candidatos encontrados</div>
+        <h4 class="mb-0 text-secondary"><%= number_with_delimiter(@overall_progress[:total_candidates]) %></h4>
       </div>
     </div>
   </div>
@@ -142,15 +156,15 @@
 <div class="card shadow-sm border-0">
   <div class="card-header bg-white">
     <strong>Progreso por comunidad</strong>
-    <span class="text-muted ml-2">Se marca por categoria segun candidatos encontrados, pendientes y aprobados en la base de datos.</span>
+    <span class="text-muted ml-2">Puedes calcular totales Google por comunidad. Eso genera peticiones reales a Places Aggregate API.</span>
   </div>
   <div class="card-body">
     <div class="row">
       <% @regions.each do |region| %>
         <% states_by_category = region.region_categories.index_by(&:category) %>
-        <% progress = @region_progress[region.id] || { completion_percentage: 0, approved_count: 0, remaining_count: 0, total_candidates: 0 } %>
+        <% progress = @region_progress[region.id] || { completion_percentage: 0, approved_count: 0, remaining_count: 0, total_candidates: 0, google_counted_categories: 0, google_total_count: 0, google_missing_count: nil } %>
         <div class="col-xl-4 col-md-6 mb-3">
-          <div class="border rounded h-100 p-3">
+          <div class="border rounded h-100 p-3" id="region-<%= region.id %>">
             <div class="d-flex justify-content-between align-items-start mb-2">
               <h5 class="mb-0"><%= region.name %></h5>
               <div class="text-right">
@@ -167,13 +181,32 @@
 
             <div class="small text-muted mb-3">
               Importados: <%= number_with_delimiter(progress[:approved_count].to_i) %> ·
-              Pendientes: <%= number_with_delimiter(progress[:remaining_count].to_i) %> ·
-              Candidatos: <%= number_with_delimiter(progress[:total_candidates].to_i) %>
+              Candidatos: <%= number_with_delimiter(progress[:total_candidates].to_i) %><br>
+              Google total:
+              <% if progress[:google_counted_categories].to_i.positive? %>
+                <%= number_with_delimiter(progress[:google_total_count].to_i) %> ·
+                Faltan: <%= number_with_delimiter(progress[:google_missing_count].to_i) %> ·
+                <%= progress[:google_counted_categories].to_i %>/<%= @categories.size %> categorias
+              <% else %>
+                sin calcular
+              <% end %>
+            </div>
+
+            <div class="mb-3">
+              <% if @api_key_present %>
+                <%= button_to 'Calcular total Google', refresh_region_google_counts_black_coffee_google_imports_path(region_id: region.id), method: :post, class: 'btn btn-sm btn-outline-primary btn-block', data: { confirm: "Esto hara #{Venue::CATEGORIES.size} peticiones a Places Aggregate API para #{region.name}. Si no hay Google Place ID regional guardado, hara 1 peticion extra para resolverlo. ¿Continuar?" } %>
+              <% else %>
+                <button class="btn btn-sm btn-outline-secondary btn-block" disabled>Configura API key para calcular</button>
+              <% end %>
+              <% if region.google_region_resource_name.present? %>
+                <div class="text-muted small mt-1">Region Google ID guardada.</div>
+              <% end %>
             </div>
 
             <div>
               <% @categories.each do |label, value| %>
                 <% state = states_by_category[value] %>
+                <% google_known = state&.google_total_known? %>
                 <% badge_class =
                   if state&.approved_count.to_i.positive?
                     'success'
@@ -185,9 +218,15 @@
                     'light'
                   end
                 %>
-                <span class="badge badge-<%= badge_class %> mr-1 mb-2 p-2" title="Pendientes: <%= state&.pending_count.to_i %> | Aprobados: <%= state&.approved_count.to_i %> | Duplicados: <%= state&.duplicate_count.to_i %>">
-                  <%= label %>: <%= state&.approved_count.to_i %>/<%= state&.total_candidates.to_i %>
+                <span class="badge badge-<%= badge_class %> mr-1 mb-2 p-2" title="Pendientes: <%= state&.pending_count.to_i %> | Aprobados: <%= state&.approved_count.to_i %> | Duplicados: <%= state&.duplicate_count.to_i %> | Google total: <%= google_known ? state.google_total_count : 'sin calcular' %>">
+                  <%= label %>: <%= state&.approved_count.to_i %>/<%= google_known ? state.google_total_count.to_i : state&.total_candidates.to_i %>
+                  <% if google_known && state.google_import_percentage.present? %>
+                    (<%= state.google_import_percentage %>%)
+                  <% end %>
                 </span>
+                <% if state&.google_total_count_error.present? %>
+                  <span class="badge badge-danger mr-1 mb-2 p-2" title="<%= state.google_total_count_error %>"><%= label %>: error Google</span>
+                <% end %>
               <% end %>
             </div>
           </div>

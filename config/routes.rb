@@ -32,6 +32,10 @@ Rails.application.routes.draw do
     resources :venues, controller: 'black_coffee_venues'
     resources :subcategories, controller: 'black_coffee_subcategories', except: [:show]
     resources :google_imports, controller: 'black_coffee_google_imports', only: [:index, :create, :show] do
+      collection do
+        post 'regions/:region_id/google_counts', action: :refresh_region_google_counts, as: :refresh_region_google_counts
+      end
+
       member do
         post :approve_selected
         post :reject_selected

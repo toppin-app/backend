@@ -140,6 +140,46 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     redirect_to black_coffee_google_import_path(@import_run), notice: "#{candidates.size} candidatos rechazados."
   end
 
+  def refresh_region_google_counts
+    region = BlackCoffeeImportRegion.includes(:region_categories).find(params[:region_id])
+    client = GooglePlacesAggregateClient.new
+    region_place, resolved_region_place = client.region_place_resource_name(region)
+    requests_count = resolved_region_place ? 1 : 0
+    successful_count = 0
+    errors = []
+
+    Venue::CATEGORIES.each do |category|
+      region_category = BlackCoffeeImportRegionCategory.find_or_create_by!(
+        black_coffee_import_region: region,
+        category: category
+      )
+      requests_count += 1
+
+      begin
+        count = client.count_region_category(region_place: region_place, category: category)
+        region_category.update!(
+          google_total_count: count,
+          google_total_counted_at: Time.current,
+          google_total_count_error: nil
+        )
+        successful_count += 1
+      rescue GooglePlacesAggregateClient::RequestError => e
+        region_category.update!(google_total_count_error: e.message)
+        errors << "#{GooglePlacesBlackCoffeeClient.config_for(category)[:label]}: #{e.message}"
+      end
+    end
+
+    message = "Totales Google actualizados para #{region.name}: #{successful_count}/#{Venue::CATEGORIES.size} categorias. Peticiones estimadas: #{requests_count}."
+    flash[:notice] = message
+    flash[:alert] = errors.join(' | ') if errors.any?
+
+    redirect_to black_coffee_google_imports_path(anchor: "region-#{region.id}")
+  rescue GooglePlacesAggregateClient::MissingApiKeyError, GooglePlacesAggregateClient::RequestError => e
+    redirect_to black_coffee_google_imports_path(anchor: "region-#{params[:region_id]}"), alert: e.message
+  rescue StandardError => e
+    redirect_to black_coffee_google_imports_path(anchor: "region-#{params[:region_id]}"), alert: "No se pudieron calcular los totales Google: #{e.message}"
+  end
+
   private
 
   def import_params
@@ -180,14 +220,24 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def aggregate_progress(records)
     records.each_with_object(empty_progress) do |record, totals|
-      totals[:total_candidates] += record[:total_candidates].to_i
-      totals[:pending_count] += record[:pending_count].to_i
-      totals[:approved_count] += record[:approved_count].to_i
-      totals[:rejected_count] += record[:rejected_count].to_i
-      totals[:duplicate_count] += record[:duplicate_count].to_i
+      totals[:total_candidates] += progress_value(record, :total_candidates).to_i
+      totals[:pending_count] += progress_value(record, :pending_count).to_i
+      totals[:approved_count] += progress_value(record, :approved_count).to_i
+      totals[:rejected_count] += progress_value(record, :rejected_count).to_i
+      totals[:duplicate_count] += progress_value(record, :duplicate_count).to_i
+
+      google_total_count = progress_value(record, :google_total_count)
+      next if google_total_count.nil?
+
+      totals[:google_total_count] += google_total_count.to_i
+      google_approved_count = progress_value(record, :google_approved_count)
+      google_counted_categories = progress_value(record, :google_counted_categories)
+      totals[:google_approved_count] += google_approved_count.nil? ? progress_value(record, :approved_count).to_i : google_approved_count.to_i
+      totals[:google_counted_categories] += google_counted_categories.nil? ? 1 : google_counted_categories.to_i
     end.tap do |totals|
       totals[:reviewed_count] = totals[:approved_count] + totals[:rejected_count] + totals[:duplicate_count]
       totals[:remaining_count] = totals[:pending_count]
+      totals[:google_missing_count] = google_missing_count(totals)
       totals[:completion_percentage] = completion_percentage(totals)
     end
   end
@@ -198,15 +248,34 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       pending_count: 0,
       approved_count: 0,
       rejected_count: 0,
-      duplicate_count: 0
+      duplicate_count: 0,
+      google_total_count: 0,
+      google_approved_count: 0,
+      google_counted_categories: 0
     }
   end
 
   def completion_percentage(totals)
-    total_candidates = totals[:total_candidates].to_i
-    return 0 if total_candidates.zero?
+    denominator = totals[:google_total_count].to_i.positive? ? totals[:google_total_count].to_i : totals[:total_candidates].to_i
+    return 0 if denominator.zero?
 
-    ((totals[:approved_count].to_f / total_candidates) * 100).round
+    numerator = totals[:google_total_count].to_i.positive? ? totals[:google_approved_count].to_i : totals[:approved_count].to_i
+    ((numerator.to_f / denominator) * 100).round
+  end
+
+  def google_missing_count(totals)
+    return nil unless totals[:google_total_count].to_i.positive?
+
+    [totals[:google_total_count].to_i - totals[:google_approved_count].to_i, 0].max
+  end
+
+  def progress_value(record, key)
+    if record.respond_to?(:has_attribute?)
+      return record[key] if record.has_attribute?(key)
+      return nil
+    end
+
+    record[key] if record.respond_to?(:[])
   end
 
   def duplicate_venue_for(candidate_attrs)

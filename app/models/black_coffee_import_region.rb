@@ -24,6 +24,15 @@ class BlackCoffeeImportRegion < ApplicationRecord
     region_categories.detect { |region_category| region_category.category == category.to_s }
   end
 
+  def google_region_resource_name
+    return unless has_attribute?(:google_region_place_id)
+
+    normalized = google_region_place_id.to_s.strip
+    return if normalized.blank?
+
+    normalized.start_with?('places/') ? normalized : "places/#{normalized}"
+  end
+
   def refresh_status!
     categories = region_categories.reload
     next_status =
