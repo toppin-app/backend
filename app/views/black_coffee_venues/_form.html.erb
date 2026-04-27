@@ -51,7 +51,7 @@
             <%= form.text_area :description, class: 'form-control', rows: 3, required: true, placeholder: 'Describe el local en una o dos frases' %>
           </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
           <div class="mb-3">
             <%= form.label :address, 'Direccion *' %>
             <%= form.text_field :address, class: 'form-control', required: true %>
@@ -65,6 +65,30 @@
         </div>
         <div class="col-md-2">
           <div class="mb-3">
+            <%= form.label :postal_code, 'Codigo postal' %>
+            <%= form.text_field :postal_code, class: 'form-control' %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <%= form.label :state, 'Estado / Region' %>
+            <%= form.text_field :state, class: 'form-control', placeholder: 'Comunidad Valenciana' %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <%= form.label :country, 'Pais' %>
+            <%= form.text_field :country, class: 'form-control', placeholder: 'Espana' %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
+            <%= form.label :country_code, 'Codigo pais' %>
+            <%= form.text_field :country_code, class: 'form-control', placeholder: 'ES', maxlength: 3 %>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="mb-3">
             <%= form.label :latitude, 'Latitud *' %>
             <%= form.number_field :latitude, class: 'form-control', step: '0.0000001', required: true %>
           </div>
@@ -73,6 +97,15 @@
           <div class="mb-3">
             <%= form.label :longitude, 'Longitud *' %>
             <%= form.number_field :longitude, class: 'form-control', step: '0.0000001', required: true %>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <%= form.label :google_place_id, 'Google Place ID' %>
+            <%= form.text_field :google_place_id, class: 'form-control', placeholder: 'ChIJ...' %>
+            <small class="form-text text-muted">
+              Si esta presente, el local queda conectado a Google.
+            </small>
           </div>
         </div>
         <div class="col-md-8">

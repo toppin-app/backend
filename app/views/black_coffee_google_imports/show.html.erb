@@ -113,10 +113,16 @@
                 <% if candidate.google_maps_uri.present? %>
                   <%= link_to 'Abrir en Google Maps', candidate.google_maps_uri, target: '_blank', rel: 'noopener', class: 'small' %>
                 <% end %>
+                <% if candidate.google_place_id.present? %>
+                  <div class="text-muted small">Google ID: <%= candidate.google_place_id %></div>
+                <% end %>
               </td>
               <td>
                 <%= candidate.address.presence || 'Sin direccion' %>
                 <div class="text-muted small"><%= candidate.city.presence || candidate.black_coffee_import_region.name %></div>
+                <div class="text-muted small">
+                  <%= [candidate.postal_code, candidate.state, candidate.country_code.presence || candidate.country].compact.reject(&:blank?).join(' / ').presence || 'Sin metadata territorial' %>
+                </div>
               </td>
               <td>
                 <% if candidate.rating.present? %>

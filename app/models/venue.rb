@@ -49,6 +49,7 @@ class Venue < ApplicationRecord
   validates :favorites_count, numericality: { greater_than_or_equal_to: 0, only_integer: true }
 
   before_validation :normalize_tags
+  before_validation :normalize_location_metadata
   before_create :assign_identifier
 
   scope :with_coordinates, -> { where.not(latitude: nil, longitude: nil) }
@@ -126,6 +127,10 @@ class Venue < ApplicationRecord
     has_attribute?(:internal_test) ? internal_test? : false
   end
 
+  def google_connected?
+    has_attribute?(:google_place_id) && google_place_id.present?
+  end
+
   def cover_image_url(base_url: nil)
     image_urls(base_url: base_url).first
   end
@@ -160,6 +165,10 @@ class Venue < ApplicationRecord
       location: {
         address: address,
         city: city,
+        postalCode: has_attribute?(:postal_code) ? postal_code : nil,
+        state: has_attribute?(:state) ? state : nil,
+        country: has_attribute?(:country) ? country : nil,
+        countryCode: has_attribute?(:country_code) ? country_code : nil,
         coordinates: {
           latitude: latitude.to_f,
           longitude: longitude.to_f
@@ -170,7 +179,8 @@ class Venue < ApplicationRecord
       schedule: weekly_schedule,
       tags: Array(tags),
       featured: featured,
-      visible: visible_to_app?
+      visible: visible_to_app?,
+      googlePlaceId: google_connected? ? google_place_id : nil
     }
   end
 
@@ -269,6 +279,14 @@ class Venue < ApplicationRecord
 
   def normalize_tags
     self.tags = Array(tags).map { |tag| tag.to_s.strip }.reject(&:blank?).uniq
+  end
+
+  def normalize_location_metadata
+    self.google_place_id = google_place_id.to_s.strip.presence if has_attribute?(:google_place_id)
+    self.postal_code = postal_code.to_s.strip.presence if has_attribute?(:postal_code)
+    self.state = state.to_s.strip.presence if has_attribute?(:state)
+    self.country = country.to_s.strip.presence if has_attribute?(:country)
+    self.country_code = country_code.to_s.strip.upcase.presence if has_attribute?(:country_code)
   end
 
   def normalize_schedule_payload(raw_schedule)

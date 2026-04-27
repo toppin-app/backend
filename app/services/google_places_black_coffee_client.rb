@@ -194,12 +194,17 @@ class GooglePlacesBlackCoffeeClient
 
   def place_to_candidate_attributes(place, region:, category:, subcategory:)
     photos = Array(place['photos']).first(MAX_PHOTOS_PER_PLACE)
+    address_components = place['addressComponents']
 
     {
       google_place_id: place['id'].presence || place['name'].to_s.split('/').last,
       name: place.dig('displayName', 'text').presence || 'Local sin nombre',
       address: place['formattedAddress'],
-      city: city_from_components(place['addressComponents']).presence || region.name,
+      city: city_from_components(address_components).presence || region.name,
+      postal_code: address_component_value(address_components, 'postal_code'),
+      state: address_component_value(address_components, 'administrative_area_level_1'),
+      country: address_component_value(address_components, 'country'),
+      country_code: address_component_value(address_components, 'country', key: 'shortText'),
       category: category,
       subcategory: subcategory,
       latitude: place.dig('location', 'latitude'),
@@ -223,6 +228,11 @@ class GooglePlacesBlackCoffeeClient
     end.first
 
     component&.dig('longText') || component&.dig('shortText')
+  end
+
+  def address_component_value(components, type, key: 'longText')
+    component = Array(components).find { |entry| Array(entry['types']).include?(type) }
+    component&.dig(key).presence || component&.dig('longText').presence || component&.dig('shortText')
   end
 
   def photo_reference_payload(photo)

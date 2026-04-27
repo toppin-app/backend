@@ -86,6 +86,8 @@
           <th>Categoria</th>
           <th>Subcategoria</th>
           <th>Ciudad</th>
+          <th>Pais / Region</th>
+          <th>Google</th>
           <th>Favoritos</th>
           <th>Destacado</th>
           <th>Visible</th>
@@ -115,6 +117,17 @@
               <td><span class="badge badge-secondary"><%= venue.category %></span></td>
               <td><%= venue.subcategory_name.presence || 'Sin subcategoria' %></td>
               <td><%= venue.city %></td>
+              <td>
+                <strong><%= venue.country.presence || 'Sin pais' %></strong>
+                <div class="text-muted small"><%= venue.state.presence || 'Sin region' %></div>
+              </td>
+              <td>
+                <% if venue.google_connected? %>
+                  <span class="badge badge-success">Conectado</span>
+                <% else %>
+                  <span class="badge badge-light">Sin Google</span>
+                <% end %>
+              </td>
               <td><%= venue.favorites_count %></td>
               <td>
                 <% if venue.featured? %>
@@ -160,7 +173,7 @@
           <% end %>
         <% else %>
           <tr>
-            <td colspan="12" class="text-center text-muted py-5">
+            <td colspan="14" class="text-center text-muted py-5">
               No hay locales que coincidan con los filtros actuales.
             </td>
           </tr>

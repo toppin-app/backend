@@ -74,6 +74,10 @@ class BlackCoffeeImportCandidate < ApplicationRecord
       venue.payment_current = true if venue.has_attribute?(:payment_current)
       venue.visible = true if venue.has_attribute?(:visible)
       venue.google_place_id = google_place_id if venue.has_attribute?(:google_place_id)
+      venue.postal_code = postal_code if venue.has_attribute?(:postal_code)
+      venue.state = state if venue.has_attribute?(:state)
+      venue.country = country if venue.has_attribute?(:country)
+      venue.country_code = country_code if venue.has_attribute?(:country_code)
       venue.assign_subcategory_by_name!(subcategory) if subcategory.present?
       venue.save!
 
