@@ -1,6 +1,18 @@
 class BlackCoffeeGoogleImportsController < ApplicationController
   MAX_STORED_GOOGLE_ERROR_LENGTH = 1_000
   MAX_FLASH_ERROR_LENGTH = 700
+  GLOBAL_GOOGLE_COUNT_ERROR_PATTERNS = [
+    /API has not been used/i,
+    /API key/i,
+    /billing/i,
+    /disabled/i,
+    /location.*not supported/i,
+    /not authorized/i,
+    /PERMISSION_DENIED/i,
+    /region.*not supported/i,
+    /SERVICE_DISABLED/i,
+    /unsupported region/i
+  ].freeze
 
   before_action :check_admin
   before_action :ensure_regions_and_categories
@@ -150,8 +162,9 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     requests_count = resolved_region_place ? 1 : 0
     successful_count = 0
     errors = []
+    global_error = nil
 
-    Venue::CATEGORIES.each do |category|
+    Venue::CATEGORIES.each_with_index do |category, index|
       region_category = BlackCoffeeImportRegionCategory.find_or_create_by!(
         black_coffee_import_region: region,
         category: category
@@ -170,18 +183,28 @@ class BlackCoffeeGoogleImportsController < ApplicationController
         error_message = compact_google_error(e.message)
         region_category.update!(google_total_count_error: error_message)
         errors << "#{GooglePlacesBlackCoffeeClient.config_for(category)[:label]}: #{error_message}"
+
+        next unless global_google_count_error?(error_message)
+
+        global_error = error_message
+        mark_remaining_categories_with_google_error(region, Venue::CATEGORIES[(index + 1)..-1], error_message)
+        break
       end
     end
 
     message = "Totales Google actualizados para #{region.name}: #{successful_count}/#{Venue::CATEGORIES.size} categorias. Peticiones estimadas: #{requests_count}."
     flash[:notice] = message
-    flash[:alert] = "#{errors.size} categorias fallaron. Revisa las etiquetas rojas del progreso por categoria para ver el detalle." if errors.any?
+    if global_error.present?
+      flash[:alert] = "Google devolvio un error global y se detuvo el calculo para no repetir peticiones. Revisa el detalle en #{region.name}."
+    elsif errors.any?
+      flash[:alert] = "#{errors.size} categorias fallaron. Revisa las etiquetas rojas del progreso por categoria para ver el detalle."
+    end
 
     redirect_to black_coffee_google_imports_path(anchor: "region-#{region.id}")
   rescue GooglePlacesAggregateClient::MissingApiKeyError, GooglePlacesAggregateClient::RequestError => e
-    redirect_to black_coffee_google_imports_path(anchor: "region-#{params[:region_id]}"), alert: e.message
+    redirect_to black_coffee_google_imports_path(anchor: "region-#{params[:region_id]}"), alert: compact_google_error(e.message)
   rescue StandardError => e
-    redirect_to black_coffee_google_imports_path(anchor: "region-#{params[:region_id]}"), alert: "No se pudieron calcular los totales Google: #{e.message}"
+    redirect_to black_coffee_google_imports_path(anchor: "region-#{params[:region_id]}"), alert: compact_flash_errors([e.message], prefix: 'No se pudieron calcular los totales Google:')
   end
 
   private
@@ -200,6 +223,19 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def compact_google_error(message)
     message.to_s.squish.truncate(MAX_STORED_GOOGLE_ERROR_LENGTH)
+  end
+
+  def global_google_count_error?(message)
+    GLOBAL_GOOGLE_COUNT_ERROR_PATTERNS.any? { |pattern| message.match?(pattern) }
+  end
+
+  def mark_remaining_categories_with_google_error(region, categories, error_message)
+    Array(categories).compact.each do |category|
+      BlackCoffeeImportRegionCategory.find_or_create_by!(
+        black_coffee_import_region: region,
+        category: category
+      ).update!(google_total_count_error: error_message)
+    end
   end
 
   def clamped_limit(value)

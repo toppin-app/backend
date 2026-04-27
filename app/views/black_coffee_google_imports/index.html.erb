@@ -204,11 +204,15 @@
             </div>
 
             <div>
+              <% google_errors = @categories.map { |_label, value| states_by_category[value]&.google_total_count_error.presence }.compact.uniq %>
               <% @categories.each do |label, value| %>
                 <% state = states_by_category[value] %>
                 <% google_known = state&.google_total_known? %>
+                <% google_error = state&.google_total_count_error.presence %>
                 <% badge_class =
-                  if state&.approved_count.to_i.positive?
+                  if google_error.present?
+                    'danger'
+                  elsif state&.approved_count.to_i.positive?
                     'success'
                   elsif state&.pending_count.to_i.positive?
                     'warning'
@@ -218,15 +222,25 @@
                     'light'
                   end
                 %>
-                <span class="badge badge-<%= badge_class %> mr-1 mb-2 p-2" title="Pendientes: <%= state&.pending_count.to_i %> | Aprobados: <%= state&.approved_count.to_i %> | Duplicados: <%= state&.duplicate_count.to_i %> | Google total: <%= google_known ? state.google_total_count : 'sin calcular' %>">
-                  <%= label %>: <%= state&.approved_count.to_i %>/<%= google_known ? state.google_total_count.to_i : state&.total_candidates.to_i %>
-                  <% if google_known && state.google_import_percentage.present? %>
-                    (<%= state.google_import_percentage %>%)
+                <span class="badge badge-<%= badge_class %> mr-1 mb-2 p-2" title="Pendientes: <%= state&.pending_count.to_i %> | Aprobados: <%= state&.approved_count.to_i %> | Duplicados: <%= state&.duplicate_count.to_i %> | Google total: <%= google_known ? state.google_total_count : 'sin calcular' %><%= google_error.present? ? " | Error: #{google_error}" : '' %>">
+                  <% if google_error.present? %>
+                    <%= label %>: error Google
+                  <% else %>
+                    <%= label %>: <%= state&.approved_count.to_i %>/<%= google_known ? state.google_total_count.to_i : state&.total_candidates.to_i %>
+                    <% if google_known && state.google_import_percentage.present? %>
+                      (<%= state.google_import_percentage %>%)
+                    <% end %>
                   <% end %>
                 </span>
-                <% if state&.google_total_count_error.present? %>
-                  <span class="badge badge-danger mr-1 mb-2 p-2" title="<%= state.google_total_count_error %>"><%= label %>: error Google</span>
-                <% end %>
+              <% end %>
+              <% if google_errors.any? %>
+                <div class="alert alert-danger small mt-2 mb-0 py-2 px-3">
+                  <strong>Error Google:</strong>
+                  <%= google_errors.first.truncate(240) %>
+                  <% if google_errors.size > 1 %>
+                    <span class="d-block mt-1"><%= google_errors.size - 1 %> errores adicionales en esta comunidad.</span>
+                  <% end %>
+                </div>
               <% end %>
             </div>
           </div>
