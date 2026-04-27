@@ -13,7 +13,7 @@ module Api
         relation = apply_distance_filter(relation)
         return if performed?
 
-        relation = relation.order(featured: :desc, favorites_count: :desc, created_at: :desc)
+        relation = Venue.order_by_favorites(relation.order(featured: :desc)).order(created_at: :desc)
         limit = parse_limit(50)
         offset = parse_offset
 
@@ -31,7 +31,7 @@ module Api
         relation = apply_distance_filter(relation)
         return if performed?
 
-        relation = relation.order(favorites_count: :desc, created_at: :desc)
+        relation = Venue.order_by_favorites(relation).order(created_at: :desc)
 
         render json: {
           venues: serialize_venues(fetch_venues(relation, limit: limit))
@@ -68,7 +68,7 @@ module Api
         relation = apply_distance_filter(relation)
         return if performed?
 
-        relation = relation.order(favorites_count: :desc, created_at: :desc)
+        relation = Venue.order_by_favorites(relation).order(created_at: :desc)
 
         render json: {
           venues: serialize_venues(fetch_venues(relation, limit: parse_limit(8, max_value: 50)))
@@ -84,7 +84,7 @@ module Api
         relation = apply_distance_filter(relation)
         return if performed?
 
-        relation = relation.order(featured: :desc, favorites_count: :desc, created_at: :desc)
+        relation = Venue.order_by_favorites(relation.order(featured: :desc)).order(created_at: :desc)
 
         limit = parse_limit(20)
         offset = parse_offset
@@ -109,6 +109,7 @@ module Api
         render json: {
           venue: @venue.as_black_coffee_json(
             favorite_venue_ids: favorite_venue_ids_for([@venue]),
+            favorite_counts_by_venue_id: Venue.favorite_counts_for([@venue.id]),
             base_url: public_base_url
           )
         }
@@ -142,10 +143,7 @@ module Api
             return
           end
 
-          UserFavorite.transaction do
-            current_user.user_favorites.create!(venue: @venue)
-            Venue.where(id: @venue.id).update_all('favorites_count = COALESCE(favorites_count, 0) + 1')
-          end
+          current_user.user_favorites.create!(venue: @venue)
 
           @venue.reload
           render json: {
@@ -166,11 +164,7 @@ module Api
           return
         end
 
-        UserFavorite.transaction do
-          favorite.destroy!
-          Venue.where(id: @venue.id)
-               .update_all('favorites_count = CASE WHEN favorites_count > 0 THEN favorites_count - 1 ELSE 0 END')
-        end
+        favorite.destroy!
 
         @venue.reload
         render json: {

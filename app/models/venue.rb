@@ -46,14 +46,13 @@ class Venue < ApplicationRecord
   validates :category, inclusion: { in: CATEGORIES }
   validates :google_place_id, uniqueness: true, allow_blank: true, if: -> { has_attribute?(:google_place_id) }
   validates :latitude, :longitude, numericality: true
-  validates :favorites_count, numericality: { greater_than_or_equal_to: 0, only_integer: true }
 
   before_validation :normalize_tags
   before_validation :normalize_location_metadata
   before_create :assign_identifier
 
   scope :with_coordinates, -> { where.not(latitude: nil, longitude: nil) }
-  scope :featured_first, -> { order(featured: :desc, favorites_count: :desc, created_at: :desc) }
+  scope :featured_first, -> { order_by_favorites(order(featured: :desc)).order(created_at: :desc) }
 
   def self.normalize_text(value)
     value.to_s.strip.downcase.presence
@@ -76,6 +75,28 @@ class Venue < ApplicationRecord
 
   def self.visible_to_app
     column_names.include?('visible') ? where(visible: true) : all
+  end
+
+  def self.favorites_count_sql
+    <<~SQL.squish
+      (
+        SELECT COUNT(*)
+        FROM user_favorites
+        WHERE user_favorites.venue_id = venues.id
+      )
+    SQL
+  end
+
+  def self.order_by_favorites(scope, direction: :desc)
+    direction_sql = direction.to_s.downcase == 'asc' ? 'ASC' : 'DESC'
+    scope.order(Arel.sql("#{favorites_count_sql} #{direction_sql}"))
+  end
+
+  def self.favorite_counts_for(venue_ids)
+    ids = Array(venue_ids).compact
+    return {} if ids.empty?
+
+    UserFavorite.where(venue_id: ids).group(:venue_id).count
   end
 
   def self.distance_sql(lat, lng)
@@ -131,6 +152,12 @@ class Venue < ApplicationRecord
     has_attribute?(:google_place_id) && google_place_id.present?
   end
 
+  def favorites_count
+    return attributes['live_favorites_count'].to_i if attributes.key?('live_favorites_count')
+
+    user_favorites.loaded? ? user_favorites.size : user_favorites.count
+  end
+
   def cover_image_url(base_url: nil)
     image_urls(base_url: base_url).first
   end
@@ -154,7 +181,7 @@ class Venue < ApplicationRecord
     end
   end
 
-  def as_black_coffee_json(favorite_venue_ids: [], base_url: nil)
+  def as_black_coffee_json(favorite_venue_ids: [], favorite_counts_by_venue_id: nil, base_url: nil)
     {
       id: id,
       name: name,
@@ -174,7 +201,7 @@ class Venue < ApplicationRecord
           longitude: longitude.to_f
         }
       },
-      favoritesCount: favorites_count,
+      favoritesCount: favorite_count_from(favorite_counts_by_venue_id),
       isFavorite: favorite_venue_ids.include?(id),
       schedule: weekly_schedule,
       tags: Array(tags),
@@ -182,6 +209,12 @@ class Venue < ApplicationRecord
       visible: visible_to_app?,
       googlePlaceId: google_connected? ? google_place_id : nil
     }
+  end
+
+  def favorite_count_from(favorite_counts_by_venue_id)
+    return favorites_count if favorite_counts_by_venue_id.nil?
+
+    favorite_counts_by_venue_id[id].to_i
   end
 
   def sync_images!(entries:, uploaded_files_by_key: {})

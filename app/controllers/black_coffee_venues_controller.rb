@@ -13,7 +13,7 @@ class BlackCoffeeVenuesController < ApplicationController
       venues: Venue.count,
       featured: Venue.where(featured: true).count,
       subcategories: VenueSubcategory.count,
-      favorites: Venue.sum(:favorites_count)
+      favorites: UserFavorite.count
     }
 
     scope = Venue.includes(:venue_subcategory, :venue_images)
@@ -30,8 +30,10 @@ class BlackCoffeeVenuesController < ApplicationController
       scope = scope.where('venues.name LIKE :query OR venues.city LIKE :query OR venues.address LIKE :query', query: query)
     end
 
-    @venues = scope.order(featured: :desc, favorites_count: :desc, updated_at: :desc)
+    @venues = Venue.order_by_favorites(scope.order(featured: :desc))
+                   .order(updated_at: :desc)
                    .paginate(page: params[:page], per_page: 20)
+    @favorite_counts_by_venue_id = Venue.favorite_counts_for(@venues.map(&:id))
   end
 
   def show

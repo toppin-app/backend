@@ -128,7 +128,7 @@
                   <span class="badge badge-light">Sin Google</span>
                 <% end %>
               </td>
-              <td><%= venue.favorites_count %></td>
+              <td><%= @favorite_counts_by_venue_id[venue.id].to_i %></td>
               <td>
                 <% if venue.featured? %>
                   <span class="badge badge-success">Si</span>

@@ -66,7 +66,6 @@ class BlackCoffeeImportCandidate < ApplicationRecord
         city: city.presence || black_coffee_import_region.name,
         latitude: latitude,
         longitude: longitude,
-        favorites_count: 0,
         featured: false,
         tags: default_tags
       )

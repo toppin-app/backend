@@ -94,10 +94,13 @@ module Api
       end
 
       def serialize_venues(venues)
+        venue_ids = venues.map(&:id)
         favorite_ids = favorite_venue_ids_for(venues)
+        favorite_counts = Venue.favorite_counts_for(venue_ids)
         venues.map do |venue|
           venue.as_black_coffee_json(
             favorite_venue_ids: favorite_ids,
+            favorite_counts_by_venue_id: favorite_counts,
             base_url: public_base_url
           )
         end
