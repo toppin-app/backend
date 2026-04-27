@@ -1,4 +1,7 @@
 class BlackCoffeeGoogleImportsController < ApplicationController
+  MAX_STORED_GOOGLE_ERROR_LENGTH = 1_000
+  MAX_FLASH_ERROR_LENGTH = 700
+
   before_action :check_admin
   before_action :ensure_regions_and_categories
   before_action :set_import_run, only: [:show, :approve_candidate, :reject_candidate, :approve_selected, :reject_selected]
@@ -128,7 +131,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     message = "#{approved_count} aprobados"
     message += ", #{duplicate_count} duplicados" if duplicate_count.positive?
     flash[:notice] = message
-    flash[:alert] = errors.join(' | ') if errors.any?
+    flash[:alert] = compact_flash_errors(errors, prefix: 'Algunos candidatos no se pudieron aprobar:') if errors.any?
 
     redirect_to black_coffee_google_import_path(@import_run)
   end
@@ -164,14 +167,15 @@ class BlackCoffeeGoogleImportsController < ApplicationController
         )
         successful_count += 1
       rescue GooglePlacesAggregateClient::RequestError => e
-        region_category.update!(google_total_count_error: e.message)
-        errors << "#{GooglePlacesBlackCoffeeClient.config_for(category)[:label]}: #{e.message}"
+        error_message = compact_google_error(e.message)
+        region_category.update!(google_total_count_error: error_message)
+        errors << "#{GooglePlacesBlackCoffeeClient.config_for(category)[:label]}: #{error_message}"
       end
     end
 
     message = "Totales Google actualizados para #{region.name}: #{successful_count}/#{Venue::CATEGORIES.size} categorias. Peticiones estimadas: #{requests_count}."
     flash[:notice] = message
-    flash[:alert] = errors.join(' | ') if errors.any?
+    flash[:alert] = "#{errors.size} categorias fallaron. Revisa las etiquetas rojas del progreso por categoria para ver el detalle." if errors.any?
 
     redirect_to black_coffee_google_imports_path(anchor: "region-#{region.id}")
   rescue GooglePlacesAggregateClient::MissingApiKeyError, GooglePlacesAggregateClient::RequestError => e
@@ -184,6 +188,18 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def import_params
     params.permit(:region_id, :category, :limit, :query_override)
+  end
+
+  def compact_flash_errors(errors, prefix:)
+    details = errors.first(3).map { |error| error.to_s.squish.truncate(180) }.join(' | ')
+    remaining = errors.size - 3
+    message = "#{prefix} #{details}"
+    message += " | #{remaining} errores mas." if remaining.positive?
+    message.truncate(MAX_FLASH_ERROR_LENGTH)
+  end
+
+  def compact_google_error(message)
+    message.to_s.squish.truncate(MAX_STORED_GOOGLE_ERROR_LENGTH)
   end
 
   def clamped_limit(value)
