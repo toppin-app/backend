@@ -5,8 +5,10 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def index
     @title = 'Importador Google Maps'
-    @regions = BlackCoffeeImportRegion.includes(:region_categories).ordered
+    @regions = BlackCoffeeImportRegion.includes(:region_categories).ordered.to_a
     @categories = GooglePlacesBlackCoffeeClient.category_options
+    @region_progress = progress_by_region(@regions)
+    @overall_progress = aggregate_progress(@region_progress.values)
     @recent_runs = BlackCoffeeImportRun.includes(:black_coffee_import_region)
                                       .order(created_at: :desc)
                                       .limit(12)
@@ -165,6 +167,46 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     return BlackCoffeeImportCandidate.none if ids.empty?
 
     @import_run.import_candidates.where(id: ids, status: 'pending')
+  end
+
+  def progress_by_region(regions)
+    regions.each_with_object({}) do |region, progress|
+      totals = aggregate_progress(region.region_categories)
+      progress[region.id] = totals.merge(
+        completion_percentage: completion_percentage(totals)
+      )
+    end
+  end
+
+  def aggregate_progress(records)
+    records.each_with_object(empty_progress) do |record, totals|
+      totals[:total_candidates] += record[:total_candidates].to_i
+      totals[:pending_count] += record[:pending_count].to_i
+      totals[:approved_count] += record[:approved_count].to_i
+      totals[:rejected_count] += record[:rejected_count].to_i
+      totals[:duplicate_count] += record[:duplicate_count].to_i
+    end.tap do |totals|
+      totals[:reviewed_count] = totals[:approved_count] + totals[:rejected_count] + totals[:duplicate_count]
+      totals[:remaining_count] = totals[:pending_count]
+      totals[:completion_percentage] = completion_percentage(totals)
+    end
+  end
+
+  def empty_progress
+    {
+      total_candidates: 0,
+      pending_count: 0,
+      approved_count: 0,
+      rejected_count: 0,
+      duplicate_count: 0
+    }
+  end
+
+  def completion_percentage(totals)
+    total_candidates = totals[:total_candidates].to_i
+    return 0 if total_candidates.zero?
+
+    ((totals[:approved_count].to_f / total_candidates) * 100).round
   end
 
   def duplicate_venue_for(candidate_attrs)
