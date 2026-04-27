@@ -204,7 +204,15 @@
             </div>
 
             <div>
-              <% google_errors = @categories.map { |_label, value| states_by_category[value]&.google_total_count_error.presence }.compact.uniq %>
+              <% google_error_items = @categories.filter_map do |label, value|
+                state = states_by_category[value]
+                summary = state&.google_total_count_error.presence
+                next if summary.blank?
+
+                details = state&.has_attribute?(:google_total_count_error_details) ? state.google_total_count_error_details.presence : nil
+                { label: label, summary: summary, details: details.presence || summary }
+              end %>
+              <% google_errors = google_error_items.map { |item| item[:summary] }.uniq %>
               <% @categories.each do |label, value| %>
                 <% state = states_by_category[value] %>
                 <% google_known = state&.google_total_known? %>
@@ -233,13 +241,22 @@
                   <% end %>
                 </span>
               <% end %>
-              <% if google_errors.any? %>
+              <% if google_error_items.any? %>
                 <div class="alert alert-danger small mt-2 mb-0 py-2 px-3">
                   <strong>Error Google:</strong>
                   <%= google_errors.first.truncate(240) %>
                   <% if google_errors.size > 1 %>
                     <span class="d-block mt-1"><%= google_errors.size - 1 %> errores adicionales en esta comunidad.</span>
                   <% end %>
+                  <details class="mt-2">
+                    <summary>Ver detalle tecnico para copiar</summary>
+                    <% google_error_items.uniq { |item| item[:details] }.each do |item| %>
+                      <div class="mt-2">
+                        <strong><%= item[:label] %></strong>
+                        <pre class="bg-dark text-white rounded p-2 mt-1 mb-0" style="white-space: pre-wrap; max-height: 360px; overflow: auto;"><%= item[:details] %></pre>
+                      </div>
+                    <% end %>
+                  </details>
                 </div>
               <% end %>
             </div>

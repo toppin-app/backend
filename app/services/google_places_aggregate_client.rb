@@ -4,7 +4,14 @@ require 'uri'
 
 class GooglePlacesAggregateClient
   class MissingApiKeyError < StandardError; end
-  class RequestError < StandardError; end
+  class RequestError < StandardError
+    attr_reader :details
+
+    def initialize(message, details: nil)
+      @details = details.to_s.strip.present? ? details : message
+      super(message)
+    end
+  end
 
   AGGREGATE_URL = 'https://areainsights.googleapis.com/v1:computeInsights'.freeze
   REGION_LOOKUP_URL = GooglePlacesBlackCoffeeClient::BASE_URL
@@ -72,7 +79,20 @@ class GooglePlacesAggregateClient
 
     return resource_name if resource_name.present?
 
-    raise RequestError, "No se pudo resolver el Google Place ID de #{region.name}."
+    raise RequestError.new(
+      "No se pudo resolver el Google Place ID de #{region.name}.",
+      details: JSON.pretty_generate(
+        error: 'region_place_id_not_found',
+        region: {
+          id: region.id,
+          name: region.name,
+          slug: region.slug,
+          country_code: region.country_code
+        },
+        query: body,
+        google_response: payload
+      )
+    )
   end
 
   def aggregate_types_for(config)
@@ -80,7 +100,12 @@ class GooglePlacesAggregateClient
             Array(config[:included_type]).presence ||
             Array(config[:google_types]).presence
 
-    raise RequestError, 'La categoria no tiene tipos de Google configurados para conteo.' if types.blank?
+    if types.blank?
+      raise RequestError.new(
+        'La categoria no tiene tipos de Google configurados para conteo.',
+        details: JSON.pretty_generate(error: 'missing_aggregate_types', config: config)
+      )
+    end
 
     types
   end
@@ -104,14 +129,66 @@ class GooglePlacesAggregateClient
       http.request(request)
     end
 
-    parsed = JSON.parse(response.body.presence || '{}')
-    return parsed if response.is_a?(Net::HTTPSuccess)
+    parsed, parse_error = parse_json_response(response.body)
+    if response.is_a?(Net::HTTPSuccess)
+      return parsed if parse_error.blank?
 
-    message = parsed.dig('error', 'message').presence || response.message
-    raise RequestError, "Google Places respondio #{response.code}: #{message}"
-  rescue JSON::ParserError
-    raise RequestError, 'Google Places devolvio una respuesta no JSON.'
+      raise RequestError.new(
+        'Google Places devolvio una respuesta no JSON.',
+        details: request_error_details(url: url, body: body, field_mask: field_mask, response: response, parse_error: parse_error)
+      )
+    end
+
+    message = parsed&.dig('error', 'message').presence || response.message
+    raise RequestError.new(
+      "Google Places respondio #{response.code}: #{message}",
+      details: request_error_details(url: url, body: body, field_mask: field_mask, response: response, parsed: parsed, parse_error: parse_error)
+    )
   rescue Net::OpenTimeout, Net::ReadTimeout
-    raise RequestError, 'Google Places no respondio a tiempo.'
+    raise RequestError.new(
+      'Google Places no respondio a tiempo.',
+      details: JSON.pretty_generate(
+        error: 'timeout',
+        url: url,
+        request_body: body,
+        field_mask: field_mask
+      )
+    )
+  end
+
+  def parse_json_response(raw_body)
+    [JSON.parse(raw_body.presence || '{}'), nil]
+  rescue JSON::ParserError => e
+    [{}, e.message]
+  end
+
+  def request_error_details(url:, body:, field_mask:, response:, parsed: nil, parse_error: nil)
+    JSON.pretty_generate(
+      error_context: {
+        service: url == AGGREGATE_URL ? 'Places Aggregate API' : 'Places API Text Search',
+        endpoint: url,
+        http_method: 'POST',
+        field_mask: field_mask,
+        request_body: body
+      },
+      google_response: {
+        http_status: response.code,
+        http_message: response.message,
+        parsed_error: parsed&.dig('error'),
+        parse_error: parse_error,
+        raw_body: response.body.to_s
+      },
+      diagnostic_hints: diagnostic_hints(parsed&.dig('error', 'message').presence || response.body.to_s)
+    )
+  end
+
+  def diagnostic_hints(message)
+    normalized = message.to_s
+    hints = []
+    hints << 'Verifica que Places Aggregate API este habilitada en el mismo proyecto de la API key.' if normalized.match?(/not been used|disabled|SERVICE_DISABLED/i)
+    hints << 'Verifica billing del proyecto en Google Cloud.' if normalized.match?(/billing/i)
+    hints << 'Verifica restricciones de la API key: IPs, HTTP referrers y APIs permitidas.' if normalized.match?(/API key|not authorized|PERMISSION_DENIED/i)
+    hints << 'La region de Google puede no estar soportada como polygon/region; prueba otra comunidad o revisa el Place ID regional.' if normalized.match?(/region.*not supported|location.*not supported|unsupported region/i)
+    hints.presence || ['Revisa http_status, parsed_error y request_body para diagnosticar el fallo exacto.']
   end
 end

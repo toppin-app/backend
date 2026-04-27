@@ -1,5 +1,6 @@
 class BlackCoffeeGoogleImportsController < ApplicationController
   MAX_STORED_GOOGLE_ERROR_LENGTH = 1_000
+  MAX_STORED_GOOGLE_ERROR_DETAILS_LENGTH = 20_000
   MAX_FLASH_ERROR_LENGTH = 700
   GLOBAL_GOOGLE_COUNT_ERROR_PATTERNS = [
     /API has not been used/i,
@@ -173,21 +174,26 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
       begin
         count = client.count_region_category(region_place: region_place, category: category)
-        region_category.update!(
+        success_attributes = {
           google_total_count: count,
           google_total_counted_at: Time.current,
           google_total_count_error: nil
-        )
+        }
+        if region_category.has_attribute?(:google_total_count_error_details)
+          success_attributes[:google_total_count_error_details] = nil
+        end
+        region_category.update!(success_attributes)
         successful_count += 1
       rescue GooglePlacesAggregateClient::RequestError => e
         error_message = compact_google_error(e.message)
-        region_category.update!(google_total_count_error: error_message)
+        error_details = compact_google_error_details(e.details)
+        update_region_category_google_error(region_category, error_message, error_details)
         errors << "#{GooglePlacesBlackCoffeeClient.config_for(category)[:label]}: #{error_message}"
 
         next unless global_google_count_error?(error_message)
 
         global_error = error_message
-        mark_remaining_categories_with_google_error(region, Venue::CATEGORIES[(index + 1)..-1], error_message)
+        mark_remaining_categories_with_google_error(region, Venue::CATEGORIES[(index + 1)..-1], error_message, error_details)
         break
       end
     end
@@ -225,17 +231,30 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     message.to_s.squish.truncate(MAX_STORED_GOOGLE_ERROR_LENGTH)
   end
 
+  def compact_google_error_details(message)
+    message.to_s.truncate(MAX_STORED_GOOGLE_ERROR_DETAILS_LENGTH)
+  end
+
   def global_google_count_error?(message)
     GLOBAL_GOOGLE_COUNT_ERROR_PATTERNS.any? { |pattern| message.match?(pattern) }
   end
 
-  def mark_remaining_categories_with_google_error(region, categories, error_message)
+  def mark_remaining_categories_with_google_error(region, categories, error_message, error_details)
     Array(categories).compact.each do |category|
-      BlackCoffeeImportRegionCategory.find_or_create_by!(
+      region_category = BlackCoffeeImportRegionCategory.find_or_create_by!(
         black_coffee_import_region: region,
         category: category
-      ).update!(google_total_count_error: error_message)
+      )
+      update_region_category_google_error(region_category, error_message, error_details)
     end
+  end
+
+  def update_region_category_google_error(region_category, error_message, error_details)
+    attributes = { google_total_count_error: error_message }
+    if region_category.has_attribute?(:google_total_count_error_details)
+      attributes[:google_total_count_error_details] = error_details
+    end
+    region_category.update!(attributes)
   end
 
   def clamped_limit(value)
