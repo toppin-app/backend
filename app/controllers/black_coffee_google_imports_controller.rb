@@ -24,9 +24,11 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     @title = 'Importador Google Maps'
     @regions = BlackCoffeeImportRegion.includes(:region_categories).ordered.to_a
     @categories = GooglePlacesBlackCoffeeClient.category_options
-    @region_progress = progress_by_region(@regions)
+    @importable_categories = GooglePlacesBlackCoffeeClient.importable_categories
+    @region_progress = progress_by_region(@regions, @importable_categories)
     @overall_progress = aggregate_progress(@region_progress.values)
     @recent_runs = BlackCoffeeImportRun.includes(:black_coffee_import_region)
+                                      .where(category: @importable_categories)
                                       .order(created_at: :desc)
                                       .limit(12)
     @api_key_present = GooglePlacesBlackCoffeeClient.api_key.present?
@@ -35,7 +37,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
   def create
     region = BlackCoffeeImportRegion.find(import_params[:region_id])
     category = import_params[:category].to_s
-    unless Venue::CATEGORIES.include?(category)
+    unless GooglePlacesBlackCoffeeClient.importable_categories.include?(category)
       redirect_to black_coffee_google_imports_path, alert: 'Categoria no valida para Black Coffee.' and return
     end
 
@@ -166,7 +168,8 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     errors = []
     global_error = nil
 
-    Venue::CATEGORIES.each_with_index do |category, index|
+    importable_categories = GooglePlacesBlackCoffeeClient.importable_categories
+    importable_categories.each_with_index do |category, index|
       region_category = BlackCoffeeImportRegionCategory.find_or_create_by!(
         black_coffee_import_region: region,
         category: category
@@ -194,12 +197,12 @@ class BlackCoffeeGoogleImportsController < ApplicationController
         next unless global_google_count_error?(error_message)
 
         global_error = error_message
-        mark_remaining_categories_with_google_error(region, Venue::CATEGORIES[(index + 1)..-1], error_message, error_details)
+        mark_remaining_categories_with_google_error(region, importable_categories[(index + 1)..-1], error_message, error_details)
         break
       end
     end
 
-    message = "Totales Google actualizados para #{region.name}: #{successful_count}/#{Venue::CATEGORIES.size} categorias. Peticiones estimadas: #{requests_count}."
+    message = "Totales Google actualizados para #{region.name}: #{successful_count}/#{importable_categories.size} categorias. Peticiones estimadas: #{requests_count}."
     flash[:notice] = message
     if global_error.present?
       flash[:alert] = "Google devolvio un error global y se detuvo el calculo para no repetir peticiones. Revisa el detalle en #{region.name}."
@@ -281,9 +284,10 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     @import_run.import_candidates.where(id: ids, status: 'pending')
   end
 
-  def progress_by_region(regions)
+  def progress_by_region(regions, categories)
     regions.each_with_object({}) do |region, progress|
-      totals = aggregate_progress(region.region_categories)
+      region_categories = region.region_categories.select { |region_category| categories.include?(region_category.category) }
+      totals = aggregate_progress(region_categories)
       progress[region.id] = totals.merge(
         completion_percentage: completion_percentage(totals)
       )
@@ -396,7 +400,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
         record.position = index
       end
 
-      Venue::CATEGORIES.each do |category|
+      GooglePlacesBlackCoffeeClient.importable_categories.each do |category|
         BlackCoffeeImportRegionCategory.find_or_create_by!(
           black_coffee_import_region: region,
           category: category

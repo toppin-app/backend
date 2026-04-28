@@ -11,6 +11,7 @@ class GooglePlacesBlackCoffeeClient
   MAX_PAGE_SIZE = 20
   MAX_RESULTS = 60
   MAX_PHOTOS_PER_PLACE = 3
+  EXCLUDED_IMPORT_CATEGORIES = %w[concierto].freeze
   FIELD_MASK = %w[
     places.id
     places.name
@@ -114,9 +115,13 @@ class GooglePlacesBlackCoffeeClient
   end
 
   def self.category_options
-    Venue::CATEGORIES.map do |category|
+    importable_categories.map do |category|
       [CATEGORY_CONFIG.dig(category, :label) || category.humanize, category]
     end
+  end
+
+  def self.importable_categories
+    Venue::CATEGORIES - EXCLUDED_IMPORT_CATEGORIES
   end
 
   def self.config_for(category)
