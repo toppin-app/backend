@@ -1,0 +1,158 @@
+<% totals = @audit_report[:totals] %>
+<% issues = @audit_report[:issues] %>
+<% severity_badges = { critical: 'danger', warning: 'warning', info: 'info' } %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div class="alert alert-info mb-3 mb-md-0 flex-grow-1 mr-md-3">
+    <strong>Auditoria sin coste Google.</strong>
+    Este analisis usa solo datos guardados en la base de datos: totales Google ya calculados, candidatos importados y contadores internos.
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver al importador', black_coffee_google_imports_path, class: 'btn btn-outline-dark' %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <strong>Resumen del precalculo</strong>
+        <div class="text-muted small">Generado: <%= @audit_report[:generated_at].strftime('%d/%m/%Y %H:%M') %></div>
+      </div>
+      <span class="badge badge-<%= totals[:critical_issues].positive? ? 'danger' : (totals[:warning_issues].positive? ? 'warning' : 'success') %> p-2">
+        <%= totals[:critical_issues].positive? ? 'Revisar' : (totals[:warning_issues].positive? ? 'Con avisos' : 'Consistente') %>
+      </span>
+    </div>
+
+    <div class="row text-center">
+      <div class="col-md-3 col-6 mb-3">
+        <div class="text-muted small text-uppercase">Celdas calculadas</div>
+        <h4 class="mb-0"><%= totals[:counted_cells] %>/<%= totals[:expected_cells] %></h4>
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <div class="text-muted small text-uppercase">Total Google</div>
+        <h4 class="mb-0"><%= number_with_delimiter(totals[:google_total_count]) %></h4>
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <div class="text-muted small text-uppercase">Importados</div>
+        <h4 class="mb-0 text-success"><%= number_with_delimiter(totals[:approved_count]) %></h4>
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <div class="text-muted small text-uppercase">Progreso</div>
+        <h4 class="mb-0"><%= totals[:percentage] %>%</h4>
+      </div>
+    </div>
+
+    <div class="row text-center">
+      <div class="col-md-4 col-12 mb-2">
+        <span class="badge badge-danger p-2">Criticos: <%= totals[:critical_issues] %></span>
+      </div>
+      <div class="col-md-4 col-12 mb-2">
+        <span class="badge badge-warning p-2">Avisos: <%= totals[:warning_issues] %></span>
+      </div>
+      <div class="col-md-4 col-12 mb-2">
+        <span class="badge badge-info p-2">Notas: <%= totals[:info_issues] %></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <strong>Recomendaciones</strong>
+  </div>
+  <div class="card-body">
+    <% @audit_report[:recommendations].each do |recommendation| %>
+      <div class="alert alert-secondary py-2 mb-2"><%= recommendation %></div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <strong>Incidencias detectadas</strong>
+    <span class="text-muted small"><%= issues.size %> registros</span>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Severidad</th>
+          <th>Comunidad</th>
+          <th>Categoria</th>
+          <th>Problema</th>
+          <th>Sugerencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if issues.any? %>
+          <% issues.each do |issue| %>
+            <tr>
+              <td><span class="badge badge-<%= severity_badges[issue[:severity]] || 'secondary' %>"><%= issue[:severity] %></span></td>
+              <td><%= issue[:region] || '-' %></td>
+              <td><%= issue[:category_label] || '-' %></td>
+              <td><%= issue[:message] %></td>
+              <td><%= issue[:suggestion] %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">No se detectaron incidencias.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <strong>Detalle por comunidad</strong>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <% @audit_report[:summaries].each do |summary| %>
+        <% region = summary[:region] %>
+        <div class="col-xl-4 col-md-6 mb-3">
+          <div class="border rounded h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h5 class="mb-0"><%= region[:name] %></h5>
+              <span class="badge badge-<%= summary[:counted_categories] == summary[:expected_categories] ? 'success' : 'warning' %>">
+                <%= summary[:counted_categories] %>/<%= summary[:expected_categories] %>
+              </span>
+            </div>
+            <div class="small text-muted mb-2">
+              Estrategia: <%= summary[:strategy] %> · Total Google: <%= number_with_delimiter(summary[:google_total_count]) %> · Importados: <%= number_with_delimiter(summary[:approved_count]) %> · <%= summary[:percentage] %>%
+            </div>
+            <% if region[:google_count_location_note].present? %>
+              <div class="text-warning small mb-2"><%= region[:google_count_location_note] %></div>
+            <% end %>
+
+            <% summary[:categories].each do |category| %>
+              <% badge_class = category[:google_error].present? ? 'danger' : (category[:google_total_known] ? 'light' : 'warning') %>
+              <span class="badge badge-<%= badge_class %> mr-1 mb-2 p-2" title="<%= category[:google_error] || 'OK' %>">
+                <%= category[:label] %>:
+                <% if category[:google_error].present? %>
+                  error
+                <% elsif category[:google_total_known] %>
+                  <%= category[:approved_count] %>/<%= category[:google_total_count] %>
+                <% else %>
+                  sin total
+                <% end %>
+              </span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white">
+    <strong>Reporte tecnico copiable</strong>
+  </div>
+  <div class="card-body">
+    <textarea class="form-control" rows="18" readonly><%= @audit_json %></textarea>
+  </div>
+</div>

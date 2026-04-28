@@ -105,6 +105,12 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     )
   end
 
+  def audit
+    @title = 'Auditoria importador Google'
+    @audit_report = BlackCoffeeGoogleImportAudit.new.call
+    @audit_json = JSON.pretty_generate(@audit_report)
+  end
+
   def approve_candidate
     candidate = candidate_from_run
     venue = candidate.approve!
