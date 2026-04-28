@@ -5,6 +5,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
   GLOBAL_GOOGLE_COUNT_ERROR_PATTERNS = [
     /API has not been used/i,
     /API key/i,
+    /API_KEY_SERVICE_BLOCKED/i,
     /billing/i,
     /disabled/i,
     /location.*not supported/i,

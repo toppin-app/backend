@@ -187,6 +187,7 @@ class GooglePlacesAggregateClient
     hints = []
     hints << 'Verifica que Places Aggregate API este habilitada en el mismo proyecto de la API key.' if normalized.match?(/not been used|disabled|SERVICE_DISABLED/i)
     hints << 'Verifica billing del proyecto en Google Cloud.' if normalized.match?(/billing/i)
+    hints << 'La API key tiene restricciones de APIs y no permite areainsights.googleapis.com. Agrega Places Aggregate API a las APIs permitidas de esa key.' if normalized.match?(/API_KEY_SERVICE_BLOCKED|areainsights\.googleapis\.com.*blocked|ComputeInsights.*blocked/i)
     hints << 'Verifica restricciones de la API key: IPs, HTTP referrers y APIs permitidas.' if normalized.match?(/API key|not authorized|PERMISSION_DENIED/i)
     hints << 'La region de Google puede no estar soportada como polygon/region; prueba otra comunidad o revisa el Place ID regional.' if normalized.match?(/region.*not supported|location.*not supported|unsupported region/i)
     hints.presence || ['Revisa http_status, parsed_error y request_body para diagnosticar el fallo exacto.']
