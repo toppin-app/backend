@@ -107,7 +107,17 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def audit
     @title = 'Auditoria importador Google'
-    @audit_report = BlackCoffeeGoogleImportAudit.new.call
+    @api_key_present = GooglePlacesAggregateClient.api_key.present?
+    @live_google_enabled = ActiveModel::Type::Boolean.new.cast(params[:live_google])
+    requested_live_scope = params[:live_scope].presence || 'smart'
+    @live_scope = BlackCoffeeGoogleImportAudit::LIVE_SCOPES.include?(requested_live_scope) ? requested_live_scope : 'smart'
+    requested_live_limit = params[:live_limit].presence || BlackCoffeeGoogleImportAudit::DEFAULT_LIVE_LIMIT
+    @live_limit = [[requested_live_limit.to_i, 1].max, BlackCoffeeGoogleImportAudit::MAX_LIVE_LIMIT].min
+    @audit_report = BlackCoffeeGoogleImportAudit.new(
+      live_google: @live_google_enabled,
+      live_scope: @live_scope,
+      live_limit: @live_limit
+    ).call
     @audit_json = JSON.pretty_generate(@audit_report)
   end
 

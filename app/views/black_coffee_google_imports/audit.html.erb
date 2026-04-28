@@ -1,14 +1,58 @@
 <% totals = @audit_report[:totals] %>
 <% issues = @audit_report[:issues] %>
+<% live_google = @audit_report[:live_google] || {} %>
 <% severity_badges = { critical: 'danger', warning: 'warning', info: 'info' } %>
+<% live_scope_options = [
+  ['Muestra inteligente', 'smart'],
+  ['Solo incidencias guardadas', 'issues'],
+  ['Todo Espana', 'all']
+] %>
 
 <div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
-  <div class="alert alert-info mb-3 mb-md-0 flex-grow-1 mr-md-3">
-    <strong>Auditoria sin coste Google.</strong>
-    Este analisis usa solo datos guardados en la base de datos: totales Google ya calculados, candidatos importados y contadores internos.
+  <div class="alert alert-<%= live_google[:enabled] ? 'warning' : 'info' %> mb-3 mb-md-0 flex-grow-1 mr-md-3">
+    <% if live_google[:enabled] %>
+      <strong>Auditoria con Google activa.</strong>
+      Este analisis hizo <%= live_google[:executed_google_requests].to_i %> peticiones reales estimadas/ejecutadas a Google para validar una muestra de conteos.
+      Los resultados live no se guardan automaticamente; sirven para decidir que comunidades recalcular.
+    <% else %>
+      <strong>Auditoria sin coste Google.</strong>
+      Este analisis usa solo datos guardados en la base de datos: totales Google ya calculados, candidatos importados y contadores internos.
+    <% end %>
   </div>
   <div class="mt-3 mt-md-0">
+    <% if live_google[:enabled] %>
+      <%= link_to 'Auditoria sin Google', audit_black_coffee_google_imports_path, class: 'btn btn-outline-secondary mr-2' %>
+    <% end %>
     <%= link_to 'Volver al importador', black_coffee_google_imports_path, class: 'btn btn-outline-dark' %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <strong>Validacion live con Google</strong>
+  </div>
+  <div class="card-body">
+    <p class="text-muted mb-3">
+      Ejecuta una auditoria live solo cuando quieras gastar llamadas reales de Places Aggregate API. El limite controla cuantas celdas comunidad/categoria se revisan; si falta el Google Region ID puede haber una peticion extra por comunidad.
+    </p>
+    <%= form_with url: audit_black_coffee_google_imports_path, method: :get, local: true, class: 'row align-items-end' do %>
+      <%= hidden_field_tag :live_google, '1' %>
+      <div class="form-group col-md-4 mb-3">
+        <%= label_tag :live_scope, 'Alcance live' %>
+        <%= select_tag :live_scope, options_for_select(live_scope_options, @live_scope), class: 'form-control' %>
+      </div>
+      <div class="form-group col-md-3 mb-3">
+        <%= label_tag :live_limit, 'Maximo de celdas' %>
+        <%= number_field_tag :live_limit, @live_limit, min: 1, max: BlackCoffeeGoogleImportAudit::MAX_LIVE_LIMIT, class: 'form-control' %>
+      </div>
+      <div class="form-group col-md-5 mb-3">
+        <% if @api_key_present %>
+          <%= submit_tag 'Auditar con Google', class: 'btn btn-warning btn-block', data: { confirm: 'Esto hara peticiones reales a Google Places Aggregate API. Revisa el limite antes de continuar. Continuar?' } %>
+        <% else %>
+          <button class="btn btn-outline-secondary btn-block" disabled>Configura API key para auditoria live</button>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </div>
 
@@ -56,6 +100,107 @@
     </div>
   </div>
 </div>
+
+<% if live_google[:enabled] %>
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+      <strong>Resultado live Google</strong>
+      <span class="text-muted small">
+        Alcance: <%= live_google[:scope] %> - Limite: <%= live_google[:limit] %>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="row text-center mb-3">
+        <div class="col-md-3 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Celdas revisadas</div>
+          <h4 class="mb-0"><%= live_google[:checked_cells].to_i %>/<%= live_google[:selected_cells].to_i %></h4>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Peticiones Google</div>
+          <h4 class="mb-0"><%= live_google[:executed_google_requests].to_i %></h4>
+          <div class="text-muted small">estimadas: <%= live_google[:estimated_google_requests].to_i %></div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Diferencias</div>
+          <h4 class="mb-0 text-warning"><%= live_google[:differences].to_i %></h4>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Errores live</div>
+          <h4 class="mb-0 text-danger"><%= live_google[:errors].to_i %></h4>
+        </div>
+      </div>
+
+      <% if live_google[:skipped_by_limit].to_i.positive? %>
+        <div class="alert alert-secondary py-2">
+          Se omitieron <%= live_google[:skipped_by_limit].to_i %> celdas por el limite configurado. Sube el maximo si quieres revisar mas.
+        </div>
+      <% end %>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Comunidad</th>
+              <th>Categoria</th>
+              <th>Guardado</th>
+              <th>Google live</th>
+              <th>Delta</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if live_google[:results].present? %>
+              <% live_google[:results].each do |result| %>
+                <% status_class =
+                  case result[:status]
+                  when 'same' then 'success'
+                  when 'different' then (result[:significant_difference] ? 'warning' : 'info')
+                  when 'missing_stored' then 'warning'
+                  else 'danger'
+                  end
+                %>
+                <tr>
+                  <td><%= result.dig(:region, :name) %></td>
+                  <td><%= result[:label] %></td>
+                  <td><%= result[:stored_count].nil? ? '-' : number_with_delimiter(result[:stored_count]) %></td>
+                  <td><%= result[:live_count].nil? ? '-' : number_with_delimiter(result[:live_count]) %></td>
+                  <td>
+                    <% if result[:difference].nil? %>
+                      -
+                    <% else %>
+                      <%= number_with_delimiter(result[:difference]) %>
+                      <% if result[:difference_percentage].present? %>
+                        (<%= result[:difference_percentage] %>%)
+                      <% end %>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge badge-<%= status_class %>"><%= result[:status] %></span>
+                    <% if result[:switched_to_circle] %>
+                      <span class="badge badge-info">fallback circulo</span>
+                    <% end %>
+                    <% if result[:error_message].present? %>
+                      <details class="mt-2">
+                        <summary>Detalle error</summary>
+                        <pre class="bg-dark text-white rounded p-2 mt-1 mb-0" style="white-space: pre-wrap; max-height: 300px; overflow: auto;"><%= result[:error_details].presence || result[:error_message] %></pre>
+                      </details>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  No hubo celdas live seleccionadas para este alcance.
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>
 
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-header bg-white">
