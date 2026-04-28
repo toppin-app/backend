@@ -42,7 +42,7 @@
 
     <div class="row text-center">
       <div class="col-md-3 col-6 mb-3 mb-md-0">
-        <div class="text-muted small text-uppercase">Total Google calculado</div>
+        <div class="text-muted small text-uppercase">Suma Google categorias</div>
         <h4 class="mb-0">
           <% if @overall_progress[:google_counted_categories].to_i.positive? %>
             <%= number_with_delimiter(@overall_progress[:google_total_count]) %>
@@ -50,7 +50,7 @@
             -
           <% end %>
         </h4>
-        <div class="text-muted small"><%= @overall_progress[:google_counted_categories] %>/<%= @regions.size * @categories.size %> categorias</div>
+        <div class="text-muted small"><%= @overall_progress[:google_counted_categories] %>/<%= @regions.size * @categories.size %> categorias, sin deduplicar entre categorias</div>
       </div>
       <div class="col-md-3 col-6 mb-3 mb-md-0">
         <div class="text-muted small text-uppercase">Importados</div>

@@ -491,22 +491,59 @@ class BlackCoffeeGoogleImportAudit
   end
 
   def build_totals(summaries, issues)
+    category_totals = category_totals_for(summaries)
+    google_total = category_totals.sum { |category_total| category_total[:google_total_count].to_i }
+    approved_total = summaries.sum { |summary| summary[:approved_count].to_i }
+
     {
       regions: summaries.size,
       categories_per_region: categories.size,
       expected_cells: summaries.size * categories.size,
       counted_cells: summaries.sum { |summary| summary[:counted_categories] },
-      google_total_count: summaries.sum { |summary| summary[:google_total_count].to_i },
-      approved_count: summaries.sum { |summary| summary[:approved_count].to_i },
+      google_total_count: google_total,
+      google_total_unique_places: false,
+      google_total_description: 'Suma de conteos por comunidad y categoria. No deduplica locales que coincidan en varias categorias.',
+      category_totals: category_totals,
+      approved_count: approved_total,
       missing_vs_google: summaries.sum { |summary| summary[:missing_vs_google].to_i },
       percentage: percentage_for(
-        summaries.sum { |summary| summary[:approved_count].to_i },
-        summaries.sum { |summary| summary[:google_total_count].to_i }
+        approved_total,
+        google_total
       ),
       critical_issues: issues.count { |issue| issue[:severity] == :critical },
       warning_issues: issues.count { |issue| issue[:severity] == :warning },
       info_issues: issues.count { |issue| issue[:severity] == :info }
     }
+  end
+
+  def category_totals_for(summaries)
+    raw_totals = categories.map do |category|
+      config = GooglePlacesBlackCoffeeClient.config_for(category)
+      filter_types = Array(config[:aggregate_primary_types]).presence ||
+                     Array(config[:aggregate_types]).presence ||
+                     Array(config[:included_type]).presence ||
+                     Array(config[:google_types])
+      filter_mode = config[:aggregate_primary_types].present? ? 'includedPrimaryTypes' : 'includedTypes'
+      google_total_count = summaries.sum do |summary|
+        category_summary = summary.fetch(:categories).find { |candidate| candidate[:category] == category }
+        category_summary&.dig(:google_total_count).to_i
+      end
+
+      {
+        category: category,
+        label: label_for(category),
+        google_total_count: google_total_count,
+        filter_mode: filter_mode,
+        filter_types: filter_types
+      }
+    end
+    global_total = raw_totals.sum { |category_total| category_total[:google_total_count].to_i }
+
+    raw_totals.map do |category_total|
+      category_total.merge(
+        share_percentage: global_total.positive? ? ((category_total[:google_total_count].to_f / global_total) * 100).round(1) : 0
+      )
+    end
   end
 
   def recommendations_for(issues)
@@ -517,6 +554,7 @@ class BlackCoffeeGoogleImportAudit
     recommendations << 'Revisa categorias que concentran demasiado volumen regional; pueden tener tipos Google demasiado amplios.' if issues.any? { |issue| issue[:message].include?('concentra') || issue[:message].include?('frente a') }
     recommendations << 'La auditoria live con Google detecto diferencias; recalcula esas comunidades si quieres refrescar porcentajes.' if issues.any? { |issue| issue[:message].include?('Google live difiere') }
     recommendations << 'El precalculo parece consistente con los datos locales disponibles.' if recommendations.empty?
+    recommendations.unshift('Interpreta el total Google global como suma de conteos comunidad/categoria; no es un censo deduplicado de locales unicos.')
     recommendations
   end
 

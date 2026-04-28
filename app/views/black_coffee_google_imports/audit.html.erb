@@ -80,8 +80,9 @@
         <h4 class="mb-0"><%= totals[:counted_cells] %>/<%= totals[:expected_cells] %></h4>
       </div>
       <div class="col-md-3 col-6 mb-3">
-        <div class="text-muted small text-uppercase">Total Google</div>
+        <div class="text-muted small text-uppercase">Suma Google categorias</div>
         <h4 class="mb-0"><%= number_with_delimiter(totals[:google_total_count]) %></h4>
+        <div class="text-muted small">No deduplica locales entre categorias</div>
       </div>
       <div class="col-md-3 col-6 mb-3">
         <div class="text-muted small text-uppercase">Importados</div>
@@ -103,6 +104,45 @@
       <div class="col-md-4 col-12 mb-2">
         <span class="badge badge-info p-2">Notas: <%= totals[:info_issues] %></span>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <strong>Desglose por categoria</strong>
+  </div>
+  <div class="card-body">
+    <p class="text-muted mb-3">
+      Este desglose ayuda a interpretar saltos grandes: el total global es la suma de estas categorias, no un conteo unico de locales. Los filtros <code>includedTypes</code> pueden contar coincidencias por tipos primarios o secundarios; <code>includedPrimaryTypes</code> es mas estricto.
+    </p>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Categoria</th>
+            <th>Total Google</th>
+            <th>Peso</th>
+            <th>Filtro</th>
+            <th>Tipos usados</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% totals[:category_totals].each do |category_total| %>
+            <tr>
+              <td><%= category_total[:label] %></td>
+              <td><%= number_with_delimiter(category_total[:google_total_count]) %></td>
+              <td><%= category_total[:share_percentage] %>%</td>
+              <td>
+                <span class="badge badge-<%= category_total[:filter_mode] == 'includedPrimaryTypes' ? 'success' : 'secondary' %>">
+                  <%= category_total[:filter_mode] %>
+                </span>
+              </td>
+              <td class="small text-muted"><%= category_total[:filter_types].join(', ') %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -273,7 +313,7 @@
               </span>
             </div>
             <div class="small text-muted mb-2">
-              Estrategia: <%= summary[:strategy] %> · Total Google: <%= number_with_delimiter(summary[:google_total_count]) %> · Importados: <%= number_with_delimiter(summary[:approved_count]) %> · <%= summary[:percentage] %>%
+              Estrategia: <%= summary[:strategy] %> · Suma Google categorias: <%= number_with_delimiter(summary[:google_total_count]) %> · Importados: <%= number_with_delimiter(summary[:approved_count]) %> · <%= summary[:percentage] %>%
             </div>
             <% if region[:google_count_location_note].present? %>
               <div class="text-warning small mb-2"><%= region[:google_count_location_note] %></div>
