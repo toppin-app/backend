@@ -33,6 +33,10 @@ class BlackCoffeeImportRegion < ApplicationRecord
     normalized.start_with?('places/') ? normalized : "places/#{normalized}"
   end
 
+  def google_count_uses_circle?
+    has_attribute?(:google_count_location_strategy) && google_count_location_strategy == 'circle'
+  end
+
   def refresh_status!
     categories = region_categories.reload
     next_status =

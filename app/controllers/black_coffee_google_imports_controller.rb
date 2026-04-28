@@ -162,11 +162,16 @@ class BlackCoffeeGoogleImportsController < ApplicationController
   def refresh_region_google_counts
     region = BlackCoffeeImportRegion.includes(:region_categories).find(params[:region_id])
     client = GooglePlacesAggregateClient.new
-    region_place, resolved_region_place = client.region_place_resource_name(region)
+    region_place = nil
+    resolved_region_place = false
+    unless client.circle_fallback_enabled?(region)
+      region_place, resolved_region_place = client.region_place_resource_name(region)
+    end
     requests_count = resolved_region_place ? 1 : 0
     successful_count = 0
     errors = []
     global_error = nil
+    switched_to_circle = false
 
     importable_categories = GooglePlacesBlackCoffeeClient.importable_categories
     importable_categories.each_with_index do |category, index|
@@ -177,7 +182,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       requests_count += 1
 
       begin
-        count = client.count_region_category(region_place: region_place, category: category)
+        count = client.count_region_category(region: region, region_place: region_place, category: category)
         success_attributes = {
           google_total_count: count,
           google_total_counted_at: Time.current,
@@ -189,6 +194,30 @@ class BlackCoffeeGoogleImportsController < ApplicationController
         region_category.update!(success_attributes)
         successful_count += 1
       rescue GooglePlacesAggregateClient::RequestError => e
+        if retry_with_circle_fallback?(client, region, e)
+          client.enable_circle_fallback!(region, e)
+          region.reload
+          switched_to_circle = true
+          requests_count += 1
+
+          begin
+            count = client.count_region_category(region: region, region_place: nil, category: category)
+            success_attributes = {
+              google_total_count: count,
+              google_total_counted_at: Time.current,
+              google_total_count_error: nil
+            }
+            if region_category.has_attribute?(:google_total_count_error_details)
+              success_attributes[:google_total_count_error_details] = nil
+            end
+            region_category.update!(success_attributes)
+            successful_count += 1
+            next
+          rescue GooglePlacesAggregateClient::RequestError => fallback_error
+            e = fallback_error
+          end
+        end
+
         error_message = compact_google_error(e.message)
         error_details = compact_google_error_details(e.details)
         update_region_category_google_error(region_category, error_message, error_details)
@@ -203,6 +232,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     end
 
     message = "Totales Google actualizados para #{region.name}: #{successful_count}/#{importable_categories.size} categorias. Peticiones estimadas: #{requests_count}."
+    message += ' Se uso circulo aproximado porque Google no soporta la geometria regional.' if switched_to_circle
     flash[:notice] = message
     if global_error.present?
       flash[:alert] = "Google devolvio un error global y se detuvo el calculo para no repetir peticiones. Revisa el detalle en #{region.name}."
@@ -241,6 +271,12 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def global_google_count_error?(message)
     GLOBAL_GOOGLE_COUNT_ERROR_PATTERNS.any? { |pattern| message.match?(pattern) }
+  end
+
+  def retry_with_circle_fallback?(client, region, error)
+    client.unsupported_region_geometry_error?(error) &&
+      client.circle_fallback_available?(region) &&
+      !client.circle_fallback_enabled?(region)
   end
 
   def mark_remaining_categories_with_google_error(region, categories, error_message, error_details)

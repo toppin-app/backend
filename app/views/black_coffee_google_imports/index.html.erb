@@ -201,6 +201,11 @@
               <% if region.google_region_resource_name.present? %>
                 <div class="text-muted small mt-1">Region Google ID guardada.</div>
               <% end %>
+              <% if region.google_count_uses_circle? %>
+                <div class="text-warning small mt-1">
+                  Usando circulo aproximado para Google Aggregate porque el poligono regional no fue soportado.
+                </div>
+              <% end %>
             </div>
 
             <div>
