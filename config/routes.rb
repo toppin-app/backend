@@ -34,6 +34,7 @@ Rails.application.routes.draw do
     resources :google_imports, controller: 'black_coffee_google_imports', only: [:index, :create, :show] do
       collection do
         get :audit
+        post 'google_counts', action: :refresh_all_region_google_counts, as: :refresh_all_region_google_counts
         post 'regions/:region_id/google_counts', action: :refresh_region_google_counts, as: :refresh_region_google_counts
       end
 
