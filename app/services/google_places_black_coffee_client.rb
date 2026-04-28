@@ -44,7 +44,7 @@ class GooglePlacesBlackCoffeeClient
       query: 'hoteles',
       included_type: 'lodging',
       google_types: %w[lodging],
-      aggregate_types: %w[hotel hostel guest_house bed_and_breakfast motel resort_hotel lodging],
+      aggregate_primary_types: %w[hotel hostel motel bed_and_breakfast guest_house resort_hotel inn extended_stay_hotel],
       subcategory: 'hotel'
     },
     'pub' => {

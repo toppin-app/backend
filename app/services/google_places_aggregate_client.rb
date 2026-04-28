@@ -65,14 +65,11 @@ class GooglePlacesAggregateClient
 
   def count_region_category(region:, region_place:, category:)
     config = GooglePlacesBlackCoffeeClient.config_for(category)
-    types = aggregate_types_for(config)
     body = {
       insights: ['INSIGHT_COUNT'],
       filter: {
         locationFilter: location_filter_for(region: region, region_place: region_place),
-        typeFilter: {
-          includedTypes: types
-        },
+        typeFilter: aggregate_type_filter_for(config),
         operatingStatus: ['OPERATING_STATUS_OPERATIONAL']
       }
     }
@@ -137,19 +134,33 @@ class GooglePlacesAggregateClient
     )
   end
 
-  def aggregate_types_for(config)
-    types = Array(config[:aggregate_types]).presence ||
-            Array(config[:included_type]).presence ||
-            Array(config[:google_types]).presence
+  def aggregate_type_filter_for(config)
+    primary_types = Array(config[:aggregate_primary_types]).presence
+    if primary_types.present?
+      return optional_type_exclusions(config).merge(includedPrimaryTypes: primary_types)
+    end
 
-    if types.blank?
+    included_types = Array(config[:aggregate_types]).presence ||
+                     Array(config[:included_type]).presence ||
+                     Array(config[:google_types]).presence
+
+    if included_types.blank?
       raise RequestError.new(
         'La categoria no tiene tipos de Google configurados para conteo.',
         details: JSON.pretty_generate(error: 'missing_aggregate_types', config: config)
       )
     end
 
-    types
+    optional_type_exclusions(config).merge(includedTypes: included_types)
+  end
+
+  def optional_type_exclusions(config)
+    {}.tap do |filter|
+      excluded_types = Array(config[:aggregate_excluded_types]).presence
+      excluded_primary_types = Array(config[:aggregate_excluded_primary_types]).presence
+      filter[:excludedTypes] = excluded_types if excluded_types.present?
+      filter[:excludedPrimaryTypes] = excluded_primary_types if excluded_primary_types.present?
+    end
   end
 
   def location_filter_for(region:, region_place:)
