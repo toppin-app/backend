@@ -5,6 +5,8 @@ class BlackCoffeeGoogleImportAudit
   DEFAULT_LIVE_LIMIT = 20
   MAX_LIVE_LIMIT = 200
   MAX_LIVE_ERROR_DETAILS_LENGTH = 20_000
+  LOW_VOLUME_REGION_SLUGS = %w[ceuta melilla].freeze
+  OPTIONAL_ZERO_COUNT_CATEGORIES = %w[cine discoteca escape_room festival].freeze
 
   attr_reader :regions, :categories, :category_labels
 
@@ -97,7 +99,7 @@ class BlackCoffeeGoogleImportAudit
     elsif !state.google_total_known?
       add_issue(issues, :critical, region, category, 'No hay total Google guardado.', 'Pulsar Calcular total Google para esta comunidad.')
     elsif state.google_total_count.to_i.zero?
-      add_issue(issues, :warning, region, category, 'Google devolvio total 0.', 'Validar si la categoria/tipo de Google tiene sentido para esta comunidad.')
+      add_zero_count_issue(issues, region, category)
     end
 
     if state.google_total_known? && state.google_total_counted_at.blank?
@@ -620,6 +622,26 @@ class BlackCoffeeGoogleImportAudit
       message: message,
       suggestion: suggestion
     }
+  end
+
+  def add_zero_count_issue(issues, region, category)
+    if expected_low_volume_zero?(region, category)
+      add_issue(
+        issues,
+        :info,
+        region,
+        category,
+        'Google devolvio total 0 en una categoria de baja frecuencia para esta comunidad.',
+        'Puede ser normal en comunidades pequenas; valida manualmente solo si necesitas importar esta categoria alli.'
+      )
+    else
+      add_issue(issues, :warning, region, category, 'Google devolvio total 0.', 'Validar si la categoria/tipo de Google tiene sentido para esta comunidad.')
+    end
+  end
+
+  def expected_low_volume_zero?(region, category)
+    LOW_VOLUME_REGION_SLUGS.include?(region.slug.to_s) &&
+      OPTIONAL_ZERO_COUNT_CATEGORIES.include?(category.to_s)
   end
 
   def label_for(category)
