@@ -9,6 +9,12 @@
   </div>
   <div class="mt-3 mt-md-0">
     <%= link_to 'Nuevo import', black_coffee_google_imports_path, class: 'btn btn-outline-dark mr-2' %>
+    <%= button_to 'Limpiar corrida',
+                  black_coffee_google_import_path(@import_run),
+                  method: :delete,
+                  class: 'btn btn-outline-danger mr-2',
+                  form_class: 'd-inline-block',
+                  data: { confirm: "Eliminar la corrida ##{@import_run.id} y sus #{@import_run.candidate_count} candidatos? No se borran locales aprobados; si esta corrida ya aprobo alguno, se bloqueara." } %>
     <%= link_to 'Locales', black_coffee_venues_path, class: 'btn btn-outline-primary' %>
   </div>
 </div>

@@ -21,7 +21,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   before_action :check_admin
   before_action :ensure_regions_and_categories
-  before_action :set_import_run, only: [:show, :approve_candidate, :reject_candidate, :approve_selected, :reject_selected]
+  before_action :set_import_run, only: [:show, :destroy, :approve_candidate, :reject_candidate, :approve_selected, :reject_selected]
 
   def index
     @title = 'Importador Google Maps'
@@ -106,6 +106,23 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       rating: :desc,
       name: :asc
     )
+  end
+
+  def destroy
+    if @import_run.import_candidates.where(status: 'approved').exists?
+      redirect_to black_coffee_google_import_path(@import_run), alert: 'Esta corrida ya tiene locales aprobados. No la borro automaticamente para no dejar locales publicados sin trazabilidad.'
+      return
+    end
+
+    run_id = @import_run.id
+    candidate_count = @import_run.import_candidates.count
+    @import_run.destroy_with_candidates!
+
+    redirect_to black_coffee_google_imports_path, notice: "Corrida ##{run_id} eliminada. Se borraron #{candidate_count} candidatos y se recalculo el progreso."
+  rescue ActiveRecord::RecordNotDestroyed => e
+    redirect_to import_run_fallback_path(@import_run), alert: e.message
+  rescue StandardError => e
+    redirect_to import_run_fallback_path(@import_run), alert: "No se pudo eliminar la corrida: #{e.message}"
   end
 
   def audit
@@ -388,6 +405,10 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def candidate_from_run
     @import_run.import_candidates.find(params[:candidate_id])
+  end
+
+  def import_run_fallback_path(import_run)
+    import_run&.persisted? ? black_coffee_google_import_path(import_run) : black_coffee_google_imports_path
   end
 
   def selected_candidates

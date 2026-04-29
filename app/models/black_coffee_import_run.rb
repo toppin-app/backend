@@ -16,6 +16,25 @@ class BlackCoffeeImportRun < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :limit, numericality: { greater_than: 0, less_than_or_equal_to: 60, only_integer: true }
 
+  def destroy_with_candidates!
+    raise ActiveRecord::RecordNotDestroyed, 'No se puede eliminar una corrida con locales aprobados.' if import_candidates.where(status: 'approved').exists?
+
+    region_category = black_coffee_import_region_category
+    region = black_coffee_import_region
+
+    ActiveRecord::Base.transaction do
+      import_candidates.destroy_all
+      destroy!
+
+      if region_category.present?
+        region_category.refresh_counts!
+        refresh_last_imported_at!(region_category)
+      else
+        region.refresh_status!
+      end
+    end
+  end
+
   def refresh_counts!
     counts = import_candidates.group(:status).count
 
@@ -27,5 +46,12 @@ class BlackCoffeeImportRun < ApplicationRecord
     )
 
     black_coffee_import_region_category&.refresh_counts!
+  end
+
+  private
+
+  def refresh_last_imported_at!(region_category)
+    latest_completed_run = region_category.import_runs.where(status: 'completed').order(created_at: :desc).first
+    region_category.update!(last_imported_at: latest_completed_run&.created_at)
   end
 end

@@ -145,6 +145,12 @@
                   <td><%= run.created_at.strftime('%d/%m/%Y %H:%M') %></td>
                   <td class="text-right">
                     <%= link_to 'Revisar', black_coffee_google_import_path(run), class: 'btn btn-sm btn-outline-primary' %>
+                    <%= button_to 'Limpiar',
+                                  black_coffee_google_import_path(run),
+                                  method: :delete,
+                                  class: 'btn btn-sm btn-outline-danger ml-1',
+                                  form_class: 'd-inline-block',
+                                  data: { confirm: "Eliminar la corrida ##{run.id} y sus #{run.candidate_count} candidatos? No se borran locales aprobados; si esta corrida ya aprobo alguno, se bloqueara." } %>
                   </td>
                 </tr>
               <% end %>

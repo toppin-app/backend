@@ -31,7 +31,7 @@ Rails.application.routes.draw do
   scope :black_coffee, as: :black_coffee do
     resources :venues, controller: 'black_coffee_venues'
     resources :subcategories, controller: 'black_coffee_subcategories', except: [:show]
-    resources :google_imports, controller: 'black_coffee_google_imports', only: [:index, :create, :show] do
+    resources :google_imports, controller: 'black_coffee_google_imports', only: [:index, :create, :show, :destroy] do
       collection do
         get :audit
         post 'google_counts', action: :refresh_all_region_google_counts, as: :refresh_all_region_google_counts
