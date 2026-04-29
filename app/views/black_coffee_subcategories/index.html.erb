@@ -5,8 +5,11 @@
   </div>
   <div>
     <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-secondary mr-2' %>
-    <%= link_to 'Nueva subcategoria', new_black_coffee_subcategory_path, class: 'btn btn-success text-white' %>
   </div>
+</div>
+
+<div class="alert alert-info">
+  Este catalogo es fijo y esta alineado con los tipos de Google Places. Desde el dashboard se consulta y se usa al editar locales, pero no se crean valores dinamicos.
 </div>
 
 <div class="card mb-4">
@@ -33,31 +36,34 @@
       <thead>
         <tr>
           <th>Nombre</th>
+          <th>Etiqueta app</th>
           <th>Categoria</th>
+          <th>Tipos Google</th>
           <th>Locales asociados</th>
-          <th class="text-right">Acciones</th>
         </tr>
       </thead>
       <tbody>
         <% if @subcategories.any? %>
           <% @subcategories.each do |subcategory| %>
             <tr>
-              <td><strong><%= subcategory.name %></strong></td>
-              <td><span class="badge badge-secondary"><%= subcategory.category %></span></td>
-              <td><%= subcategory.try(:venues_count).to_i %></td>
-              <td class="text-right text-nowrap">
-                <%= link_to edit_black_coffee_subcategory_path(subcategory), class: 'btn btn-sm btn-primary text-white' do %>
-                  <i class="fas fa-edit"></i>
-                <% end %>
-                <%= link_to black_coffee_subcategory_path(subcategory), method: :delete, data: { confirm: '¿Eliminar esta subcategoria? Los locales afectados quedaran sin subcategoria.' }, class: 'btn btn-sm btn-danger text-white' do %>
-                  <i class="fas fa-trash"></i>
+              <td><strong><%= subcategory[:name] %></strong></td>
+              <td><%= subcategory[:label] %></td>
+              <td><span class="badge badge-secondary"><%= subcategory[:category] %></span></td>
+              <td class="small" style="max-width: 420px;">
+                <% if Array(subcategory[:google_types]).any? %>
+                  <% Array(subcategory[:google_types]).each do |google_type| %>
+                    <span class="badge badge-light border mr-1 mb-1"><%= google_type %></span>
+                  <% end %>
+                <% else %>
+                  <span class="text-muted">Solo keywords internas</span>
                 <% end %>
               </td>
+              <td><%= subcategory[:venues_count].to_i %></td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="4" class="text-center text-muted py-5">
+            <td colspan="5" class="text-center text-muted py-5">
               No hay subcategorias con los filtros actuales.
             </td>
           </tr>

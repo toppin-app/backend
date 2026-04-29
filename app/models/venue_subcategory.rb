@@ -19,6 +19,7 @@ class VenueSubcategory < ApplicationRecord
   validates :name, :category, presence: true
   validates :category, inclusion: { in: CATEGORIES }
   validates :name, uniqueness: { scope: :category, case_sensitive: false }
+  validate :name_is_part_of_fixed_taxonomy
 
   before_validation :normalize_name
   before_create :assign_identifier
@@ -27,7 +28,9 @@ class VenueSubcategory < ApplicationRecord
     {
       id: id,
       name: name,
+      label: BlackCoffeeTaxonomy.label_for(category, name),
       category: category,
+      googleTypes: Array(BlackCoffeeTaxonomy.option_for(category, name)&.fetch(:google_types, [])),
       venueCount: venues.count
     }
   end
@@ -39,6 +42,13 @@ class VenueSubcategory < ApplicationRecord
   end
 
   def assign_identifier
-    self.id ||= "sub_#{SecureRandom.hex(6)}"
+    self.id ||= BlackCoffeeTaxonomy.subcategory_id(category, name)
+  end
+
+  def name_is_part_of_fixed_taxonomy
+    return if category.blank? || name.blank?
+    return if BlackCoffeeTaxonomy.valid_subcategory?(category, name)
+
+    errors.add(:name, 'no forma parte del catalogo fijo de Black Coffee')
   end
 end

@@ -204,7 +204,6 @@ class Venue < ApplicationRecord
       favoritesCount: favorite_count_from(favorite_counts_by_venue_id),
       isFavorite: favorite_venue_ids.include?(id),
       schedule: weekly_schedule,
-      tags: Array(tags),
       featured: featured,
       visible: visible_to_app?,
       googlePlaceId: google_connected? ? google_place_id : nil
@@ -298,6 +297,11 @@ class Venue < ApplicationRecord
     normalized_name = self.class.normalize_text(subcategory_name)
     self.venue_subcategory =
       if normalized_name.present?
+        unless BlackCoffeeTaxonomy.valid_subcategory?(category, normalized_name)
+          errors.add(:venue_subcategory, 'no forma parte del catalogo fijo de Black Coffee')
+          raise ActiveRecord::RecordInvalid, self
+        end
+
         VenueSubcategory.find_or_create_by!(name: normalized_name, category: category)
       else
         nil
@@ -311,7 +315,7 @@ class Venue < ApplicationRecord
   end
 
   def normalize_tags
-    self.tags = Array(tags).map { |tag| tag.to_s.strip }.reject(&:blank?).uniq
+    self.tags = Array(tags).map { |tag| BlackCoffeeTaxonomy.normalize_google_tag(tag) }.reject(&:blank?).uniq
   end
 
   def normalize_location_metadata

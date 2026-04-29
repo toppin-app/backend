@@ -1,70 +1,42 @@
 class BlackCoffeeSubcategoriesController < ApplicationController
   before_action :check_admin
-  before_action :set_subcategory, only: [:edit, :update, :destroy]
 
   def index
     @title = 'Black Coffee - Subcategorias'
     @categories = Venue::CATEGORIES
 
-    scope = VenueSubcategory.left_joins(:venues)
-    scope = scope.where(category: params[:category]) if params[:category].present? && Venue::CATEGORIES.include?(params[:category])
-    scope = scope.where('venue_subcategories.name LIKE ?', "%#{params[:q].to_s.strip}%") if params[:q].to_s.strip.present?
+    counts = Venue.joins(:venue_subcategory)
+                  .group('venue_subcategories.category', 'venue_subcategories.name')
+                  .count
+    query = params[:q].to_s.strip.downcase
+    selected_category = params[:category].presence
+    selected_category = nil unless Venue::CATEGORIES.include?(selected_category)
 
-    @subcategories = scope.group('venue_subcategories.id')
-                          .order(:category, :name)
-                          .select('venue_subcategories.*, COUNT(venues.id) AS venues_count')
+    @subcategories = BlackCoffeeTaxonomy.subcategory_options(selected_category).filter_map do |entry|
+      haystack = [entry[:name], entry[:label], Array(entry[:google_types]).join(' ')].join(' ').downcase
+      next if query.present? && !haystack.include?(query)
+
+      entry.merge(venues_count: counts[[entry[:category], entry[:name]]].to_i)
+    end
   end
 
   def new
-    @subcategory = VenueSubcategory.new
-    @title = 'Nueva subcategoria Black Coffee'
-    @categories = Venue::CATEGORIES
+    redirect_to black_coffee_subcategories_path, alert: 'Las subcategorias son fijas y se actualizan por codigo.'
   end
 
   def edit
-    @title = "Editar subcategoria #{@subcategory.name}"
-    @categories = Venue::CATEGORIES
+    redirect_to black_coffee_subcategories_path, alert: 'Las subcategorias son fijas y no se editan desde el dashboard.'
   end
 
   def create
-    @subcategory = VenueSubcategory.new(subcategory_params)
-    @categories = Venue::CATEGORIES
-    @title = 'Nueva subcategoria Black Coffee'
-
-    if @subcategory.save
-      redirect_to black_coffee_subcategories_path, notice: 'Subcategoria creada correctamente.'
-    else
-      render :new, status: :unprocessable_entity
-    end
+    redirect_to black_coffee_subcategories_path, alert: 'Las subcategorias son fijas y se actualizan por codigo.'
   end
 
   def update
-    @categories = Venue::CATEGORIES
-    @title = "Editar subcategoria #{@subcategory.name}"
-
-    if @subcategory.update(update_subcategory_params)
-      redirect_to black_coffee_subcategories_path, notice: 'Subcategoria actualizada correctamente.'
-    else
-      render :edit, status: :unprocessable_entity
-    end
+    redirect_to black_coffee_subcategories_path, alert: 'Las subcategorias son fijas y no se editan desde el dashboard.'
   end
 
   def destroy
-    @subcategory.destroy
-    redirect_to black_coffee_subcategories_path, notice: 'Subcategoria eliminada correctamente.'
-  end
-
-  private
-
-  def set_subcategory
-    @subcategory = VenueSubcategory.find(params[:id])
-  end
-
-  def subcategory_params
-    params.require(:venue_subcategory).permit(:name, :category)
-  end
-
-  def update_subcategory_params
-    params.require(:venue_subcategory).permit(:name)
+    redirect_to black_coffee_subcategories_path, alert: 'Las subcategorias son fijas y no se eliminan desde el dashboard.'
   end
 end

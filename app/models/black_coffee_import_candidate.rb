@@ -87,6 +87,10 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     end
   end
 
+  def google_type_tags
+    BlackCoffeeTaxonomy.google_tags_for_place(raw_payload || {})
+  end
+
   def approve!
     raise ActiveRecord::RecordInvalid, self unless valid_for_approval?
     return approved_venue if approved? && approved_venue.present?
@@ -119,7 +123,9 @@ class BlackCoffeeImportCandidate < ApplicationRecord
       venue.state = state if venue.has_attribute?(:state)
       venue.country = country if venue.has_attribute?(:country)
       venue.country_code = country_code if venue.has_attribute?(:country_code)
-      venue.assign_subcategory_by_name!(subcategory) if subcategory.present?
+      if subcategory.present? && BlackCoffeeTaxonomy.valid_subcategory?(category, subcategory)
+        venue.assign_subcategory_by_name!(subcategory)
+      end
       venue.save!
 
       image_url_list.first(10).each_with_index do |url, index|
@@ -171,11 +177,7 @@ class BlackCoffeeImportCandidate < ApplicationRecord
   end
 
   def default_tags
-    [
-      category,
-      subcategory,
-      rating.present? ? "google_rating_#{rating}" : nil
-    ].compact
+    google_type_tags.presence || BlackCoffeeTaxonomy.fallback_internal_tags(category, subcategory)
   end
 
   def find_existing_venue

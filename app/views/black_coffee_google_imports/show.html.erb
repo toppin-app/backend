@@ -114,7 +114,7 @@
                 <div class="text-muted small">
                   <%= candidate.category %>
                   <% if candidate.subcategory.present? %>
-                    / <%= candidate.subcategory %>
+                    / <%= BlackCoffeeTaxonomy.label_for(candidate.category, candidate.subcategory) %>
                   <% end %>
                 </div>
                 <% if candidate.google_maps_uri.present? %>
@@ -122,6 +122,13 @@
                 <% end %>
                 <% if candidate.google_place_id.present? %>
                   <div class="text-muted small">Google ID: <%= candidate.google_place_id %></div>
+                <% end %>
+                <% if candidate.google_type_tags.any? %>
+                  <div class="small mt-1">
+                    <% candidate.google_type_tags.first(4).each do |tag| %>
+                      <span class="badge badge-light border mr-1 mb-1"><%= tag %></span>
+                    <% end %>
+                  </div>
                 <% end %>
               </td>
               <td>

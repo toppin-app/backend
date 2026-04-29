@@ -8,11 +8,12 @@ class BlackCoffeeVenuesController < ApplicationController
   def index
     @title = 'Black Coffee'
     @categories = Venue::CATEGORIES
+    @subcategory_options = BlackCoffeeTaxonomy.subcategory_options(params[:category].presence)
     @category_counts = Venue.group(:category).count
     @stats = {
       venues: Venue.count,
       featured: Venue.where(featured: true).count,
-      subcategories: VenueSubcategory.count,
+      subcategories: BlackCoffeeTaxonomy.subcategory_options.count,
       favorites: UserFavorite.count
     }
 
@@ -87,9 +88,9 @@ class BlackCoffeeVenuesController < ApplicationController
 
   def prepare_form_state
     @categories = Venue::CATEGORIES
-    @subcategory_options = VenueSubcategory.order(:category, :name)
-    @subcategory_options_json = @subcategory_options.map { |subcategory| { name: subcategory.name, category: subcategory.category } }.to_json
-    @tag_list_input = params.dig(:venue, :tag_list).presence || Array(@venue.tags).join(', ')
+    @subcategory_options = BlackCoffeeTaxonomy.subcategory_options
+    @subcategory_options_json = @subcategory_options.to_json
+    @tags_payload = params.dig(:venue, :tags_payload).presence || Array(@venue.tags).to_json
     @image_entries = image_entries_for_form
     @image_order_payload = image_order_payload_for(@image_entries)
     @subcategory_input = params.dig(:venue, :subcategory_name).presence || @venue.subcategory_name
@@ -98,7 +99,7 @@ class BlackCoffeeVenuesController < ApplicationController
 
   def persist_venue
     @venue.assign_attributes(venue_params)
-    @venue.tags = parse_tag_list
+    @venue.tags = parse_tags_payload
     image_entries = normalized_image_entries_from_payload
     normalized_schedule = schedule_payload
 
@@ -167,8 +168,15 @@ class BlackCoffeeVenuesController < ApplicationController
     raise InvalidSchedulePayloadError
   end
 
-  def parse_tag_list
-    params.dig(:venue, :tag_list).to_s.split(',').map(&:strip).reject(&:blank?).uniq
+  def parse_tags_payload
+    raw_payload = params.dig(:venue, :tags_payload)
+    return [] if raw_payload.blank?
+
+    Array(JSON.parse(raw_payload)).map do |tag|
+      BlackCoffeeTaxonomy.normalize_google_tag(tag)
+    end.reject(&:blank?).uniq
+  rescue JSON::ParserError
+    []
   end
 
   def image_entries_for_form

@@ -64,7 +64,13 @@
           <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, params[:category]), class: 'form-control' %>
         </div>
         <div class="col-md-3 mb-3">
-          <%= text_field_tag :subcategory, params[:subcategory], class: 'form-control', placeholder: 'Filtrar por subcategoria' %>
+          <%= select_tag :subcategory,
+                         options_for_select(
+                           [['Todas las subcategorias', '']] +
+                           @subcategory_options.map { |entry| ["#{entry[:label]} (#{entry[:category]})", entry[:name]] },
+                           params[:subcategory]
+                         ),
+                         class: 'form-control' %>
         </div>
         <div class="col-md-2 mb-3">
           <div class="d-flex">
@@ -115,7 +121,7 @@
                 <div class="text-muted small"><%= venue.address %></div>
               </td>
               <td><span class="badge badge-secondary"><%= venue.category %></span></td>
-              <td><%= venue.subcategory_name.presence || 'Sin subcategoria' %></td>
+              <td><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name).presence || 'Sin subcategoria' %></td>
               <td><%= venue.city %></td>
               <td>
                 <strong><%= venue.country.presence || 'Sin pais' %></strong>

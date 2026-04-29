@@ -38,10 +38,10 @@
         <div class="col-md-3">
           <div class="mb-3">
             <%= label_tag 'venue_subcategory_name', 'Subcategoria' %>
-            <%= text_field_tag 'venue[subcategory_name]', @subcategory_input, class: 'form-control', list: 'venue-subcategories-list', id: 'venue-subcategory-input', placeholder: 'Ej: brunch, cocteleria, artesanal' %>
+            <%= select_tag 'venue[subcategory_name]', '', class: 'form-control', id: 'venue-subcategory-input', data: { selected: @subcategory_input } %>
             <small class="form-text text-muted">
-              Puedes escribir una nueva subcategoria o elegir una existente.
-              <%= link_to 'Gestionarlas', black_coffee_subcategories_path %>
+              Catalogo fijo alineado con Google. Puedes consultarlo en
+              <%= link_to 'subcategorias', black_coffee_subcategories_path %>.
             </small>
           </div>
         </div>
@@ -110,9 +110,18 @@
         </div>
         <div class="col-md-8">
           <div class="mb-0">
-            <%= label_tag 'venue_tag_list', 'Tags' %>
-            <%= text_field_tag 'venue[tag_list]', @tag_list_input, class: 'form-control', id: 'venue-tag-list', placeholder: 'romantico, terraza, craft beer' %>
-            <small class="form-text text-muted">Introduce etiquetas separadas por coma.</small>
+            <%= label_tag 'venue-tag-input', 'Etiquetas internas Google' %>
+            <%= hidden_field_tag 'venue[tags_payload]', @tags_payload, id: 'venue-tags-payload' %>
+            <div class="input-group">
+              <input type="text" class="form-control" id="venue-tag-input" placeholder="Ej: mexican_restaurant">
+              <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="add-venue-tag-button">Agregar</button>
+              </div>
+            </div>
+            <div id="venue-tags-list" class="d-flex flex-wrap mt-2"></div>
+            <small class="form-text text-muted">
+              Se guardan como array interno, no como texto separado por comas. No se muestran en la app.
+            </small>
           </div>
         </div>
         <div class="col-md-4">
@@ -177,8 +186,6 @@
     </div>
   </div>
 
-  <datalist id="venue-subcategories-list"></datalist>
-
   <div class="pb-5">
     <%= form.submit(@venue.persisted? ? 'Actualizar local' : 'Crear local', class: 'btn btn-success text-white') %>
     <%= link_to 'Cancelar', black_coffee_venues_path, class: 'btn btn-secondary text-white' %>
@@ -196,7 +203,10 @@
 
     var categorySelect = document.getElementById('venue-category-select');
     var subcategoryInput = document.getElementById('venue-subcategory-input');
-    var subcategoriesList = document.getElementById('venue-subcategories-list');
+    var tagsPayloadField = document.getElementById('venue-tags-payload');
+    var tagInput = document.getElementById('venue-tag-input');
+    var addTagButton = document.getElementById('add-venue-tag-button');
+    var tagsList = document.getElementById('venue-tags-list');
     var imageList = document.getElementById('venue-image-list');
     var imageOrderField = document.getElementById('venue-image-order-payload');
     var imageInitialState = document.getElementById('venue-image-initial-state');
@@ -205,11 +215,18 @@
     var scheduleField = document.getElementById('venue-schedule-payload');
     var scheduleEditor = document.getElementById('schedule-editor');
     var scheduleData = [];
+    var internalTags = [];
 
     try {
       scheduleData = JSON.parse(scheduleField.dataset.initialSchedule || '[]');
     } catch (error) {
       scheduleData = [];
+    }
+
+    try {
+      internalTags = JSON.parse(tagsPayloadField.value || '[]');
+    } catch (error) {
+      internalTags = [];
     }
 
     function parseInitialImageEntries() {
@@ -235,6 +252,54 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    function normalizeTag(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function syncTagsPayload() {
+      internalTags = internalTags.map(normalizeTag).filter(function (tag, index, list) {
+        return tag.length > 0 && list.indexOf(tag) === index;
+      });
+      tagsPayloadField.value = JSON.stringify(internalTags);
+    }
+
+    function renderTags() {
+      syncTagsPayload();
+      tagsList.innerHTML = '';
+
+      if (internalTags.length === 0) {
+        tagsList.innerHTML = '<span class="text-muted small">Sin etiquetas internas.</span>';
+        return;
+      }
+
+      internalTags.forEach(function (tag) {
+        var chip = document.createElement('span');
+        chip.className = 'badge badge-dark mr-2 mb-2 p-2';
+        chip.innerHTML = escapeHtml(tag) + ' <button type="button" class="close text-white ml-2" aria-label="Quitar" style="font-size: 1rem; line-height: 0.8;">&times;</button>';
+        chip.querySelector('button').addEventListener('click', function () {
+          internalTags = internalTags.filter(function (current) { return current !== tag; });
+          renderTags();
+        });
+        tagsList.appendChild(chip);
+      });
+    }
+
+    function addInternalTag() {
+      var normalized = normalizeTag(tagInput.value);
+      if (!normalized || internalTags.indexOf(normalized) >= 0) {
+        tagInput.value = '';
+        return;
+      }
+
+      internalTags.push(normalized);
+      tagInput.value = '';
+      renderTags();
     }
 
     function rowTitle(index) {
@@ -489,6 +554,14 @@
       });
     });
 
+    addTagButton.addEventListener('click', addInternalTag);
+    tagInput.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addInternalTag();
+      }
+    });
+
     function updateSubcategoryOptions() {
       var currentCategory = categorySelect.value;
       var allSubcategories = [];
@@ -503,12 +576,18 @@
         return !currentCategory || subcategory.category === currentCategory;
       });
 
-      subcategoriesList.innerHTML = '';
+      var selectedValue = subcategoryInput.dataset.selected || subcategoryInput.value || '';
+      subcategoryInput.innerHTML = '<option value="">Sin subcategoria especifica</option>';
       filtered.forEach(function (subcategory) {
         var option = document.createElement('option');
         option.value = subcategory.name;
-        subcategoriesList.appendChild(option);
+        option.textContent = subcategory.label || subcategory.name;
+        if (subcategory.name === selectedValue) {
+          option.selected = true;
+        }
+        subcategoryInput.appendChild(option);
       });
+      subcategoryInput.dataset.selected = '';
     }
 
     categorySelect.addEventListener('change', function () {
@@ -629,11 +708,13 @@
     }
 
     form.addEventListener('submit', function () {
+      syncTagsPayload();
       collectSchedulePayload();
     });
 
     updateSubcategoryOptions();
-    refreshImageLabels();
+    renderTags();
+    refreshImageRows();
     renderScheduleEditor();
   });
 </script>
