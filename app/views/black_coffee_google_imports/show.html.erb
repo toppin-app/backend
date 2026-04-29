@@ -61,7 +61,7 @@
 </div>
 
 <div class="alert alert-info">
-  Las fotos se guardan como URLs publicas devueltas por Place Photos, sin exponer la API key. Tambien dejamos referencias y atribuciones de Google en el candidato para trazabilidad.
+  Las fotos se guardan como URLs publicas devueltas por Place Photos, sin exponer la API key. Tambien dejamos referencias, atribuciones, horarios y tipos de Google en el candidato para trazabilidad.
 </div>
 
 <%= form_with url: approve_selected_black_coffee_google_import_path(@import_run), method: :post, local: true, html: { id: 'bulk-candidates-form' } do %>
@@ -88,6 +88,7 @@
           <th>Direccion</th>
           <th>Rating</th>
           <th>Fotos Google</th>
+          <th>Horario Google</th>
           <th>Estado</th>
           <th class="text-right">Acciones</th>
         </tr>
@@ -142,6 +143,26 @@
                 <span class="badge badge-light"><%= candidate.image_url_list.size %> URLs</span>
                 <span class="badge badge-light"><%= candidate.google_photo_reference_list.size %> refs</span>
               </td>
+              <td style="min-width: 220px;">
+                <% opening_descriptions = candidate.google_opening_hours_descriptions %>
+                <% if opening_descriptions.any? %>
+                  <% opening_descriptions.first(2).each do |description| %>
+                    <div class="small"><%= description %></div>
+                  <% end %>
+                  <% if opening_descriptions.size > 2 %>
+                    <details class="small mt-1">
+                      <summary>Ver semana completa</summary>
+                      <% opening_descriptions.drop(2).each do |description| %>
+                        <div><%= description %></div>
+                      <% end %>
+                    </details>
+                  <% end %>
+                <% elsif candidate.google_schedule_payload.present? %>
+                  <span class="badge badge-light">Horario importable</span>
+                <% else %>
+                  <span class="text-muted small">Sin horario Google</span>
+                <% end %>
+              </td>
               <td>
                 <% badge_class =
                   case candidate.status
@@ -174,7 +195,7 @@
           <% end %>
         <% else %>
           <tr>
-            <td colspan="8" class="text-center text-muted py-5">No hay candidatos en esta corrida.</td>
+            <td colspan="9" class="text-center text-muted py-5">No hay candidatos en esta corrida.</td>
           </tr>
         <% end %>
       </tbody>

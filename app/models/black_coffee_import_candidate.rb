@@ -1,5 +1,14 @@
 class BlackCoffeeImportCandidate < ApplicationRecord
   STATUSES = %w[pending approved rejected duplicate].freeze
+  GOOGLE_DAY_TO_BLACK_COFFEE_DAY = {
+    0 => 'D',
+    1 => 'L',
+    2 => 'M',
+    3 => 'X',
+    4 => 'J',
+    5 => 'V',
+    6 => 'S'
+  }.freeze
 
   belongs_to :black_coffee_import_run,
              inverse_of: :import_candidates
@@ -46,6 +55,38 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     Array(google_photo_references)
   end
 
+  def google_opening_hours_descriptions
+    Array(google_opening_hours&.dig('weekdayDescriptions')).map(&:to_s).reject(&:blank?)
+  end
+
+  def google_schedule_payload
+    opening_hours = google_opening_hours
+    return if opening_hours.blank?
+
+    periods = Array(opening_hours['periods'])
+    return full_week_google_schedule if always_open_periods?(periods)
+    return closed_week_google_schedule if opening_hours.key?('periods') && periods.empty?
+
+    slots_by_day = periods.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |period, memo|
+      period_hash = google_point(period)
+      open_point = google_point(period_hash[:open])
+      close_point = google_point(period_hash[:close])
+      day = GOOGLE_DAY_TO_BLACK_COFFEE_DAY[open_point['day'].to_i]
+      open_time = google_point_time(open_point)
+      close_time = google_point_time(close_point)
+      next if day.blank? || open_time.blank? || close_time.blank?
+
+      memo[day] << { open: open_time, close: close_time }
+    end
+
+    return if slots_by_day.empty?
+
+    Venue::DAY_ORDER.map do |day|
+      slots = Array(slots_by_day[day]).uniq.sort_by { |slot| slot[:open] }
+      { day: day, closed: slots.blank?, slots: slots }
+    end
+  end
+
   def approve!
     raise ActiveRecord::RecordInvalid, self unless valid_for_approval?
     return approved_venue if approved? && approved_venue.present?
@@ -57,6 +98,7 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     end
 
     venue = nil
+    schedule_payload = google_schedule_payload
     ActiveRecord::Base.transaction do
       venue = Venue.new(
         name: name,
@@ -88,6 +130,7 @@ class BlackCoffeeImportCandidate < ApplicationRecord
         end
         image.save!
       end
+      venue.sync_schedule!(schedule_payload) if schedule_payload.present?
 
       update!(
         status: 'approved',
@@ -161,5 +204,43 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     self.image_urls = Array(image_urls).reject(&:blank?)
     self.google_photo_references = Array(google_photo_references)
     self.author_attributions = Array(author_attributions)
+  end
+
+  def google_opening_hours
+    payload =
+      if raw_payload.respond_to?(:with_indifferent_access)
+        raw_payload.with_indifferent_access
+      else
+        {}
+      end
+    hours = payload[:regularOpeningHours].presence || payload[:currentOpeningHours].presence
+    hours.respond_to?(:with_indifferent_access) ? hours.with_indifferent_access : nil
+  end
+
+  def google_point(value)
+    value.respond_to?(:with_indifferent_access) ? value.with_indifferent_access : {}
+  end
+
+  def google_point_time(point)
+    return unless point.key?(:hour)
+
+    format('%<hour>02d:%<minute>02d', hour: point[:hour].to_i, minute: point[:minute].to_i)
+  end
+
+  def always_open_periods?(periods)
+    periods.any? do |period|
+      period_hash = google_point(period)
+      period_hash[:open].present? && period_hash[:close].blank?
+    end
+  end
+
+  def full_week_google_schedule
+    Venue::DAY_ORDER.map do |day|
+      { day: day, closed: false, slots: [{ open: '00:00', close: '23:59' }] }
+    end
+  end
+
+  def closed_week_google_schedule
+    Venue::DAY_ORDER.map { |day| { day: day, closed: true, slots: [] } }
   end
 end
