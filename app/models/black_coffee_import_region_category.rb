@@ -57,4 +57,40 @@ class BlackCoffeeImportRegionCategory < ApplicationRecord
 
     black_coffee_import_region.refresh_status!
   end
+
+  def apply_review_deltas!(approved_delta: 0, duplicate_delta: 0, rejected_delta: 0)
+    approved_delta = approved_delta.to_i
+    duplicate_delta = duplicate_delta.to_i
+    rejected_delta = rejected_delta.to_i
+    return if approved_delta.zero? && duplicate_delta.zero? && rejected_delta.zero?
+
+    with_lock do
+      next_pending = [pending_count.to_i - approved_delta - duplicate_delta - rejected_delta, 0].max
+      next_approved = approved_count.to_i + approved_delta
+      next_duplicate = duplicate_count.to_i + duplicate_delta
+      next_rejected = rejected_count.to_i + rejected_delta
+      next_total = total_candidates.to_i.positive? ? total_candidates.to_i : import_candidates.count
+      next_status =
+        if next_approved.positive?
+          'imported'
+        elsif next_pending.positive?
+          'pending_review'
+        elsif next_total.positive?
+          'reviewed'
+        else
+          'pending'
+        end
+
+      update!(
+        status: next_status,
+        total_candidates: next_total,
+        pending_count: next_pending,
+        approved_count: next_approved,
+        rejected_count: next_rejected,
+        duplicate_count: next_duplicate
+      )
+    end
+
+    black_coffee_import_region.refresh_status!
+  end
 end

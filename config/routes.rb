@@ -48,8 +48,12 @@ Rails.application.routes.draw do
 
       member do
         post :approve_selected
+        post :approve_all_pending
         post :reject_selected
         post :refresh_selected_images
+        post :retry_approval_batch
+        get :approval_status
+        post :advance_approval
         post :retry_image_refresh
         get :image_refresh_status
         post :advance_image_refresh

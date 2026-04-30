@@ -1,5 +1,8 @@
 class BlackCoffeeGoogleImportsController < ApplicationController
   ALL_CATEGORIES_VALUE = '__all__'.freeze
+  DEFAULT_CANDIDATES_PER_PAGE = 100
+  MAX_CANDIDATES_PER_PAGE = 250
+  CANDIDATES_PER_PAGE_OPTIONS = [50, 100, 200, 250].freeze
   MAX_STORED_GOOGLE_ERROR_LENGTH = 1_000
   MAX_STORED_GOOGLE_ERROR_DETAILS_LENGTH = 20_000
   MAX_FLASH_ERROR_LENGTH = 700
@@ -28,8 +31,12 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     :approve_candidate,
     :reject_candidate,
     :approve_selected,
+    :approve_all_pending,
     :reject_selected,
     :refresh_selected_images,
+    :retry_approval_batch,
+    :approval_status,
+    :advance_approval,
     :retry_image_refresh,
     :image_refresh_status,
     :advance_image_refresh
@@ -164,13 +171,25 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def show
     @title = "Candidatos importados #{@import_run.black_coffee_import_region.name} · #{run_category_label} · corrida ##{@import_run.id}"
-    @candidates = @import_run.import_candidates.order(
-      Arel.sql("CASE status WHEN 'pending' THEN 0 WHEN 'duplicate' THEN 1 WHEN 'approved' THEN 2 WHEN 'rejected' THEN 3 ELSE 4 END"),
-      rating: :desc,
-      name: :asc
-    )
+    @per_page_options = CANDIDATES_PER_PAGE_OPTIONS
+    @per_page = per_page_param
+    @total_candidates = @import_run.candidate_count.to_i.positive? ? @import_run.candidate_count.to_i : @import_run.import_candidates.count
+    @total_pages = [(@total_candidates.to_f / @per_page).ceil, 1].max
+    @page = [[page_param, 1].max, @total_pages].min
+    @pending_candidates_count = [
+      @total_candidates - @import_run.approved_count.to_i - @import_run.duplicate_count.to_i - @import_run.rejected_count.to_i,
+      0
+    ].max
+    @visible_candidates_from = @total_candidates.zero? ? 0 : ((@page - 1) * @per_page) + 1
+    @visible_candidates_to = [@page * @per_page, @total_candidates].min
+    @candidates = ordered_candidates_scope
+                  .offset((@page - 1) * @per_page)
+                  .limit(@per_page)
+                  .includes(:approved_venue, :duplicate_venue)
     @latest_image_refresh_batch = @import_run.photo_refresh_batches.recent_first.first
     @image_refresh_progress_payload = @latest_image_refresh_batch&.as_progress_json
+    @latest_approval_batch = latest_approval_batch
+    @approval_progress_payload = @latest_approval_batch&.as_progress_json
   end
 
   def destroy
@@ -208,68 +227,93 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def approve_candidate
     candidate = candidate_from_run
-    venue = candidate.approve!
+    unless candidate.pending?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: 'Este candidato ya fue revisado.'
+      return
+    end
 
+    venue = candidate.approve!(refresh_counts: false)
     if candidate.duplicate?
-      redirect_to black_coffee_google_import_path(@import_run), alert: "#{candidate.name} ya existe como #{venue.name}."
+      @import_run.apply_review_deltas!(duplicate_delta: 1)
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "#{candidate.name} ya existe como #{venue.name}."
     else
-      redirect_to black_coffee_google_import_path(@import_run), notice: "#{candidate.name} aprobado y creado como local."
+      @import_run.apply_review_deltas!(approved_delta: 1)
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "#{candidate.name} aprobado y creado como local."
     end
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to black_coffee_google_import_path(@import_run), alert: "No se pudo aprobar: #{e.record.errors.full_messages.to_sentence}"
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo aprobar: #{e.record.errors.full_messages.to_sentence}"
   rescue StandardError => e
-    redirect_to black_coffee_google_import_path(@import_run), alert: "No se pudo aprobar: #{e.message}"
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo aprobar: #{e.message}"
   end
 
   def reject_candidate
     candidate = candidate_from_run
-    candidate.reject!
+    unless candidate.pending?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: 'Este candidato ya fue revisado.'
+      return
+    end
 
-    redirect_to black_coffee_google_import_path(@import_run), notice: "#{candidate.name} rechazado."
+    candidate.reject!(refresh_counts: false)
+    @import_run.apply_review_deltas!(rejected_delta: 1)
+
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "#{candidate.name} rechazado."
   end
 
   def approve_selected
-    candidates = selected_candidates
-    approved_count = 0
-    duplicate_count = 0
-    errors = []
-
-    candidates.each do |candidate|
-      venue = candidate.approve!
-      if candidate.duplicate?
-        duplicate_count += 1
-      elsif venue.present?
-        approved_count += 1
-      end
-    rescue StandardError => e
-      errors << "#{candidate.name}: #{e.message}"
+    existing_batch = latest_approval_batch
+    if existing_batch&.active?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: 'Ya hay una aprobacion en curso para esta corrida. Puedes seguir el progreso desde aqui.'
+      return
     end
 
-    message = "#{approved_count} aprobados"
-    message += ", #{duplicate_count} duplicados" if duplicate_count.positive?
-    flash[:notice] = message
-    flash[:alert] = compact_flash_errors(errors, prefix: 'Algunos candidatos no se pudieron aprobar:') if errors.any?
+    candidate_ids = selected_candidates.pluck(:id)
+    if candidate_ids.blank?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: 'Selecciona al menos un candidato pendiente para aprobar.'
+      return
+    end
 
-    redirect_to black_coffee_google_import_path(@import_run)
+    batch = BlackCoffeeImportApprovalRunner.start_selected!(import_run: @import_run, candidate_ids: candidate_ids)
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "Aprobacion preparada para #{batch.total_candidates_count} candidatos. Iremos publicandolos por bloques cortos para no saturar el servidor."
+  rescue StandardError => e
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar la aprobacion masiva: #{e.message}"
+  end
+
+  def approve_all_pending
+    existing_batch = latest_approval_batch
+    if existing_batch&.active?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: 'Ya hay una aprobacion en curso para esta corrida. Puedes seguir el progreso desde aqui.'
+      return
+    end
+
+    batch = BlackCoffeeImportApprovalRunner.start_pending_scope!(import_run: @import_run)
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "Aprobacion total preparada para #{batch.total_candidates_count} pendientes. El dashboard los ira aprobando por lotes estables."
+  rescue StandardError => e
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar la aprobacion total: #{e.message}"
   end
 
   def reject_selected
     candidates = selected_candidates
-    candidates.each(&:reject!)
+    if candidates.blank?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: 'Selecciona al menos un candidato pendiente para rechazar.'
+      return
+    end
 
-    redirect_to black_coffee_google_import_path(@import_run), notice: "#{candidates.size} candidatos rechazados."
+    rejected_count = candidates.update_all(status: 'rejected', reviewed_at: Time.current)
+    @import_run.apply_review_deltas!(rejected_delta: rejected_count)
+
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "#{rejected_count} candidatos rechazados."
   end
 
   def refresh_selected_images
     existing_batch = @import_run.photo_refresh_batches.active.recent_first.first
     if existing_batch.present?
-      redirect_to black_coffee_google_import_path(@import_run), notice: 'Ya hay un reintento de imagenes en curso para esta corrida. Puedes seguirlo desde aqui.'
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: 'Ya hay un reintento de imagenes en curso para esta corrida. Puedes seguirlo desde aqui.'
       return
     end
 
     candidates = selected_candidates_for_image_refresh
     if candidates.blank?
-      redirect_to black_coffee_google_import_path(@import_run), alert: 'Selecciona al menos un candidato para reintentar sus imagenes.'
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: 'Selecciona al menos un candidato para reintentar sus imagenes.'
       return
     end
 
@@ -277,22 +321,44 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       import_run: @import_run,
       candidate_ids: candidates.pluck(:id)
     )
-    redirect_to black_coffee_google_import_path(@import_run), notice: "Reintento de imagenes preparado para #{batch.total_candidates_count} candidatos."
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "Reintento de imagenes preparado para #{batch.total_candidates_count} candidatos."
   rescue StandardError => e
-    redirect_to black_coffee_google_import_path(@import_run), alert: "No se pudo preparar el reintento de imagenes: #{e.message}"
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar el reintento de imagenes: #{e.message}"
   end
 
   def retry_image_refresh
     batch = latest_image_refresh_batch!
     BlackCoffeeImportPhotoRefreshRunner.retry_failed!(batch: batch)
-    redirect_to black_coffee_google_import_path(@import_run), notice: 'Reintentaremos las imagenes que quedaron pendientes o fallaron.'
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: 'Reintentaremos las imagenes que quedaron pendientes o fallaron.'
   rescue StandardError => e
-    redirect_to black_coffee_google_import_path(@import_run), alert: "No se pudo reanudar el reintento de imagenes: #{e.message}"
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo reanudar el reintento de imagenes: #{e.message}"
   end
 
   def image_refresh_status
     batch = latest_image_refresh_batch
     render json: batch.present? ? batch.as_progress_json : {}
+  end
+
+  def retry_approval_batch
+    batch = latest_approval_batch!
+    BlackCoffeeImportApprovalRunner.retry_failed!(batch: batch)
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: 'Reintentaremos solo las aprobaciones que quedaron pendientes o fallaron.'
+  rescue StandardError => e
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo reanudar la aprobacion: #{e.message}"
+  end
+
+  def approval_status
+    batch = latest_approval_batch
+    render json: batch.present? ? batch.as_progress_json : {}
+  end
+
+  def advance_approval
+    batch = latest_approval_batch!
+    BlackCoffeeImportApprovalRunner.advance!(batch: batch)
+    render json: batch.reload.as_progress_json
+  rescue StandardError => e
+    batch = latest_approval_batch
+    render json: (batch.present? ? batch.reload.as_progress_json : {}).merge(errorMessage: e.message), status: :unprocessable_entity
   end
 
   def advance_image_refresh
@@ -517,9 +583,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
   def set_import_run
     @import_run = BlackCoffeeImportRun.includes(
       :black_coffee_import_region,
-      :black_coffee_import_region_category,
-      :photo_refresh_batches,
-      import_candidates: [:approved_venue, :duplicate_venue]
+      :black_coffee_import_region_category
     ).find(params[:id])
   end
 
@@ -533,6 +597,14 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def latest_image_refresh_batch!
     latest_image_refresh_batch || raise('No hay ningun lote de reintento de imagenes para esta corrida.')
+  end
+
+  def latest_approval_batch
+    @import_run.approval_batches.recent_first.first
+  end
+
+  def latest_approval_batch!
+    latest_approval_batch || raise('No hay ningun lote de aprobacion para esta corrida.')
   end
 
   def import_run_fallback_path(import_run)
@@ -555,6 +627,33 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   def run_category_label
     GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG.dig(@import_run.category, :label) || @import_run.category
+  end
+
+  def ordered_candidates_scope
+    @import_run.import_candidates.order(
+      Arel.sql("CASE status WHEN 'pending' THEN 0 WHEN 'duplicate' THEN 1 WHEN 'approved' THEN 2 WHEN 'rejected' THEN 3 ELSE 4 END"),
+      rating: :desc,
+      name: :asc
+    )
+  end
+
+  def page_param
+    value = params[:page].to_i
+    value.positive? ? value : 1
+  end
+
+  def per_page_param
+    value = params[:per_page].to_i
+    return DEFAULT_CANDIDATES_PER_PAGE if value <= 0
+
+    [value, MAX_CANDIDATES_PER_PAGE].min
+  end
+
+  def redirect_pagination_params
+    {
+      page: params[:page].presence,
+      per_page: params[:per_page].presence
+    }.compact
   end
 
   def progress_by_region(regions, categories)

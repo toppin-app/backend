@@ -92,13 +92,13 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     BlackCoffeeTaxonomy.google_tags_for_place(raw_payload || {})
   end
 
-  def approve!
+  def approve!(refresh_counts: true, preloaded_duplicate: nil)
     raise ActiveRecord::RecordInvalid, self unless valid_for_approval?
     return approved_venue if approved? && approved_venue.present?
 
-    existing_duplicate = duplicate_venue.presence || find_existing_venue
+    existing_duplicate = preloaded_duplicate.presence || duplicate_venue.presence || find_existing_venue
     if existing_duplicate.present?
-      mark_as_duplicate!(existing_duplicate)
+      mark_as_duplicate!(existing_duplicate, refresh_counts: refresh_counts)
       return existing_duplicate
     end
 
@@ -145,20 +145,20 @@ class BlackCoffeeImportCandidate < ApplicationRecord
         duplicate_venue: nil,
         reviewed_at: Time.current
       )
-      black_coffee_import_run.refresh_counts!
+      black_coffee_import_run.refresh_counts! if refresh_counts
     end
 
     venue
   end
 
-  def reject!
+  def reject!(refresh_counts: true)
     update!(status: 'rejected', reviewed_at: Time.current)
-    black_coffee_import_run.refresh_counts!
+    black_coffee_import_run.refresh_counts! if refresh_counts
   end
 
-  def mark_as_duplicate!(venue)
+  def mark_as_duplicate!(venue, refresh_counts: true)
     update!(status: 'duplicate', duplicate_venue: venue, reviewed_at: Time.current)
-    black_coffee_import_run.refresh_counts!
+    black_coffee_import_run.refresh_counts! if refresh_counts
   end
 
   private

@@ -21,6 +21,10 @@ class BlackCoffeeImportRun < ApplicationRecord
            class_name: 'BlackCoffeeImportPhotoRefreshBatch',
            dependent: :destroy,
            inverse_of: :black_coffee_import_run
+  has_many :approval_batches,
+           class_name: 'BlackCoffeeImportApprovalBatch',
+           dependent: :destroy,
+           inverse_of: :black_coffee_import_run
 
   validates :category, :status, presence: true
   validates :category, inclusion: { in: Venue::CATEGORIES }
@@ -57,6 +61,28 @@ class BlackCoffeeImportRun < ApplicationRecord
     )
 
     black_coffee_import_region_category&.refresh_counts!
+  end
+
+  def apply_review_deltas!(approved_delta: 0, duplicate_delta: 0, rejected_delta: 0)
+    approved_delta = approved_delta.to_i
+    duplicate_delta = duplicate_delta.to_i
+    rejected_delta = rejected_delta.to_i
+    return if approved_delta.zero? && duplicate_delta.zero? && rejected_delta.zero?
+
+    with_lock do
+      update!(
+        candidate_count: candidate_count.to_i.positive? ? candidate_count.to_i : import_candidates.count,
+        approved_count: approved_count.to_i + approved_delta,
+        duplicate_count: duplicate_count.to_i + duplicate_delta,
+        rejected_count: rejected_count.to_i + rejected_delta
+      )
+    end
+
+    black_coffee_import_region_category&.apply_review_deltas!(
+      approved_delta: approved_delta,
+      duplicate_delta: duplicate_delta,
+      rejected_delta: rejected_delta
+    )
   end
 
   private
