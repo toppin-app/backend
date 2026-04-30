@@ -36,6 +36,7 @@ Rails.application.routes.draw do
       member do
         get :status
         post :advance
+        post :retry
       end
     end
     resources :google_imports, controller: 'black_coffee_google_imports', only: [:index, :create, :show, :destroy] do

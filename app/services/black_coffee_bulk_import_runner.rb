@@ -74,6 +74,10 @@ class BlackCoffeeBulkImportRunner
     new(bulk_import).advance!(step_budget: step_budget, time_budget_seconds: time_budget_seconds)
   end
 
+  def self.retry_failed!(bulk_import:)
+    new(bulk_import).retry_failed!
+  end
+
   def initialize(bulk_import, client: GooglePlacesBlackCoffeeClient.new)
     @bulk_import = bulk_import
     @client = client
@@ -111,6 +115,38 @@ class BlackCoffeeBulkImportRunner
     @bulk_import.reload
   end
 
+  def retry_failed!
+    failed_steps_scope = @bulk_import.import_steps.where(status: 'failed')
+    raise 'No hay celdas fallidas para reintentar.' unless failed_steps_scope.exists?
+
+    BlackCoffeeBulkImport.transaction do
+      @bulk_import.lock!
+      failed_run_ids = failed_steps_scope.pluck(:black_coffee_import_run_id).compact.uniq
+      failed_steps_scope.update_all(
+        status: 'pending',
+        processed_at: nil,
+        error_message: nil,
+        updated_at: Time.current
+      )
+      @bulk_import.import_runs.where(id: failed_run_ids).update_all(
+        status: 'running',
+        error_message: nil,
+        updated_at: Time.current
+      )
+      @bulk_import.update!(
+        status: 'pending',
+        finished_at: nil,
+        error_message: nil,
+        current_category: nil,
+        current_cell_label: nil
+      )
+      @bulk_import.refresh_progress!
+      @bulk_import.black_coffee_import_region.update!(status: 'in_progress') if @bulk_import.black_coffee_import_region.status != 'in_progress'
+    end
+
+    @bulk_import.reload
+  end
+
   private
 
   def claim_next_step
@@ -134,6 +170,7 @@ class BlackCoffeeBulkImportRunner
   end
 
   def process_step(step)
+    requests_count = 0
     response = @client.search(
       region: @bulk_import.black_coffee_import_region,
       category: step.category,
@@ -151,7 +188,7 @@ class BlackCoffeeBulkImportRunner
       step.update!(
         status: 'split',
         found_count: candidates.size,
-        request_count: requests_count,
+        request_count: step.request_count.to_i + requests_count,
         processed_at: Time.current
       )
       finalize_category_run_if_finished(step.category)
@@ -166,7 +203,7 @@ class BlackCoffeeBulkImportRunner
       found_count: candidates.size,
       saved_count: import_stats[:saved_count],
       duplicate_count: import_stats[:duplicate_count],
-      request_count: requests_count,
+      request_count: step.request_count.to_i + requests_count,
       saturated: saturated,
       processed_at: Time.current
     )
@@ -176,7 +213,7 @@ class BlackCoffeeBulkImportRunner
   rescue GooglePlacesBlackCoffeeClient::MissingApiKeyError, GooglePlacesBlackCoffeeClient::RequestError => e
     step.update!(
       status: 'failed',
-      request_count: step.request_count.to_i + 1,
+      request_count: step.request_count.to_i + [requests_count, 1].max,
       error_message: e.message.to_s.truncate(1_000),
       processed_at: Time.current
     )
@@ -186,6 +223,7 @@ class BlackCoffeeBulkImportRunner
   rescue StandardError => e
     step.update!(
       status: 'failed',
+      request_count: step.request_count.to_i + requests_count,
       error_message: "No se pudo procesar la celda: #{e.message}".truncate(1_000),
       processed_at: Time.current
     )

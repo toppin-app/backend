@@ -33,8 +33,10 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     @importable_categories = GooglePlacesBlackCoffeeClient.importable_categories
     @region_progress = progress_by_region(@regions, @importable_categories)
     @overall_progress = aggregate_progress(@region_progress.values)
-    active_bulk_imports = BlackCoffeeBulkImport.active.includes(:black_coffee_import_region).recent_first.to_a
+    bulk_imports = BlackCoffeeBulkImport.includes(:black_coffee_import_region).recent_first.to_a
+    active_bulk_imports = bulk_imports.select(&:active?)
     @active_bulk_imports_by_region = active_bulk_imports.group_by(&:black_coffee_import_region_id).transform_values(&:first)
+    @latest_bulk_imports_by_region = bulk_imports.group_by(&:black_coffee_import_region_id).transform_values(&:first)
     @recent_runs = BlackCoffeeImportRun.includes(:black_coffee_import_region)
                                       .where(category: @importable_categories)
                                       .order(created_at: :desc)

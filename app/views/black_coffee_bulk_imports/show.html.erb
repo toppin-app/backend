@@ -7,6 +7,8 @@
     <%= link_to 'Volver al importador', black_coffee_google_imports_path(anchor: "region-#{@bulk_import.black_coffee_import_region_id}"), class: 'btn btn-outline-dark mr-2' %>
     <% if @bulk_import.active? %>
       <button type="button" class="btn btn-success text-white" id="bulk-import-continue-button">Seguir procesando</button>
+    <% elsif @bulk_import.retryable? %>
+      <%= button_to 'Reintentar fallos', retry_black_coffee_bulk_import_path(@bulk_import), method: :post, class: 'btn btn-danger text-white', form_class: 'd-inline-block', data: { confirm: 'Se reintentaran solo las celdas fallidas y se conservara todo lo que ya estaba guardado. Continuar?' } %>
     <% end %>
   </div>
 </div>
@@ -14,6 +16,7 @@
 <div class="alert alert-info">
   Esta importacion avanza por bloques cortos para evitar timeouts. Mientras esta pantalla este abierta, el dashboard ira pidiendo el siguiente lote automaticamente.
   Si se interrumpe, puedes volver luego y reanudarla sin perder el progreso ya guardado.
+  Los "guardados" de abajo son candidatos almacenados para revision; no son locales publicados en Black Coffee hasta aprobarlos.
 </div>
 
 <div id="black-coffee-bulk-import"
@@ -53,7 +56,7 @@
           <h4 class="mb-0" id="bulk-import-found-value"><%= number_with_delimiter(@bulk_import.found_count) %></h4>
         </div>
         <div class="col-md-2 col-6 mt-3 mt-md-0">
-          <div class="text-muted small text-uppercase">Guardados</div>
+          <div class="text-muted small text-uppercase">Candidatos</div>
           <h4 class="mb-0 text-success" id="bulk-import-saved-value"><%= number_with_delimiter(@bulk_import.saved_candidates_count) %></h4>
         </div>
         <div class="col-md-2 col-6 mt-3 mt-md-0">

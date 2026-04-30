@@ -30,6 +30,7 @@ class BlackCoffeeImportCandidate < ApplicationRecord
   validates :latitude, :longitude, numericality: true, allow_nil: true
 
   before_validation :normalize_arrays
+  before_validation :truncate_string_columns_to_limits
 
   def pending?
     status == 'pending'
@@ -206,6 +207,19 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     self.image_urls = Array(image_urls).reject(&:blank?)
     self.google_photo_references = Array(google_photo_references)
     self.author_attributions = Array(author_attributions)
+  end
+
+  def truncate_string_columns_to_limits
+    self.class.columns.each do |column|
+      next unless column.type == :string
+      next if column.limit.blank?
+
+      current_value = self[column.name]
+      next unless current_value.is_a?(String)
+      next if current_value.length <= column.limit
+
+      self[column.name] = current_value.first(column.limit)
+    end
   end
 
   def google_opening_hours

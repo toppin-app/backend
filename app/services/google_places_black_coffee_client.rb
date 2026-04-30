@@ -11,7 +11,7 @@ class GooglePlacesBlackCoffeeClient
   MAX_PAGE_SIZE = 20
   MAX_RESULTS = 60
   MAX_PHOTOS_PER_PLACE = 3
-  EXCLUDED_IMPORT_CATEGORIES = %w[concierto].freeze
+  EXCLUDED_IMPORT_CATEGORIES = %w[concierto festival].freeze
   FIELD_MASK = %w[
     places.id
     places.name

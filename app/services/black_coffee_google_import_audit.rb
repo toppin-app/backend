@@ -6,7 +6,7 @@ class BlackCoffeeGoogleImportAudit
   MAX_LIVE_LIMIT = 200
   MAX_LIVE_ERROR_DETAILS_LENGTH = 20_000
   LOW_VOLUME_REGION_SLUGS = %w[ceuta melilla].freeze
-  OPTIONAL_ZERO_COUNT_CATEGORIES = %w[cine discoteca escape_room festival].freeze
+  OPTIONAL_ZERO_COUNT_CATEGORIES = %w[cine discoteca escape_room].freeze
 
   attr_reader :regions, :categories, :category_labels
 

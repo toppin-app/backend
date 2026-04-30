@@ -34,6 +34,10 @@ class BlackCoffeeBulkImport < ApplicationRecord
     status.in?(%w[completed failed cancelled])
   end
 
+  def retryable?
+    status == 'failed' && import_steps.where(status: 'failed').exists?
+  end
+
   def completion_percentage
     total = total_steps.to_i
     return 0 if total.zero?

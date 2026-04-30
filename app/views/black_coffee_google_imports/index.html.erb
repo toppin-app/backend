@@ -33,9 +33,10 @@
         <strong>Progreso total del importador</strong>
         <div class="text-muted small">
           Si hay total Google calculado, el porcentaje usa ese denominador. Si no, cae al avance interno de candidatos encontrados.
+          Los candidatos guardados aun no son locales publicados en Black Coffee hasta que se aprueban.
         </div>
       </div>
-      <span class="badge badge-primary p-2"><%= @overall_progress[:completion_percentage] %>% importado</span>
+      <span class="badge badge-primary p-2"><%= @overall_progress[:completion_percentage] %>% publicado</span>
     </div>
 
     <div class="progress mb-3" style="height: 10px;">
@@ -55,7 +56,7 @@
         <div class="text-muted small"><%= @overall_progress[:google_counted_categories] %>/<%= @regions.size * @categories.size %> categorias, sin deduplicar entre categorias</div>
       </div>
       <div class="col-md-3 col-6 mb-3 mb-md-0">
-        <div class="text-muted small text-uppercase">Importados</div>
+        <div class="text-muted small text-uppercase">Publicados</div>
         <h4 class="mb-0 text-success"><%= number_with_delimiter(@overall_progress[:approved_count]) %></h4>
       </div>
       <div class="col-md-3 col-6">
@@ -180,6 +181,7 @@
         <% states_by_category = region.region_categories.index_by(&:category) %>
         <% progress = @region_progress[region.id] || { completion_percentage: 0, approved_count: 0, remaining_count: 0, total_candidates: 0, google_counted_categories: 0, google_total_count: 0, google_missing_count: nil } %>
         <% active_bulk_import = @active_bulk_imports_by_region[region.id] %>
+        <% latest_bulk_import = @latest_bulk_imports_by_region[region.id] %>
         <div class="col-xl-4 col-md-6 mb-3">
           <div class="border rounded h-100 p-3" id="region-<%= region.id %>">
             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -188,7 +190,7 @@
                 <span class="badge badge-<%= region.status == 'imported' ? 'success' : (region.status == 'reviewed' ? 'info' : 'light') %>">
                   <%= region.status %>
                 </span>
-                <div class="small text-muted mt-1"><%= progress[:completion_percentage].to_i %>% importado</div>
+                <div class="small text-muted mt-1"><%= progress[:completion_percentage].to_i %>% publicado</div>
               </div>
             </div>
 
@@ -197,7 +199,7 @@
             </div>
 
             <div class="small text-muted mb-3">
-              Importados: <%= number_with_delimiter(progress[:approved_count].to_i) %> ·
+              Publicados: <%= number_with_delimiter(progress[:approved_count].to_i) %> ·
               Candidatos: <%= number_with_delimiter(progress[:total_candidates].to_i) %><br>
               Google total:
               <% if progress[:google_counted_categories].to_i.positive? %>
@@ -219,6 +221,11 @@
                 </div>
                 <div class="progress mb-2" style="height: 7px;">
                   <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: <%= [active_bulk_import.completion_percentage, 100].min %>%;" aria-valuenow="<%= active_bulk_import.completion_percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              <% elsif latest_bulk_import&.retryable? %>
+                <%= link_to 'Revisar importacion fallida', black_coffee_bulk_import_path(latest_bulk_import), class: 'btn btn-sm btn-outline-danger btn-block mb-2' %>
+                <div class="small text-danger mb-2">
+                  El ultimo barrido termino con error. Reintenta ese intento para rescatar lo ya encontrado sin duplicar candidatos.
                 </div>
               <% elsif @api_key_present %>
                 <%= button_to 'Importar totalidad',
