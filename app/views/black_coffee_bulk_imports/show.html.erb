@@ -1,0 +1,289 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Importacion total</p>
+    <h2 class="mb-0"><%= @bulk_import.black_coffee_import_region.name %></h2>
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver al importador', black_coffee_google_imports_path(anchor: "region-#{@bulk_import.black_coffee_import_region_id}"), class: 'btn btn-outline-dark mr-2' %>
+    <% if @bulk_import.active? %>
+      <button type="button" class="btn btn-success text-white" id="bulk-import-continue-button">Seguir procesando</button>
+    <% end %>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  Esta importacion avanza por bloques cortos para evitar timeouts. Mientras esta pantalla este abierta, el dashboard ira pidiendo el siguiente lote automaticamente.
+  Si se interrumpe, puedes volver luego y reanudarla sin perder el progreso ya guardado.
+</div>
+
+<div id="black-coffee-bulk-import"
+     data-advance-url="<%= advance_black_coffee_bulk_import_path(@bulk_import) %>"
+     data-status-url="<%= status_black_coffee_bulk_import_path(@bulk_import) %>">
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+          <strong>Progreso del barrido</strong>
+          <div class="text-muted small" id="bulk-import-live-note">
+            Estado actual de la importacion masiva por celdas.
+          </div>
+        </div>
+        <span class="badge badge-secondary p-2" id="bulk-import-status-badge"><%= @bulk_import.status %></span>
+      </div>
+
+      <div class="progress mb-3" style="height: 14px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="bulk-import-progress-bar" role="progressbar" style="width: <%= [@bulk_import.completion_percentage, 100].min %>%;" aria-valuenow="<%= @bulk_import.completion_percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+
+      <div class="row text-center">
+        <div class="col-md-2 col-6 mb-3 mb-md-0">
+          <div class="text-muted small text-uppercase">Avance</div>
+          <h4 class="mb-0" id="bulk-import-progress-value"><%= @bulk_import.completion_percentage %>%</h4>
+        </div>
+        <div class="col-md-2 col-6 mb-3 mb-md-0">
+          <div class="text-muted small text-uppercase">Pasos</div>
+          <h4 class="mb-0" id="bulk-import-steps-value"><%= @bulk_import.completed_steps_count + @bulk_import.split_steps_count + @bulk_import.failed_steps_count %>/<%= @bulk_import.total_steps %></h4>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small text-uppercase">Requests</div>
+          <h4 class="mb-0" id="bulk-import-requests-value"><%= number_with_delimiter(@bulk_import.requests_count) %></h4>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small text-uppercase">Encontrados</div>
+          <h4 class="mb-0" id="bulk-import-found-value"><%= number_with_delimiter(@bulk_import.found_count) %></h4>
+        </div>
+        <div class="col-md-2 col-6 mt-3 mt-md-0">
+          <div class="text-muted small text-uppercase">Guardados</div>
+          <h4 class="mb-0 text-success" id="bulk-import-saved-value"><%= number_with_delimiter(@bulk_import.saved_candidates_count) %></h4>
+        </div>
+        <div class="col-md-2 col-6 mt-3 mt-md-0">
+          <div class="text-muted small text-uppercase">Duplicados</div>
+          <h4 class="mb-0 text-warning" id="bulk-import-duplicates-value"><%= number_with_delimiter(@bulk_import.duplicate_candidates_count) %></h4>
+        </div>
+      </div>
+
+      <div class="mt-3 small text-muted" id="bulk-import-current-line">
+        <% if @bulk_import.current_category.present? %>
+          Siguiente bloque: <strong><%= GooglePlacesBlackCoffeeClient.config_for(@bulk_import.current_category)[:label] %></strong>
+          <% if @bulk_import.current_cell_label.present? %>
+            · <%= @bulk_import.current_cell_label %>
+          <% end %>
+        <% else %>
+          Sin bloque activo ahora mismo.
+        <% end %>
+      </div>
+
+      <div class="mt-3" id="bulk-import-error-container" style="<%= @bulk_import.error_message.present? ? '' : 'display: none;' %>">
+        <div class="alert alert-danger mb-0" id="bulk-import-error-message">
+          <%= @bulk_import.error_message %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white">
+      <strong>Categorias y corridas</strong>
+      <span class="text-muted ml-2">Cada categoria mantiene su propia corrida para revisar candidatos despues.</span>
+    </div>
+    <div class="card-body table-responsive p-0">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Categoria</th>
+            <th>Progreso</th>
+            <th>Pasos</th>
+            <th>Encontrados</th>
+            <th>Candidatos</th>
+            <th>Duplicados</th>
+            <th>Corrida</th>
+          </tr>
+        </thead>
+        <tbody id="bulk-import-categories-body">
+          <% @progress_payload[:categorySummaries].each do |summary| %>
+            <tr>
+              <td><strong><%= summary[:label] %></strong></td>
+              <td><%= summary[:progress_percentage] %>%</td>
+              <td><%= summary[:processed_steps] %>/<%= summary[:total_steps] %></td>
+              <td><%= number_with_delimiter(summary[:found_count]) %></td>
+              <td><%= number_with_delimiter(summary[:candidate_count]) %></td>
+              <td><%= number_with_delimiter(summary[:duplicate_count]) %></td>
+              <td>
+                <% if summary[:run_id].present? %>
+                  <%= link_to "Corrida ##{summary[:run_id]}", black_coffee_google_import_path(summary[:run_id]), class: 'btn btn-sm btn-outline-primary' %>
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="bulk-import-initial-state"><%= raw json_escape(@progress_payload.to_json) %></script>
+
+<script>
+  (function() {
+    const container = document.getElementById('black-coffee-bulk-import');
+    const initialStateNode = document.getElementById('bulk-import-initial-state');
+    if (!container || !initialStateNode) return;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    const formatter = new Intl.NumberFormat('es-ES');
+    let state = JSON.parse(initialStateNode.textContent);
+    let pollTimer = null;
+    let requestInFlight = false;
+
+    const statusBadge = document.getElementById('bulk-import-status-badge');
+    const progressBar = document.getElementById('bulk-import-progress-bar');
+    const progressValue = document.getElementById('bulk-import-progress-value');
+    const stepsValue = document.getElementById('bulk-import-steps-value');
+    const requestsValue = document.getElementById('bulk-import-requests-value');
+    const foundValue = document.getElementById('bulk-import-found-value');
+    const savedValue = document.getElementById('bulk-import-saved-value');
+    const duplicatesValue = document.getElementById('bulk-import-duplicates-value');
+    const currentLine = document.getElementById('bulk-import-current-line');
+    const liveNote = document.getElementById('bulk-import-live-note');
+    const errorContainer = document.getElementById('bulk-import-error-container');
+    const errorMessage = document.getElementById('bulk-import-error-message');
+    const categoriesBody = document.getElementById('bulk-import-categories-body');
+    const continueButton = document.getElementById('bulk-import-continue-button');
+
+    function badgeClass(status) {
+      if (status === 'completed') return 'badge badge-success p-2';
+      if (status === 'failed') return 'badge badge-danger p-2';
+      if (status === 'running') return 'badge badge-primary p-2';
+      if (status === 'cancelled') return 'badge badge-dark p-2';
+      return 'badge badge-secondary p-2';
+    }
+
+    function progressClass(status, active) {
+      if (status === 'completed') return 'progress-bar bg-success';
+      if (status === 'failed') return 'progress-bar bg-danger';
+      if (active) return 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
+      return 'progress-bar bg-secondary';
+    }
+
+    function renderCategoryRows(categorySummaries) {
+      categoriesBody.innerHTML = categorySummaries.map(summary => {
+        const runButton = summary.run_id
+          ? `<a class="btn btn-sm btn-outline-primary" href="/black_coffee/google_imports/${summary.run_id}">Corrida #${summary.run_id}</a>`
+          : '<span class="text-muted">-</span>';
+
+        return `
+          <tr>
+            <td><strong>${summary.label}</strong></td>
+            <td>${summary.progress_percentage}%</td>
+            <td>${summary.processed_steps}/${summary.total_steps}</td>
+            <td>${formatter.format(summary.found_count || 0)}</td>
+            <td>${formatter.format(summary.candidate_count || 0)}</td>
+            <td>${formatter.format(summary.duplicate_count || 0)}</td>
+            <td>${runButton}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function render(data) {
+      state = data;
+      const processedSteps = (data.completedSteps || 0) + (data.splitSteps || 0) + (data.failedSteps || 0);
+
+      statusBadge.className = badgeClass(data.status);
+      statusBadge.textContent = data.status;
+
+      progressBar.className = progressClass(data.status, data.active);
+      progressBar.style.width = `${Math.min(data.completionPercentage || 0, 100)}%`;
+      progressBar.setAttribute('aria-valuenow', data.completionPercentage || 0);
+
+      progressValue.textContent = `${data.completionPercentage || 0}%`;
+      stepsValue.textContent = `${processedSteps}/${data.totalSteps || 0}`;
+      requestsValue.textContent = formatter.format(data.requestsCount || 0);
+      foundValue.textContent = formatter.format(data.foundCount || 0);
+      savedValue.textContent = formatter.format(data.savedCandidatesCount || 0);
+      duplicatesValue.textContent = formatter.format(data.duplicateCandidatesCount || 0);
+
+      if (data.currentCategoryLabel) {
+        currentLine.innerHTML = `Siguiente bloque: <strong>${data.currentCategoryLabel}</strong>${data.currentCellLabel ? ` · ${data.currentCellLabel}` : ''}`;
+      } else if (data.finished) {
+        currentLine.textContent = 'No quedan bloques pendientes en esta importacion.';
+      } else {
+        currentLine.textContent = 'Esperando al siguiente bloque...';
+      }
+
+      if (data.active) {
+        liveNote.textContent = 'Procesando bloques cortos automaticamente. Esta pantalla puede quedarse abierta sin lanzar una peticion gigante.';
+      } else if (data.status === 'completed') {
+        liveNote.textContent = 'Importacion total completada. Ya puedes entrar a revisar las corridas de cada categoria.';
+      } else if (data.status === 'failed') {
+        liveNote.textContent = 'La importacion se detuvo con error. El progreso ya guardado no se pierde y puede revisarse.';
+      } else {
+        liveNote.textContent = 'Proceso en pausa.';
+      }
+
+      if (data.errorMessage) {
+        errorContainer.style.display = '';
+        errorMessage.textContent = data.errorMessage;
+      } else {
+        errorContainer.style.display = 'none';
+        errorMessage.textContent = '';
+      }
+
+      renderCategoryRows(data.categorySummaries || []);
+
+      if (continueButton) {
+        continueButton.disabled = !data.active && data.status !== 'pending' && data.status !== 'running';
+      }
+    }
+
+    function scheduleNext(delayMs) {
+      window.clearTimeout(pollTimer);
+      if (!state.active) return;
+      pollTimer = window.setTimeout(tick, delayMs);
+    }
+
+    function tick() {
+      if (requestInFlight || !state.active) return;
+      requestInFlight = true;
+
+      fetch(container.dataset.advanceUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        credentials: 'same-origin'
+      })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+          render(data);
+          if (!ok) {
+            scheduleNext(2500);
+            return;
+          }
+          scheduleNext(700);
+        })
+        .catch(() => {
+          liveNote.textContent = 'Hubo un problema temporal de conexion. Reintentando en unos segundos...';
+          scheduleNext(2500);
+        })
+        .finally(() => {
+          requestInFlight = false;
+        });
+    }
+
+    if (continueButton) {
+      continueButton.addEventListener('click', function() {
+        if (requestInFlight) return;
+        tick();
+      });
+    }
+
+    render(state);
+    if (state.active) {
+      scheduleNext(500);
+    }
+  })();
+</script>

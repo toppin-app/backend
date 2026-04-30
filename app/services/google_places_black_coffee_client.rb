@@ -133,16 +133,26 @@ class GooglePlacesBlackCoffeeClient
     @api_key = api_key
   end
 
-  def search(region:, category:, limit:, query_override: nil)
+  def search(region:, category:, limit:, query_override: nil, location_restriction: nil, append_region_to_query: true, metadata: false)
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
 
     normalized_category = category.to_s
     config = self.class.config_for(normalized_category)
     requested_limit = [[limit.to_i, 1].max, MAX_RESULTS].min
-    query = build_query(region: region, config: config, query_override: query_override)
-    places = fetch_places(query: query, config: config, limit: requested_limit)
+    query = build_query(
+      region: region,
+      config: config,
+      query_override: query_override,
+      append_region_to_query: append_region_to_query
+    )
+    places, requests_count = fetch_places(
+      query: query,
+      config: config,
+      limit: requested_limit,
+      location_restriction: location_restriction
+    )
 
-    places.first(requested_limit).map do |place|
+    candidates = places.first(requested_limit).map do |place|
       place_to_candidate_attributes(
         place,
         region: region,
@@ -150,18 +160,25 @@ class GooglePlacesBlackCoffeeClient
         subcategory: config[:subcategory]
       )
     end
+
+    return { candidates: candidates, requests_count: requests_count } if metadata
+
+    candidates
   end
 
   private
 
-  def build_query(region:, config:, query_override:)
+  def build_query(region:, config:, query_override:, append_region_to_query:)
     raw_query = query_override.to_s.strip.presence || config.fetch(:query)
+    return raw_query unless append_region_to_query
+
     "#{raw_query} en #{region.name}, Espana"
   end
 
-  def fetch_places(query:, config:, limit:)
+  def fetch_places(query:, config:, limit:, location_restriction: nil)
     places = []
     next_page_token = nil
+    requests_count = 0
 
     loop do
       remaining = limit - places.size
@@ -174,23 +191,26 @@ class GooglePlacesBlackCoffeeClient
         pageSize: [remaining, MAX_PAGE_SIZE].min
       }
       body[:includedType] = config[:included_type] if config[:included_type].present?
+      body[:strictTypeFiltering] = true if config[:included_type].present?
+      body[:locationRestriction] = location_restriction if location_restriction.present?
       body[:pageToken] = next_page_token if next_page_token.present?
 
       payload = post_json(BASE_URL, body)
+      requests_count += 1
       places.concat(Array(payload['places']))
       next_page_token = payload['nextPageToken'].presence
       break if next_page_token.blank? || places.size >= limit
     end
 
-    places
+    [places, requests_count]
   end
 
-  def post_json(url, body)
+  def post_json(url, body, field_mask: FIELD_MASK)
     uri = URI.parse(url)
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = 'application/json'
     request['X-Goog-Api-Key'] = @api_key
-    request['X-Goog-FieldMask'] = FIELD_MASK
+    request['X-Goog-FieldMask'] = field_mask
     request.body = JSON.generate(body)
 
     response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https', read_timeout: 20, open_timeout: 10) do |http|

@@ -32,6 +32,12 @@ Rails.application.routes.draw do
     resources :venues, controller: 'black_coffee_venues'
     resource :cleanup, controller: 'black_coffee_cleanup', only: [:show, :create]
     resources :subcategories, controller: 'black_coffee_subcategories', except: [:show]
+    resources :bulk_imports, controller: 'black_coffee_bulk_imports', only: [:create, :show] do
+      member do
+        get :status
+        post :advance
+      end
+    end
     resources :google_imports, controller: 'black_coffee_google_imports', only: [:index, :create, :show, :destroy] do
       collection do
         get :audit

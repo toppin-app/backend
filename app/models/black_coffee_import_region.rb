@@ -9,6 +9,10 @@ class BlackCoffeeImportRegion < ApplicationRecord
            class_name: 'BlackCoffeeImportRun',
            dependent: :destroy,
            inverse_of: :black_coffee_import_region
+  has_many :bulk_imports,
+           class_name: 'BlackCoffeeBulkImport',
+           dependent: :destroy,
+           inverse_of: :black_coffee_import_region
   has_many :import_candidates,
            class_name: 'BlackCoffeeImportCandidate',
            dependent: :destroy,

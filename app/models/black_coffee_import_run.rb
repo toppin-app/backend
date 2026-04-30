@@ -6,9 +6,16 @@ class BlackCoffeeImportRun < ApplicationRecord
   belongs_to :black_coffee_import_region_category,
              optional: true,
              inverse_of: :import_runs
+  belongs_to :black_coffee_bulk_import,
+             optional: true,
+             inverse_of: :import_runs
   has_many :import_candidates,
            class_name: 'BlackCoffeeImportCandidate',
            dependent: :destroy,
+           inverse_of: :black_coffee_import_run
+  has_many :bulk_import_steps,
+           class_name: 'BlackCoffeeBulkImportStep',
+           dependent: :nullify,
            inverse_of: :black_coffee_import_run
 
   validates :category, :status, presence: true

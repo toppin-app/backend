@@ -6,6 +6,7 @@
     <strong>Alcance actual: Espana.</strong>
     Este importador trabaja por comunidades autonomas y categorias de Black Coffee. Nada se publica hasta aprobarlo.
     Los totales reales de Google se calculan bajo demanda con Places Aggregate API: 1 peticion por comunidad y categoria, mas 1 resolucion inicial si la comunidad aun no tiene Google Place ID guardado.
+    La importacion total usa celdas geograficas y se subdivide solo donde Google satura resultados, para evitar timeouts y mejorar cobertura.
   </div>
   <div class="mt-3 mt-md-0">
     <%= link_to 'Auditar precalculos', audit_black_coffee_google_imports_path, class: 'btn btn-outline-primary mr-2' %>
@@ -92,7 +93,7 @@
           <div class="form-group">
             <%= label_tag :category, 'Categoria Black Coffee' %>
             <%= select_tag :category, options_for_select(@category_options, params[:category]), class: 'form-control' %>
-            <small class="text-muted">Elige "Todas las categorias" para crear una corrida por cada categoria importable de la comunidad.</small>
+            <small class="text-muted">Este selector es el modo rapido. Para barrer una comunidad entera por celdas, usa el boton "Importar totalidad" dentro de cada tarjeta.</small>
           </div>
 
           <div class="form-group">
@@ -178,6 +179,7 @@
       <% @regions.each do |region| %>
         <% states_by_category = region.region_categories.index_by(&:category) %>
         <% progress = @region_progress[region.id] || { completion_percentage: 0, approved_count: 0, remaining_count: 0, total_candidates: 0, google_counted_categories: 0, google_total_count: 0, google_missing_count: nil } %>
+        <% active_bulk_import = @active_bulk_imports_by_region[region.id] %>
         <div class="col-xl-4 col-md-6 mb-3">
           <div class="border rounded h-100 p-3" id="region-<%= region.id %>">
             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -208,6 +210,26 @@
             </div>
 
             <div class="mb-3">
+              <% if active_bulk_import.present? %>
+                <%= link_to 'Continuar importacion total', black_coffee_bulk_import_path(active_bulk_import), class: 'btn btn-sm btn-success btn-block mb-2 text-white' %>
+                <div class="small text-muted mb-2">
+                  Barrido vivo por celdas: <%= active_bulk_import.completion_percentage %>% ·
+                  <%= active_bulk_import.completed_steps_count + active_bulk_import.split_steps_count + active_bulk_import.failed_steps_count %>/<%= active_bulk_import.total_steps %> pasos ·
+                  <%= number_with_delimiter(active_bulk_import.saved_candidates_count) %> candidatos guardados
+                </div>
+                <div class="progress mb-2" style="height: 7px;">
+                  <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: <%= [active_bulk_import.completion_percentage, 100].min %>%;" aria-valuenow="<%= active_bulk_import.completion_percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              <% elsif @api_key_present %>
+                <%= button_to 'Importar totalidad',
+                              black_coffee_bulk_imports_path(region_id: region.id),
+                              method: :post,
+                              class: 'btn btn-sm btn-outline-success btn-block mb-2',
+                              data: { confirm: "Esto iniciara un barrido progresivo por celdas para #{region.name}. Es mas completo que la importacion rapida, pero puede hacer bastantes peticiones si la comunidad es muy densa. ¿Continuar?" } %>
+              <% else %>
+                <button class="btn btn-sm btn-outline-secondary btn-block mb-2" disabled>Configura API key para importar totalidad</button>
+              <% end %>
+
               <% if @api_key_present %>
                 <%= button_to 'Calcular total Google', refresh_region_google_counts_black_coffee_google_imports_path(region_id: region.id), method: :post, class: 'btn btn-sm btn-outline-primary btn-block', data: { confirm: "Esto hara #{@categories.size} peticiones a Places Aggregate API para #{region.name}. Si no hay Google Place ID regional guardado, hara 1 peticion extra para resolverlo. ¿Continuar?" } %>
               <% else %>

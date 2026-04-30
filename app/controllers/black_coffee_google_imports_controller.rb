@@ -28,11 +28,13 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     @title = 'Importador Google Maps'
     @regions = BlackCoffeeImportRegion.includes(:region_categories).ordered.to_a
     @categories = GooglePlacesBlackCoffeeClient.category_options
-    @category_options = @categories + [["Todas las categorias de la comunidad (#{GooglePlacesBlackCoffeeClient.importable_categories.size} busquedas)", ALL_CATEGORIES_VALUE]]
+    @category_options = @categories + [["Todas las categorias (modo rapido: #{GooglePlacesBlackCoffeeClient.importable_categories.size} busquedas)", ALL_CATEGORIES_VALUE]]
     @all_categories_value = ALL_CATEGORIES_VALUE
     @importable_categories = GooglePlacesBlackCoffeeClient.importable_categories
     @region_progress = progress_by_region(@regions, @importable_categories)
     @overall_progress = aggregate_progress(@region_progress.values)
+    active_bulk_imports = BlackCoffeeBulkImport.active.includes(:black_coffee_import_region).recent_first.to_a
+    @active_bulk_imports_by_region = active_bulk_imports.group_by(&:black_coffee_import_region_id).transform_values(&:first)
     @recent_runs = BlackCoffeeImportRun.includes(:black_coffee_import_region)
                                       .where(category: @importable_categories)
                                       .order(created_at: :desc)
