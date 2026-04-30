@@ -91,19 +91,20 @@
 
           <div class="form-group">
             <%= label_tag :category, 'Categoria Black Coffee' %>
-            <%= select_tag :category, options_for_select(@categories, params[:category]), class: 'form-control' %>
+            <%= select_tag :category, options_for_select(@category_options, params[:category]), class: 'form-control' %>
+            <small class="text-muted">Elige "Todas las categorias" para crear una corrida por cada categoria importable de la comunidad.</small>
           </div>
 
           <div class="form-group">
             <%= label_tag :limit, 'Cantidad maxima para probar' %>
             <%= number_field_tag :limit, params[:limit].presence || 10, min: 1, max: GooglePlacesBlackCoffeeClient::MAX_RESULTS, class: 'form-control' %>
-            <small class="text-muted">Maximo <%= GooglePlacesBlackCoffeeClient::MAX_RESULTS %> por busqueda para controlar coste y revision.</small>
+            <small class="text-muted">Maximo <%= GooglePlacesBlackCoffeeClient::MAX_RESULTS %> por busqueda. Si eliges todas las categorias, este limite se aplica a cada categoria.</small>
           </div>
 
           <div class="form-group">
             <%= label_tag :query_override, 'Busqueda personalizada (opcional)' %>
             <%= text_field_tag :query_override, params[:query_override], class: 'form-control', placeholder: 'Ej: restaurantes romanticos' %>
-            <small class="text-muted">Si lo dejas vacio se usa la busqueda base de la categoria.</small>
+            <small class="text-muted">Solo se aplica cuando importas una categoria concreta. Para todas las categorias se usan las busquedas base.</small>
           </div>
 
           <%= submit_tag 'Buscar candidatos', class: 'btn btn-primary btn-block text-white' %>
