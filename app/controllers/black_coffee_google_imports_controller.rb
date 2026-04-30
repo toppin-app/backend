@@ -22,7 +22,18 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
   before_action :check_admin
   before_action :ensure_regions_and_categories
-  before_action :set_import_run, only: [:show, :destroy, :approve_candidate, :reject_candidate, :approve_selected, :reject_selected]
+  before_action :set_import_run, only: [
+    :show,
+    :destroy,
+    :approve_candidate,
+    :reject_candidate,
+    :approve_selected,
+    :reject_selected,
+    :refresh_selected_images,
+    :retry_image_refresh,
+    :image_refresh_status,
+    :advance_image_refresh
+  ]
 
   def index
     @title = 'Importador Google Maps'
@@ -152,12 +163,14 @@ class BlackCoffeeGoogleImportsController < ApplicationController
   end
 
   def show
-    @title = "Revision importacion ##{@import_run.id}"
+    @title = "Candidatos importados #{@import_run.black_coffee_import_region.name} · #{run_category_label} · corrida ##{@import_run.id}"
     @candidates = @import_run.import_candidates.order(
       Arel.sql("CASE status WHEN 'pending' THEN 0 WHEN 'duplicate' THEN 1 WHEN 'approved' THEN 2 WHEN 'rejected' THEN 3 ELSE 4 END"),
       rating: :desc,
       name: :asc
     )
+    @latest_image_refresh_batch = @import_run.photo_refresh_batches.recent_first.first
+    @image_refresh_progress_payload = @latest_image_refresh_batch&.as_progress_json
   end
 
   def destroy
@@ -245,6 +258,50 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     candidates.each(&:reject!)
 
     redirect_to black_coffee_google_import_path(@import_run), notice: "#{candidates.size} candidatos rechazados."
+  end
+
+  def refresh_selected_images
+    existing_batch = @import_run.photo_refresh_batches.active.recent_first.first
+    if existing_batch.present?
+      redirect_to black_coffee_google_import_path(@import_run), notice: 'Ya hay un reintento de imagenes en curso para esta corrida. Puedes seguirlo desde aqui.'
+      return
+    end
+
+    candidates = selected_candidates_for_image_refresh
+    if candidates.blank?
+      redirect_to black_coffee_google_import_path(@import_run), alert: 'Selecciona al menos un candidato para reintentar sus imagenes.'
+      return
+    end
+
+    batch = BlackCoffeeImportPhotoRefreshRunner.start!(
+      import_run: @import_run,
+      candidate_ids: candidates.pluck(:id)
+    )
+    redirect_to black_coffee_google_import_path(@import_run), notice: "Reintento de imagenes preparado para #{batch.total_candidates_count} candidatos."
+  rescue StandardError => e
+    redirect_to black_coffee_google_import_path(@import_run), alert: "No se pudo preparar el reintento de imagenes: #{e.message}"
+  end
+
+  def retry_image_refresh
+    batch = latest_image_refresh_batch!
+    BlackCoffeeImportPhotoRefreshRunner.retry_failed!(batch: batch)
+    redirect_to black_coffee_google_import_path(@import_run), notice: 'Reintentaremos las imagenes que quedaron pendientes o fallaron.'
+  rescue StandardError => e
+    redirect_to black_coffee_google_import_path(@import_run), alert: "No se pudo reanudar el reintento de imagenes: #{e.message}"
+  end
+
+  def image_refresh_status
+    batch = latest_image_refresh_batch
+    render json: batch.present? ? batch.as_progress_json : {}
+  end
+
+  def advance_image_refresh
+    batch = latest_image_refresh_batch!
+    BlackCoffeeImportPhotoRefreshRunner.advance!(batch: batch)
+    render json: batch.reload.as_progress_json
+  rescue StandardError => e
+    batch = latest_image_refresh_batch
+    render json: (batch.present? ? batch.reload.as_progress_json : {}).merge(errorMessage: e.message), status: :unprocessable_entity
   end
 
   def refresh_region_google_counts
@@ -461,12 +518,21 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     @import_run = BlackCoffeeImportRun.includes(
       :black_coffee_import_region,
       :black_coffee_import_region_category,
+      :photo_refresh_batches,
       import_candidates: [:approved_venue, :duplicate_venue]
     ).find(params[:id])
   end
 
   def candidate_from_run
     @import_run.import_candidates.find(params[:candidate_id])
+  end
+
+  def latest_image_refresh_batch
+    @import_run.photo_refresh_batches.recent_first.first
+  end
+
+  def latest_image_refresh_batch!
+    latest_image_refresh_batch || raise('No hay ningun lote de reintento de imagenes para esta corrida.')
   end
 
   def import_run_fallback_path(import_run)
@@ -478,6 +544,17 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     return BlackCoffeeImportCandidate.none if ids.empty?
 
     @import_run.import_candidates.where(id: ids, status: 'pending')
+  end
+
+  def selected_candidates_for_image_refresh
+    ids = Array(params[:candidate_ids]).reject(&:blank?)
+    return BlackCoffeeImportCandidate.none if ids.empty?
+
+    @import_run.import_candidates.where(id: ids)
+  end
+
+  def run_category_label
+    GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG.dig(@import_run.category, :label) || @import_run.category
   end
 
   def progress_by_region(regions, categories)

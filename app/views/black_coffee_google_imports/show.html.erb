@@ -1,14 +1,13 @@
 <% category_label = GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG.dig(@import_run.category, :label) || @import_run.category %>
+<% pending_candidates_count = @candidates.count { |candidate| candidate.status == 'pending' } %>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
   <div>
-    <h2 class="mb-1">Revision de candidatos</h2>
-    <p class="text-muted mb-0">
-      <%= @import_run.black_coffee_import_region.name %> / <%= category_label %> / corrida #<%= @import_run.id %>
-    </p>
+    <h1 class="mb-1">Candidatos importados · <%= @import_run.black_coffee_import_region.name %> · <%= category_label %> · corrida #<%= @import_run.id %></h1>
+    <p class="text-muted mb-0">Filtra, selecciona y publica solo los locales que quieras llevar a Black Coffee.</p>
   </div>
   <div class="mt-3 mt-md-0">
-    <%= link_to 'Nuevo import', black_coffee_google_imports_path, class: 'btn btn-outline-dark mr-2' %>
+    <%= link_to 'Volver al importador', black_coffee_google_imports_path, class: 'btn btn-outline-dark mr-2' %>
     <%= button_to 'Limpiar corrida',
                   black_coffee_google_import_path(@import_run),
                   method: :delete,
@@ -25,6 +24,91 @@
   </div>
 <% end %>
 
+<% if @latest_image_refresh_batch.present? %>
+  <div id="candidate-image-refresh"
+       class="card shadow-sm border-0 mb-4"
+       data-status-url="<%= image_refresh_status_black_coffee_google_import_path(@import_run) %>"
+       data-advance-url="<%= advance_image_refresh_black_coffee_google_import_path(@import_run) %>">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+          <strong>Reintento de imagenes</strong>
+          <div class="text-muted small" id="image-refresh-live-note">
+            Reintentamos de forma progresiva para no disparar de golpe el consumo de la API de Google.
+          </div>
+        </div>
+        <div class="d-flex align-items-center">
+          <span class="badge badge-secondary p-2 mr-2" id="image-refresh-status-badge"><%= @latest_image_refresh_batch.status %></span>
+          <% if @latest_image_refresh_batch.retryable? %>
+            <div id="image-refresh-retry-container">
+              <%= button_to 'Reanudar imagenes',
+                            retry_image_refresh_black_coffee_google_import_path(@import_run),
+                            method: :post,
+                            class: 'btn btn-sm btn-danger text-white',
+                            form_class: 'd-inline-block',
+                            data: { confirm: 'Se reintentaran solo las imagenes que hayan quedado pendientes o se hayan frenado por error temporal. Continuar?' } %>
+            </div>
+          <% else %>
+            <div id="image-refresh-retry-container" style="display: none;">
+              <%= button_to 'Reanudar imagenes',
+                            retry_image_refresh_black_coffee_google_import_path(@import_run),
+                            method: :post,
+                            class: 'btn btn-sm btn-danger text-white',
+                            form_class: 'd-inline-block',
+                            data: { confirm: 'Se reintentaran solo las imagenes que hayan quedado pendientes o se hayan frenado por error temporal. Continuar?' } %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="progress mb-3" style="height: 12px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" id="image-refresh-progress-bar" role="progressbar" style="width: <%= [@latest_image_refresh_batch.completion_percentage, 100].min %>%;" aria-valuenow="<%= @latest_image_refresh_batch.completion_percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+
+      <div class="row text-center">
+        <div class="col-md-2 col-6 mb-3 mb-md-0">
+          <div class="text-muted small text-uppercase">Avance</div>
+          <h4 class="mb-0" id="image-refresh-progress-value"><%= @latest_image_refresh_batch.completion_percentage %>%</h4>
+        </div>
+        <div class="col-md-2 col-6 mb-3 mb-md-0">
+          <div class="text-muted small text-uppercase">Procesados</div>
+          <h4 class="mb-0" id="image-refresh-processed-value"><%= @latest_image_refresh_batch.processed_candidates_count %>/<%= @latest_image_refresh_batch.total_candidates_count %></h4>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small text-uppercase">Con imagen</div>
+          <h4 class="mb-0 text-success" id="image-refresh-success-value"><%= @latest_image_refresh_batch.refreshed_candidates_count %></h4>
+        </div>
+        <div class="col-md-2 col-6">
+          <div class="text-muted small text-uppercase">Sin cambios</div>
+          <h4 class="mb-0 text-secondary" id="image-refresh-skipped-value"><%= @latest_image_refresh_batch.skipped_candidates_count %></h4>
+        </div>
+        <div class="col-md-2 col-6 mt-3 mt-md-0">
+          <div class="text-muted small text-uppercase">Fallidos</div>
+          <h4 class="mb-0 text-danger" id="image-refresh-failed-value"><%= @latest_image_refresh_batch.failed_candidates_count %></h4>
+        </div>
+        <div class="col-md-2 col-6 mt-3 mt-md-0">
+          <div class="text-muted small text-uppercase">Requests</div>
+          <h4 class="mb-0" id="image-refresh-requests-value"><%= number_with_delimiter(@latest_image_refresh_batch.requests_count) %></h4>
+        </div>
+      </div>
+
+      <div class="mt-3 small text-muted" id="image-refresh-current-line">
+        <% if @latest_image_refresh_batch.current_candidate_name.present? %>
+          Procesando ahora: <strong><%= @latest_image_refresh_batch.current_candidate_name %></strong>
+        <% elsif @latest_image_refresh_batch.finished? %>
+          No quedan candidatos pendientes en este reintento de imagenes.
+        <% else %>
+          Esperando el siguiente bloque de imagenes...
+        <% end %>
+      </div>
+
+      <div class="mt-3" id="image-refresh-error-container" style="<%= @latest_image_refresh_batch.error_message.present? ? '' : 'display: none;' %>">
+        <div class="alert alert-danger mb-0" id="image-refresh-error-message"><%= @latest_image_refresh_batch.error_message %></div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <div class="row mb-4">
   <div class="col-md-3 mb-3">
     <div class="card border-0 shadow-sm h-100">
@@ -38,7 +122,7 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase mb-2">Pendientes</p>
-        <h2 class="mb-0"><%= @candidates.count { |candidate| candidate.status == 'pending' } %></h2>
+        <h2 class="mb-0"><%= pending_candidates_count %></h2>
       </div>
     </div>
   </div>
@@ -61,151 +145,404 @@
 </div>
 
 <div class="alert alert-info">
-  Las fotos se guardan como URLs publicas devueltas por Place Photos, sin exponer la API key. Tambien dejamos referencias, atribuciones, horarios y tipos de Google en el candidato para trazabilidad.
+  Las fotos se guardan como URLs publicas devueltas por Place Photos, sin exponer la API key. Si un candidato no tiene imagenes, puedes filtrarlo y lanzar un reintento progresivo solo para los seleccionados.
 </div>
 
-<%= form_with url: approve_selected_black_coffee_google_import_path(@import_run), method: :post, local: true, html: { id: 'bulk-candidates-form' } do %>
-<% end %>
+<%= form_with url: approve_selected_black_coffee_google_import_path(@import_run), method: :post, local: true, html: { id: 'bulk-candidates-form' } do %><% end %>
 
-<div class="card shadow-sm border-0">
-  <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
-    <div>
-      <strong>Candidatos encontrados</strong>
-      <span class="text-muted ml-2">Selecciona y aprueba solo lo que quieras publicar.</span>
+<div class="card shadow-sm border-0" id="import-candidates-table">
+    <div class="card-header bg-white">
+      <div class="d-flex flex-wrap justify-content-between align-items-start">
+        <div class="mr-3">
+          <strong>Lista de candidatos</strong>
+          <span class="text-muted ml-2">Filtra por imagen y lanza acciones masivas sobre la seleccion visible.</span>
+        </div>
+        <div class="mt-3 mt-md-0 text-md-right">
+          <div class="small text-muted mb-2" id="selection-summary">0 seleccionados · 0 visibles</div>
+          <%= button_tag 'Aprobar seleccionados', type: 'submit', form: 'bulk-candidates-form', class: 'btn btn-success text-white mr-2 mb-2', id: 'approve-selected-button', disabled: true %>
+          <%= button_tag 'Rechazar seleccionados', type: 'submit', form: 'bulk-candidates-form', formaction: reject_selected_black_coffee_google_import_path(@import_run), class: 'btn btn-outline-danger mr-2 mb-2', id: 'reject-selected-button', disabled: true %>
+          <%= button_tag 'Reintentar imagenes de seleccionados', type: 'submit', form: 'bulk-candidates-form', formaction: refresh_selected_images_black_coffee_google_import_path(@import_run), class: 'btn btn-outline-primary mb-2', id: 'refresh-images-button', disabled: true %>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-3 col-md-4 mb-2">
+          <label for="candidate-image-filter" class="small text-muted text-uppercase mb-1">Mostrar</label>
+          <select id="candidate-image-filter" class="form-control form-control-sm">
+            <option value="all">Todos</option>
+            <option value="pending">Solo pendientes</option>
+            <option value="with_images">Con imagenes</option>
+            <option value="without_images">Sin imagenes</option>
+            <option value="without_images_with_refs">Sin imagenes pero con refs</option>
+          </select>
+        </div>
+        <div class="col-lg-5 col-md-8 mb-2 d-flex align-items-end">
+          <button type="button" class="btn btn-sm btn-outline-secondary mr-2" id="select-visible-button">Seleccionar visibles</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="clear-selection-button">Limpiar seleccion</button>
+        </div>
+      </div>
     </div>
-    <div class="mt-2 mt-md-0">
-      <%= button_tag 'Aprobar seleccionados', type: 'submit', form: 'bulk-candidates-form', class: 'btn btn-success text-white mr-2' %>
-      <%= button_tag 'Rechazar seleccionados', type: 'submit', form: 'bulk-candidates-form', formaction: reject_selected_black_coffee_google_import_path(@import_run), class: 'btn btn-outline-danger' %>
-    </div>
-  </div>
-  <div class="card-body table-responsive p-0">
-    <table class="table table-hover mb-0">
-      <thead>
-        <tr>
-          <th style="width: 44px;"></th>
-          <th>Foto</th>
-          <th>Local</th>
-          <th>Direccion</th>
-          <th>Rating</th>
-          <th>Fotos Google</th>
-          <th>Horario Google</th>
-          <th>Estado</th>
-          <th class="text-right">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @candidates.any? %>
-          <% @candidates.each do |candidate| %>
-            <tr>
-              <td>
-                <%= check_box_tag 'candidate_ids[]', candidate.id, false, form: 'bulk-candidates-form', disabled: !candidate.pending? %>
-              </td>
-              <td style="width: 112px;">
-                <% if candidate.image_url_list.first.present? %>
-                  <%= image_tag candidate.image_url_list.first, class: 'img-thumbnail', style: 'width: 96px; height: 64px; object-fit: cover;' %>
-                <% else %>
-                  <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 96px; height: 64px;">
-                    <i class="fas fa-image text-muted"></i>
-                  </div>
-                <% end %>
-              </td>
-              <td>
-                <strong><%= candidate.name %></strong>
-                <div class="text-muted small">
-                  <%= candidate.category %>
-                  <% if candidate.subcategory.present? %>
-                    / <%= BlackCoffeeTaxonomy.label_for(candidate.category, candidate.subcategory) %>
+
+    <div class="card-body table-responsive p-0">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th style="width: 48px;">
+              <input type="checkbox" id="candidate-select-all">
+            </th>
+            <th>Foto</th>
+            <th>Local</th>
+            <th>Direccion</th>
+            <th>Rating</th>
+            <th>Fotos Google</th>
+            <th>Horario Google</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="candidate-table-body">
+          <% if @candidates.any? %>
+            <% @candidates.each do |candidate| %>
+              <% has_images = candidate.image_url_list.any? %>
+              <% has_refs = candidate.google_photo_reference_list.any? %>
+              <% selectable = candidate.pending? %>
+              <tr class="candidate-row"
+                  data-status="<%= candidate.status %>"
+                  data-has-images="<%= has_images ? '1' : '0' %>"
+                  data-has-photo-refs="<%= has_refs ? '1' : '0' %>"
+                  data-selectable="<%= selectable ? '1' : '0' %>">
+                <td>
+                  <%= check_box_tag 'candidate_ids[]', candidate.id, false, disabled: !selectable, class: 'candidate-checkbox', form: 'bulk-candidates-form' %>
+                </td>
+                <td style="width: 112px;">
+                  <% if has_images %>
+                    <%= image_tag candidate.image_url_list.first, class: 'img-thumbnail', style: 'width: 96px; height: 64px; object-fit: cover;' %>
+                  <% else %>
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 96px; height: 64px;">
+                      <i class="fas fa-image text-muted"></i>
+                    </div>
                   <% end %>
-                </div>
-                <% if candidate.google_maps_uri.present? %>
-                  <%= link_to 'Abrir en Google Maps', candidate.google_maps_uri, target: '_blank', rel: 'noopener', class: 'small' %>
-                <% end %>
-                <% if candidate.google_place_id.present? %>
-                  <div class="text-muted small">Google ID: <%= candidate.google_place_id %></div>
-                <% end %>
-                <% if candidate.google_type_tags.any? %>
-                  <div class="small mt-1">
-                    <% candidate.google_type_tags.first(4).each do |tag| %>
-                      <span class="badge badge-light border mr-1 mb-1"><%= tag %></span>
+                </td>
+                <td>
+                  <strong><%= candidate.name %></strong>
+                  <div class="text-muted small">
+                    <%= candidate.category %>
+                    <% if candidate.subcategory.present? %>
+                      / <%= BlackCoffeeTaxonomy.label_for(candidate.category, candidate.subcategory) %>
                     <% end %>
                   </div>
-                <% end %>
-              </td>
-              <td>
-                <%= candidate.address.presence || 'Sin direccion' %>
-                <div class="text-muted small"><%= candidate.city.presence || candidate.black_coffee_import_region.name %></div>
-                <div class="text-muted small">
-                  <%= [candidate.postal_code, candidate.state, candidate.country_code.presence || candidate.country].compact.reject(&:blank?).join(' / ').presence || 'Sin metadata territorial' %>
-                </div>
-              </td>
-              <td>
-                <% if candidate.rating.present? %>
-                  <strong><%= candidate.rating %></strong>
-                  <div class="text-muted small"><%= candidate.user_ratings_total.to_i %> reviews</div>
-                <% else %>
-                  <span class="text-muted">Sin rating</span>
-                <% end %>
-              </td>
-              <td>
-                <span class="badge badge-light"><%= candidate.image_url_list.size %> URLs</span>
-                <span class="badge badge-light"><%= candidate.google_photo_reference_list.size %> refs</span>
-              </td>
-              <td style="min-width: 220px;">
-                <% opening_descriptions = candidate.google_opening_hours_descriptions %>
-                <% if opening_descriptions.any? %>
-                  <% opening_descriptions.first(2).each do |description| %>
-                    <div class="small"><%= description %></div>
+                  <% if candidate.google_maps_uri.present? %>
+                    <%= link_to 'Abrir en Google Maps', candidate.google_maps_uri, target: '_blank', rel: 'noopener', class: 'small' %>
                   <% end %>
-                  <% if opening_descriptions.size > 2 %>
-                    <details class="small mt-1">
-                      <summary>Ver semana completa</summary>
-                      <% opening_descriptions.drop(2).each do |description| %>
-                        <div><%= description %></div>
+                  <% if candidate.google_place_id.present? %>
+                    <div class="text-muted small">Google ID: <%= candidate.google_place_id %></div>
+                  <% end %>
+                  <% if candidate.google_type_tags.any? %>
+                    <div class="small mt-1">
+                      <% candidate.google_type_tags.first(4).each do |tag| %>
+                        <span class="badge badge-light border mr-1 mb-1"><%= tag %></span>
                       <% end %>
-                    </details>
+                    </div>
                   <% end %>
-                <% elsif candidate.google_schedule_payload.present? %>
-                  <span class="badge badge-light">Horario importable</span>
-                <% else %>
-                  <span class="text-muted small">Sin horario Google</span>
-                <% end %>
-              </td>
-              <td>
-                <% badge_class =
-                  case candidate.status
-                  when 'approved' then 'success'
-                  when 'rejected' then 'danger'
-                  when 'duplicate' then 'warning'
-                  else 'secondary'
-                  end
-                %>
-                <span class="badge badge-<%= badge_class %>"><%= candidate.status %></span>
-                <% if candidate.approved_venue.present? %>
-                  <div><%= link_to 'Ver local', black_coffee_venue_path(candidate.approved_venue), class: 'small' %></div>
-                <% elsif candidate.duplicate_venue.present? %>
-                  <div><%= link_to 'Duplicado', black_coffee_venue_path(candidate.duplicate_venue), class: 'small' %></div>
-                <% end %>
-              </td>
-              <td class="text-right text-nowrap">
-                <% if candidate.pending? %>
-                  <%= button_to 'Aprobar', approve_candidate_black_coffee_google_import_path(@import_run, candidate_id: candidate.id), method: :post, class: 'btn btn-sm btn-success text-white d-inline-block' %>
-                  <%= button_to 'Rechazar', reject_candidate_black_coffee_google_import_path(@import_run, candidate_id: candidate.id), method: :post, class: 'btn btn-sm btn-outline-danger d-inline-block' %>
-                <% elsif candidate.duplicate? && candidate.duplicate_venue.present? %>
-                  <%= link_to 'Ver duplicado', black_coffee_venue_path(candidate.duplicate_venue), class: 'btn btn-sm btn-outline-warning' %>
-                <% elsif candidate.approved? && candidate.approved_venue.present? %>
-                  <%= link_to 'Editar local', edit_black_coffee_venue_path(candidate.approved_venue), class: 'btn btn-sm btn-primary text-white' %>
-                <% else %>
-                  <span class="text-muted small">Sin acciones</span>
-                <% end %>
-              </td>
+                </td>
+                <td>
+                  <%= candidate.address.presence || 'Sin direccion' %>
+                  <div class="text-muted small"><%= candidate.city.presence || candidate.black_coffee_import_region.name %></div>
+                  <div class="text-muted small">
+                    <%= [candidate.postal_code, candidate.state, candidate.country_code.presence || candidate.country].compact.reject(&:blank?).join(' / ').presence || 'Sin metadata territorial' %>
+                  </div>
+                </td>
+                <td>
+                  <% if candidate.rating.present? %>
+                    <strong><%= candidate.rating %></strong>
+                    <div class="text-muted small"><%= candidate.user_ratings_total.to_i %> reviews</div>
+                  <% else %>
+                    <span class="text-muted">Sin rating</span>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="badge badge-light"><%= candidate.image_url_list.size %> URLs</span>
+                  <span class="badge badge-light"><%= candidate.google_photo_reference_list.size %> refs</span>
+                </td>
+                <td style="min-width: 220px;">
+                  <% opening_descriptions = candidate.google_opening_hours_descriptions %>
+                  <% if opening_descriptions.any? %>
+                    <% opening_descriptions.first(2).each do |description| %>
+                      <div class="small"><%= description %></div>
+                    <% end %>
+                    <% if opening_descriptions.size > 2 %>
+                      <details class="small mt-1">
+                        <summary>Ver semana completa</summary>
+                        <% opening_descriptions.drop(2).each do |description| %>
+                          <div><%= description %></div>
+                        <% end %>
+                      </details>
+                    <% end %>
+                  <% elsif candidate.google_schedule_payload.present? %>
+                    <span class="badge badge-light">Horario importable</span>
+                  <% else %>
+                    <span class="text-muted small">Sin horario Google</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% badge_class =
+                    case candidate.status
+                    when 'approved' then 'success'
+                    when 'rejected' then 'danger'
+                    when 'duplicate' then 'warning'
+                    else 'secondary'
+                    end
+                  %>
+                  <span class="badge badge-<%= badge_class %>"><%= candidate.status %></span>
+                  <% if candidate.approved_venue.present? %>
+                    <div><%= link_to 'Ver local', black_coffee_venue_path(candidate.approved_venue), class: 'small' %></div>
+                  <% elsif candidate.duplicate_venue.present? %>
+                    <div><%= link_to 'Duplicado', black_coffee_venue_path(candidate.duplicate_venue), class: 'small' %></div>
+                  <% end %>
+                </td>
+                <td class="text-right text-nowrap">
+                  <% if candidate.pending? %>
+                    <%= button_to 'Aprobar', approve_candidate_black_coffee_google_import_path(@import_run, candidate_id: candidate.id), method: :post, class: 'btn btn-sm btn-success text-white d-inline-block' %>
+                    <%= button_to 'Rechazar', reject_candidate_black_coffee_google_import_path(@import_run, candidate_id: candidate.id), method: :post, class: 'btn btn-sm btn-outline-danger d-inline-block' %>
+                  <% elsif candidate.duplicate? && candidate.duplicate_venue.present? %>
+                    <%= link_to 'Ver duplicado', black_coffee_venue_path(candidate.duplicate_venue), class: 'btn btn-sm btn-outline-warning' %>
+                  <% elsif candidate.approved? && candidate.approved_venue.present? %>
+                    <%= link_to 'Editar local', edit_black_coffee_venue_path(candidate.approved_venue), class: 'btn btn-sm btn-primary text-white' %>
+                  <% else %>
+                    <span class="text-muted small">Sin acciones</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="9" class="text-center text-muted py-5">No hay candidatos en esta corrida.</td>
             </tr>
           <% end %>
-        <% else %>
-          <tr>
-            <td colspan="9" class="text-center text-muted py-5">No hay candidatos en esta corrida.</td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-  </div>
+        </tbody>
+      </table>
+    </div>
 </div>
+
+<% if @latest_image_refresh_batch.present? %>
+  <script type="application/json" id="image-refresh-initial-state"><%= raw json_escape(@image_refresh_progress_payload.to_json) %></script>
+<% end %>
+
+<script>
+  (function() {
+    const tableContainer = document.getElementById('import-candidates-table');
+    if (tableContainer) {
+      const filterSelect = document.getElementById('candidate-image-filter');
+      const selectAll = document.getElementById('candidate-select-all');
+      const selectVisibleButton = document.getElementById('select-visible-button');
+      const clearSelectionButton = document.getElementById('clear-selection-button');
+      const selectionSummary = document.getElementById('selection-summary');
+      const approveButton = document.getElementById('approve-selected-button');
+      const rejectButton = document.getElementById('reject-selected-button');
+      const refreshImagesButton = document.getElementById('refresh-images-button');
+      const rows = Array.from(document.querySelectorAll('.candidate-row'));
+
+      function rowMatchesFilter(row, filterValue) {
+        const status = row.dataset.status;
+        const hasImages = row.dataset.hasImages === '1';
+        const hasRefs = row.dataset.hasPhotoRefs === '1';
+
+        if (filterValue === 'pending') return status === 'pending';
+        if (filterValue === 'with_images') return hasImages;
+        if (filterValue === 'without_images') return !hasImages;
+        if (filterValue === 'without_images_with_refs') return !hasImages && hasRefs;
+        return true;
+      }
+
+      function visibleSelectableCheckboxes() {
+        return rows
+          .filter(row => row.style.display !== 'none')
+          .map(row => row.querySelector('.candidate-checkbox'))
+          .filter(checkbox => checkbox && !checkbox.disabled);
+      }
+
+      function allSelectableCheckboxes() {
+        return rows
+          .map(row => row.querySelector('.candidate-checkbox'))
+          .filter(checkbox => checkbox && !checkbox.disabled);
+      }
+
+      function updateSelectionSummary() {
+        const visibleRows = rows.filter(row => row.style.display !== 'none').length;
+        const selectedCount = allSelectableCheckboxes().filter(checkbox => checkbox.checked).length;
+        selectionSummary.textContent = `${selectedCount} seleccionados · ${visibleRows} visibles`;
+        approveButton.disabled = selectedCount === 0;
+        rejectButton.disabled = selectedCount === 0;
+        refreshImagesButton.disabled = selectedCount === 0;
+
+        const visibleCheckboxes = visibleSelectableCheckboxes();
+        const allVisibleSelected = visibleCheckboxes.length > 0 && visibleCheckboxes.every(checkbox => checkbox.checked);
+        selectAll.checked = allVisibleSelected;
+        selectAll.indeterminate = !allVisibleSelected && visibleCheckboxes.some(checkbox => checkbox.checked);
+      }
+
+      function applyFilter() {
+        const filterValue = filterSelect.value;
+        rows.forEach(row => {
+          const visible = rowMatchesFilter(row, filterValue);
+          row.style.display = visible ? '' : 'none';
+          if (!visible) {
+            const checkbox = row.querySelector('.candidate-checkbox');
+            if (checkbox) checkbox.checked = false;
+          }
+        });
+        updateSelectionSummary();
+      }
+
+      selectVisibleButton.addEventListener('click', function() {
+        visibleSelectableCheckboxes().forEach(checkbox => {
+          checkbox.checked = true;
+        });
+        updateSelectionSummary();
+      });
+
+      clearSelectionButton.addEventListener('click', function() {
+        allSelectableCheckboxes().forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        updateSelectionSummary();
+      });
+
+      selectAll.addEventListener('change', function() {
+        visibleSelectableCheckboxes().forEach(checkbox => {
+          checkbox.checked = selectAll.checked;
+        });
+        updateSelectionSummary();
+      });
+
+      filterSelect.addEventListener('change', applyFilter);
+
+      rows.forEach(row => {
+        const checkbox = row.querySelector('.candidate-checkbox');
+        if (!checkbox) return;
+        checkbox.addEventListener('change', updateSelectionSummary);
+      });
+
+      applyFilter();
+    }
+
+    const refreshContainer = document.getElementById('candidate-image-refresh');
+    const initialStateNode = document.getElementById('image-refresh-initial-state');
+    if (!refreshContainer || !initialStateNode) return;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    const formatter = new Intl.NumberFormat('es-ES');
+    let state = JSON.parse(initialStateNode.textContent);
+    let pollTimer = null;
+    let requestInFlight = false;
+
+    const statusBadge = document.getElementById('image-refresh-status-badge');
+    const progressBar = document.getElementById('image-refresh-progress-bar');
+    const progressValue = document.getElementById('image-refresh-progress-value');
+    const processedValue = document.getElementById('image-refresh-processed-value');
+    const successValue = document.getElementById('image-refresh-success-value');
+    const skippedValue = document.getElementById('image-refresh-skipped-value');
+    const failedValue = document.getElementById('image-refresh-failed-value');
+    const requestsValue = document.getElementById('image-refresh-requests-value');
+    const currentLine = document.getElementById('image-refresh-current-line');
+    const liveNote = document.getElementById('image-refresh-live-note');
+    const errorContainer = document.getElementById('image-refresh-error-container');
+    const errorMessage = document.getElementById('image-refresh-error-message');
+    const retryContainer = document.getElementById('image-refresh-retry-container');
+
+    function badgeClass(status) {
+      if (status === 'completed') return 'badge badge-success p-2 mr-2';
+      if (status === 'failed') return 'badge badge-danger p-2 mr-2';
+      if (status === 'running') return 'badge badge-primary p-2 mr-2';
+      return 'badge badge-secondary p-2 mr-2';
+    }
+
+    function progressClass(status, active) {
+      if (status === 'completed') return 'progress-bar bg-success';
+      if (status === 'failed') return 'progress-bar bg-danger';
+      if (active) return 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
+      return 'progress-bar bg-secondary';
+    }
+
+    function render(data) {
+      state = data;
+      statusBadge.className = badgeClass(data.status);
+      statusBadge.textContent = data.status;
+      progressBar.className = progressClass(data.status, data.active);
+      progressBar.style.width = `${Math.min(data.completionPercentage || 0, 100)}%`;
+      progressBar.setAttribute('aria-valuenow', data.completionPercentage || 0);
+
+      progressValue.textContent = `${data.completionPercentage || 0}%`;
+      processedValue.textContent = `${data.processedCandidates || 0}/${data.totalCandidates || 0}`;
+      successValue.textContent = formatter.format(data.refreshedCandidates || 0);
+      skippedValue.textContent = formatter.format(data.skippedCandidates || 0);
+      failedValue.textContent = formatter.format(data.failedCandidates || 0);
+      requestsValue.textContent = formatter.format(data.requestsCount || 0);
+
+      if (data.currentCandidateName) {
+        currentLine.innerHTML = `Procesando ahora: <strong>${data.currentCandidateName}</strong>`;
+      } else if (data.finished) {
+        currentLine.textContent = 'No quedan candidatos pendientes en este reintento de imagenes.';
+      } else {
+        currentLine.textContent = 'Esperando el siguiente bloque de imagenes...';
+      }
+
+      if (data.active) {
+        liveNote.textContent = 'Procesando candidatos poco a poco para evitar timeouts y reducir el riesgo de rate limit.';
+      } else if (data.status === 'completed') {
+        liveNote.textContent = 'Reintento de imagenes completado. Ya puedes filtrar de nuevo y aprobar los locales con foto.';
+      } else if (data.status === 'failed') {
+        liveNote.textContent = 'El reintento de imagenes se ha detenido. Puedes reanudarlo cuando quieras.';
+      }
+
+      if (data.errorMessage) {
+        errorContainer.style.display = '';
+        errorMessage.textContent = data.errorMessage;
+      } else {
+        errorContainer.style.display = 'none';
+        errorMessage.textContent = '';
+      }
+
+      if (retryContainer) {
+        retryContainer.style.display = data.retryable ? '' : 'none';
+      }
+    }
+
+    function scheduleNext(delayMs) {
+      window.clearTimeout(pollTimer);
+      if (!state.active) return;
+      pollTimer = window.setTimeout(tick, delayMs);
+    }
+
+    function tick() {
+      if (requestInFlight || !state.active) return;
+      requestInFlight = true;
+
+      fetch(refreshContainer.dataset.advanceUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        credentials: 'same-origin'
+      })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+          render(data);
+          scheduleNext(ok ? 1200 : 2500);
+        })
+        .catch(() => {
+          liveNote.textContent = 'Hubo un problema temporal de conexion. Reintentando en unos segundos...';
+          scheduleNext(2500);
+        })
+        .finally(() => {
+          requestInFlight = false;
+        });
+    }
+
+    render(state);
+    if (state.active) {
+      scheduleNext(600);
+    }
+  })();
+</script>

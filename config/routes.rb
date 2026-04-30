@@ -49,6 +49,10 @@ Rails.application.routes.draw do
       member do
         post :approve_selected
         post :reject_selected
+        post :refresh_selected_images
+        post :retry_image_refresh
+        get :image_refresh_status
+        post :advance_image_refresh
         post 'candidates/:candidate_id/approve', action: :approve_candidate, as: :approve_candidate
         post 'candidates/:candidate_id/reject', action: :reject_candidate, as: :reject_candidate
       end

@@ -7,6 +7,7 @@ class GooglePlacesBlackCoffeeClient
   class RequestError < StandardError; end
 
   BASE_URL = 'https://places.googleapis.com/v1/places:searchText'.freeze
+  PLACE_DETAILS_URL = 'https://places.googleapis.com/v1/places'.freeze
   PHOTO_HOST = 'places.googleapis.com'.freeze
   MAX_PAGE_SIZE = 20
   MAX_RESULTS = 60
@@ -31,6 +32,7 @@ class GooglePlacesBlackCoffeeClient
     places.photos
     nextPageToken
   ].join(',').freeze
+  PLACE_DETAILS_PHOTO_FIELD_MASK = 'id,photos'.freeze
   CATEGORY_CONFIG = {
     'restaurante' => {
       label: 'Restaurantes',
@@ -166,6 +168,50 @@ class GooglePlacesBlackCoffeeClient
     candidates
   end
 
+  def photo_urls_from_references(photo_references, max_photos: MAX_PHOTOS_PER_PLACE)
+    raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
+
+    references = Array(photo_references).first(max_photos)
+    image_urls = []
+    requests_count = 0
+
+    references.each do |reference|
+      photo_name = extract_photo_name(reference)
+      next if photo_name.blank?
+
+      payload = get_json(photo_media_uri(photo_name))
+      requests_count += 1
+      image_url = normalize_photo_uri(payload['photoUri'])
+      image_urls << image_url if image_url.present?
+    end
+
+    {
+      image_urls: image_urls.uniq,
+      requests_count: requests_count
+    }
+  end
+
+  def fetch_place_photo_bundle(place_id:, max_photos: MAX_PHOTOS_PER_PLACE)
+    raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
+
+    place_resource = normalized_place_resource(place_id)
+    payload = get_json(
+      URI.parse("#{PLACE_DETAILS_URL}/#{place_resource}"),
+      field_mask: PLACE_DETAILS_PHOTO_FIELD_MASK
+    )
+    photos = Array(payload['photos']).first(max_photos)
+    photo_references = photos.map { |photo| photo_reference_payload(photo) }
+    photo_result = photo_urls_from_references(photo_references, max_photos: max_photos)
+
+    {
+      google_photo_references: photo_references,
+      image_urls: photo_result[:image_urls],
+      author_attributions: photos.flat_map { |photo| Array(photo['authorAttributions']) },
+      raw_photos: photos,
+      requests_count: 1 + photo_result[:requests_count]
+    }
+  end
+
   private
 
   def build_query(region:, config:, query_override:, append_region_to_query:)
@@ -291,25 +337,21 @@ class GooglePlacesBlackCoffeeClient
   def photo_uri_for(photo_name)
     return if photo_name.blank?
 
-    uri = URI::HTTPS.build(
-      host: PHOTO_HOST,
-      path: "/v1/#{photo_name}/media",
-      query: URI.encode_www_form(
-        key: @api_key,
-        maxWidthPx: 1200,
-        skipHttpRedirect: true
-      )
-    )
-    payload = get_json(uri)
+    payload = get_json(photo_media_uri(photo_name))
     normalize_photo_uri(payload['photoUri'])
   rescue RequestError => e
     Rails.logger.warn("Black Coffee Google photo skipped: #{e.message}") if defined?(Rails)
     nil
   end
 
-  def get_json(uri)
+  def get_json(uri, field_mask: nil)
+    request = Net::HTTP::Get.new(uri)
+    request['Content-Type'] = 'application/json'
+    request['X-Goog-Api-Key'] = @api_key
+    request['X-Goog-FieldMask'] = field_mask if field_mask.present?
+
     response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true, read_timeout: 15, open_timeout: 10) do |http|
-      http.request(Net::HTTP::Get.new(uri))
+      http.request(request)
     end
 
     parsed = JSON.parse(response.body.presence || '{}')
@@ -329,5 +371,30 @@ class GooglePlacesBlackCoffeeClient
     return "https:#{value}" if value.start_with?('//')
 
     value
+  end
+
+  def photo_media_uri(photo_name)
+    URI::HTTPS.build(
+      host: PHOTO_HOST,
+      path: "/v1/#{photo_name}/media",
+      query: URI.encode_www_form(
+        key: @api_key,
+        maxWidthPx: 1200,
+        skipHttpRedirect: true
+      )
+    )
+  end
+
+  def extract_photo_name(reference)
+    return reference if reference.is_a?(String)
+    return if !reference.respond_to?(:[])
+
+    reference['name'] || reference[:name]
+  end
+
+  def normalized_place_resource(place_id)
+    normalized = place_id.to_s.strip
+    normalized = normalized.delete_prefix('places/')
+    normalized
   end
 end

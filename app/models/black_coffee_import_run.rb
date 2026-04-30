@@ -17,6 +17,10 @@ class BlackCoffeeImportRun < ApplicationRecord
            class_name: 'BlackCoffeeBulkImportStep',
            dependent: :nullify,
            inverse_of: :black_coffee_import_run
+  has_many :photo_refresh_batches,
+           class_name: 'BlackCoffeeImportPhotoRefreshBatch',
+           dependent: :destroy,
+           inverse_of: :black_coffee_import_run
 
   validates :category, :status, presence: true
   validates :category, inclusion: { in: Venue::CATEGORIES }
