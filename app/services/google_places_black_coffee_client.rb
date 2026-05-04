@@ -1,5 +1,6 @@
 require 'json'
 require 'net/http'
+require 'ostruct'
 require 'uri'
 
 class GooglePlacesBlackCoffeeClient
@@ -29,10 +30,30 @@ class GooglePlacesBlackCoffeeClient
     places.nationalPhoneNumber
     places.addressComponents
     places.regularOpeningHours
+    places.editorialSummary
     places.photos
     nextPageToken
   ].join(',').freeze
   PLACE_DETAILS_PHOTO_FIELD_MASK = 'id,photos'.freeze
+  PLACE_DETAILS_SYNC_FIELD_MASK = %w[
+    id
+    name
+    displayName
+    formattedAddress
+    location
+    types
+    primaryType
+    primaryTypeDisplayName
+    rating
+    userRatingCount
+    googleMapsUri
+    websiteUri
+    nationalPhoneNumber
+    addressComponents
+    regularOpeningHours
+    editorialSummary
+    photos
+  ].join(',').freeze
   CATEGORY_CONFIG = {
     'restaurante' => {
       label: 'Restaurantes',
@@ -212,6 +233,29 @@ class GooglePlacesBlackCoffeeClient
     }
   end
 
+  def fetch_place_sync_data(place_id:, category:, fallback_city:, fallback_subcategory: nil)
+    raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
+
+    place_resource = normalized_place_resource(place_id)
+    payload = get_json(
+      URI.parse("#{PLACE_DETAILS_URL}/#{place_resource}"),
+      field_mask: PLACE_DETAILS_SYNC_FIELD_MASK
+    )
+    attributes = place_to_candidate_attributes(
+      payload,
+      region: OpenStruct.new(name: fallback_city.to_s.strip.presence || 'Sin ciudad'),
+      category: category,
+      subcategory: fallback_subcategory
+    )
+    photos = Array(payload['photos']).first(MAX_PHOTOS_PER_PLACE)
+
+    attributes.merge(
+      google_type_tags: BlackCoffeeTaxonomy.google_tags_for_place(payload),
+      google_schedule_payload: schedule_payload_for_place(payload),
+      requests_count: 1 + photos.count { |photo| photo['name'].present? }
+    )
+  end
+
   private
 
   def build_query(region:, config:, query_override:, append_region_to_query:)
@@ -296,6 +340,8 @@ class GooglePlacesBlackCoffeeClient
       website: place['websiteUri'],
       phone: place['nationalPhoneNumber'],
       google_maps_uri: place['googleMapsUri'],
+      google_description: place.dig('editorialSummary', 'text'),
+      google_description_language_code: place.dig('editorialSummary', 'languageCode'),
       image_urls: photos.filter_map { |photo| photo_uri_for(photo['name']) },
       google_photo_references: photos.map { |photo| photo_reference_payload(photo) },
       author_attributions: photos.flat_map { |photo| Array(photo['authorAttributions']) },
@@ -309,6 +355,10 @@ class GooglePlacesBlackCoffeeClient
       category: category,
       fallback: fallback
     )
+  end
+
+  def schedule_payload_for_place(place)
+    BlackCoffeeImportCandidate.new(raw_payload: place).google_schedule_payload
   end
 
   def city_from_components(components)

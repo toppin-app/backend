@@ -1,6 +1,6 @@
 class BlackCoffeeImportApprovalBatch < ApplicationRecord
   STATUSES = %w[pending running completed failed cancelled].freeze
-  SELECTION_MODES = %w[selected_ids pending_scope].freeze
+  SELECTION_MODES = %w[selected_ids pending_scope pending_with_images_scope].freeze
 
   belongs_to :black_coffee_import_run,
              inverse_of: :approval_batches
@@ -37,6 +37,10 @@ class BlackCoffeeImportApprovalBatch < ApplicationRecord
 
   def pending_scope?
     selection_mode == 'pending_scope'
+  end
+
+  def pending_with_images_scope?
+    selection_mode == 'pending_with_images_scope'
   end
 
   def selected_ids?

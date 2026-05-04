@@ -31,6 +31,11 @@ class AdminUtilitiesController < ApplicationController
     # Obtener progreso actual si existe
     @current_progress = Rails.cache.read('location_population_progress')
     @platform_progress = Rails.cache.read('platform_population_progress')
+    @black_coffee_google_connected_venues = Venue.google_connected.count
+    @latest_black_coffee_google_sync_batch =
+      if ActiveRecord::Base.connection.data_source_exists?('black_coffee_venue_google_sync_batches')
+        BlackCoffeeVenueGoogleSyncBatch.recent_first.first
+      end
   end
 
   def populate_locations

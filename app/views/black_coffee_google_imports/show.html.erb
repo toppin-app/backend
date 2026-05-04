@@ -108,7 +108,17 @@
         </div>
         <div class="col-md-4 col-6">
           <div class="text-muted small text-uppercase">Modo</div>
-          <h5 class="mb-0" id="approval-mode-value"><%= @latest_approval_batch.pending_scope? ? 'Toda la corrida' : 'Seleccion manual' %></h5>
+          <h5 class="mb-0" id="approval-mode-value">
+            <%=
+              if @latest_approval_batch.pending_scope?
+                'Toda la corrida'
+              elsif @latest_approval_batch.pending_with_images_scope?
+                'Pendientes con imagen'
+              else
+                'Seleccion manual'
+              end
+            %>
+          </h5>
         </div>
         <div class="col-md-4 col-6">
           <div class="text-muted small text-uppercase">Ultimo ID</div>
@@ -278,6 +288,13 @@
                         form: { class: 'd-inline-block', data: { turbolinks: false } },
                         disabled: pending_candidates_count.zero?,
                         data: { confirm: "Se preparara una aprobacion progresiva para #{number_with_delimiter(pending_candidates_count)} pendientes. Continuar?" } %>
+          <%= button_to 'Aprobar todos con imagen',
+                        approve_all_with_images_black_coffee_google_import_path(@import_run, current_query_params),
+                        method: :post,
+                        class: 'btn btn-outline-success mr-2 mb-2',
+                        form: { class: 'd-inline-block', data: { turbolinks: false } },
+                        disabled: @pending_with_images_count.zero?,
+                        data: { confirm: "Se preparara una aprobacion progresiva para #{number_with_delimiter(@pending_with_images_count)} pendientes que ya tienen imagen. Continuar?" } %>
           <button type="button"
                   class="btn btn-outline-danger mr-2 mb-2"
                   id="reject-selected-button"
@@ -753,7 +770,13 @@
           skippedValue.textContent = formatter.format(data.skippedCandidates || 0);
           failedValue.textContent = formatter.format(data.failedCandidates || 0);
           pendingValue.textContent = formatter.format(data.pendingCandidates || 0);
-          modeValue.textContent = data.selectionMode === 'pending_scope' ? 'Toda la corrida' : 'Seleccion manual';
+          if (data.selectionMode === 'pending_scope') {
+            modeValue.textContent = 'Toda la corrida';
+          } else if (data.selectionMode === 'pending_with_images_scope') {
+            modeValue.textContent = 'Pendientes con imagen';
+          } else {
+            modeValue.textContent = 'Seleccion manual';
+          }
           lastIdValue.textContent = data.lastProcessedCandidateId || '-';
 
           if (data.currentCandidateName) {

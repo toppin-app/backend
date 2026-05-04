@@ -44,6 +44,7 @@
         <%= link_to 'Gestionar subcategorias', black_coffee_subcategories_path, class: 'btn btn-outline-dark mr-2' %>
         <%= link_to 'Limpieza masiva', black_coffee_cleanup_path, class: 'btn btn-outline-danger mr-2' %>
         <%= link_to 'Importar Google Maps', black_coffee_google_imports_path, class: 'btn btn-outline-primary mr-2' %>
+        <%= link_to 'Actualizar desde Google', black_coffee_venue_google_syncs_path, class: 'btn btn-outline-info mr-2' %>
         <%= link_to 'Nuevo local', new_black_coffee_venue_path, class: 'btn btn-success text-white' %>
       </div>
     </div>
@@ -171,6 +172,15 @@
                 <% end %>
                 <%= link_to edit_black_coffee_venue_path(venue), class: 'btn btn-sm btn-primary text-white' do %>
                   <i class="fas fa-edit"></i>
+                <% end %>
+                <% if venue.google_connected? %>
+                  <%= button_to black_coffee_venue_google_syncs_path(venue_id: venue.id),
+                                method: :post,
+                                class: 'btn btn-sm btn-outline-info d-inline-block',
+                                form_class: 'd-inline-block',
+                                data: { confirm: "Se preparara una sincronizacion Google para #{venue.name}. Continuar?" } do %>
+                    <i class="fas fa-sync-alt"></i>
+                  <% end %>
                 <% end %>
                 <%= link_to black_coffee_venue_path(venue), method: :delete, data: { confirm: '¿Eliminar este local?' }, class: 'btn btn-sm btn-danger text-white' do %>
                   <i class="fas fa-trash"></i>

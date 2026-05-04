@@ -1,0 +1,123 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Utilidad Google</p>
+    <h2 class="mb-0">Sincronizar locales publicados</h2>
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-dark mr-2' %>
+    <%= link_to 'Volver a utilidades', admin_utilities_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  Esta utilidad refresca desde Google solo los locales de Black Coffee que ya tengan <strong>Google Place ID</strong>.
+  Se ejecuta por bloques cortos, con progreso visible y sin bloquear el dashboard. El consumo de la API puede crecer si hay miles de locales porque cada sincronizacion puede pedir horarios, descripcion e imagenes.
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-4 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Locales conectados</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@connected_venues_count) %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Sin Google</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@venues_without_google_count) %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Ultimo lote</p>
+        <h2 class="mb-0"><%= @latest_batches.first&.id || '-' %></h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center">
+      <div class="mr-3 mb-3 mb-md-0">
+        <strong>Actualizar toda la informacion Google de Black Coffee</strong>
+        <div class="text-muted small">
+          Refresca nombre, direccion, horario, descripcion real, etiquetas internas, subcategoria sugerida y fotos de origen Google.
+          Si Google no devuelve descripcion, no inventamos texto. Si un local aun tiene el placeholder antiguo, se limpia.
+        </div>
+      </div>
+      <div>
+        <% if @active_batch.present? %>
+          <%= link_to "Seguir lote ##{@active_batch.id}", black_coffee_venue_google_sync_path(@active_batch), class: 'btn btn-success text-white' %>
+        <% else %>
+          <%= button_to 'Actualizar todos los conectados',
+                        black_coffee_venue_google_syncs_path(mode: 'all_connected'),
+                        method: :post,
+                        class: 'btn btn-primary text-white',
+                        form_class: 'd-inline-block',
+                        disabled: @connected_venues_count.zero?,
+                        data: { confirm: "Se preparara una sincronizacion progresiva para #{@connected_venues_count} locales conectados a Google. Continuar?" } %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white">
+    <strong>Ultimos lotes</strong>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Modo</th>
+          <th>Estado</th>
+          <th>Procesados</th>
+          <th>Sincronizados</th>
+          <th>Requests</th>
+          <th>Fecha</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @latest_batches.any? %>
+          <% @latest_batches.each do |batch| %>
+            <tr>
+              <td><%= batch.id %></td>
+              <td><%= batch.connected_scope? ? 'Todos los conectados' : 'Seleccion manual' %></td>
+              <td>
+                <% badge_class =
+                  case batch.status
+                  when 'completed' then 'success'
+                  when 'failed' then 'danger'
+                  when 'running' then 'primary'
+                  else 'secondary'
+                  end
+                %>
+                <span class="badge badge-<%= badge_class %>"><%= batch.status %></span>
+              </td>
+              <td><%= number_with_delimiter(batch.processed_venues_count) %>/<%= number_with_delimiter(batch.total_venues_count) %></td>
+              <td><%= number_with_delimiter(batch.synced_venues_count) %></td>
+              <td><%= number_with_delimiter(batch.requests_count) %></td>
+              <td><%= batch.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+              <td class="text-right">
+                <%= link_to 'Ver progreso', black_coffee_venue_google_sync_path(batch), class: 'btn btn-sm btn-outline-primary' %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">Todavia no hay lotes de sincronizacion Google.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

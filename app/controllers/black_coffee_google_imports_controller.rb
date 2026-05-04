@@ -32,6 +32,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     :reject_candidate,
     :approve_selected,
     :approve_all_pending,
+    :approve_all_with_images,
     :reject_selected,
     :refresh_selected_images,
     :refresh_all_missing_images,
@@ -181,6 +182,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       @total_candidates - @import_run.approved_count.to_i - @import_run.duplicate_count.to_i - @import_run.rejected_count.to_i,
       0
     ].max
+    @pending_with_images_count = @import_run.import_candidates.where(status: 'pending').where.not('image_urls IS NULL OR JSON_LENGTH(image_urls) = 0').count
     @missing_image_candidates_count = @import_run.import_candidates.missing_images.count
     @refreshable_missing_image_candidates_count = @import_run.import_candidates.missing_images.image_refreshable.count
     @visible_candidates_from = @total_candidates.zero? ? 0 : ((@page - 1) * @per_page) + 1
@@ -292,6 +294,19 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "Aprobacion total preparada para #{batch.total_candidates_count} pendientes. El dashboard los ira aprobando por lotes estables."
   rescue StandardError => e
     redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar la aprobacion total: #{e.message}"
+  end
+
+  def approve_all_with_images
+    existing_batch = latest_approval_batch
+    if existing_batch&.active?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: 'Ya hay una aprobacion en curso para esta corrida. Puedes seguir el progreso desde aqui.'
+      return
+    end
+
+    batch = BlackCoffeeImportApprovalRunner.start_pending_with_images_scope!(import_run: @import_run)
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "Aprobacion preparada para #{batch.total_candidates_count} pendientes que ya tienen imagen."
+  rescue StandardError => e
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar la aprobacion con imagenes: #{e.message}"
   end
 
   def reject_selected

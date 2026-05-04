@@ -460,6 +460,33 @@
       <% end %>
     </div>
 
+    <div class="utility-card">
+      <h3><i class="fas fa-sync-alt"></i> Actualizar informacion Google · Black Coffee</h3>
+      <p>
+        Refresca en bloque los locales de Black Coffee que ya estan conectados a Google: nombre, direccion, horarios, descripcion real, etiquetas internas y fotos Google.
+      </p>
+
+      <div class="info-badge">
+        <i class="fas fa-info-circle"></i>
+        <div>
+          <strong>Locales conectados:</strong> <%= number_with_delimiter(@black_coffee_google_connected_venues) %>
+        </div>
+      </div>
+
+      <% if @latest_black_coffee_google_sync_batch.present? %>
+        <div class="warning-badge">
+          <i class="fas fa-history"></i>
+          <div>
+            <strong>Ultimo lote:</strong> #<%= @latest_black_coffee_google_sync_batch.id %> · <%= @latest_black_coffee_google_sync_batch.status %>
+          </div>
+        </div>
+      <% end %>
+
+      <%= link_to black_coffee_venue_google_syncs_path, class: 'btn-start' do %>
+        <i class="fas fa-database"></i> Abrir sincronizacion
+      <% end %>
+    </div>
+
     <!-- Utilidad: Poblar Ubicaciones -->
     <div class="utility-card">
       <h3><i class="fas fa-map-marker-alt"></i> Poblar Ubicaciones</h3>

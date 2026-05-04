@@ -37,6 +37,22 @@ class BlackCoffeeImportApprovalRunner
     )
   end
 
+  def self.start_pending_with_images_scope!(import_run:)
+    active_batch = import_run.approval_batches.active.recent_first.first
+    return active_batch if active_batch.present?
+
+    total_pending = import_run.import_candidates.where(status: 'pending').where.not('image_urls IS NULL OR JSON_LENGTH(image_urls) = 0').count
+    raise 'No hay candidatos pendientes con imagen para aprobar en esta corrida.' if total_pending.zero?
+
+    import_run.approval_batches.create!(
+      status: 'pending',
+      selection_mode: 'pending_with_images_scope',
+      total_candidates_count: total_pending,
+      pending_candidates_count: total_pending,
+      last_processed_candidate_id: 0
+    )
+  end
+
   def self.advance!(batch:, step_budget: DEFAULT_STEP_BUDGET, time_budget_seconds: DEFAULT_TIME_BUDGET_SECONDS)
     new(batch).advance!(step_budget: step_budget, time_budget_seconds: time_budget_seconds)
   end
@@ -123,6 +139,8 @@ class BlackCoffeeImportApprovalRunner
       claimed_ids =
         if @batch.selected_ids?
           claim_selected_ids(limit)
+        elsif @batch.pending_with_images_scope?
+          claim_pending_with_images_scope_ids(limit)
         else
           claim_pending_scope_ids(limit)
         end
@@ -158,6 +176,24 @@ class BlackCoffeeImportApprovalRunner
     end
 
     scope = @import_run.import_candidates.where(status: 'pending')
+    if @batch.last_processed_candidate_id.to_i.positive?
+      scope = scope.where('id > ?', @batch.last_processed_candidate_id.to_i)
+    end
+
+    claimed_ids = scope.order(:id).limit(limit).pluck(:id)
+    @batch.update!(last_processed_candidate_id: claimed_ids.last) if claimed_ids.any?
+    claimed_ids
+  end
+
+  def claim_pending_with_images_scope_ids(limit)
+    queued_ids = @batch.pending_candidate_ids
+    if queued_ids.any?
+      claimed_ids = queued_ids.shift(limit)
+      @batch.update!(pending_candidate_ids_payload: queued_ids)
+      return claimed_ids
+    end
+
+    scope = @import_run.import_candidates.where(status: 'pending').where.not('image_urls IS NULL OR JSON_LENGTH(image_urls) = 0')
     if @batch.last_processed_candidate_id.to_i.positive?
       scope = scope.where('id > ?', @batch.last_processed_candidate_id.to_i)
     end
@@ -311,6 +347,7 @@ class BlackCoffeeImportApprovalRunner
     return true if @batch.pending_candidate_ids.any?
 
     scope = @import_run.import_candidates.where(status: 'pending')
+    scope = scope.where.not('image_urls IS NULL OR JSON_LENGTH(image_urls) = 0') if @batch.pending_with_images_scope?
     if @batch.last_processed_candidate_id.to_i.positive?
       scope = scope.where('id > ?', @batch.last_processed_candidate_id.to_i)
     end

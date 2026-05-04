@@ -42,12 +42,20 @@ class Venue < ApplicationRecord
   has_many :user_favorites, dependent: :destroy
   has_many :favorited_by_users, through: :user_favorites, source: :user
 
-  validates :name, :category, :description, :address, :city, presence: true
+  validates :name, :category, :address, :city, presence: true
   validates :category, inclusion: { in: CATEGORIES }
   validates :google_place_id, uniqueness: true, allow_blank: true, if: -> { has_attribute?(:google_place_id) }
   validates :latitude, :longitude, numericality: true
 
+  scope :google_connected, lambda {
+    if column_names.include?('google_place_id')
+      where.not(google_place_id: [nil, ''])
+    else
+      none
+    end
+  }
   before_validation :normalize_tags
+  before_validation :normalize_description
   before_validation :normalize_location_metadata
   before_create :assign_identifier
 
@@ -152,6 +160,10 @@ class Venue < ApplicationRecord
     has_attribute?(:google_place_id) && google_place_id.present?
   end
 
+  def description_present?
+    description.to_s.strip.present?
+  end
+
   def favorites_count
     return attributes['live_favorites_count'].to_i if attributes.key?('live_favorites_count')
 
@@ -188,7 +200,7 @@ class Venue < ApplicationRecord
       images: image_urls(base_url: base_url),
       category: category,
       subcategory: subcategory_name,
-      description: description,
+      description: description.presence,
       location: {
         address: address,
         city: city,
@@ -251,7 +263,13 @@ class Venue < ApplicationRecord
       when 'remote'
         next if entry[:url].blank?
 
-        image = venue_images.create!(url: entry[:url], position: next_temporary_position)
+        attributes = { url: entry[:url], position: next_temporary_position }
+        attributes[:source] = entry[:source] if venue_images.klass.column_names.include?('source') && entry.key?(:source)
+        if venue_images.klass.column_names.include?('author_attributions') && entry.key?(:author_attributions)
+          attributes[:author_attributions] = entry[:author_attributions]
+        end
+
+        image = venue_images.create!(attributes)
         next_temporary_position += 1
         image
       when 'upload'
@@ -269,6 +287,31 @@ class Venue < ApplicationRecord
 
       image.update_columns(position: index)
     end
+  end
+
+  def sync_google_images!(image_urls:, author_attributions_by_index: [])
+    desired_urls = Array(image_urls).map(&:to_s).map(&:strip).reject(&:blank?).uniq.first(10)
+    return false if desired_urls.empty?
+
+    current_google_urls = google_managed_images.map { |image| image.url.to_s.strip }.reject(&:blank?)
+    current_google_author_attributions = google_managed_images.map { |image| Array(image.author_attributions) }
+    desired_author_attributions = desired_urls.each_index.map { |index| Array(author_attributions_by_index[index]) }
+    return false if current_google_urls == desired_urls && current_google_author_attributions == desired_author_attributions
+
+    preserved_entries = venue_images.to_a.sort_by(&:position).reject { |image| google_managed_image?(image) }.map do |image|
+      { kind: 'existing', id: image.id }
+    end
+    google_entries = desired_urls.each_with_index.map do |url, index|
+      {
+        kind: 'remote',
+        url: url,
+        source: 'google_places',
+        author_attributions: desired_author_attributions[index]
+      }
+    end
+
+    sync_images!(entries: preserved_entries + google_entries, uploaded_files_by_key: {})
+    true
   end
 
   def sync_schedule!(raw_schedule)
@@ -312,6 +355,10 @@ class Venue < ApplicationRecord
 
   def assign_identifier
     self.id ||= "ven_#{SecureRandom.hex(8)}"
+  end
+
+  def normalize_description
+    self.description = description.to_s.strip.presence
   end
 
   def normalize_tags
@@ -364,5 +411,13 @@ class Venue < ApplicationRecord
     DAY_ORDER.map do |day|
       by_day[day] || { day: day, closed: true, slots: [] }
     end
+  end
+
+  def google_managed_images
+    venue_images.to_a.sort_by(&:position).select { |image| google_managed_image?(image) }
+  end
+
+  def google_managed_image?(image)
+    image.respond_to?(:source) && image.source.to_s == 'google_places'
   end
 end

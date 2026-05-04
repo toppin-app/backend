@@ -1,5 +1,6 @@
 class BlackCoffeeImportCandidate < ApplicationRecord
   STATUSES = %w[pending approved rejected duplicate].freeze
+  LEGACY_PLACEHOLDER_DESCRIPTION = 'Local importado desde Google Maps para Black Coffee. Revisa y completa la descripcion antes de destacarlo.'.freeze
   GOOGLE_DAY_TO_BLACK_COFFEE_DAY = {
     0 => 'D',
     1 => 'L',
@@ -107,6 +108,13 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     BlackCoffeeTaxonomy.google_tags_for_place(raw_payload || {})
   end
 
+  def google_description_text
+    payload = raw_payload || {}
+    google_description.to_s.strip.presence ||
+      payload.dig('editorialSummary', 'text').to_s.strip.presence ||
+      payload.dig('editorialSummary', :text).to_s.strip.presence
+  end
+
   def approve!(refresh_counts: true, preloaded_duplicate: nil)
     raise ActiveRecord::RecordInvalid, self unless valid_for_approval?
     return approved_venue if approved? && approved_venue.present?
@@ -123,7 +131,7 @@ class BlackCoffeeImportCandidate < ApplicationRecord
       venue = Venue.new(
         name: name,
         category: category,
-        description: default_description,
+        description: google_description_text,
         address: address.presence || 'Direccion pendiente de revisar',
         city: city.presence || black_coffee_import_region.name,
         latitude: latitude,
@@ -186,10 +194,6 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     errors.add(:category, 'no es valida') unless Venue::CATEGORIES.include?(category)
 
     errors.blank?
-  end
-
-  def default_description
-    'Local importado desde Google Maps para Black Coffee. Revisa y completa la descripcion antes de destacarlo.'
   end
 
   def default_tags

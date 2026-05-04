@@ -30,6 +30,13 @@ Rails.application.routes.draw do
 
   scope :black_coffee, as: :black_coffee do
     resources :venues, controller: 'black_coffee_venues'
+    resources :venue_google_syncs, controller: 'black_coffee_venue_google_syncs', only: [:index, :create, :show] do
+      member do
+        get :status
+        post :advance
+        post :retry
+      end
+    end
     resource :cleanup, controller: 'black_coffee_cleanup', only: [:show, :create]
     resources :subcategories, controller: 'black_coffee_subcategories', except: [:show]
     resources :bulk_imports, controller: 'black_coffee_bulk_imports', only: [:create, :show] do
@@ -49,6 +56,7 @@ Rails.application.routes.draw do
       member do
         post :approve_selected
         post :approve_all_pending
+        post :approve_all_with_images
         post :reject_selected
         post :refresh_selected_images
         post :refresh_all_missing_images

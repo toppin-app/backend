@@ -5,6 +5,14 @@
   </div>
   <div>
     <%= link_to 'Volver', black_coffee_venues_path, class: 'btn btn-outline-secondary mr-2' %>
+    <% if @venue.google_connected? %>
+      <%= button_to 'Actualizar desde Google',
+                    black_coffee_venue_google_syncs_path(venue_id: @venue.id),
+                    method: :post,
+                    class: 'btn btn-outline-info mr-2',
+                    form_class: 'd-inline-block',
+                    data: { confirm: "Se preparara una sincronizacion Google para #{@venue.name}. Continuar?" } %>
+    <% end %>
     <%= link_to 'Editar', edit_black_coffee_venue_path(@venue), class: 'btn btn-primary text-white' %>
   </div>
 </div>
@@ -13,22 +21,37 @@
   <div class="col-lg-8">
     <div class="card mb-4">
       <div class="card-body">
-        <div class="row">
-          <div class="col-md-8">
-            <p class="text-muted text-uppercase mb-2">Descripcion</p>
-            <p><%= @venue.description %></p>
+        <% if @venue.description_present? %>
+          <div class="row">
+            <div class="col-md-8">
+              <p class="text-muted text-uppercase mb-2">Descripcion</p>
+              <p><%= @venue.description %></p>
+            </div>
+            <div class="col-md-4">
+              <p class="text-muted text-uppercase mb-2">Estado editorial</p>
+              <% if @venue.featured? %>
+                <span class="badge badge-success p-2">Destacado</span>
+              <% else %>
+                <span class="badge badge-light p-2">No destacado</span>
+              <% end %>
+            </div>
           </div>
-          <div class="col-md-4">
-            <p class="text-muted text-uppercase mb-2">Estado editorial</p>
-            <% if @venue.featured? %>
-              <span class="badge badge-success p-2">Destacado</span>
-            <% else %>
-              <span class="badge badge-light p-2">No destacado</span>
-            <% end %>
-          </div>
-        </div>
 
-        <hr>
+          <hr>
+        <% else %>
+          <div class="row">
+            <div class="col-md-12">
+              <p class="text-muted text-uppercase mb-2">Estado editorial</p>
+              <% if @venue.featured? %>
+                <span class="badge badge-success p-2">Destacado</span>
+              <% else %>
+                <span class="badge badge-light p-2">No destacado</span>
+              <% end %>
+            </div>
+          </div>
+
+          <hr>
+        <% end %>
 
         <div class="row">
           <div class="col-md-4 mb-3">
@@ -65,6 +88,14 @@
             <% if @venue.google_connected? %>
               <span class="badge badge-success p-2">Conectado</span>
               <div class="text-muted small mt-2"><%= @venue.google_place_id %></div>
+              <div class="mt-3">
+                <%= button_to 'Actualizar ahora desde Google',
+                              black_coffee_venue_google_syncs_path(venue_id: @venue.id),
+                              method: :post,
+                              class: 'btn btn-sm btn-outline-info',
+                              form_class: 'd-inline-block',
+                              data: { confirm: "Se preparara una sincronizacion Google para #{@venue.name}. Continuar?" } %>
+              </div>
             <% else %>
               <span class="badge badge-light p-2">Sin Google Place ID</span>
             <% end %>
