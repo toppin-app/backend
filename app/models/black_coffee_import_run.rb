@@ -31,6 +31,56 @@ class BlackCoffeeImportRun < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :limit, numericality: { greater_than: 0, less_than_or_equal_to: 60, only_integer: true }
 
+  def reviewed_candidates_count
+    approved_count.to_i + rejected_count.to_i + duplicate_count.to_i
+  end
+
+  def pending_review_count
+    [candidate_count.to_i - reviewed_candidates_count, 0].max
+  end
+
+  def review_status_key
+    return 'failed' if status == 'failed'
+    return 'running' if status == 'running'
+    return 'pending' if candidate_count.to_i.zero?
+    return 'review_completed' if pending_review_count.zero?
+    return 'review_in_progress' if reviewed_candidates_count.positive?
+
+    'pending_review'
+  end
+
+  def review_status_label
+    case review_status_key
+    when 'failed'
+      'Fallida'
+    when 'running'
+      'Importando'
+    when 'review_completed'
+      'Revisada'
+    when 'review_in_progress'
+      'En revision'
+    when 'pending_review'
+      'Pendiente de revisar'
+    else
+      'Pendiente'
+    end
+  end
+
+  def review_status_badge_class
+    case review_status_key
+    when 'failed'
+      'danger'
+    when 'running'
+      'primary'
+    when 'review_completed'
+      'success'
+    when 'review_in_progress'
+      'warning'
+    else
+      'secondary'
+    end
+  end
+
   def destroy_with_candidates!
     raise ActiveRecord::RecordNotDestroyed, 'No se puede eliminar una corrida con locales aprobados.' if import_candidates.where(status: 'approved').exists?
 

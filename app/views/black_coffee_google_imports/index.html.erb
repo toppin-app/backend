@@ -141,9 +141,18 @@
                   <td><%= run.black_coffee_import_region.name %></td>
                   <td><%= category_labels[run.category] || run.category %></td>
                   <td>
-                    <span class="badge badge-<%= run.status == 'completed' ? 'success' : (run.status == 'failed' ? 'danger' : 'secondary') %>">
-                      <%= run.status %>
+                    <span class="badge badge-<%= run.review_status_badge_class %>">
+                      <%= run.review_status_label %>
                     </span>
+                    <div class="small text-muted mt-1">
+                      <% if run.pending_review_count.positive? %>
+                        <%= number_with_delimiter(run.pending_review_count) %> pendientes de revision
+                      <% elsif run.candidate_count.to_i.positive? %>
+                        100% revisado
+                      <% else %>
+                        Sin candidatos
+                      <% end %>
+                    </div>
                   </td>
                   <td><%= run.candidate_count %></td>
                   <td><%= run.created_at.strftime('%d/%m/%Y %H:%M') %></td>

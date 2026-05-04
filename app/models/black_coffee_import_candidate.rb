@@ -52,8 +52,16 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     Array(image_urls).map(&:to_s).reject(&:blank?)
   end
 
+  def missing_images?
+    image_url_list.empty?
+  end
+
   def google_photo_reference_list
     Array(google_photo_references)
+  end
+
+  def image_refreshable?
+    google_photo_reference_list.any? || google_place_id.present?
   end
 
   def google_opening_hours_descriptions

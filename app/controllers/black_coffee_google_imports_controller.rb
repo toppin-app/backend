@@ -317,11 +317,18 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       return
     end
 
+    selected_ids = candidates.ids
+    selected_count = selected_ids.size
     batch = BlackCoffeeImportPhotoRefreshRunner.start!(
       import_run: @import_run,
-      candidate_ids: candidates.pluck(:id)
+      candidate_ids: selected_ids
     )
-    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: "Reintento de imagenes preparado para #{batch.total_candidates_count} candidatos."
+    skipped_count = [selected_count - batch.total_candidates_count.to_i, 0].max
+    notice = "Reintento de imagenes preparado para #{batch.total_candidates_count} candidatos."
+    if skipped_count.positive?
+      notice += " Se omitieron #{skipped_count} que ya tenian imagen o no tenian datos suficientes de Google para refrescarlas."
+    end
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: notice
   rescue StandardError => e
     redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar el reintento de imagenes: #{e.message}"
   end

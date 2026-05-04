@@ -3,6 +3,7 @@
 <% total_candidates_count = @total_candidates.to_i %>
 <% pending_candidates_count = @pending_candidates_count.to_i %>
 
+<div id="black-coffee-import-review">
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
   <div>
     <h1 class="mb-1">Revision de importacion · <%= @import_run.black_coffee_import_region.name %> · <%= category_label %> · corrida #<%= @import_run.id %></h1>
@@ -47,7 +48,7 @@
                             retry_approval_batch_black_coffee_google_import_path(@import_run, current_query_params),
                             method: :post,
                             class: 'btn btn-sm btn-danger text-white',
-                            form_class: 'd-inline-block',
+                            form: { class: 'd-inline-block', data: { turbolinks: false } },
                             data: { confirm: 'Se reintentaran solo los candidatos que hayan quedado pendientes o fallado durante la aprobacion. Continuar?' } %>
             </div>
           <% else %>
@@ -56,7 +57,7 @@
                             retry_approval_batch_black_coffee_google_import_path(@import_run, current_query_params),
                             method: :post,
                             class: 'btn btn-sm btn-danger text-white',
-                            form_class: 'd-inline-block',
+                            form: { class: 'd-inline-block', data: { turbolinks: false } },
                             data: { confirm: 'Se reintentaran solo los candidatos que hayan quedado pendientes o fallado durante la aprobacion. Continuar?' } %>
             </div>
           <% end %>
@@ -153,7 +154,7 @@
                             retry_image_refresh_black_coffee_google_import_path(@import_run, current_query_params),
                             method: :post,
                             class: 'btn btn-sm btn-danger text-white',
-                            form_class: 'd-inline-block',
+                            form: { class: 'd-inline-block', data: { turbolinks: false } },
                             data: { confirm: 'Se reintentaran solo las imagenes que hayan quedado pendientes o se hayan frenado por error temporal. Continuar?' } %>
             </div>
           <% else %>
@@ -162,7 +163,7 @@
                             retry_image_refresh_black_coffee_google_import_path(@import_run, current_query_params),
                             method: :post,
                             class: 'btn btn-sm btn-danger text-white',
-                            form_class: 'd-inline-block',
+                            form: { class: 'd-inline-block', data: { turbolinks: false } },
                             data: { confirm: 'Se reintentaran solo las imagenes que hayan quedado pendientes o se hayan frenado por error temporal. Continuar?' } %>
             </div>
           <% end %>
@@ -256,8 +257,6 @@
   Las fotos se guardan como URLs publicas devueltas por Place Photos, sin exponer la API key. Si un candidato no tiene imagenes, puedes filtrarlo y lanzar un reintento progresivo solo para los seleccionados.
 </div>
 
-<%= form_with url: approve_selected_black_coffee_google_import_path(@import_run, current_query_params), method: :post, local: true, html: { id: 'bulk-candidates-form' } do %><% end %>
-
 <div class="card shadow-sm border-0" id="import-candidates-table">
     <div class="card-header bg-white">
       <div class="d-flex flex-wrap justify-content-between align-items-start">
@@ -267,16 +266,28 @@
         </div>
         <div class="mt-3 mt-md-0 text-md-right">
           <div class="small text-muted mb-2" id="selection-summary">0 seleccionados · 0 visibles</div>
-          <%= button_tag 'Aprobar seleccionados', type: 'submit', form: 'bulk-candidates-form', class: 'btn btn-success text-white mr-2 mb-2', id: 'approve-selected-button', disabled: true %>
+          <button type="button"
+                  class="btn btn-success text-white mr-2 mb-2"
+                  id="approve-selected-button"
+                  data-action-url="<%= approve_selected_black_coffee_google_import_path(@import_run, current_query_params) %>"
+                  disabled>Aprobar seleccionados</button>
           <%= button_to 'Aprobar todos los pendientes',
                         approve_all_pending_black_coffee_google_import_path(@import_run, current_query_params),
                         method: :post,
                         class: 'btn btn-outline-success mr-2 mb-2',
-                        form_class: 'd-inline-block',
+                        form: { class: 'd-inline-block', data: { turbolinks: false } },
                         disabled: pending_candidates_count.zero?,
                         data: { confirm: "Se preparara una aprobacion progresiva para #{number_with_delimiter(pending_candidates_count)} pendientes. Continuar?" } %>
-          <%= button_tag 'Rechazar seleccionados', type: 'submit', form: 'bulk-candidates-form', formaction: reject_selected_black_coffee_google_import_path(@import_run, current_query_params), class: 'btn btn-outline-danger mr-2 mb-2', id: 'reject-selected-button', disabled: true %>
-          <%= button_tag 'Reintentar imagenes de seleccionados', type: 'submit', form: 'bulk-candidates-form', formaction: refresh_selected_images_black_coffee_google_import_path(@import_run, current_query_params), class: 'btn btn-outline-primary mb-2', id: 'refresh-images-button', disabled: true %>
+          <button type="button"
+                  class="btn btn-outline-danger mr-2 mb-2"
+                  id="reject-selected-button"
+                  data-action-url="<%= reject_selected_black_coffee_google_import_path(@import_run, current_query_params) %>"
+                  disabled>Rechazar seleccionados</button>
+          <button type="button"
+                  class="btn btn-outline-primary mb-2"
+                  id="refresh-images-button"
+                  data-action-url="<%= refresh_selected_images_black_coffee_google_import_path(@import_run, current_query_params) %>"
+                  disabled>Reintentar imagenes de seleccionados</button>
         </div>
       </div>
 
@@ -338,9 +349,10 @@
                   data-status="<%= candidate.status %>"
                   data-has-images="<%= has_images ? '1' : '0' %>"
                   data-has-photo-refs="<%= has_refs ? '1' : '0' %>"
+                  data-image-refreshable="<%= candidate.image_refreshable? ? '1' : '0' %>"
                   data-selectable="<%= selectable ? '1' : '0' %>">
                 <td>
-                  <%= check_box_tag 'candidate_ids[]', candidate.id, false, disabled: !selectable, class: 'candidate-checkbox', form: 'bulk-candidates-form' %>
+                  <%= check_box_tag 'candidate_ids[]', candidate.id, false, disabled: !selectable, class: 'candidate-checkbox' %>
                 </td>
                 <td style="width: 112px;">
                   <% if has_images %>
@@ -486,375 +498,460 @@
 
 <script>
   (function() {
-    const tableContainer = document.getElementById('import-candidates-table');
-    if (tableContainer) {
-      const filterSelect = document.getElementById('candidate-image-filter');
-      const selectAll = document.getElementById('candidate-select-all');
-      const selectVisibleButton = document.getElementById('select-visible-button');
-      const clearSelectionButton = document.getElementById('clear-selection-button');
-      const selectionSummary = document.getElementById('selection-summary');
-      const approveButton = document.getElementById('approve-selected-button');
-      const rejectButton = document.getElementById('reject-selected-button');
-      const refreshImagesButton = document.getElementById('refresh-images-button');
-      const rows = Array.from(document.querySelectorAll('.candidate-row'));
-
-      function rowMatchesFilter(row, filterValue) {
-        const status = row.dataset.status;
-        const hasImages = row.dataset.hasImages === '1';
-        const hasRefs = row.dataset.hasPhotoRefs === '1';
-
-        if (filterValue === 'pending') return status === 'pending';
-        if (filterValue === 'with_images') return hasImages;
-        if (filterValue === 'without_images') return !hasImages;
-        if (filterValue === 'without_images_with_refs') return !hasImages && hasRefs;
-        return true;
-      }
-
-      function visibleSelectableCheckboxes() {
-        return rows
-          .filter(row => row.style.display !== 'none')
-          .map(row => row.querySelector('.candidate-checkbox'))
-          .filter(checkbox => checkbox && !checkbox.disabled);
-      }
-
-      function allSelectableCheckboxes() {
-        return rows
-          .map(row => row.querySelector('.candidate-checkbox'))
-          .filter(checkbox => checkbox && !checkbox.disabled);
-      }
-
-      function updateSelectionSummary() {
-        const visibleRows = rows.filter(row => row.style.display !== 'none').length;
-        const selectedCount = allSelectableCheckboxes().filter(checkbox => checkbox.checked).length;
-        selectionSummary.textContent = `${selectedCount} seleccionados · ${visibleRows} visibles`;
-        approveButton.disabled = selectedCount === 0;
-        rejectButton.disabled = selectedCount === 0;
-        refreshImagesButton.disabled = selectedCount === 0;
-
-        const visibleCheckboxes = visibleSelectableCheckboxes();
-        const allVisibleSelected = visibleCheckboxes.length > 0 && visibleCheckboxes.every(checkbox => checkbox.checked);
-        selectAll.checked = allVisibleSelected;
-        selectAll.indeterminate = !allVisibleSelected && visibleCheckboxes.some(checkbox => checkbox.checked);
-      }
-
-      function applyFilter() {
-        const filterValue = filterSelect.value;
-        rows.forEach(row => {
-          const visible = rowMatchesFilter(row, filterValue);
-          row.style.display = visible ? '' : 'none';
-          if (!visible) {
-            const checkbox = row.querySelector('.candidate-checkbox');
-            if (checkbox) checkbox.checked = false;
-          }
-        });
-        updateSelectionSummary();
-      }
-
-      selectVisibleButton.addEventListener('click', function() {
-        visibleSelectableCheckboxes().forEach(checkbox => {
-          checkbox.checked = true;
-        });
-        updateSelectionSummary();
-      });
-
-      clearSelectionButton.addEventListener('click', function() {
-        allSelectableCheckboxes().forEach(checkbox => {
-          checkbox.checked = false;
-        });
-        updateSelectionSummary();
-      });
-
-      selectAll.addEventListener('change', function() {
-        visibleSelectableCheckboxes().forEach(checkbox => {
-          checkbox.checked = selectAll.checked;
-        });
-        updateSelectionSummary();
-      });
-
-      filterSelect.addEventListener('change', applyFilter);
-
-      rows.forEach(row => {
-        const checkbox = row.querySelector('.candidate-checkbox');
-        if (!checkbox) return;
-        checkbox.addEventListener('change', updateSelectionSummary);
-      });
-
-      applyFilter();
+    function buildHiddenInput(name, value) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      return input;
     }
 
-    const approvalContainer = document.getElementById('candidate-approval-batch');
-    const approvalInitialStateNode = document.getElementById('approval-batch-initial-state');
-    if (approvalContainer && approvalInitialStateNode) {
+    function submitCandidateAction(actionUrl, candidateIds) {
+      if (!actionUrl || !candidateIds.length) return;
+
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-      const formatter = new Intl.NumberFormat('es-ES');
-      const initialBatchState = JSON.parse(approvalInitialStateNode.textContent);
-      let state = initialBatchState;
-      let pollTimer = null;
-      let requestInFlight = false;
-      let finishedReloadScheduled = false;
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.action = actionUrl;
+      form.style.display = 'none';
+      form.setAttribute('data-turbolinks', 'false');
 
-      const statusBadge = document.getElementById('approval-status-badge');
-      const progressBar = document.getElementById('approval-progress-bar');
-      const progressValue = document.getElementById('approval-progress-value');
-      const processedValue = document.getElementById('approval-processed-value');
-      const approvedValue = document.getElementById('approval-approved-value');
-      const duplicateValue = document.getElementById('approval-duplicate-value');
-      const skippedValue = document.getElementById('approval-skipped-value');
-      const failedValue = document.getElementById('approval-failed-value');
-      const pendingValue = document.getElementById('approval-pending-value');
-      const modeValue = document.getElementById('approval-mode-value');
-      const lastIdValue = document.getElementById('approval-last-id-value');
-      const currentLine = document.getElementById('approval-current-line');
-      const liveNote = document.getElementById('approval-live-note');
-      const errorContainer = document.getElementById('approval-error-container');
-      const errorMessage = document.getElementById('approval-error-message');
-      const retryContainer = document.getElementById('approval-retry-container');
-      const runPendingCount = document.getElementById('run-pending-count');
-      const runApprovedCount = document.getElementById('run-approved-count');
-      const runDuplicateCount = document.getElementById('run-duplicate-count');
-
-      const initialRunCounts = {
-        pending: parseInt((runPendingCount?.textContent || '0').replace(/\D/g, ''), 10) || 0,
-        approved: parseInt((runApprovedCount?.textContent || '0').replace(/\D/g, ''), 10) || 0,
-        duplicate: parseInt((runDuplicateCount?.textContent || '0').replace(/\D/g, ''), 10) || 0
-      };
-
-      function approvalBadgeClass(status) {
-        if (status === 'completed') return 'badge badge-success p-2 mr-2';
-        if (status === 'failed') return 'badge badge-danger p-2 mr-2';
-        if (status === 'running') return 'badge badge-primary p-2 mr-2';
-        return 'badge badge-secondary p-2 mr-2';
+      form.appendChild(buildHiddenInput('utf8', '✓'));
+      if (csrfToken) {
+        form.appendChild(buildHiddenInput('authenticity_token', csrfToken));
       }
 
-      function approvalProgressClass(status, active) {
-        if (status === 'completed') return 'progress-bar bg-success';
-        if (status === 'failed') return 'progress-bar bg-danger';
-        if (active) return 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
-        return 'progress-bar bg-secondary';
+      candidateIds.forEach(id => {
+        form.appendChild(buildHiddenInput('candidate_ids[]', id));
+      });
+
+      document.body.appendChild(form);
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+      } else {
+        form.submit();
       }
+    }
 
-      function updateRunCountCards(data) {
-        const approvedDelta = (data.approvedCandidates || 0) - (initialBatchState.approvedCandidates || 0);
-        const duplicateDelta = (data.duplicateCandidates || 0) - (initialBatchState.duplicateCandidates || 0);
-        const nextApproved = Math.max(initialRunCounts.approved + approvedDelta, 0);
-        const nextDuplicate = Math.max(initialRunCounts.duplicate + duplicateDelta, 0);
-        const nextPending = Math.max(initialRunCounts.pending - approvedDelta - duplicateDelta, 0);
+    function initializeBlackCoffeeImportReview() {
+      const pageRoot = document.getElementById('black-coffee-import-review');
+      if (!pageRoot || pageRoot.dataset.jsInitialized === '1') return;
 
-        if (runApprovedCount) runApprovedCount.textContent = formatter.format(nextApproved);
-        if (runDuplicateCount) runDuplicateCount.textContent = formatter.format(nextDuplicate);
-        if (runPendingCount) runPendingCount.textContent = formatter.format(nextPending);
-      }
+      pageRoot.dataset.jsInitialized = '1';
 
-      function renderApproval(data) {
-        const wasActive = state.active;
-        state = data;
-        statusBadge.className = approvalBadgeClass(data.status);
-        statusBadge.textContent = data.status;
-        progressBar.className = approvalProgressClass(data.status, data.active);
-        progressBar.style.width = `${Math.min(data.completionPercentage || 0, 100)}%`;
-        progressBar.setAttribute('aria-valuenow', data.completionPercentage || 0);
+      const tableContainer = document.getElementById('import-candidates-table');
+      if (tableContainer) {
+        const filterSelect = document.getElementById('candidate-image-filter');
+        const selectAll = document.getElementById('candidate-select-all');
+        const selectVisibleButton = document.getElementById('select-visible-button');
+        const clearSelectionButton = document.getElementById('clear-selection-button');
+        const selectionSummary = document.getElementById('selection-summary');
+        const approveButton = document.getElementById('approve-selected-button');
+        const rejectButton = document.getElementById('reject-selected-button');
+        const refreshImagesButton = document.getElementById('refresh-images-button');
+        const rows = Array.from(tableContainer.querySelectorAll('.candidate-row'));
 
-        progressValue.textContent = `${data.completionPercentage || 0}%`;
-        processedValue.textContent = `${formatter.format(data.processedCandidates || 0)}/${formatter.format(data.totalCandidates || 0)}`;
-        approvedValue.textContent = formatter.format(data.approvedCandidates || 0);
-        duplicateValue.textContent = formatter.format(data.duplicateCandidates || 0);
-        skippedValue.textContent = formatter.format(data.skippedCandidates || 0);
-        failedValue.textContent = formatter.format(data.failedCandidates || 0);
-        pendingValue.textContent = formatter.format(data.pendingCandidates || 0);
-        modeValue.textContent = data.selectionMode === 'pending_scope' ? 'Toda la corrida' : 'Seleccion manual';
-        lastIdValue.textContent = data.lastProcessedCandidateId || '-';
+        function rowMatchesFilter(row, filterValue) {
+          const status = row.dataset.status;
+          const hasImages = row.dataset.hasImages === '1';
+          const hasRefs = row.dataset.hasPhotoRefs === '1';
 
-        if (data.currentCandidateName) {
-          currentLine.innerHTML = `Procesando ahora: <strong>${data.currentCandidateName}</strong>`;
-        } else if (data.finished) {
-          currentLine.textContent = 'Este lote ya no tiene candidatos pendientes.';
-        } else {
-          currentLine.textContent = 'Esperando el siguiente bloque de aprobacion...';
+          if (filterValue === 'pending') return status === 'pending';
+          if (filterValue === 'with_images') return hasImages;
+          if (filterValue === 'without_images') return !hasImages;
+          if (filterValue === 'without_images_with_refs') return !hasImages && hasRefs;
+          return true;
         }
 
-        if (data.active) {
-          liveNote.textContent = 'Seguimos publicando por bloques cortos para mantener el servidor estable aunque la corrida sea enorme.';
-        } else if (data.status === 'completed') {
-          liveNote.textContent = 'Aprobacion completada. La pagina se actualizara sola para reflejar los nuevos estados.';
-        } else if (data.status === 'failed') {
-          liveNote.textContent = 'La aprobacion se ha detenido. Puedes reanudar solo lo que falto o fallo.';
+        function rowAllowsImageRefresh(row) {
+          return row.dataset.hasImages !== '1' && row.dataset.imageRefreshable === '1';
         }
 
-        if (data.errorMessage) {
-          errorContainer.style.display = '';
-          errorMessage.textContent = data.errorMessage;
-        } else {
-          errorContainer.style.display = 'none';
-          errorMessage.textContent = '';
+        function selectableCheckboxesFor(rowsCollection) {
+          return rowsCollection
+            .map(row => row.querySelector('.candidate-checkbox'))
+            .filter(checkbox => checkbox && !checkbox.disabled);
         }
 
-        if (retryContainer) {
-          retryContainer.style.display = data.retryable ? '' : 'none';
+        function visibleSelectableCheckboxes() {
+          return selectableCheckboxesFor(rows.filter(row => row.style.display !== 'none'));
         }
 
-        updateRunCountCards(data);
-
-        if (!finishedReloadScheduled && wasActive && data.finished) {
-          finishedReloadScheduled = true;
-          window.setTimeout(() => window.location.reload(), 1200);
+        function allSelectableCheckboxes() {
+          return selectableCheckboxesFor(rows);
         }
-      }
 
-      function scheduleApprovalNext(delayMs) {
-        window.clearTimeout(pollTimer);
-        if (!state.active) return;
-        pollTimer = window.setTimeout(tickApproval, delayMs);
-      }
+        function checkedCandidateIds(options) {
+          const config = options || {};
 
-      function tickApproval() {
-        if (requestInFlight || !state.active) return;
-        requestInFlight = true;
+          return allSelectableCheckboxes()
+            .filter(checkbox => checkbox.checked)
+            .filter(checkbox => {
+              if (!config.onlyImageRefreshable) return true;
 
-        fetch(approvalContainer.dataset.advanceUrl, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'X-CSRF-Token': csrfToken
-          },
-          credentials: 'same-origin'
-        })
-          .then(response => response.json().then(data => ({ ok: response.ok, data })))
-          .then(({ ok, data }) => {
-            renderApproval(data);
-            scheduleApprovalNext(ok ? 700 : 1800);
-          })
-          .catch(() => {
-            liveNote.textContent = 'Hubo un problema temporal de conexion. Reintentando la aprobacion en unos segundos...';
-            scheduleApprovalNext(1800);
-          })
-          .finally(() => {
-            requestInFlight = false;
+              const row = checkbox.closest('.candidate-row');
+              return row && rowAllowsImageRefresh(row);
+            })
+            .map(checkbox => checkbox.value);
+        }
+
+        function updateSelectionSummary() {
+          const visibleRows = rows.filter(row => row.style.display !== 'none').length;
+          const selectedCount = checkedCandidateIds().length;
+          const refreshableSelectedCount = checkedCandidateIds({ onlyImageRefreshable: true }).length;
+          selectionSummary.textContent = `${selectedCount} seleccionados · ${refreshableSelectedCount} listos para reintento de imagen · ${visibleRows} visibles`;
+          approveButton.disabled = selectedCount === 0;
+          rejectButton.disabled = selectedCount === 0;
+          refreshImagesButton.disabled = refreshableSelectedCount === 0;
+
+          const visibleCheckboxes = visibleSelectableCheckboxes();
+          const allVisibleSelected = visibleCheckboxes.length > 0 && visibleCheckboxes.every(checkbox => checkbox.checked);
+          selectAll.checked = allVisibleSelected;
+          selectAll.indeterminate = !allVisibleSelected && visibleCheckboxes.some(checkbox => checkbox.checked);
+        }
+
+        function applyFilter() {
+          const filterValue = filterSelect.value;
+          rows.forEach(row => {
+            const visible = rowMatchesFilter(row, filterValue);
+            row.style.display = visible ? '' : 'none';
+            if (!visible) {
+              const checkbox = row.querySelector('.candidate-checkbox');
+              if (checkbox) checkbox.checked = false;
+            }
           });
-      }
+          updateSelectionSummary();
+        }
 
-      renderApproval(state);
-      if (state.active) {
-        scheduleApprovalNext(300);
-      }
-    }
-
-    const refreshContainer = document.getElementById('candidate-image-refresh');
-    const initialStateNode = document.getElementById('image-refresh-initial-state');
-    if (!refreshContainer || !initialStateNode) return;
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    const formatter = new Intl.NumberFormat('es-ES');
-    let state = JSON.parse(initialStateNode.textContent);
-    let pollTimer = null;
-    let requestInFlight = false;
-
-    const statusBadge = document.getElementById('image-refresh-status-badge');
-    const progressBar = document.getElementById('image-refresh-progress-bar');
-    const progressValue = document.getElementById('image-refresh-progress-value');
-    const processedValue = document.getElementById('image-refresh-processed-value');
-    const successValue = document.getElementById('image-refresh-success-value');
-    const skippedValue = document.getElementById('image-refresh-skipped-value');
-    const failedValue = document.getElementById('image-refresh-failed-value');
-    const requestsValue = document.getElementById('image-refresh-requests-value');
-    const currentLine = document.getElementById('image-refresh-current-line');
-    const liveNote = document.getElementById('image-refresh-live-note');
-    const errorContainer = document.getElementById('image-refresh-error-container');
-    const errorMessage = document.getElementById('image-refresh-error-message');
-    const retryContainer = document.getElementById('image-refresh-retry-container');
-
-    function badgeClass(status) {
-      if (status === 'completed') return 'badge badge-success p-2 mr-2';
-      if (status === 'failed') return 'badge badge-danger p-2 mr-2';
-      if (status === 'running') return 'badge badge-primary p-2 mr-2';
-      return 'badge badge-secondary p-2 mr-2';
-    }
-
-    function progressClass(status, active) {
-      if (status === 'completed') return 'progress-bar bg-success';
-      if (status === 'failed') return 'progress-bar bg-danger';
-      if (active) return 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
-      return 'progress-bar bg-secondary';
-    }
-
-    function render(data) {
-      state = data;
-      statusBadge.className = badgeClass(data.status);
-      statusBadge.textContent = data.status;
-      progressBar.className = progressClass(data.status, data.active);
-      progressBar.style.width = `${Math.min(data.completionPercentage || 0, 100)}%`;
-      progressBar.setAttribute('aria-valuenow', data.completionPercentage || 0);
-
-      progressValue.textContent = `${data.completionPercentage || 0}%`;
-      processedValue.textContent = `${data.processedCandidates || 0}/${data.totalCandidates || 0}`;
-      successValue.textContent = formatter.format(data.refreshedCandidates || 0);
-      skippedValue.textContent = formatter.format(data.skippedCandidates || 0);
-      failedValue.textContent = formatter.format(data.failedCandidates || 0);
-      requestsValue.textContent = formatter.format(data.requestsCount || 0);
-
-      if (data.currentCandidateName) {
-        currentLine.innerHTML = `Procesando ahora: <strong>${data.currentCandidateName}</strong>`;
-      } else if (data.finished) {
-        currentLine.textContent = 'No quedan candidatos pendientes en este reintento de imagenes.';
-      } else {
-        currentLine.textContent = 'Esperando el siguiente bloque de imagenes...';
-      }
-
-      if (data.active) {
-        liveNote.textContent = 'Procesando candidatos poco a poco para evitar timeouts y reducir el riesgo de rate limit.';
-      } else if (data.status === 'completed') {
-        liveNote.textContent = 'Reintento de imagenes completado. Ya puedes filtrar de nuevo y aprobar los locales con foto.';
-      } else if (data.status === 'failed') {
-        liveNote.textContent = 'El reintento de imagenes se ha detenido. Puedes reanudarlo cuando quieras.';
-      }
-
-      if (data.errorMessage) {
-        errorContainer.style.display = '';
-        errorMessage.textContent = data.errorMessage;
-      } else {
-        errorContainer.style.display = 'none';
-        errorMessage.textContent = '';
-      }
-
-      if (retryContainer) {
-        retryContainer.style.display = data.retryable ? '' : 'none';
-      }
-    }
-
-    function scheduleNext(delayMs) {
-      window.clearTimeout(pollTimer);
-      if (!state.active) return;
-      pollTimer = window.setTimeout(tick, delayMs);
-    }
-
-    function tick() {
-      if (requestInFlight || !state.active) return;
-      requestInFlight = true;
-
-      fetch(refreshContainer.dataset.advanceUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        credentials: 'same-origin'
-      })
-        .then(response => response.json().then(data => ({ ok: response.ok, data })))
-        .then(({ ok, data }) => {
-          render(data);
-          scheduleNext(ok ? 1200 : 2500);
-        })
-        .catch(() => {
-          liveNote.textContent = 'Hubo un problema temporal de conexion. Reintentando en unos segundos...';
-          scheduleNext(2500);
-        })
-        .finally(() => {
-          requestInFlight = false;
+        selectVisibleButton.addEventListener('click', function() {
+          visibleSelectableCheckboxes().forEach(checkbox => {
+            checkbox.checked = true;
+          });
+          updateSelectionSummary();
         });
+
+        clearSelectionButton.addEventListener('click', function() {
+          allSelectableCheckboxes().forEach(checkbox => {
+            checkbox.checked = false;
+          });
+          updateSelectionSummary();
+        });
+
+        selectAll.addEventListener('change', function() {
+          visibleSelectableCheckboxes().forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+          });
+          updateSelectionSummary();
+        });
+
+        filterSelect.addEventListener('change', applyFilter);
+
+        rows.forEach(row => {
+          const checkbox = row.querySelector('.candidate-checkbox');
+          if (!checkbox) return;
+          checkbox.addEventListener('change', updateSelectionSummary);
+        });
+
+        approveButton.addEventListener('click', function() {
+          submitCandidateAction(approveButton.dataset.actionUrl, checkedCandidateIds());
+        });
+
+        rejectButton.addEventListener('click', function() {
+          submitCandidateAction(rejectButton.dataset.actionUrl, checkedCandidateIds());
+        });
+
+        refreshImagesButton.addEventListener('click', function() {
+          submitCandidateAction(refreshImagesButton.dataset.actionUrl, checkedCandidateIds({ onlyImageRefreshable: true }));
+        });
+
+        applyFilter();
+      }
+
+      const approvalContainer = document.getElementById('candidate-approval-batch');
+      const approvalInitialStateNode = document.getElementById('approval-batch-initial-state');
+      if (approvalContainer && approvalInitialStateNode) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const formatter = new Intl.NumberFormat('es-ES');
+        const initialBatchState = JSON.parse(approvalInitialStateNode.textContent);
+        let state = initialBatchState;
+        let pollTimer = null;
+        let requestInFlight = false;
+        let finishedReloadScheduled = false;
+
+        const statusBadge = document.getElementById('approval-status-badge');
+        const progressBar = document.getElementById('approval-progress-bar');
+        const progressValue = document.getElementById('approval-progress-value');
+        const processedValue = document.getElementById('approval-processed-value');
+        const approvedValue = document.getElementById('approval-approved-value');
+        const duplicateValue = document.getElementById('approval-duplicate-value');
+        const skippedValue = document.getElementById('approval-skipped-value');
+        const failedValue = document.getElementById('approval-failed-value');
+        const pendingValue = document.getElementById('approval-pending-value');
+        const modeValue = document.getElementById('approval-mode-value');
+        const lastIdValue = document.getElementById('approval-last-id-value');
+        const currentLine = document.getElementById('approval-current-line');
+        const liveNote = document.getElementById('approval-live-note');
+        const errorContainer = document.getElementById('approval-error-container');
+        const errorMessage = document.getElementById('approval-error-message');
+        const retryContainer = document.getElementById('approval-retry-container');
+        const runPendingCount = document.getElementById('run-pending-count');
+        const runApprovedCount = document.getElementById('run-approved-count');
+        const runDuplicateCount = document.getElementById('run-duplicate-count');
+
+        const initialRunCounts = {
+          pending: parseInt((runPendingCount?.textContent || '0').replace(/\D/g, ''), 10) || 0,
+          approved: parseInt((runApprovedCount?.textContent || '0').replace(/\D/g, ''), 10) || 0,
+          duplicate: parseInt((runDuplicateCount?.textContent || '0').replace(/\D/g, ''), 10) || 0
+        };
+
+        function approvalBadgeClass(status) {
+          if (status === 'completed') return 'badge badge-success p-2 mr-2';
+          if (status === 'failed') return 'badge badge-danger p-2 mr-2';
+          if (status === 'running') return 'badge badge-primary p-2 mr-2';
+          return 'badge badge-secondary p-2 mr-2';
+        }
+
+        function approvalProgressClass(status, active) {
+          if (status === 'completed') return 'progress-bar bg-success';
+          if (status === 'failed') return 'progress-bar bg-danger';
+          if (active) return 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
+          return 'progress-bar bg-secondary';
+        }
+
+        function updateRunCountCards(data) {
+          const approvedDelta = (data.approvedCandidates || 0) - (initialBatchState.approvedCandidates || 0);
+          const duplicateDelta = (data.duplicateCandidates || 0) - (initialBatchState.duplicateCandidates || 0);
+          const nextApproved = Math.max(initialRunCounts.approved + approvedDelta, 0);
+          const nextDuplicate = Math.max(initialRunCounts.duplicate + duplicateDelta, 0);
+          const nextPending = Math.max(initialRunCounts.pending - approvedDelta - duplicateDelta, 0);
+
+          if (runApprovedCount) runApprovedCount.textContent = formatter.format(nextApproved);
+          if (runDuplicateCount) runDuplicateCount.textContent = formatter.format(nextDuplicate);
+          if (runPendingCount) runPendingCount.textContent = formatter.format(nextPending);
+        }
+
+        function renderApproval(data) {
+          const wasActive = state.active;
+          state = data;
+          statusBadge.className = approvalBadgeClass(data.status);
+          statusBadge.textContent = data.status;
+          progressBar.className = approvalProgressClass(data.status, data.active);
+          progressBar.style.width = `${Math.min(data.completionPercentage || 0, 100)}%`;
+          progressBar.setAttribute('aria-valuenow', data.completionPercentage || 0);
+
+          progressValue.textContent = `${data.completionPercentage || 0}%`;
+          processedValue.textContent = `${formatter.format(data.processedCandidates || 0)}/${formatter.format(data.totalCandidates || 0)}`;
+          approvedValue.textContent = formatter.format(data.approvedCandidates || 0);
+          duplicateValue.textContent = formatter.format(data.duplicateCandidates || 0);
+          skippedValue.textContent = formatter.format(data.skippedCandidates || 0);
+          failedValue.textContent = formatter.format(data.failedCandidates || 0);
+          pendingValue.textContent = formatter.format(data.pendingCandidates || 0);
+          modeValue.textContent = data.selectionMode === 'pending_scope' ? 'Toda la corrida' : 'Seleccion manual';
+          lastIdValue.textContent = data.lastProcessedCandidateId || '-';
+
+          if (data.currentCandidateName) {
+            currentLine.innerHTML = `Procesando ahora: <strong>${data.currentCandidateName}</strong>`;
+          } else if (data.finished) {
+            currentLine.textContent = 'Este lote ya no tiene candidatos pendientes.';
+          } else {
+            currentLine.textContent = 'Esperando el siguiente bloque de aprobacion...';
+          }
+
+          if (data.active) {
+            liveNote.textContent = 'Seguimos publicando por bloques cortos para mantener el servidor estable aunque la corrida sea enorme.';
+          } else if (data.status === 'completed') {
+            liveNote.textContent = 'Aprobacion completada. La pagina se actualizara sola para reflejar los nuevos estados.';
+          } else if (data.status === 'failed') {
+            liveNote.textContent = 'La aprobacion se ha detenido. Puedes reanudar solo lo que falto o fallo.';
+          }
+
+          if (data.errorMessage) {
+            errorContainer.style.display = '';
+            errorMessage.textContent = data.errorMessage;
+          } else {
+            errorContainer.style.display = 'none';
+            errorMessage.textContent = '';
+          }
+
+          if (retryContainer) {
+            retryContainer.style.display = data.retryable ? '' : 'none';
+          }
+
+          updateRunCountCards(data);
+
+          if (!finishedReloadScheduled && wasActive && data.finished) {
+            finishedReloadScheduled = true;
+            window.setTimeout(() => window.location.reload(), 1200);
+          }
+        }
+
+        function scheduleApprovalNext(delayMs) {
+          window.clearTimeout(pollTimer);
+          if (!state.active) return;
+          pollTimer = window.setTimeout(tickApproval, delayMs);
+        }
+
+        function tickApproval() {
+          if (requestInFlight || !state.active) return;
+          requestInFlight = true;
+
+          fetch(approvalContainer.dataset.advanceUrl, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'X-CSRF-Token': csrfToken
+            },
+            credentials: 'same-origin'
+          })
+            .then(response => response.json().then(data => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+              renderApproval(data);
+              scheduleApprovalNext(ok ? 700 : 1800);
+            })
+            .catch(() => {
+              liveNote.textContent = 'Hubo un problema temporal de conexion. Reintentando la aprobacion en unos segundos...';
+              scheduleApprovalNext(1800);
+            })
+            .finally(() => {
+              requestInFlight = false;
+            });
+        }
+
+        renderApproval(state);
+        if (state.active) {
+          scheduleApprovalNext(300);
+        }
+      }
+
+      const refreshContainer = document.getElementById('candidate-image-refresh');
+      const initialStateNode = document.getElementById('image-refresh-initial-state');
+      if (refreshContainer && initialStateNode) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const formatter = new Intl.NumberFormat('es-ES');
+        let state = JSON.parse(initialStateNode.textContent);
+        let pollTimer = null;
+        let requestInFlight = false;
+        let finishedReloadScheduled = false;
+
+        const statusBadge = document.getElementById('image-refresh-status-badge');
+        const progressBar = document.getElementById('image-refresh-progress-bar');
+        const progressValue = document.getElementById('image-refresh-progress-value');
+        const processedValue = document.getElementById('image-refresh-processed-value');
+        const successValue = document.getElementById('image-refresh-success-value');
+        const skippedValue = document.getElementById('image-refresh-skipped-value');
+        const failedValue = document.getElementById('image-refresh-failed-value');
+        const requestsValue = document.getElementById('image-refresh-requests-value');
+        const currentLine = document.getElementById('image-refresh-current-line');
+        const liveNote = document.getElementById('image-refresh-live-note');
+        const errorContainer = document.getElementById('image-refresh-error-container');
+        const errorMessage = document.getElementById('image-refresh-error-message');
+        const retryContainer = document.getElementById('image-refresh-retry-container');
+
+        function badgeClass(status) {
+          if (status === 'completed') return 'badge badge-success p-2 mr-2';
+          if (status === 'failed') return 'badge badge-danger p-2 mr-2';
+          if (status === 'running') return 'badge badge-primary p-2 mr-2';
+          return 'badge badge-secondary p-2 mr-2';
+        }
+
+        function progressClass(status, active) {
+          if (status === 'completed') return 'progress-bar bg-success';
+          if (status === 'failed') return 'progress-bar bg-danger';
+          if (active) return 'progress-bar bg-primary progress-bar-striped progress-bar-animated';
+          return 'progress-bar bg-secondary';
+        }
+
+        function render(data) {
+          const wasActive = state.active;
+          state = data;
+          statusBadge.className = badgeClass(data.status);
+          statusBadge.textContent = data.status;
+          progressBar.className = progressClass(data.status, data.active);
+          progressBar.style.width = `${Math.min(data.completionPercentage || 0, 100)}%`;
+          progressBar.setAttribute('aria-valuenow', data.completionPercentage || 0);
+
+          progressValue.textContent = `${data.completionPercentage || 0}%`;
+          processedValue.textContent = `${formatter.format(data.processedCandidates || 0)}/${formatter.format(data.totalCandidates || 0)}`;
+          successValue.textContent = formatter.format(data.refreshedCandidates || 0);
+          skippedValue.textContent = formatter.format(data.skippedCandidates || 0);
+          failedValue.textContent = formatter.format(data.failedCandidates || 0);
+          requestsValue.textContent = formatter.format(data.requestsCount || 0);
+
+          if (data.currentCandidateName) {
+            currentLine.innerHTML = `Procesando ahora: <strong>${data.currentCandidateName}</strong>`;
+          } else if (data.finished) {
+            currentLine.textContent = 'No quedan candidatos pendientes en este reintento de imagenes.';
+          } else {
+            currentLine.textContent = 'Esperando el siguiente bloque de imagenes...';
+          }
+
+          if (data.active) {
+            liveNote.textContent = 'Procesando candidatos poco a poco para evitar timeouts y reducir el riesgo de rate limit.';
+          } else if (data.status === 'completed') {
+            liveNote.textContent = 'Reintento de imagenes completado. La pagina se actualizara sola para que veas las fotos recuperadas.';
+          } else if (data.status === 'failed') {
+            liveNote.textContent = 'El reintento de imagenes se ha detenido. Puedes reanudarlo cuando quieras.';
+          }
+
+          if (data.errorMessage) {
+            errorContainer.style.display = '';
+            errorMessage.textContent = data.errorMessage;
+          } else {
+            errorContainer.style.display = 'none';
+            errorMessage.textContent = '';
+          }
+
+          if (retryContainer) {
+            retryContainer.style.display = data.retryable ? '' : 'none';
+          }
+
+          if (!finishedReloadScheduled && wasActive && data.finished) {
+            finishedReloadScheduled = true;
+            window.setTimeout(() => window.location.reload(), 1200);
+          }
+        }
+
+        function scheduleNext(delayMs) {
+          window.clearTimeout(pollTimer);
+          if (!state.active) return;
+          pollTimer = window.setTimeout(tick, delayMs);
+        }
+
+        function tick() {
+          if (requestInFlight || !state.active) return;
+          requestInFlight = true;
+
+          fetch(refreshContainer.dataset.advanceUrl, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'X-CSRF-Token': csrfToken
+            },
+            credentials: 'same-origin'
+          })
+            .then(response => response.json().then(data => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+              render(data);
+              scheduleNext(ok ? 800 : 2200);
+            })
+            .catch(() => {
+              liveNote.textContent = 'Hubo un problema temporal de conexion. Reintentando en unos segundos...';
+              scheduleNext(2200);
+            })
+            .finally(() => {
+              requestInFlight = false;
+            });
+        }
+
+        render(state);
+        if (state.active) {
+          scheduleNext(400);
+        }
+      }
     }
 
-    render(state);
-    if (state.active) {
-      scheduleNext(600);
-    }
+    document.addEventListener('turbolinks:load', initializeBlackCoffeeImportReview);
+    initializeBlackCoffeeImportReview();
   })();
 </script>
+</div>

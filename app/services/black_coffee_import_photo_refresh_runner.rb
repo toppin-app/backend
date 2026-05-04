@@ -1,6 +1,6 @@
 class BlackCoffeeImportPhotoRefreshRunner
-  DEFAULT_STEP_BUDGET = 1
-  DEFAULT_TIME_BUDGET_SECONDS = 4
+  DEFAULT_STEP_BUDGET = 6
+  DEFAULT_TIME_BUDGET_SECONDS = 6
   FATAL_ERROR_PATTERNS = [
     /API has not been used/i,
     /API key/i,
@@ -19,8 +19,15 @@ class BlackCoffeeImportPhotoRefreshRunner
     active_batch = import_run.photo_refresh_batches.active.recent_first.first
     return active_batch if active_batch.present?
 
-    ids = import_run.import_candidates.where(id: Array(candidate_ids).map(&:to_i)).pluck(:id).uniq
-    raise 'Selecciona al menos un candidato valido.' if ids.empty?
+    candidates = import_run.import_candidates.where(id: Array(candidate_ids).map(&:to_i)).to_a
+    eligible_candidates = candidates.select do |candidate|
+      candidate.missing_images? && candidate.image_refreshable?
+    end
+    ids = eligible_candidates
+          .sort_by { |candidate| [candidate.google_photo_reference_list.any? ? 0 : 1, candidate.id] }
+          .map(&:id)
+          .uniq
+    raise 'Selecciona al menos un candidato valido con imagen pendiente y datos reutilizables de Google.' if ids.empty?
 
     batch = import_run.photo_refresh_batches.create!(
       status: 'pending',
