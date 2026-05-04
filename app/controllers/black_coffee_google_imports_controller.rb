@@ -34,6 +34,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     :approve_all_pending,
     :reject_selected,
     :refresh_selected_images,
+    :refresh_all_missing_images,
     :retry_approval_batch,
     :approval_status,
     :advance_approval,
@@ -180,6 +181,8 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       @total_candidates - @import_run.approved_count.to_i - @import_run.duplicate_count.to_i - @import_run.rejected_count.to_i,
       0
     ].max
+    @missing_image_candidates_count = @import_run.import_candidates.missing_images.count
+    @refreshable_missing_image_candidates_count = @import_run.import_candidates.missing_images.image_refreshable.count
     @visible_candidates_from = @total_candidates.zero? ? 0 : ((@page - 1) * @per_page) + 1
     @visible_candidates_to = [@page * @per_page, @total_candidates].min
     @candidates = ordered_candidates_scope
@@ -331,6 +334,27 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: notice
   rescue StandardError => e
     redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar el reintento de imagenes: #{e.message}"
+  end
+
+  def refresh_all_missing_images
+    existing_batch = @import_run.photo_refresh_batches.active.recent_first.first
+    if existing_batch.present?
+      redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: 'Ya hay un reintento de imagenes en curso para esta corrida. Puedes seguirlo desde aqui.'
+      return
+    end
+
+    missing_count = @import_run.import_candidates.missing_images.count
+    batch = BlackCoffeeImportPhotoRefreshRunner.start_missing_images_scope!(import_run: @import_run)
+    skipped_count = [missing_count - batch.total_candidates_count.to_i, 0].max
+
+    notice = "Reintento total de imagenes preparado para #{batch.total_candidates_count} candidatos sin foto."
+    if skipped_count.positive?
+      notice += " Se omitieron #{skipped_count} porque no tenian datos suficientes de Google para refrescarlas."
+    end
+
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), notice: notice
+  rescue StandardError => e
+    redirect_to black_coffee_google_import_path(@import_run, redirect_pagination_params), alert: "No se pudo preparar el reintento total de imagenes: #{e.message}"
   end
 
   def retry_image_refresh

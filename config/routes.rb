@@ -51,6 +51,7 @@ Rails.application.routes.draw do
         post :approve_all_pending
         post :reject_selected
         post :refresh_selected_images
+        post :refresh_all_missing_images
         post :retry_approval_batch
         get :approval_status
         post :advance_approval

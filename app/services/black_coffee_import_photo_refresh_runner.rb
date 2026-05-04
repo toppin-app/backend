@@ -19,23 +19,22 @@ class BlackCoffeeImportPhotoRefreshRunner
     active_batch = import_run.photo_refresh_batches.active.recent_first.first
     return active_batch if active_batch.present?
 
-    candidates = import_run.import_candidates.where(id: Array(candidate_ids).map(&:to_i)).to_a
-    eligible_candidates = candidates.select do |candidate|
-      candidate.missing_images? && candidate.image_refreshable?
-    end
-    ids = eligible_candidates
-          .sort_by { |candidate| [candidate.google_photo_reference_list.any? ? 0 : 1, candidate.id] }
-          .map(&:id)
-          .uniq
+    ids = prioritized_candidate_ids(
+      import_run.import_candidates.where(id: Array(candidate_ids).map(&:to_i))
+    )
     raise 'Selecciona al menos un candidato valido con imagen pendiente y datos reutilizables de Google.' if ids.empty?
 
-    batch = import_run.photo_refresh_batches.create!(
-      status: 'pending',
-      candidate_ids_payload: ids,
-      pending_candidate_ids_payload: ids
-    )
-    batch.refresh_counts!
-    batch
+    create_batch!(import_run: import_run, candidate_ids: ids)
+  end
+
+  def self.start_missing_images_scope!(import_run:)
+    active_batch = import_run.photo_refresh_batches.active.recent_first.first
+    return active_batch if active_batch.present?
+
+    ids = prioritized_candidate_ids(import_run.import_candidates)
+    raise 'No hay candidatos sin imagen y con datos reutilizables de Google en esta corrida.' if ids.empty?
+
+    create_batch!(import_run: import_run, candidate_ids: ids)
   end
 
   def self.advance!(batch:, step_budget: DEFAULT_STEP_BUDGET, time_budget_seconds: DEFAULT_TIME_BUDGET_SECONDS)
@@ -106,6 +105,32 @@ class BlackCoffeeImportPhotoRefreshRunner
   end
 
   private
+
+  class << self
+    private
+
+    def create_batch!(import_run:, candidate_ids:)
+      batch = import_run.photo_refresh_batches.create!(
+        status: 'pending',
+        candidate_ids_payload: candidate_ids,
+        pending_candidate_ids_payload: candidate_ids
+      )
+      batch.refresh_counts!
+      batch
+    end
+
+    def prioritized_candidate_ids(scope)
+      eligible_scope = scope.missing_images.image_refreshable
+      ids_with_refs = eligible_scope.where('google_photo_references IS NOT NULL AND JSON_LENGTH(google_photo_references) > 0')
+                                   .order(:id)
+                                   .pluck(:id)
+      ids_without_refs = eligible_scope.where('google_photo_references IS NULL OR JSON_LENGTH(google_photo_references) = 0')
+                                      .order(:id)
+                                      .pluck(:id)
+
+      (ids_with_refs + ids_without_refs).uniq
+    end
+  end
 
   def claim_next_candidate
     BlackCoffeeImportPhotoRefreshBatch.transaction do

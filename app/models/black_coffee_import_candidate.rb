@@ -29,6 +29,13 @@ class BlackCoffeeImportCandidate < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :latitude, :longitude, numericality: true, allow_nil: true
 
+  scope :missing_images, -> {
+    where('image_urls IS NULL OR JSON_LENGTH(image_urls) = 0')
+  }
+  scope :image_refreshable, -> {
+    where("(google_photo_references IS NOT NULL AND JSON_LENGTH(google_photo_references) > 0) OR (google_place_id IS NOT NULL AND google_place_id <> '')")
+  }
+
   before_validation :normalize_arrays
   before_validation :truncate_string_columns_to_limits
 
