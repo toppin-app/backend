@@ -90,14 +90,16 @@
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Primary type Google</p>
+            <p class="text-muted text-uppercase mb-2">Etiqueta principal Google</p>
             <% if @venue.google_primary_type_for_dashboard.present? %>
-              <strong><%= @venue.google_primary_type_for_dashboard %></strong>
+              <div>
+                <span class="badge badge-primary p-2"><%= @venue.google_primary_type_for_dashboard %></span>
+              </div>
               <% if @venue.google_primary_type_inferred? %>
                 <div class="text-warning small mt-2">Inferido desde etiquetas antiguas. Se confirmara al sincronizar con Google.</div>
               <% end %>
             <% else %>
-              <span class="text-muted">Sin primary type guardado</span>
+              <span class="text-muted">Sin etiqueta principal guardada</span>
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
@@ -149,6 +151,13 @@
           </div>
         </div>
 
+        <p class="text-muted text-uppercase mb-2">Mapa de etiquetas Google</p>
+        <% if @venue.google_primary_type_for_dashboard.present? %>
+          <div class="mb-2">
+            <span class="badge badge-primary mr-2 mb-2 p-2"><%= @venue.google_primary_type_for_dashboard %></span>
+            <span class="text-muted small">Etiqueta principal</span>
+          </div>
+        <% end %>
         <p class="text-muted text-uppercase mb-2">Etiquetas Google secundarias</p>
         <div class="mb-0">
           <% if @venue.google_secondary_type_list.any? %>

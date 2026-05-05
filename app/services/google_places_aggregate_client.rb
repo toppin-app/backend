@@ -1,5 +1,6 @@
 require 'json'
 require 'net/http'
+require 'set'
 require 'uri'
 
 class GooglePlacesAggregateClient
@@ -16,6 +17,14 @@ class GooglePlacesAggregateClient
   AGGREGATE_URL = 'https://areainsights.googleapis.com/v1:computeInsights'.freeze
   REGION_LOOKUP_URL = GooglePlacesBlackCoffeeClient::BASE_URL
   REGION_LOOKUP_FIELD_MASK = 'places.id,places.name,places.displayName,places.types'.freeze
+  AGGREGATE_UNSUPPORTED_TYPES = Set.new(%w[
+    administrative_area_level_3 administrative_area_level_4 administrative_area_level_5 administrative_area_level_6
+    administrative_area_level_7 archipelago colloquial_area continent establishment finance food general_contractor
+    geocode health intersection landmark natural_feature neighborhood place_of_worship plus_code point_of_interest
+    political postal_code_prefix postal_code_suffix postal_town premise route street_address sublocality
+    sublocality_level_1 sublocality_level_2 sublocality_level_3 sublocality_level_4 sublocality_level_5 subpremise
+    town_square medical_clinic service
+  ]).freeze
   FALLBACK_REGION_CIRCLES = {
     'andalucia' => { latitude: 37.5443, longitude: -4.7278, radius: 260_000 },
     'aragon' => { latitude: 41.5976, longitude: -0.9057, radius: 180_000 },
@@ -40,6 +49,25 @@ class GooglePlacesAggregateClient
 
   def self.api_key
     GooglePlacesBlackCoffeeClient.api_key
+  end
+
+  def self.aggregate_filterable_type?(value)
+    normalized = BlackCoffeeTaxonomy.normalize_google_tag(value)
+    normalized.present? && !AGGREGATE_UNSUPPORTED_TYPES.include?(normalized)
+  end
+
+  def self.aggregate_supported_types(values)
+    Array(values).map { |value| BlackCoffeeTaxonomy.normalize_google_tag(value) }
+                 .reject(&:blank?)
+                 .select { |value| aggregate_filterable_type?(value) }
+                 .uniq
+  end
+
+  def self.aggregate_unsupported_types(values)
+    Array(values).map { |value| BlackCoffeeTaxonomy.normalize_google_tag(value) }
+                 .reject(&:blank?)
+                 .reject { |value| aggregate_filterable_type?(value) }
+                 .uniq
   end
 
   def initialize(api_key: self.class.api_key)
@@ -74,7 +102,7 @@ class GooglePlacesAggregateClient
       }
     }
 
-    post_json(AGGREGATE_URL, body).fetch('count', 0).to_i
+    post_aggregate_json(body).fetch('count', 0).to_i
   end
 
   def circle_fallback_enabled?(region)
@@ -156,11 +184,50 @@ class GooglePlacesAggregateClient
 
   def optional_type_exclusions(config)
     {}.tap do |filter|
-      excluded_types = Array(config[:effective_aggregate_excluded_types] || config[:aggregate_excluded_types]).presence
-      excluded_primary_types = Array(config[:effective_aggregate_excluded_primary_types] || config[:aggregate_excluded_primary_types]).presence
+      excluded_types = self.class.aggregate_supported_types(
+        config[:effective_aggregate_excluded_types] || config[:aggregate_excluded_types]
+      ).presence
+      excluded_primary_types = self.class.aggregate_supported_types(
+        config[:effective_aggregate_excluded_primary_types] || config[:aggregate_excluded_primary_types]
+      ).presence
       filter[:excludedTypes] = excluded_types if excluded_types.present?
       filter[:excludedPrimaryTypes] = excluded_primary_types if excluded_primary_types.present?
     end
+  end
+
+  def post_aggregate_json(body)
+    retried_types = Set.new
+
+    loop do
+      return post_json(AGGREGATE_URL, body)
+    rescue RequestError => error
+      unsupported_type = extract_unsupported_type_from_error(error)
+      raise error if unsupported_type.blank? || retried_types.include?(unsupported_type)
+      raise error unless remove_unsupported_type!(body, unsupported_type)
+
+      retried_types << unsupported_type
+    end
+  end
+
+  def extract_unsupported_type_from_error(error)
+    match = error.message.match(/Type is not supported, type:\s*([a-z0-9_]+)/i)
+    BlackCoffeeTaxonomy.normalize_google_tag(match[1]) if match
+  end
+
+  def remove_unsupported_type!(body, unsupported_type)
+    type_filter = body.dig(:filter, :typeFilter) || {}
+    removed = false
+
+    %i[excludedTypes excludedPrimaryTypes includedTypes includedPrimaryTypes].each do |key|
+      values = Array(type_filter[key])
+      next if values.blank?
+
+      filtered_values = values.reject { |value| BlackCoffeeTaxonomy.normalize_google_tag(value) == unsupported_type }
+      removed ||= filtered_values.size != values.size
+      type_filter[key] = filtered_values
+    end
+
+    removed
   end
 
   def location_filter_for(region:, region_place:)

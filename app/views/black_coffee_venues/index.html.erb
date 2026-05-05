@@ -137,7 +137,10 @@
                 <strong><%= venue.name %></strong>
                 <div class="text-muted small"><%= venue.address %></div>
                 <% if venue.google_primary_type_for_dashboard.present? %>
-                  <div class="text-muted small mt-1">Primary: <%= venue.google_primary_type_for_dashboard %></div>
+                  <div class="small mt-1">
+                    <span class="badge badge-primary mr-1">Principal</span>
+                    <span class="text-muted"><%= venue.google_primary_type_for_dashboard %></span>
+                  </div>
                 <% end %>
                 <% if Array(venue.tags).any? %>
                   <div class="small mt-1">

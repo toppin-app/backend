@@ -53,7 +53,9 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
       dynamic_filter: filter,
       effective_aggregate_excluded_primary_types: filter.effective_aggregate_excluded_primary_types(config),
       effective_aggregate_excluded_types: filter.effective_aggregate_excluded_types(config),
-      google_total_is_approximate: filter.keyword_filters_active?
+      aggregate_unsupported_primary_types: filter.aggregate_unsupported_primary_types(config),
+      aggregate_unsupported_types: filter.aggregate_unsupported_types(config),
+      google_total_is_approximate: filter.google_total_approximate?(config)
     )
   end
 
@@ -89,6 +91,14 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
     excluded_keywords_list.any?
   end
 
+  def aggregate_filters_approximate?(config = {})
+    aggregate_unsupported_primary_types(config).any? || aggregate_unsupported_types(config).any?
+  end
+
+  def google_total_approximate?(config = {})
+    keyword_filters_active? || aggregate_filters_approximate?(config)
+  end
+
   def global?
     category.to_s == GLOBAL_CATEGORY_KEY
   end
@@ -112,11 +122,27 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
   end
 
   def effective_aggregate_excluded_primary_types(config = {})
-    (Array(config[:aggregate_excluded_primary_types]) + excluded_primary_types_list).uniq
+    GooglePlacesAggregateClient.aggregate_supported_types(
+      Array(config[:aggregate_excluded_primary_types]) + excluded_primary_types_list
+    )
   end
 
   def effective_aggregate_excluded_types(config = {})
-    (Array(config[:aggregate_excluded_types]) + excluded_types_list).uniq
+    GooglePlacesAggregateClient.aggregate_supported_types(
+      Array(config[:aggregate_excluded_types]) + excluded_types_list
+    )
+  end
+
+  def aggregate_unsupported_primary_types(config = {})
+    GooglePlacesAggregateClient.aggregate_unsupported_types(
+      Array(config[:aggregate_excluded_primary_types]) + excluded_primary_types_list
+    )
+  end
+
+  def aggregate_unsupported_types(config = {})
+    GooglePlacesAggregateClient.aggregate_unsupported_types(
+      Array(config[:aggregate_excluded_types]) + excluded_types_list
+    )
   end
 
   def invalidate_google_totals!

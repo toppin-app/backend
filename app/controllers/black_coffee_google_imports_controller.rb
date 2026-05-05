@@ -63,7 +63,10 @@ class BlackCoffeeGoogleImportsController < ApplicationController
                                       .limit(12)
     @api_key_present = GooglePlacesBlackCoffeeClient.api_key.present?
     @active_google_filters = BlackCoffeeGoogleImportFilter.active
-    @categories_with_keyword_filters = @active_google_filters.select(&:keyword_filters_active?).map(&:category)
+    @categories_with_approximate_google_totals = @importable_categories.select do |category|
+      config = BlackCoffeeGoogleImportFilter.enhance_config(category, GooglePlacesBlackCoffeeClient.config_for(category))
+      config[:google_total_is_approximate] == true
+    end
   end
 
   def create

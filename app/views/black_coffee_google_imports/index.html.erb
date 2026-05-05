@@ -31,8 +31,9 @@
   <div class="alert alert-secondary">
     <strong>Filtros Google activos:</strong>
     <%= @active_google_filters.map(&:label).join(', ') %>.
-    <% if @categories_with_keyword_filters.any? %>
-      Las categorias con filtros por palabras clave tendran un total Google aproximado hasta que se revise el impacto manualmente.
+    <% if @categories_with_approximate_google_totals.any? %>
+      Algunas categorias tendran un total Google aproximado porque usan palabras clave o etiquetas que Google no permite aplicar en Aggregate.
+      <strong><%= @categories_with_approximate_google_totals.map { |category| category_labels[category] || category }.join(', ') %></strong>.
     <% else %>
       Los recalculos Google ya aplicaran las exclusiones por tipos configuradas aqui.
     <% end %>
