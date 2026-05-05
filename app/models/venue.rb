@@ -81,6 +81,13 @@ class Venue < ApplicationRecord
          .where('LOWER(venue_subcategories.name) = ?', normalized_subcategory)
   end
 
+  def self.filter_by_google_tag(scope, google_tag)
+    normalized_tag = BlackCoffeeTaxonomy.normalize_google_tag(google_tag)
+    return scope if normalized_tag.blank?
+
+    scope.where("JSON_SEARCH(COALESCE(venues.tags, JSON_ARRAY()), 'one', ?) IS NOT NULL", normalized_tag)
+  end
+
   def self.visible_to_app
     column_names.include?('visible') ? where(visible: true) : all
   end

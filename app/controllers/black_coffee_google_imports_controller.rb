@@ -62,6 +62,8 @@ class BlackCoffeeGoogleImportsController < ApplicationController
                                       .order(created_at: :desc)
                                       .limit(12)
     @api_key_present = GooglePlacesBlackCoffeeClient.api_key.present?
+    @active_google_filters = BlackCoffeeGoogleImportFilter.active
+    @categories_with_keyword_filters = @active_google_filters.select(&:keyword_filters_active?).map(&:category)
   end
 
   def create

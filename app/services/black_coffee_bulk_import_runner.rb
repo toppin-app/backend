@@ -182,12 +182,13 @@ class BlackCoffeeBulkImportRunner
     )
     candidates = Array(response[:candidates])
     requests_count = response[:requests_count].to_i
+    raw_places_count = response[:raw_places_count].to_i
 
-    if should_split_step?(step, candidates.size)
+    if should_split_step?(step, raw_places_count)
       create_child_steps!(step)
       step.update!(
         status: 'split',
-        found_count: candidates.size,
+        found_count: raw_places_count,
         request_count: step.request_count.to_i + requests_count,
         processed_at: Time.current
       )
@@ -200,7 +201,7 @@ class BlackCoffeeBulkImportRunner
     saturated = candidates.size >= @bulk_import.step_limit.to_i && !splittable_step?(step)
     step.update!(
       status: 'completed',
-      found_count: candidates.size,
+      found_count: raw_places_count,
       saved_count: import_stats[:saved_count],
       duplicate_count: import_stats[:duplicate_count],
       request_count: step.request_count.to_i + requests_count,

@@ -21,25 +21,30 @@
   <div class="card-body">
     <%= form_with url: black_coffee_cleanup_path, method: :get, local: true do %>
       <div class="row align-items-end">
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-6 mb-3">
           <%= label_tag :category, 'Categoria' %>
           <%= select_tag :category,
                          options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, @cleanup.category),
                          class: 'form-control' %>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-6 mb-3">
           <%= label_tag :source, 'Origen' %>
           <%= select_tag :source,
                          options_for_select(@source_options.map { |value, label| [label, value] }, @cleanup.source),
                          class: 'form-control' %>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-6 mb-3">
           <%= label_tag :visibility, 'Visibilidad' %>
           <%= select_tag :visibility,
                          options_for_select(@visibility_options.map { |value, label| [label, value] }, @cleanup.visibility),
                          class: 'form-control' %>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-4 col-md-6 mb-3">
+          <%= label_tag :google_tag, 'Etiqueta Google (opcional)' %>
+          <%= text_field_tag :google_tag, @cleanup.google_tag, class: 'form-control', placeholder: 'Ej: butcher_shop' %>
+          <small class="text-muted">Busca en las etiquetas internas guardadas en Black Coffee.</small>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-3">
           <%= submit_tag 'Previsualizar limpieza', class: 'btn btn-primary btn-block text-white' %>
         </div>
       </div>
@@ -137,6 +142,13 @@
                   <td>
                     <strong><%= venue.name %></strong>
                     <div class="text-muted small"><%= venue.city %></div>
+                    <% if Array(venue.tags).any? %>
+                      <div class="small mt-1">
+                        <% Array(venue.tags).first(4).each do |tag| %>
+                          <span class="badge badge-light border mr-1 mb-1"><%= tag %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
                   </td>
                   <td><%= venue.category %></td>
                   <td>
@@ -194,6 +206,7 @@
       <%= hidden_field_tag :category, @cleanup.category %>
       <%= hidden_field_tag :source, @cleanup.source %>
       <%= hidden_field_tag :visibility, @cleanup.visibility %>
+      <%= hidden_field_tag :google_tag, @cleanup.google_tag %>
 
       <div class="form-group">
         <%= label_tag :confirm_text, "Escribe #{@confirmation_text} para confirmar" %>

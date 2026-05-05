@@ -10,6 +10,7 @@
   </div>
   <div class="mt-3 mt-md-0">
     <%= link_to 'Auditar precalculos', audit_black_coffee_google_imports_path, class: 'btn btn-outline-primary mr-2' %>
+    <%= link_to 'Filtros Google', black_coffee_google_filters_path, class: 'btn btn-outline-info mr-2' %>
     <%= link_to 'Limpieza Black Coffee', black_coffee_cleanup_path, class: 'btn btn-outline-danger mr-2' %>
     <% if @api_key_present %>
       <%= button_to 'Recalcular todos los totales', refresh_all_region_google_counts_black_coffee_google_imports_path, method: :post, class: 'btn btn-outline-warning', form_class: 'd-inline-block mr-2 mb-2', data: { confirm: "Esto recalculara todas las comunidades y hara al menos #{estimated_all_google_count_requests} peticiones reales a Places Aggregate API. Si falta algun Google Place ID regional, puede hacer alguna peticion extra. Continuar?" } %>
@@ -23,6 +24,18 @@
 <% unless @api_key_present %>
   <div class="alert alert-warning">
     Falta configurar <strong>GOOGLE_PLACES_API_KEY</strong> o <strong>GOOGLE_MAPS_API_KEY</strong> en el servidor. Puedes ver el util, pero las busquedas fallaran hasta agregar la clave. Para los totales tambien debe estar habilitada Places Aggregate API.
+  </div>
+<% end %>
+
+<% if @active_google_filters.any? %>
+  <div class="alert alert-secondary">
+    <strong>Filtros Google activos:</strong>
+    <%= @active_google_filters.map { |filter| GooglePlacesBlackCoffeeClient.config_for(filter.category).fetch(:label) }.join(', ') %>.
+    <% if @categories_with_keyword_filters.any? %>
+      Las categorias con filtros por palabras clave tendran un total Google aproximado hasta que se revise el impacto manualmente.
+    <% else %>
+      Los recalculos Google ya aplicaran las exclusiones por tipos configuradas aqui.
+    <% end %>
   </div>
 <% end %>
 

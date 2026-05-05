@@ -64,7 +64,7 @@ class GooglePlacesAggregateClient
   end
 
   def count_region_category(region:, region_place:, category:)
-    config = GooglePlacesBlackCoffeeClient.config_for(category)
+    config = BlackCoffeeGoogleImportFilter.enhance_config(category, GooglePlacesBlackCoffeeClient.config_for(category))
     body = {
       insights: ['INSIGHT_COUNT'],
       filter: {
@@ -156,8 +156,8 @@ class GooglePlacesAggregateClient
 
   def optional_type_exclusions(config)
     {}.tap do |filter|
-      excluded_types = Array(config[:aggregate_excluded_types]).presence
-      excluded_primary_types = Array(config[:aggregate_excluded_primary_types]).presence
+      excluded_types = Array(config[:effective_aggregate_excluded_types] || config[:aggregate_excluded_types]).presence
+      excluded_primary_types = Array(config[:effective_aggregate_excluded_primary_types] || config[:aggregate_excluded_primary_types]).presence
       filter[:excludedTypes] = excluded_types if excluded_types.present?
       filter[:excludedPrimaryTypes] = excluded_primary_types if excluded_primary_types.present?
     end

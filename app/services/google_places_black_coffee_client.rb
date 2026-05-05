@@ -160,7 +160,7 @@ class GooglePlacesBlackCoffeeClient
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
 
     normalized_category = category.to_s
-    config = self.class.config_for(normalized_category)
+    config = BlackCoffeeGoogleImportFilter.enhance_config(normalized_category, self.class.config_for(normalized_category))
     requested_limit = [[limit.to_i, 1].max, MAX_RESULTS].min
     query = build_query(
       region: region,
@@ -168,7 +168,7 @@ class GooglePlacesBlackCoffeeClient
       query_override: query_override,
       append_region_to_query: append_region_to_query
     )
-    places, requests_count = fetch_places(
+    places, requests_count, raw_places_count = fetch_places(
       query: query,
       config: config,
       limit: requested_limit,
@@ -184,7 +184,7 @@ class GooglePlacesBlackCoffeeClient
       )
     end
 
-    return { candidates: candidates, requests_count: requests_count } if metadata
+    return { candidates: candidates, requests_count: requests_count, raw_places_count: raw_places_count } if metadata
 
     candidates
   end
@@ -269,6 +269,8 @@ class GooglePlacesBlackCoffeeClient
     places = []
     next_page_token = nil
     requests_count = 0
+    raw_places_count = 0
+    dynamic_filter = config[:dynamic_filter]
 
     loop do
       remaining = limit - places.size
@@ -287,12 +289,15 @@ class GooglePlacesBlackCoffeeClient
 
       payload = post_json(BASE_URL, body)
       requests_count += 1
-      places.concat(Array(payload['places']))
+      page_places = Array(payload['places'])
+      raw_places_count += page_places.size
+      page_places = page_places.reject { |place| dynamic_filter.filters_place?(place) } if dynamic_filter&.active_filters?
+      places.concat(page_places)
       next_page_token = payload['nextPageToken'].presence
       break if next_page_token.blank? || places.size >= limit
     end
 
-    [places, requests_count]
+    [places.first(limit), requests_count, raw_places_count]
   end
 
   def post_json(url, body, field_mask: FIELD_MASK)

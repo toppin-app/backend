@@ -9,6 +9,7 @@ class BlackCoffeeVenuesController < ApplicationController
     @title = 'Black Coffee'
     @categories = Venue::CATEGORIES
     @subcategory_options = BlackCoffeeTaxonomy.subcategory_options(params[:category].presence)
+    @google_tag_filter = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_tag])
     @category_counts = Venue.group(:category).count
     @stats = {
       venues: Venue.count,
@@ -30,6 +31,8 @@ class BlackCoffeeVenuesController < ApplicationController
       query = "%#{params[:q].to_s.strip}%"
       scope = scope.where('venues.name LIKE :query OR venues.city LIKE :query OR venues.address LIKE :query', query: query)
     end
+
+    scope = Venue.filter_by_google_tag(scope, @google_tag_filter)
 
     @venues = Venue.order_by_favorites(scope.order(featured: :desc))
                    .order(updated_at: :desc)

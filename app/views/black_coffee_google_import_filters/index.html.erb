@@ -1,0 +1,147 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Importador Google</p>
+    <h2 class="mb-0">Filtros por categoria</h2>
+    <p class="text-muted mb-0 mt-2">
+      Ajusta que tipos de Google queremos excluir antes de guardar candidatos. Los filtros por <strong>primary type</strong> son los mas seguros y tambien afectan al total Google. Los filtros por <strong>etiqueta secundaria</strong> son mas agresivos. Las <strong>palabras clave</strong> afinan el importador, pero no se pueden descontar de Places Aggregate API.
+    </p>
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver al importador', black_coffee_google_imports_path, class: 'btn btn-outline-primary mr-2' %>
+    <%= link_to 'Ver locales Black Coffee', black_coffee_venues_path, class: 'btn btn-outline-dark' %>
+  </div>
+</div>
+
+<div class="alert alert-warning">
+  Si cambias filtros de una categoria, sus totales Google guardados se marcan como obsoletos para forzar un recalculo limpio. Las corridas y locales ya guardados no se corrigen solos: para eso usa la limpieza/revision por etiquetas dentro del dashboard.
+</div>
+
+<div class="row">
+  <% @categories.each do |category| %>
+    <% filter = @filters_by_category.fetch(category) %>
+    <% suggestions = @suggestions_by_category.fetch(category) %>
+    <% config = GooglePlacesBlackCoffeeClient.config_for(category) %>
+    <div class="col-xl-6 mb-4" id="category-filter-<%= category %>">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <div>
+            <strong><%= config[:label] %></strong>
+            <div class="text-muted small"><%= category %></div>
+          </div>
+          <div class="text-right">
+            <% if filter.active_filters? %>
+              <span class="badge badge-success">Filtros activos</span>
+            <% else %>
+              <span class="badge badge-light">Sin filtros</span>
+            <% end %>
+            <% if filter.keyword_filters_active? %>
+              <div class="small text-warning mt-1">Total Google aproximado si usas keywords</div>
+            <% end %>
+          </div>
+        </div>
+        <div class="card-body">
+          <%= form_with model: filter,
+                        url: black_coffee_google_filter_path(category),
+                        method: :patch,
+                        local: true do |form| %>
+            <div class="form-group">
+              <%= label_tag "black_coffee_google_import_filter_excluded_primary_types_text_#{category}", 'Excluir por primaryType (recomendado)' %>
+              <%= text_area_tag 'black_coffee_google_import_filter[excluded_primary_types_text]',
+                                filter.excluded_primary_types_list.join("\n"),
+                                rows: 4,
+                                class: 'form-control js-google-filter-input',
+                                id: "black_coffee_google_import_filter_excluded_primary_types_text_#{category}",
+                                data: { role: 'primary-types' } %>
+              <small class="text-muted">Uno por linea o separados por coma. Esto si afecta tambien al recalculo de totales Google.</small>
+            </div>
+
+            <% if suggestions[:primary_types].any? %>
+              <div class="mb-3">
+                <div class="small text-muted text-uppercase mb-2">Primary types vistos recientemente</div>
+                <% suggestions[:primary_types].each do |value, count| %>
+                  <button type="button"
+                          class="btn btn-sm btn-light border mr-2 mb-2 js-google-filter-suggestion"
+                          data-target-role="primary-types"
+                          data-value="<%= value %>">
+                    + <%= value %> (<%= count %>)
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
+
+            <div class="form-group">
+              <%= label_tag "black_coffee_google_import_filter_excluded_types_text_#{category}", 'Excluir por etiquetas/tipos secundarios' %>
+              <%= text_area_tag 'black_coffee_google_import_filter[excluded_types_text]',
+                                filter.excluded_types_list.join("\n"),
+                                rows: 4,
+                                class: 'form-control js-google-filter-input',
+                                id: "black_coffee_google_import_filter_excluded_types_text_#{category}",
+                                data: { role: 'secondary-types' } %>
+              <small class="text-muted">Mas agresivo: quita locales aunque ese tag no sea su tipo principal. Tambien afecta al total Google.</small>
+            </div>
+
+            <% if suggestions[:tags].any? %>
+              <div class="mb-3">
+                <div class="small text-muted text-uppercase mb-2">Etiquetas Google detectadas</div>
+                <% suggestions[:tags].each do |value, count| %>
+                  <button type="button"
+                          class="btn btn-sm btn-light border mr-2 mb-2 js-google-filter-suggestion"
+                          data-target-role="secondary-types"
+                          data-value="<%= value %>">
+                    + <%= value %> (<%= count %>)
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
+
+            <div class="form-group">
+              <%= label_tag "black_coffee_google_import_filter_excluded_keywords_text_#{category}", 'Excluir por palabras clave (nombre / metadata)' %>
+              <%= text_area_tag 'black_coffee_google_import_filter[excluded_keywords_text]',
+                                filter.excluded_keywords_list.join("\n"),
+                                rows: 3,
+                                class: 'form-control js-google-filter-input',
+                                id: "black_coffee_google_import_filter_excluded_keywords_text_#{category}",
+                                data: { role: 'keywords' } %>
+              <small class="text-muted">Sirve para hilar fino, pero Google Aggregate no puede restar estas keywords del total estimado.</small>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+              <div class="small text-muted mb-2 mb-md-0">
+                Sugerencia: usa primero <strong>primaryType</strong>. Recurre a etiquetas secundarias solo cuando sea inevitable.
+              </div>
+              <%= form.submit 'Guardar filtros', class: 'btn btn-primary text-white' %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  document.addEventListener('turbolinks:load', function () {
+    document.querySelectorAll('.js-google-filter-suggestion').forEach(function(button) {
+      button.addEventListener('click', function () {
+        const card = button.closest('.card-body');
+        if (!card) return;
+
+        const targetRole = button.dataset.targetRole;
+        const input = card.querySelector('.js-google-filter-input[data-role="' + targetRole + '"]');
+        if (!input) return;
+
+        const value = button.dataset.value || '';
+        const currentValues = input.value
+          .split(/\n|,/)
+          .map(function(entry) { return entry.trim(); })
+          .filter(Boolean);
+
+        if (!currentValues.includes(value)) {
+          currentValues.push(value);
+          input.value = currentValues.join("\n");
+        }
+
+        input.focus();
+      });
+    });
+  });
+</script>

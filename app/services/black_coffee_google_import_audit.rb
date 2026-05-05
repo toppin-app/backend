@@ -520,7 +520,7 @@ class BlackCoffeeGoogleImportAudit
 
   def category_totals_for(summaries)
     raw_totals = categories.map do |category|
-      config = GooglePlacesBlackCoffeeClient.config_for(category)
+      config = BlackCoffeeGoogleImportFilter.enhance_config(category, GooglePlacesBlackCoffeeClient.config_for(category))
       filter_types = Array(config[:aggregate_primary_types]).presence ||
                      Array(config[:aggregate_types]).presence ||
                      Array(config[:included_type]).presence ||
@@ -536,7 +536,10 @@ class BlackCoffeeGoogleImportAudit
         label: label_for(category),
         google_total_count: google_total_count,
         filter_mode: filter_mode,
-        filter_types: filter_types
+        filter_types: filter_types,
+        excluded_primary_types: Array(config[:effective_aggregate_excluded_primary_types]),
+        excluded_types: Array(config[:effective_aggregate_excluded_types]),
+        approximate_due_to_keywords: config[:google_total_is_approximate] == true
       }
     end
     global_total = raw_totals.sum { |category_total| category_total[:google_total_count].to_i }

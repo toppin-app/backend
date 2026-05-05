@@ -42,7 +42,13 @@
       </div>
       <div class="mt-3 mt-md-0">
         <%= link_to 'Gestionar subcategorias', black_coffee_subcategories_path, class: 'btn btn-outline-dark mr-2' %>
-        <%= link_to 'Limpieza masiva', black_coffee_cleanup_path, class: 'btn btn-outline-danger mr-2' %>
+        <%= link_to 'Limpieza masiva',
+                    black_coffee_cleanup_path(
+                      category: params[:category].presence,
+                      source: 'google',
+                      google_tag: @google_tag_filter.presence
+                    ),
+                    class: 'btn btn-outline-danger mr-2' %>
         <%= link_to 'Importar Google Maps', black_coffee_google_imports_path, class: 'btn btn-outline-primary mr-2' %>
         <%= link_to 'Actualizar desde Google', black_coffee_venue_google_syncs_path, class: 'btn btn-outline-info mr-2' %>
         <%= link_to 'Nuevo local', new_black_coffee_venue_path, class: 'btn btn-success text-white' %>
@@ -62,10 +68,10 @@
         <div class="col-md-4 mb-3">
           <%= text_field_tag :q, params[:q], class: 'form-control', placeholder: 'Buscar por nombre, ciudad o direccion' %>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
           <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, params[:category]), class: 'form-control' %>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
           <%= select_tag :subcategory,
                          options_for_select(
                            [['Todas las subcategorias', '']] +
@@ -73,6 +79,10 @@
                            params[:subcategory]
                          ),
                          class: 'form-control' %>
+        </div>
+        <div class="col-md-2 mb-3">
+          <%= text_field_tag :google_tag, @google_tag_filter, class: 'form-control', placeholder: 'Etiqueta Google' %>
+          <small class="text-muted">Ej: butcher_shop</small>
         </div>
         <div class="col-md-2 mb-3">
           <div class="d-flex">
@@ -121,6 +131,13 @@
               <td>
                 <strong><%= venue.name %></strong>
                 <div class="text-muted small"><%= venue.address %></div>
+                <% if Array(venue.tags).any? %>
+                  <div class="small mt-1">
+                    <% Array(venue.tags).first(4).each do |tag| %>
+                      <span class="badge badge-light border mr-1 mb-1"><%= tag %></span>
+                    <% end %>
+                  </div>
+                <% end %>
               </td>
               <td><span class="badge badge-secondary"><%= venue.category %></span></td>
               <td><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name).presence || 'Sin subcategoria' %></td>

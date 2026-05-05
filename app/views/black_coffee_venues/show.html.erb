@@ -21,37 +21,26 @@
   <div class="col-lg-8">
     <div class="card mb-4">
       <div class="card-body">
-        <% if @venue.description_present? %>
-          <div class="row">
-            <div class="col-md-8">
-              <p class="text-muted text-uppercase mb-2">Descripcion</p>
+        <div class="row">
+          <div class="col-md-8">
+            <p class="text-muted text-uppercase mb-2">Descripcion</p>
+            <% if @venue.description_present? %>
               <p><%= @venue.description %></p>
-            </div>
-            <div class="col-md-4">
-              <p class="text-muted text-uppercase mb-2">Estado editorial</p>
-              <% if @venue.featured? %>
-                <span class="badge badge-success p-2">Destacado</span>
-              <% else %>
-                <span class="badge badge-light p-2">No destacado</span>
-              <% end %>
-            </div>
+            <% else %>
+              <p class="text-muted mb-0">Sin descripcion todavia.</p>
+            <% end %>
           </div>
-
-          <hr>
-        <% else %>
-          <div class="row">
-            <div class="col-md-12">
-              <p class="text-muted text-uppercase mb-2">Estado editorial</p>
-              <% if @venue.featured? %>
-                <span class="badge badge-success p-2">Destacado</span>
-              <% else %>
-                <span class="badge badge-light p-2">No destacado</span>
-              <% end %>
-            </div>
+          <div class="col-md-4">
+            <p class="text-muted text-uppercase mb-2">Estado editorial</p>
+            <% if @venue.featured? %>
+              <span class="badge badge-success p-2">Destacado</span>
+            <% else %>
+              <span class="badge badge-light p-2">No destacado</span>
+            <% end %>
           </div>
+        </div>
 
-          <hr>
-        <% end %>
+        <hr>
 
         <div class="row">
           <div class="col-md-4 mb-3">
