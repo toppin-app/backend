@@ -10,6 +10,7 @@ class BlackCoffeeVenuesController < ApplicationController
     @categories = Venue::CATEGORIES
     @subcategory_options = BlackCoffeeTaxonomy.subcategory_options(params[:category].presence)
     @google_tag_filter = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_tag])
+    @google_primary_type_filter = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_primary_type])
     @category_counts = Venue.group(:category).count
     @stats = {
       venues: Venue.count,
@@ -32,6 +33,7 @@ class BlackCoffeeVenuesController < ApplicationController
       scope = scope.where('venues.name LIKE :query OR venues.city LIKE :query OR venues.address LIKE :query', query: query)
     end
 
+    scope = Venue.filter_by_google_primary_type(scope, @google_primary_type_filter)
     scope = Venue.filter_by_google_tag(scope, @google_tag_filter)
 
     @venues = Venue.order_by_favorites(scope.order(featured: :desc))

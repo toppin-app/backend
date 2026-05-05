@@ -88,6 +88,20 @@ class Venue < ApplicationRecord
     scope.where("JSON_SEARCH(COALESCE(venues.tags, JSON_ARRAY()), 'one', ?) IS NOT NULL", normalized_tag)
   end
 
+  def self.filter_by_google_primary_type(scope, google_primary_type)
+    normalized_type = BlackCoffeeTaxonomy.normalize_google_tag(google_primary_type)
+    return scope if normalized_type.blank?
+
+    if column_names.include?('google_primary_type')
+      scope.where(
+        "(venues.google_primary_type = :value) OR ((venues.google_primary_type IS NULL OR venues.google_primary_type = '') AND JSON_UNQUOTE(JSON_EXTRACT(COALESCE(venues.tags, JSON_ARRAY()), '$[0]')) = :value)",
+        value: normalized_type
+      )
+    else
+      scope.where("JSON_UNQUOTE(JSON_EXTRACT(COALESCE(venues.tags, JSON_ARRAY()), '$[0]')) = ?", normalized_type)
+    end
+  end
+
   def self.visible_to_app
     column_names.include?('visible') ? where(visible: true) : all
   end
@@ -169,6 +183,33 @@ class Venue < ApplicationRecord
 
   def description_present?
     description.to_s.strip.present?
+  end
+
+  def google_primary_type_for_dashboard
+    return nil unless google_connected? || Array(tags).any?
+
+    if has_attribute?(:google_primary_type) && google_primary_type.to_s.strip.present?
+      google_primary_type.to_s.strip
+    else
+      Array(tags).map(&:to_s).map(&:strip).reject(&:blank?).first
+    end
+  end
+
+  def google_primary_type_inferred?
+    google_primary_type_for_dashboard.present? && (!has_attribute?(:google_primary_type) || google_primary_type.to_s.strip.blank?)
+  end
+
+  def google_secondary_type_list
+    stored =
+      if has_attribute?(:google_secondary_types)
+        Array(google_secondary_types).map(&:to_s).map(&:strip).reject(&:blank?)
+      else
+        []
+      end
+    return stored if stored.any?
+
+    primary = google_primary_type_for_dashboard
+    Array(tags).map(&:to_s).map(&:strip).reject(&:blank?).uniq.reject { |tag| tag == primary }
   end
 
   def favorites_count

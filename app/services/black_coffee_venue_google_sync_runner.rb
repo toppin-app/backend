@@ -283,6 +283,10 @@ class BlackCoffeeVenueGoogleSyncRunner
     venue.longitude = sync_data[:longitude] unless sync_data[:longitude].nil?
     venue.google_place_id = sync_data[:google_place_id].to_s.strip.presence || venue.google_place_id
     venue.tags = sync_data[:google_type_tags].presence || venue.tags
+    venue.google_primary_type = sync_data[:google_primary_type].to_s.strip.presence if venue.has_attribute?(:google_primary_type)
+    if venue.has_attribute?(:google_secondary_types) && sync_data.key?(:google_secondary_type_tags)
+      venue.google_secondary_types = Array(sync_data[:google_secondary_type_tags]).map(&:to_s).map(&:strip).reject(&:blank?).uniq
+    end
 
     assign_optional_string_attribute(venue, :postal_code, sync_data[:postal_code])
     assign_optional_string_attribute(venue, :state, sync_data[:state])

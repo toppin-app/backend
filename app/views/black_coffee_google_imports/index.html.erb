@@ -30,7 +30,7 @@
 <% if @active_google_filters.any? %>
   <div class="alert alert-secondary">
     <strong>Filtros Google activos:</strong>
-    <%= @active_google_filters.map { |filter| GooglePlacesBlackCoffeeClient.config_for(filter.category).fetch(:label) }.join(', ') %>.
+    <%= @active_google_filters.map(&:label).join(', ') %>.
     <% if @categories_with_keyword_filters.any? %>
       Las categorias con filtros por palabras clave tendran un total Google aproximado hasta que se revise el impacto manualmente.
     <% else %>

@@ -1,4 +1,5 @@
 class BlackCoffeeGoogleImportFilter < ApplicationRecord
+  GLOBAL_CATEGORY_KEY = '__global__'.freeze
   GENERIC_GOOGLE_TAGS = %w[
     establishment
     food
@@ -29,20 +30,42 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
     find_or_initialize_by(category: normalized_category)
   end
 
-  def self.active
-    return none unless storage_ready?
+  def self.global
+    for_category(GLOBAL_CATEGORY_KEY)
+  end
 
-    all.select(&:active_filters?).sort_by { |filter| importable_categories.index(filter.category).to_i }
+  def self.active
+    return [] unless storage_ready?
+
+    all.select(&:active_filters?).sort_by do |filter|
+      if filter.global?
+        [-1, filter.category.to_s]
+      else
+        [importable_categories.index(filter.category).to_i, filter.category.to_s]
+      end
+    end
   end
 
   def self.enhance_config(category, config)
-    filter = for_category(category)
+    filter = merged_for(category)
 
     config.merge(
       dynamic_filter: filter,
       effective_aggregate_excluded_primary_types: filter.effective_aggregate_excluded_primary_types(config),
       effective_aggregate_excluded_types: filter.effective_aggregate_excluded_types(config),
       google_total_is_approximate: filter.keyword_filters_active?
+    )
+  end
+
+  def self.merged_for(category)
+    category_filter = for_category(category)
+    global_filter = global
+
+    new(
+      category: category.to_s,
+      excluded_primary_types: (global_filter.excluded_primary_types_list + category_filter.excluded_primary_types_list).uniq,
+      excluded_types: (global_filter.excluded_types_list + category_filter.excluded_types_list).uniq,
+      excluded_keywords: (global_filter.excluded_keywords_list + category_filter.excluded_keywords_list).uniq
     )
   end
 
@@ -64,6 +87,18 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
 
   def keyword_filters_active?
     excluded_keywords_list.any?
+  end
+
+  def global?
+    category.to_s == GLOBAL_CATEGORY_KEY
+  end
+
+  def label
+    return 'Filtros globales' if global?
+
+    GooglePlacesBlackCoffeeClient.config_for(category).fetch(:label)
+  rescue KeyError
+    category.to_s
   end
 
   def filters_place?(place)
@@ -97,12 +132,14 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
       attributes[:google_total_count_error_details] = nil
     end
 
-    BlackCoffeeImportRegionCategory.where(category: category).update_all(attributes)
+    categories = global? ? self.class.importable_categories : [category]
+    BlackCoffeeImportRegionCategory.where(category: categories).update_all(attributes)
   end
 
   private
 
   def category_must_be_importable
+    return if global?
     return if self.class.importable_categories.include?(category.to_s)
 
     errors.add(:category, 'no es valida para el importador')

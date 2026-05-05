@@ -252,6 +252,15 @@ module BlackCoffeeTaxonomy
       .uniq
   end
 
+  def google_primary_type_for_place(place)
+    normalize_google_tag(place_value(place, 'primaryType'))
+  end
+
+  def google_secondary_tags_for_place(place)
+    primary = google_primary_type_for_place(place)
+    google_tags_for_place(place).reject { |tag| tag == primary }
+  end
+
   def fallback_internal_tags(category, subcategory)
     [category, subcategory].map { |tag| normalize_google_tag(tag) }.reject(&:blank?).uniq
   end

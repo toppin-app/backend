@@ -11,13 +11,14 @@ class BlackCoffeeVenueCleanup
     'hidden' => 'Solo ocultos'
   }.freeze
 
-  attr_reader :category, :source, :visibility, :google_tag
+  attr_reader :category, :source, :visibility, :google_tag, :google_primary_type
 
   def initialize(params = {})
     @category = normalized_category(params[:category])
     @source = SOURCE_OPTIONS.key?(params[:source].to_s) ? params[:source].to_s : 'all'
     @visibility = VISIBILITY_OPTIONS.key?(params[:visibility].to_s) ? params[:visibility].to_s : 'all'
     @google_tag = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_tag])
+    @google_primary_type = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_primary_type])
   end
 
   def filters
@@ -25,13 +26,15 @@ class BlackCoffeeVenueCleanup
       category: category,
       source: source,
       visibility: visibility,
-      google_tag: google_tag
+      google_tag: google_tag,
+      google_primary_type: google_primary_type
     }
   end
 
   def scope
     relation = Venue.all
     relation = relation.where(category: category) if category.present?
+    relation = Venue.filter_by_google_primary_type(relation, google_primary_type)
     relation = Venue.filter_by_google_tag(relation, google_tag)
 
     relation =

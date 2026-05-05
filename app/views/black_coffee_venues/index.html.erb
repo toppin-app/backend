@@ -46,6 +46,7 @@
                     black_coffee_cleanup_path(
                       category: params[:category].presence,
                       source: 'google',
+                      google_primary_type: @google_primary_type_filter.presence,
                       google_tag: @google_tag_filter.presence
                     ),
                     class: 'btn btn-outline-danger mr-2' %>
@@ -79,6 +80,10 @@
                            params[:subcategory]
                          ),
                          class: 'form-control' %>
+        </div>
+        <div class="col-md-2 mb-3">
+          <%= text_field_tag :google_primary_type, @google_primary_type_filter, class: 'form-control', placeholder: 'Primary type' %>
+          <small class="text-muted">Ej: supermarket</small>
         </div>
         <div class="col-md-2 mb-3">
           <%= text_field_tag :google_tag, @google_tag_filter, class: 'form-control', placeholder: 'Etiqueta Google' %>
@@ -131,6 +136,9 @@
               <td>
                 <strong><%= venue.name %></strong>
                 <div class="text-muted small"><%= venue.address %></div>
+                <% if venue.google_primary_type_for_dashboard.present? %>
+                  <div class="text-muted small mt-1">Primary: <%= venue.google_primary_type_for_dashboard %></div>
+                <% end %>
                 <% if Array(venue.tags).any? %>
                   <div class="small mt-1">
                     <% Array(venue.tags).first(4).each do |tag| %>

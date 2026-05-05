@@ -108,6 +108,14 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     BlackCoffeeTaxonomy.google_tags_for_place(raw_payload || {})
   end
 
+  def google_primary_type
+    BlackCoffeeTaxonomy.google_primary_type_for_place(raw_payload || {})
+  end
+
+  def google_secondary_type_tags
+    BlackCoffeeTaxonomy.google_secondary_tags_for_place(raw_payload || {})
+  end
+
   def google_description_text
     payload = raw_payload || {}
     google_description.to_s.strip.presence ||
@@ -143,6 +151,8 @@ class BlackCoffeeImportCandidate < ApplicationRecord
       venue.payment_current = true if venue.has_attribute?(:payment_current)
       venue.visible = true if venue.has_attribute?(:visible)
       venue.google_place_id = google_place_id if venue.has_attribute?(:google_place_id)
+      venue.google_primary_type = google_primary_type if venue.has_attribute?(:google_primary_type)
+      venue.google_secondary_types = google_secondary_type_tags if venue.has_attribute?(:google_secondary_types)
       venue.postal_code = postal_code if venue.has_attribute?(:postal_code)
       venue.state = state if venue.has_attribute?(:state)
       venue.country = country if venue.has_attribute?(:country)

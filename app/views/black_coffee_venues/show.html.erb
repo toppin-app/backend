@@ -90,6 +90,17 @@
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
+            <p class="text-muted text-uppercase mb-2">Primary type Google</p>
+            <% if @venue.google_primary_type_for_dashboard.present? %>
+              <strong><%= @venue.google_primary_type_for_dashboard %></strong>
+              <% if @venue.google_primary_type_inferred? %>
+                <div class="text-warning small mt-2">Inferido desde etiquetas antiguas. Se confirmara al sincronizar con Google.</div>
+              <% end %>
+            <% else %>
+              <span class="text-muted">Sin primary type guardado</span>
+            <% end %>
+          </div>
+          <div class="col-md-4 mb-3">
             <p class="text-muted text-uppercase mb-2">Pais</p>
             <strong><%= @venue.country.presence || 'Sin pais' %></strong>
             <% if @venue.country_code.present? %>
@@ -138,13 +149,18 @@
           </div>
         </div>
 
-        <p class="text-muted text-uppercase mb-2">Etiquetas internas Google</p>
+        <p class="text-muted text-uppercase mb-2">Etiquetas Google secundarias</p>
         <div class="mb-0">
-          <% if Array(@venue.tags).any? %>
+          <% if @venue.google_secondary_type_list.any? %>
+            <% @venue.google_secondary_type_list.each do |tag| %>
+              <span class="badge badge-dark mr-2 mb-2 p-2"><%= tag %></span>
+            <% end %>
+            <p class="text-muted small mb-0">Estas etiquetas incluyen los tipos secundarios guardados por Google. Se usan para filtros internos y limpieza masiva.</p>
+          <% elsif Array(@venue.tags).any? %>
             <% Array(@venue.tags).each do |tag| %>
               <span class="badge badge-dark mr-2 mb-2 p-2"><%= tag %></span>
             <% end %>
-            <p class="text-muted small mb-0">Uso interno para importacion y futuras mejoras. No se muestran en la app.</p>
+            <p class="text-warning small mb-0">Todavia no tenemos el desglose primario/secundario persistido en este local. El detalle se completara al sincronizarlo con Google.</p>
           <% else %>
             <p class="text-muted mb-0">Sin etiquetas internas.</p>
           <% end %>

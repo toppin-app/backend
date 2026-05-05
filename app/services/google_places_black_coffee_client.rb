@@ -251,6 +251,8 @@ class GooglePlacesBlackCoffeeClient
 
     attributes.merge(
       google_type_tags: BlackCoffeeTaxonomy.google_tags_for_place(payload),
+      google_primary_type: BlackCoffeeTaxonomy.google_primary_type_for_place(payload),
+      google_secondary_type_tags: BlackCoffeeTaxonomy.google_secondary_tags_for_place(payload),
       google_schedule_payload: schedule_payload_for_place(payload),
       requests_count: 1 + photos.count { |photo| photo['name'].present? }
     )

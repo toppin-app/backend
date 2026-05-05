@@ -41,6 +41,6 @@ class BlackCoffeeCleanupController < ApplicationController
   end
 
   def cleanup_params
-    params.permit(:category, :source, :visibility, :google_tag)
+    params.permit(:category, :source, :visibility, :google_tag, :google_primary_type)
   end
 end

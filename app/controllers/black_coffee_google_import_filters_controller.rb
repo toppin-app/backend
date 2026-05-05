@@ -7,8 +7,9 @@ class BlackCoffeeGoogleImportFiltersController < ApplicationController
 
   def index
     @title = 'Filtros Google del importador'
+    @global_filter = BlackCoffeeGoogleImportFilter.global
     @filters_by_category = @categories.index_with { |category| BlackCoffeeGoogleImportFilter.for_category(category) }
-    @suggestions_by_category = build_suggestions_by_category
+    @google_tag_catalog = BlackCoffeeGoogleTagCatalog.all_tags
   end
 
   def update
@@ -17,13 +18,14 @@ class BlackCoffeeGoogleImportFiltersController < ApplicationController
     if @filter.save
       @filter.invalidate_google_totals!
       redirect_to black_coffee_google_filters_path(anchor: dom_id_for(@filter.category)),
-                  notice: "Filtros actualizados para #{label_for(@filter.category)}. Los totales Google de esa categoria se han marcado para recalculo."
+                  notice: success_message_for(@filter)
     else
       @title = 'Filtros Google del importador'
+      @global_filter = @filter.global? ? @filter : BlackCoffeeGoogleImportFilter.global
       @filters_by_category = @categories.index_with do |category|
         category == @filter.category ? @filter : BlackCoffeeGoogleImportFilter.for_category(category)
       end
-      @suggestions_by_category = build_suggestions_by_category
+      @google_tag_catalog = BlackCoffeeGoogleTagCatalog.all_tags
       flash.now[:alert] = @filter.errors.full_messages.to_sentence
       render :index, status: :unprocessable_entity
     end
@@ -59,74 +61,15 @@ class BlackCoffeeGoogleImportFiltersController < ApplicationController
     end.reject(&:blank?).uniq
   end
 
-  def build_suggestions_by_category
-    @categories.index_with { |category| suggestions_for(category) }
-  end
-
-  def suggestions_for(category)
-    primary_type_counts = Hash.new(0)
-    tag_counts = Hash.new(0)
-
-    BlackCoffeeImportCandidate.where(category: category).order(id: :desc).limit(SUGGESTION_SAMPLE_LIMIT).pluck(:raw_payload).each do |raw_payload|
-      payload = normalized_payload(raw_payload)
-      primary_type = BlackCoffeeTaxonomy.normalize_google_tag(BlackCoffeeTaxonomy.place_value(payload, 'primaryType'))
-      primary_type_counts[primary_type] += 1 if primary_type.present?
-
-      BlackCoffeeTaxonomy.google_tags_for_place(payload).each do |tag|
-        tag_counts[tag] += 1 if tag.present?
-      end
-    end
-
-    Venue.where(category: category).order(id: :desc).limit(SUGGESTION_SAMPLE_LIMIT).pluck(:tags).each do |tags|
-      normalized_tags(tags).each do |tag|
-        normalized = BlackCoffeeTaxonomy.normalize_google_tag(tag)
-        tag_counts[normalized] += 1 if normalized.present?
-      end
-    end
-
-    {
-      primary_types: primary_type_counts.sort_by { |type, count| [generic_tag_sort_key(type), -count, type] }.first(12),
-      tags: tag_counts.sort_by { |tag, count| [generic_tag_sort_key(tag), -count, tag] }.first(18)
-    }
-  end
-
-  def generic_tag_sort_key(tag)
-    BlackCoffeeGoogleImportFilter::GENERIC_GOOGLE_TAGS.include?(tag) ? 1 : 0
-  end
-
-  def normalized_payload(raw_payload)
-    payload =
-      if raw_payload.respond_to?(:with_indifferent_access)
-        raw_payload
-      elsif raw_payload.is_a?(String)
-        JSON.parse(raw_payload)
-      else
-        {}
-      end
-
-    payload.respond_to?(:with_indifferent_access) ? payload.with_indifferent_access : {}
-  rescue JSON::ParserError
-    {}
-  end
-
-  def normalized_tags(raw_tags)
-    case raw_tags
-    when Array
-      raw_tags
-    when String
-      JSON.parse(raw_tags)
-    else
-      []
-    end
-  rescue JSON::ParserError
-    []
-  end
-
   def dom_id_for(category)
     "category-filter-#{category}"
   end
 
-  def label_for(category)
-    GooglePlacesBlackCoffeeClient.config_for(category).fetch(:label)
+  def success_message_for(filter)
+    if filter.global?
+      'Filtros globales actualizados. Los totales Google guardados se han marcado para recalculo en todas las categorias.'
+    else
+      "Filtros actualizados para #{filter.label}. Los totales Google de esa categoria se han marcado para recalculo."
+    end
   end
 end

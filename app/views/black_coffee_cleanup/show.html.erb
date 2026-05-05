@@ -39,7 +39,12 @@
                          options_for_select(@visibility_options.map { |value, label| [label, value] }, @cleanup.visibility),
                          class: 'form-control' %>
         </div>
-        <div class="col-lg-4 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :google_primary_type, 'Primary type Google (opcional)' %>
+          <%= text_field_tag :google_primary_type, @cleanup.google_primary_type, class: 'form-control', placeholder: 'Ej: supermarket' %>
+          <small class="text-muted">Coincide con el tipo principal guardado o inferido.</small>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
           <%= label_tag :google_tag, 'Etiqueta Google (opcional)' %>
           <%= text_field_tag :google_tag, @cleanup.google_tag, class: 'form-control', placeholder: 'Ej: butcher_shop' %>
           <small class="text-muted">Busca en las etiquetas internas guardadas en Black Coffee.</small>
@@ -142,6 +147,9 @@
                   <td>
                     <strong><%= venue.name %></strong>
                     <div class="text-muted small"><%= venue.city %></div>
+                    <% if venue.google_primary_type_for_dashboard.present? %>
+                      <div class="text-muted small mt-1">Primary: <%= venue.google_primary_type_for_dashboard %></div>
+                    <% end %>
                     <% if Array(venue.tags).any? %>
                       <div class="small mt-1">
                         <% Array(venue.tags).first(4).each do |tag| %>
@@ -206,6 +214,7 @@
       <%= hidden_field_tag :category, @cleanup.category %>
       <%= hidden_field_tag :source, @cleanup.source %>
       <%= hidden_field_tag :visibility, @cleanup.visibility %>
+      <%= hidden_field_tag :google_primary_type, @cleanup.google_primary_type %>
       <%= hidden_field_tag :google_tag, @cleanup.google_tag %>
 
       <div class="form-group">
