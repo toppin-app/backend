@@ -48,16 +48,16 @@
   .venue-review-photos {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 14px;
   }
 
   .venue-review-photo {
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     cursor: zoom-in;
-    height: 96px;
+    height: 180px;
     object-fit: cover;
-    width: 128px;
+    width: 240px;
   }
 
   .venue-review-empty-photo {
@@ -67,9 +67,9 @@
     border-radius: 12px;
     color: #64748b;
     display: flex;
-    height: 96px;
+    height: 180px;
     justify-content: center;
-    width: 128px;
+    width: 240px;
   }
 
   .rejection-button {
@@ -82,6 +82,48 @@
     font-weight: 800;
     padding: 8px 12px;
   }
+
+  .review-finalize-panel {
+    background: linear-gradient(135deg, #052e16 0%, #16a34a 100%);
+    border: 0;
+    border-radius: 22px;
+    box-shadow: 0 18px 40px rgba(22, 163, 74, 0.35);
+    color: white;
+    margin-bottom: 32px;
+    padding: 32px;
+  }
+
+  .review-finalize-title {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .review-finalize-panel .btn {
+    border-radius: 14px;
+    font-size: 18px;
+    font-weight: 800;
+    padding: 18px 28px;
+  }
+
+  .review-finalize-counter {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    display: inline-flex;
+    font-size: 15px;
+    font-weight: 800;
+    margin: 10px 8px 0 0;
+    padding: 10px 12px;
+  }
+
+  @media (max-width: 767px) {
+    .venue-review-photo,
+    .venue-review-empty-photo {
+      height: 150px;
+      width: 100%;
+    }
+  }
 </style>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
@@ -92,6 +134,12 @@
   </div>
   <div class="mt-3 mt-md-0">
     <%= link_to 'Volver a revision', black_coffee_reviews_path, class: 'btn btn-outline-secondary mr-2' %>
+    <button type="button"
+            class="btn btn-outline-danger mr-2"
+            data-toggle="modal"
+            data-target="#deleteReviewBatch<%= @batch.id %>">
+      Borrar lote
+    </button>
     <%= link_to 'Locales', black_coffee_venues_path, class: 'btn btn-outline-dark' %>
   </div>
 </div>
@@ -109,7 +157,7 @@
       </div>
       <div class="col-md-3 mb-3 mb-md-0">
         <div class="venue-review-label">Aprobados</div>
-        <h3 class="mb-0 text-success" id="review-approved-count"><%= @batch.completed? ? @batch.approved_count : '-' %></h3>
+        <h3 class="mb-0 text-success" id="review-approved-count"><%= @batch.completed? ? @batch.approved_count : @items.size %></h3>
       </div>
       <div class="col-md-3 mb-3 mb-md-0">
         <div class="venue-review-label">Rechazados</div>
@@ -280,21 +328,59 @@
   <% end %>
 
   <% unless @batch.completed? %>
-    <div class="sticky-bottom bg-white border rounded shadow-sm p-3 mb-4">
+    <div class="sticky-bottom review-finalize-panel">
       <div class="d-flex flex-wrap justify-content-between align-items-center">
         <div>
-          <strong>Listo para finalizar:</strong>
-          <span id="review-live-rejected">0</span> rechazados,
-          <span id="review-live-approved"><%= @items.size %></span> aprobados automaticamente.
-          <div class="text-muted small">Solo se actualizaran los <%= @items.size %> locales cargados en este lote.</div>
+          <div class="review-finalize-title">Finalizar revision del lote</div>
+          <div>Al pulsar aqui, todo lo no rechazado quedara aprobado para Black Coffee.</div>
+          <span class="review-finalize-counter">
+            <span id="review-live-rejected">0</span>&nbsp;rechazados
+          </span>
+          <span class="review-finalize-counter">
+            <span id="review-live-approved"><%= @items.size %></span>&nbsp;aprobados automaticamente
+          </span>
+          <div class="small mt-2" style="opacity: 0.85;">Solo se actualizaran los <%= @items.size %> locales cargados en este lote.</div>
         </div>
-        <%= submit_tag 'Finalizar revision del lote',
-                       class: 'btn btn-success btn-lg text-white mt-3 mt-md-0',
+        <%= submit_tag 'Finalizar revision y aprobar el resto',
+                       class: 'btn btn-light text-success mt-4 mt-md-0',
                        data: { confirm: 'Se aprobaran automaticamente todos los locales no rechazados de este lote. Continuar?' } %>
       </div>
     </div>
   <% end %>
 <% end %>
+
+<div class="modal fade" id="deleteReviewBatch<%= @batch.id %>" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Borrar lote #<%= @batch.id %> y deshacer revision</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          Esta accion elimina el historial del lote y devuelve sus locales a <strong>pending</strong>.
+        </div>
+        <p class="mb-2">Resumen de impacto:</p>
+        <ul class="mb-0">
+          <li><strong><%= number_with_delimiter(@batch.total_places) %></strong> locales volveran a pendiente de revision.</li>
+          <li><strong><%= number_with_delimiter(@batch.approved_count) %></strong> aprobaciones se desharan.</li>
+          <li><strong><%= number_with_delimiter(@batch.rejected_count) %></strong> rechazos se desharan, incluyendo motivo y nota interna.</li>
+          <li>Se borrara el lote #<%= @batch.id %> del historial de revisiones.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+        <%= link_to 'Si, borrar lote y deshacer',
+                    black_coffee_review_path(@batch),
+                    method: :delete,
+                    class: 'btn btn-danger text-white',
+                    data: { confirm: 'Confirmacion final: se eliminara el lote y todos sus locales volveran a pendiente. Continuar?' } %>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="modal fade" id="reviewImageModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
@@ -318,8 +404,11 @@
     var rejectedCounter = document.getElementById('review-live-rejected');
     var approvedCounter = document.getElementById('review-live-approved');
     var rejectedSummary = document.getElementById('review-rejected-count');
+    var approvedSummary = document.getElementById('review-approved-count');
 
     function updateCounters() {
+      if (!rejectedCounter || !approvedCounter) return;
+
       var rejectedCount = cards.filter(function(card) {
         var input = card.querySelector('[data-reason-input]');
         return input && input.value;
@@ -329,6 +418,7 @@
       if (rejectedCounter) rejectedCounter.textContent = rejectedCount;
       if (approvedCounter) approvedCounter.textContent = approvedCount;
       if (rejectedSummary) rejectedSummary.textContent = rejectedCount;
+      if (approvedSummary) approvedSummary.textContent = approvedCount;
     }
 
     cards.forEach(function(card) {

@@ -18,6 +18,7 @@ class BlackCoffeeVenuesController < ApplicationController
       subcategories: BlackCoffeeTaxonomy.subcategory_options.count,
       favorites: UserFavorite.count,
       review_pending: Venue.where(review_status: Venue::REVIEW_STATUS_PENDING).count,
+      review_approved: Venue.where(review_status: Venue::REVIEW_STATUS_APPROVED).count,
       review_rejected: Venue.where(review_status: Venue::REVIEW_STATUS_REJECTED).count
     }
 

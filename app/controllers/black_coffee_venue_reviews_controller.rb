@@ -1,10 +1,10 @@
 class BlackCoffeeVenueReviewsController < ApplicationController
-  DEFAULT_BATCH_SIZE = 100
-  FIXED_BATCH_SIZES = [50, 100, 150, 200].freeze
+  DEFAULT_BATCH_SIZE = 20
+  FIXED_BATCH_SIZES = [20, 50, 100, 150, 200].freeze
   MAX_CUSTOM_BATCH_SIZE = 500
 
   before_action :check_admin
-  before_action :set_batch, only: [:show, :complete]
+  before_action :set_batch, only: [:show, :complete, :destroy]
 
   def index
     @title = 'Revision de locales · Black Coffee'
@@ -72,6 +72,14 @@ class BlackCoffeeVenueReviewsController < ApplicationController
                 notice: "Lote finalizado: #{result.approved_count} aprobados y #{result.rejected_count} rechazados."
   rescue ArgumentError, ActiveRecord::ActiveRecordError => e
     redirect_to black_coffee_review_path(@batch), alert: "No se pudo finalizar el lote: #{e.message}"
+  end
+
+  def destroy
+    result = BlackCoffeeVenueReviewBatchReverter.call(batch: @batch)
+    redirect_to black_coffee_reviews_path,
+                notice: "Lote eliminado. #{result.total_places} locales volvieron a pendiente; se deshicieron #{result.approved_count} aprobaciones y #{result.rejected_count} rechazos."
+  rescue ActiveRecord::ActiveRecordError => e
+    redirect_back fallback_location: black_coffee_reviews_path, alert: "No se pudo eliminar el lote: #{e.message}"
   end
 
   private

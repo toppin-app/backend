@@ -25,6 +25,13 @@
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   }
+
+  .review-delete-warning {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 14px;
+  }
 </style>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
@@ -113,7 +120,7 @@
                              options_for_select(@batch_sizes.map { |size| [size, size] } + [['Personalizado', 'custom']], params[:batch_size].presence || @default_batch_size),
                              class: 'form-control',
                              id: 'review-batch-size-select' %>
-              <small class="text-muted">Por defecto revisamos 100 locales pendientes.</small>
+              <small class="text-muted">Por defecto revisamos 20 locales pendientes.</small>
             </div>
             <div class="col-md-6 mb-3" id="review-custom-size-wrapper" style="display: none;">
               <label class="font-weight-bold">Tamano personalizado</label>
@@ -166,7 +173,15 @@
             <span class="text-muted ml-2"><%= batch.filters_summary %></span>
             <div class="text-muted small"><%= batch.total_places %> locales · creado <%= batch.created_at.strftime('%d/%m/%Y %H:%M') %></div>
           </div>
-          <%= link_to 'Continuar revision', black_coffee_review_path(batch), class: 'btn btn-sm btn-outline-primary mt-2 mt-md-0' %>
+          <div class="mt-2 mt-md-0">
+            <%= link_to 'Continuar revision', black_coffee_review_path(batch), class: 'btn btn-sm btn-outline-primary mr-2' %>
+            <button type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    data-toggle="modal"
+                    data-target="#deleteReviewBatch<%= batch.id %>">
+              Borrar lote
+            </button>
+          </div>
         </div>
       <% end %>
     </div>
@@ -189,7 +204,7 @@
           <th>Rechazados</th>
           <th>Reviewer</th>
           <th>Fecha</th>
-          <th class="text-right">Accion</th>
+          <th class="text-right">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -204,8 +219,14 @@
               <td class="text-danger"><%= number_with_delimiter(batch.rejected_count) %></td>
               <td><%= batch.reviewed_by&.name.presence || batch.reviewed_by&.email.presence || 'Sin reviewer' %></td>
               <td><%= (batch.reviewed_at || batch.created_at).strftime('%d/%m/%Y %H:%M') %></td>
-              <td class="text-right">
-                <%= link_to 'Ver lote', black_coffee_review_path(batch), class: 'btn btn-sm btn-outline-primary' %>
+              <td class="text-right text-nowrap">
+                <%= link_to 'Ver lote', black_coffee_review_path(batch), class: 'btn btn-sm btn-outline-primary mr-2' %>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        data-toggle="modal"
+                        data-target="#deleteReviewBatch<%= batch.id %>">
+                  Borrar
+                </button>
               </td>
             </tr>
           <% end %>
@@ -218,6 +239,42 @@
     </table>
   </div>
 </div>
+
+<% (@open_batches.to_a + @recent_batches.to_a).uniq.each do |batch| %>
+  <div class="modal fade" id="deleteReviewBatch<%= batch.id %>" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Borrar lote #<%= batch.id %> y deshacer revision</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="review-delete-warning mb-3">
+            <strong>Atencion:</strong> esta accion elimina el historial del lote y devuelve sus locales a
+            <span class="badge badge-warning">pending</span>.
+          </div>
+          <p class="mb-2">Resumen de impacto:</p>
+          <ul class="mb-0">
+            <li><strong><%= number_with_delimiter(batch.total_places) %></strong> locales volveran a pendiente de revision.</li>
+            <li><strong><%= number_with_delimiter(batch.approved_count) %></strong> aprobaciones se desharan.</li>
+            <li><strong><%= number_with_delimiter(batch.rejected_count) %></strong> rechazos se desharan, incluyendo motivo y nota interna.</li>
+            <li>Se borrara el lote #<%= batch.id %> del historial de revisiones.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+          <%= link_to 'Si, borrar lote y deshacer',
+                      black_coffee_review_path(batch),
+                      method: :delete,
+                      class: 'btn btn-danger text-white',
+                      data: { confirm: 'Confirmacion final: se eliminara el lote y todos sus locales volveran a pendiente. Continuar?' } %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
