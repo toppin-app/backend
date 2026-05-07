@@ -15,7 +15,7 @@ class BlackCoffeeReviewBatch < ApplicationRecord
 
   scope :open, -> { where(status: 'open') }
   scope :completed, -> { where(status: 'completed') }
-  scope :recent_first, -> { order(created_at: :desc) }
+  scope :recent_first, -> { order(id: :desc) }
 
   def completed?
     status == 'completed'

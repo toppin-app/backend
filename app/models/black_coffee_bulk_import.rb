@@ -20,7 +20,7 @@ class BlackCoffeeBulkImport < ApplicationRecord
   validates :min_cell_size_meters, :step_limit, numericality: { greater_than: 0, only_integer: true }
 
   scope :active, -> { where(status: %w[pending running]) }
-  scope :recent_first, -> { order(created_at: :desc) }
+  scope :recent_first, -> { order(id: :desc) }
 
   def categories
     Array(categories_payload).presence || GooglePlacesBlackCoffeeClient.importable_categories

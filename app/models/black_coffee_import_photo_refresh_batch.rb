@@ -7,7 +7,7 @@ class BlackCoffeeImportPhotoRefreshBatch < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
 
   scope :active, -> { where(status: %w[pending running]) }
-  scope :recent_first, -> { order(created_at: :desc) }
+  scope :recent_first, -> { order(id: :desc) }
 
   def candidate_ids
     normalized_id_array(candidate_ids_payload)

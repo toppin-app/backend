@@ -4,7 +4,7 @@ class BlackCoffeeFakeFavoriteBatch < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
 
   scope :active, -> { where(status: %w[pending running]) }
-  scope :recent_first, -> { order(created_at: :desc) }
+  scope :recent_first, -> { order(id: :desc) }
 
   def user_ids
     normalized_integer_array(user_ids_payload)
