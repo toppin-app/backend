@@ -2,7 +2,9 @@ require 'set'
 
 class BlackCoffeeFeaturedRecalculator
   RUNNING_CACHE_KEY = 'black_coffee_featured_recalculation_running'.freeze
+  LAST_RESULT_CACHE_KEY = 'black_coffee_featured_recalculation_last_result'.freeze
   CACHE_LOCK_TTL = 15.minutes
+  LAST_RESULT_TTL = 7.days
 
   class AlreadyRunningError < StandardError; end
 
@@ -10,14 +12,78 @@ class BlackCoffeeFeaturedRecalculator
     new(logger: logger).call
   end
 
-  def initialize(logger: Rails.logger)
+  def self.enqueue!(logger: Rails.logger)
+    return :already_running if running?
+
+    Rails.cache.write(RUNNING_CACHE_KEY, true, expires_in: CACHE_LOCK_TTL)
+
+    Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        new(logger: logger, lock_acquired: true).call
+      end
+    rescue StandardError => e
+      logger.error("[BlackCoffeeFeaturedRecalculator] Error en ejecucion asincrona: #{e.class} - #{e.message}")
+      Rails.cache.write(
+        LAST_RESULT_CACHE_KEY,
+        {
+          success: false,
+          error: e.message,
+          message: 'Featured Black Coffee places recalculation failed',
+          failed_at: Time.current
+        },
+        expires_in: LAST_RESULT_TTL
+      )
+      Rails.cache.delete(RUNNING_CACHE_KEY)
+    end
+
+    :started
+  rescue StandardError
+    Rails.cache.delete(RUNNING_CACHE_KEY)
+    raise
+  end
+
+  def self.running?
+    Rails.cache.read(RUNNING_CACHE_KEY).present?
+  end
+
+  def self.last_result
+    Rails.cache.read(LAST_RESULT_CACHE_KEY)
+  end
+
+  def initialize(logger: Rails.logger, lock_acquired: false)
     @logger = logger
+    @lock_acquired = lock_acquired
   end
 
   def call
-    raise AlreadyRunningError, 'Ya hay una recalculacion de destacados Black Coffee en curso.' if Rails.cache.read(RUNNING_CACHE_KEY)
+    acquire_lock! unless @lock_acquired
+    @lock_acquired = true
+
+    result = perform_recalculation
+    store_last_result(result)
+    result
+  rescue StandardError => e
+    store_last_result(
+      success: false,
+      error: e.message,
+      message: 'Featured Black Coffee places recalculation failed',
+      failed_at: Time.current
+    )
+    log_error("Error recalculando destacados Black Coffee: #{e.class} - #{e.message}")
+    raise
+  ensure
+    Rails.cache.delete(RUNNING_CACHE_KEY) if @lock_acquired
+  end
+
+  private
+
+  def acquire_lock!
+    raise AlreadyRunningError, 'Ya hay una recalculacion de destacados Black Coffee en curso.' if self.class.running?
 
     Rails.cache.write(RUNNING_CACHE_KEY, true, expires_in: CACHE_LOCK_TTL)
+  end
+
+  def perform_recalculation
     log_info('Inicio de recalculacion de destacados Black Coffee.')
 
     grouped_rankings = Hash.new { |hash, key| hash[key] = [] }
@@ -47,7 +113,7 @@ class BlackCoffeeFeaturedRecalculator
              .map(&:first)
     end.uniq
 
-      combinations_processed = grouped_rankings.size
+    combinations_processed = grouped_rankings.size
     featured_marked = 0
 
     Venue.transaction do
@@ -63,6 +129,7 @@ class BlackCoffeeFeaturedRecalculator
       categories_found: categories.size,
       combinations_processed: combinations_processed,
       featured_places_marked: featured_marked,
+      completed_at: Time.current,
       message: 'Featured Black Coffee places recalculated successfully'
     }
 
@@ -71,14 +138,11 @@ class BlackCoffeeFeaturedRecalculator
     )
 
     result
-  rescue StandardError => e
-    log_error("Error recalculando destacados Black Coffee: #{e.class} - #{e.message}")
-    raise
-  ensure
-    Rails.cache.delete(RUNNING_CACHE_KEY)
   end
 
-  private
+  def store_last_result(result)
+    Rails.cache.write(LAST_RESULT_CACHE_KEY, result, expires_in: LAST_RESULT_TTL)
+  end
 
   def favorites_scope
     Venue.public_catalog_scope

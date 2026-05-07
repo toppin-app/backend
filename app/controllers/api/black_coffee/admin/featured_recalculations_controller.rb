@@ -6,6 +6,11 @@ module Api
         before_action :authorize_request!
 
         def create
+          if cron_token_request?
+            handle_cron_request
+            return
+          end
+
           result = BlackCoffeeFeaturedRecalculator.call
           render json: result
         rescue BlackCoffeeFeaturedRecalculator::AlreadyRunningError => e
@@ -40,6 +45,36 @@ module Api
           return false unless provided.bytesize == expected.bytesize
 
           ActiveSupport::SecurityUtils.secure_compare(provided, expected)
+        end
+
+        def handle_cron_request
+          enqueue_result = BlackCoffeeFeaturedRecalculator.enqueue!
+
+          case enqueue_result
+          when :started
+            render json: {
+              success: true,
+              queued: true,
+              running: true,
+              message: 'Featured Black Coffee recalculation started'
+            }, status: :ok
+          when :already_running
+            render json: {
+              success: true,
+              queued: false,
+              running: true,
+              message: 'Featured Black Coffee recalculation already running',
+              last_result: BlackCoffeeFeaturedRecalculator.last_result
+            }, status: :ok
+          else
+            render json: {
+              success: true,
+              queued: false,
+              running: BlackCoffeeFeaturedRecalculator.running?,
+              message: 'Featured Black Coffee recalculation request accepted',
+              last_result: BlackCoffeeFeaturedRecalculator.last_result
+            }, status: :ok
+          end
         end
       end
     end
