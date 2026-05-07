@@ -32,7 +32,7 @@ class BlackCoffeeFakeFavoritesRunner
     end
 
     Rails.logger.info(
-      "[BlackCoffeeFakeFavoritesRunner] Preparando lote. fake_users=#{user_ids.size}, regiones=#{matrix.states.size}, categorias=#{matrix.categories.size}, combinaciones=#{matrix.combination_keys.size}, vacias=#{empty_combinations.size}"
+      "[BlackCoffeeFakeFavoritesRunner] Preparando lote. fake_users=#{user_ids.size}, ubicaciones=#{matrix.states.size}, categorias=#{matrix.categories.size}, combinaciones=#{matrix.combination_keys.size}, vacias=#{empty_combinations.size}"
     )
 
     BlackCoffeeFakeFavoriteBatch.create!(
@@ -184,7 +184,8 @@ class BlackCoffeeFakeFavoritesRunner
   end
 
   def process_claimed_users(claimed_ids:, started_at:, time_budget_seconds:)
-    users_by_id = User.fake_users.active_accounts.where(id: claimed_ids).index_by(&:id)
+    normalized_claimed_ids = Array(claimed_ids).map(&:to_i).uniq
+    users_by_id = User.fake_users.active_accounts.where(id: normalized_claimed_ids).index_by(&:id)
     combination_entries = @batch.combination_entries
 
     result = {
@@ -198,9 +199,9 @@ class BlackCoffeeFakeFavoritesRunner
       error_messages: []
     }
 
-    claimed_ids.each_with_index do |user_id, index|
+    normalized_claimed_ids.each_with_index do |user_id, index|
       if result[:processed_count].positive? && elapsed_seconds(started_at) >= time_budget_seconds
-        result[:leftover_ids] = claimed_ids[index..-1]
+        result[:leftover_ids] = normalized_claimed_ids[index..-1]
         break
       end
 

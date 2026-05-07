@@ -19,7 +19,7 @@
 </div>
 
 <div class="alert alert-info">
-  Este lote trabaja solo con usuarios fake. Primero limpia sus favoritos anteriores y luego crea nuevos favoritos aleatorios por region y categoria, en bloques cortos para no colgar el dashboard.
+  Este lote trabaja solo con usuarios fake. Primero limpia sus favoritos anteriores y luego crea nuevos favoritos aleatorios por ciudad/region y categoria, en bloques cortos para no colgar el dashboard.
 </div>
 
 <div id="black-coffee-fake-favorites-batch"
@@ -112,7 +112,7 @@
           <strong>Resumen del alcance</strong>
         </div>
         <div class="card-body">
-          <p class="mb-2"><strong>Regiones detectadas:</strong> <%= number_with_delimiter(@batch.states.size) %></p>
+          <p class="mb-2"><strong>Ciudades o regiones detectadas:</strong> <%= number_with_delimiter(@batch.states.size) %></p>
           <p class="mb-2"><strong>Categorias detectadas:</strong> <%= number_with_delimiter(@batch.categories.size) %></p>
           <p class="mb-0"><strong>Reseteo inicial hecho:</strong> <%= @batch.favorites_reset_at.present? ? l(@batch.favorites_reset_at, format: :short) : 'Todavia no' %></p>
         </div>

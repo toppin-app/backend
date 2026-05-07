@@ -10,7 +10,7 @@
 
 <div class="alert alert-info">
   Esta utilidad regenera favoritos solo para usuarios <strong>fake</strong>. Antes de crear nuevos favoritos, borra los que ya tuvieran esos usuarios.
-  Luego asigna 1 local aleatorio por cada combinacion dinamica de <strong>region + categoria</strong>. Se ejecuta por bloques cortos y con progreso visible.
+  Luego asigna 1 local aleatorio por cada combinacion dinamica de <strong>ciudad (o region si falta la ciudad) + categoria</strong>. Se ejecuta por bloques cortos y con progreso visible.
 </div>
 
 <div class="row mb-4">
@@ -41,7 +41,7 @@
   <div class="col-md-3 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <p class="text-muted text-uppercase mb-2">Combinaciones region + categoria</p>
+        <p class="text-muted text-uppercase mb-2">Combinaciones ciudad/region + categoria</p>
         <h2 class="mb-0"><%= number_with_delimiter(@matrix_preview.combination_keys.size) %></h2>
         <div class="text-muted small mt-2">
           <%= number_with_delimiter(@matrix_preview.empty_combination_keys.size) %> sin locales disponibles
@@ -57,7 +57,7 @@
       <div class="mr-3 mb-3 mb-md-0">
         <strong>Regenerar favoritos fake desde cero</strong>
         <div class="text-muted small">
-          Cada usuario fake quedara con 1 favorito aleatorio por combinacion disponible de region y categoria. Los favoritos previos de usuarios fake se borran antes de reconstruirlos.
+          Cada usuario fake quedara con 1 favorito aleatorio por combinacion disponible de ciudad/region y categoria. Si el local tiene ciudad, esa sera la agrupacion principal; si no, se cae a la region.
         </div>
       </div>
       <div>
@@ -87,7 +87,7 @@
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th>Region</th>
+              <th>Ciudad / region</th>
               <th>Categoria</th>
               <th class="text-right">Locales</th>
             </tr>

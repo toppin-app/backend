@@ -21,7 +21,7 @@ class BlackCoffeeFeaturedRecalculator
     log_info('Inicio de recalculacion de destacados Black Coffee.')
 
     grouped_rankings = Hash.new { |hash, key| hash[key] = [] }
-    state_keys = Set.new
+    location_keys = Set.new
     categories = Set.new
     evaluated_places = 0
 
@@ -29,10 +29,13 @@ class BlackCoffeeFeaturedRecalculator
       category = row.category.to_s.strip.presence
       next if category.blank?
 
-      state_key = BlackCoffeeVenueCombinationMatrix.normalize_state_key(row.state)
+      state_key = BlackCoffeeVenueCombinationMatrix.location_key_for(
+        city: row.city.to_s.strip,
+        state: row.state.to_s.strip
+      )
       favorites_count = row.read_attribute(:favorites_count).to_i
 
-      state_keys << state_key
+      location_keys << state_key
       categories << category
       grouped_rankings[[state_key, category]] << [row.id, favorites_count]
       evaluated_places += 1
@@ -55,7 +58,8 @@ class BlackCoffeeFeaturedRecalculator
     result = {
       success: true,
       evaluated_places: evaluated_places,
-      regions_found: state_keys.size,
+      regions_found: location_keys.size,
+      location_groups_found: location_keys.size,
       categories_found: categories.size,
       combinations_processed: combinations_processed,
       featured_places_marked: featured_marked,
@@ -63,7 +67,7 @@ class BlackCoffeeFeaturedRecalculator
     }
 
     log_info(
-      "Recalculo completado. locales=#{evaluated_places}, regiones=#{state_keys.size}, categorias=#{categories.size}, combinaciones=#{combinations_processed}, destacados=#{featured_marked}"
+      "Recalculo completado. locales=#{evaluated_places}, ubicaciones=#{location_keys.size}, categorias=#{categories.size}, combinaciones=#{combinations_processed}, destacados=#{featured_marked}"
     )
 
     result
@@ -79,8 +83,8 @@ class BlackCoffeeFeaturedRecalculator
   def favorites_scope
     Venue.public_catalog_scope
          .left_joins(:user_favorites)
-         .select('venues.id, venues.state, venues.category, COUNT(user_favorites.id) AS favorites_count')
-         .group('venues.id, venues.state, venues.category')
+         .select('venues.id, venues.city, venues.state, venues.category, COUNT(user_favorites.id) AS favorites_count')
+         .group('venues.id, venues.city, venues.state, venues.category')
          .order('venues.id ASC')
   end
 

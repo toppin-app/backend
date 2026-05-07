@@ -7,15 +7,15 @@ class BlackCoffeeFakeFavoriteBatch < ApplicationRecord
   scope :recent_first, -> { order(created_at: :desc) }
 
   def user_ids
-    normalized_id_array(user_ids_payload)
+    normalized_integer_array(user_ids_payload)
   end
 
   def pending_user_ids
-    normalized_id_array(pending_user_ids_payload)
+    normalized_integer_array(pending_user_ids_payload)
   end
 
   def failed_user_ids
-    normalized_id_array(failed_user_ids_payload)
+    normalized_integer_array(failed_user_ids_payload)
   end
 
   def states
@@ -111,10 +111,6 @@ class BlackCoffeeFakeFavoriteBatch < ApplicationRecord
   end
 
   private
-
-  def normalized_id_array(value)
-    Array(value).map { |entry| entry.to_s.strip }.reject(&:blank?).uniq
-  end
 
   def normalized_integer_array(value)
     Array(value).filter_map do |entry|
