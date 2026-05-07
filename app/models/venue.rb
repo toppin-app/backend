@@ -61,6 +61,9 @@ class Venue < ApplicationRecord
 
   scope :with_coordinates, -> { where.not(latitude: nil, longitude: nil) }
   scope :featured_first, -> { order_by_favorites(order(featured: :desc)).order(created_at: :desc) }
+  scope :not_internal_test, lambda {
+    column_names.include?('internal_test') ? where(internal_test: false) : all
+  }
 
   def self.normalize_text(value)
     value.to_s.strip.downcase.presence
@@ -104,6 +107,10 @@ class Venue < ApplicationRecord
 
   def self.visible_to_app
     column_names.include?('visible') ? where(visible: true) : all
+  end
+
+  def self.public_catalog_scope
+    visible_to_app.not_internal_test
   end
 
   def self.favorites_count_sql

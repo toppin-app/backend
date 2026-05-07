@@ -1,0 +1,197 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Utilidad favoritos fake</p>
+    <h2 class="mb-0">Generar favoritos aleatorios con usuarios fake</h2>
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver a utilidades', admin_utilities_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  Esta utilidad regenera favoritos solo para usuarios <strong>fake</strong>. Antes de crear nuevos favoritos, borra los que ya tuvieran esos usuarios.
+  Luego asigna 1 local aleatorio por cada combinacion dinamica de <strong>region + categoria</strong>. Se ejecuta por bloques cortos y con progreso visible.
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Usuarios fake activos</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@fake_users_count) %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Favoritos fake actuales</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@fake_favorites_count) %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Locales publicables</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@public_venues_count) %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Combinaciones region + categoria</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@matrix_preview.combination_keys.size) %></h2>
+        <div class="text-muted small mt-2">
+          <%= number_with_delimiter(@matrix_preview.empty_combination_keys.size) %> sin locales disponibles
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center">
+      <div class="mr-3 mb-3 mb-md-0">
+        <strong>Regenerar favoritos fake desde cero</strong>
+        <div class="text-muted small">
+          Cada usuario fake quedara con 1 favorito aleatorio por combinacion disponible de region y categoria. Los favoritos previos de usuarios fake se borran antes de reconstruirlos.
+        </div>
+      </div>
+      <div>
+        <% if @active_batch.present? %>
+          <%= link_to "Seguir lote ##{@active_batch.id}", black_coffee_fake_favorite_batch_path(@active_batch), class: 'btn btn-success text-white' %>
+        <% else %>
+          <%= button_to 'Generar favoritos fake',
+                        black_coffee_fake_favorite_batches_path,
+                        method: :post,
+                        class: 'btn btn-primary text-white',
+                        form_class: 'd-inline-block',
+                        disabled: @fake_users_count.zero? || @public_venues_count.zero?,
+                        data: { confirm: "Se limpiaran los favoritos previos de #{@fake_users_count} usuarios fake y se regeneraran desde cero. Continuar?" } %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-lg-7 mb-4 mb-lg-0">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <strong>Vista previa de combinaciones</strong>
+      </div>
+      <div class="card-body table-responsive p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Region</th>
+              <th>Categoria</th>
+              <th class="text-right">Locales</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% preview_rows = @matrix_preview.populated_combination_keys.first(20) %>
+            <% if preview_rows.any? %>
+              <% preview_rows.each do |state_key, category| %>
+                <tr>
+                  <td><%= BlackCoffeeVenueCombinationMatrix.state_label(state_key) %></td>
+                  <td><%= category %></td>
+                  <td class="text-right"><%= number_with_delimiter(Array(@matrix_preview.venue_ids_by_combination[[state_key, category]]).size) %></td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="3" class="text-center text-muted py-4">No hay combinaciones disponibles.</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <% if @matrix_preview.populated_combination_keys.size > 20 %>
+        <div class="card-footer bg-white text-muted small">
+          Mostrando 20 de <%= number_with_delimiter(@matrix_preview.populated_combination_keys.size) %> combinaciones con locales.
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <strong>Combinaciones sin locales</strong>
+      </div>
+      <div class="card-body">
+        <% empty_rows = @matrix_preview.empty_combination_keys.first(20) %>
+        <% if empty_rows.any? %>
+          <ul class="mb-0 pl-3">
+            <% empty_rows.each do |state_key, category| %>
+              <li class="mb-2"><%= BlackCoffeeVenueCombinationMatrix.combination_label(state_key, category) %></li>
+            <% end %>
+          </ul>
+          <% if @matrix_preview.empty_combination_keys.size > 20 %>
+            <div class="text-muted small mt-3">
+              Mostrando 20 de <%= number_with_delimiter(@matrix_preview.empty_combination_keys.size) %> combinaciones sin locales.
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-muted mb-0">Todas las combinaciones detectadas tienen al menos un local disponible.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white">
+    <strong>Ultimos lotes</strong>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Estado</th>
+          <th>Usuarios</th>
+          <th>Favoritos nuevos</th>
+          <th>Favoritos borrados</th>
+          <th>Fecha</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @latest_batches.any? %>
+          <% @latest_batches.each do |batch| %>
+            <tr>
+              <td><%= batch.id %></td>
+              <td>
+                <% badge_class =
+                  case batch.status
+                  when 'completed' then 'success'
+                  when 'failed' then 'danger'
+                  when 'running' then 'primary'
+                  else 'secondary'
+                  end
+                %>
+                <span class="badge badge-<%= badge_class %>"><%= batch.status %></span>
+              </td>
+              <td><%= number_with_delimiter(batch.processed_users_count) %>/<%= number_with_delimiter(batch.total_users_count) %></td>
+              <td><%= number_with_delimiter(batch.created_favorites_count) %></td>
+              <td><%= number_with_delimiter(batch.deleted_favorites_count) %></td>
+              <td><%= batch.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+              <td class="text-right">
+                <%= link_to 'Ver progreso', black_coffee_fake_favorite_batch_path(batch), class: 'btn btn-sm btn-outline-primary' %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="7" class="text-center text-muted py-5">Todavia no hay lotes de favoritos fake.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -487,6 +487,40 @@
       <% end %>
     </div>
 
+    <div class="utility-card">
+      <h3><i class="fas fa-heart"></i> Generar favoritos aleatorios con usuarios fake</h3>
+      <p>
+        Regenera favoritos simulados para usuarios fake/BOC. Borra los favoritos fake anteriores y crea nuevos por combinaciones dinamicas de region y categoria.
+      </p>
+
+      <div class="info-badge">
+        <i class="fas fa-info-circle"></i>
+        <div>
+          <strong>Usuarios fake activos:</strong> <%= number_with_delimiter(@black_coffee_fake_users_count) %>
+        </div>
+      </div>
+
+      <div class="info-badge">
+        <i class="fas fa-heart"></i>
+        <div>
+          <strong>Favoritos fake actuales:</strong> <%= number_with_delimiter(@black_coffee_fake_favorites_count) %>
+        </div>
+      </div>
+
+      <% if @latest_black_coffee_fake_favorite_batch.present? %>
+        <div class="warning-badge">
+          <i class="fas fa-history"></i>
+          <div>
+            <strong>Ultimo lote:</strong> #<%= @latest_black_coffee_fake_favorite_batch.id %> · <%= @latest_black_coffee_fake_favorite_batch.status %>
+          </div>
+        </div>
+      <% end %>
+
+      <%= link_to black_coffee_fake_favorite_batches_path, class: 'btn-start' do %>
+        <i class="fas fa-random"></i> Abrir utilidad
+      <% end %>
+    </div>
+
     <!-- Utilidad: Poblar Ubicaciones -->
     <div class="utility-card">
       <h3><i class="fas fa-map-marker-alt"></i> Poblar Ubicaciones</h3>

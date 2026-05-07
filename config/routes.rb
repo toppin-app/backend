@@ -30,6 +30,13 @@ Rails.application.routes.draw do
 
   scope :black_coffee, as: :black_coffee do
     resources :venues, controller: 'black_coffee_venues'
+    resources :fake_favorite_batches, controller: 'black_coffee_fake_favorite_batches', only: [:index, :create, :show] do
+      member do
+        get :status
+        post :advance
+        post :retry
+      end
+    end
     resources :venue_google_syncs, controller: 'black_coffee_venue_google_syncs', only: [:index, :create, :show] do
       member do
         get :status
@@ -75,6 +82,10 @@ Rails.application.routes.draw do
 
   namespace :api, defaults: { format: :json } do
     scope module: 'black_coffee', path: 'blackcoffee' do
+      namespace :admin do
+        post 'featured/recalculate', to: 'featured_recalculations#create'
+      end
+
       resources :venues, only: [:index, :show] do
         collection do
           get :featured

@@ -36,6 +36,12 @@ class AdminUtilitiesController < ApplicationController
       if ActiveRecord::Base.connection.data_source_exists?('black_coffee_venue_google_sync_batches')
         BlackCoffeeVenueGoogleSyncBatch.recent_first.first
       end
+    @black_coffee_fake_users_count = User.fake_users.active_accounts.count
+    @black_coffee_fake_favorites_count = UserFavorite.where(user_id: User.fake_users.active_accounts.select(:id)).count
+    @latest_black_coffee_fake_favorite_batch =
+      if ActiveRecord::Base.connection.data_source_exists?('black_coffee_fake_favorite_batches')
+        BlackCoffeeFakeFavoriteBatch.recent_first.first
+      end
   end
 
   def populate_locations
