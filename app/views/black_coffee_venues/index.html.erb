@@ -4,6 +4,9 @@
       <div class="card-body">
         <p class="text-muted text-uppercase mb-2">Locales</p>
         <h2 class="mb-0"><%= @stats[:venues] %></h2>
+        <div class="text-muted small mt-2">
+          <%= number_with_delimiter(@stats[:review_pending]) %> pendientes · <%= number_with_delimiter(@stats[:review_rejected]) %> rechazados
+        </div>
       </div>
     </div>
   </div>
@@ -42,6 +45,7 @@
       </div>
       <div class="mt-3 mt-md-0">
         <%= link_to 'Gestionar subcategorias', black_coffee_subcategories_path, class: 'btn btn-outline-dark mr-2' %>
+        <%= link_to 'Revision de locales', black_coffee_reviews_path, class: 'btn btn-outline-warning mr-2' %>
         <%= link_to 'Limpieza masiva',
                     black_coffee_cleanup_path(
                       category: params[:category].presence,
@@ -112,6 +116,7 @@
           <th>Pais / Region</th>
           <th>Google</th>
           <th>Favoritos</th>
+          <th>Revision</th>
           <th>Destacado</th>
           <th>Visible</th>
           <th>Pago</th>
@@ -166,6 +171,12 @@
               </td>
               <td><%= @favorite_counts_by_venue_id[venue.id].to_i %></td>
               <td>
+                <span class="badge badge-<%= venue.review_status_badge_class %>"><%= venue.review_status_label %></span>
+                <% if venue.review_rejection_reason.present? %>
+                  <div class="text-muted small mt-1"><%= venue.review_rejection_reason_label %></div>
+                <% end %>
+              </td>
+              <td>
                 <% if venue.featured? %>
                   <span class="badge badge-success">Si</span>
                 <% else %>
@@ -218,7 +229,7 @@
           <% end %>
         <% else %>
           <tr>
-            <td colspan="14" class="text-center text-muted py-5">
+            <td colspan="15" class="text-center text-muted py-5">
               No hay locales que coincidan con los filtros actuales.
             </td>
           </tr>

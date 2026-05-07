@@ -16,7 +16,9 @@ class BlackCoffeeVenuesController < ApplicationController
       venues: Venue.count,
       featured: Venue.where(featured: true).count,
       subcategories: BlackCoffeeTaxonomy.subcategory_options.count,
-      favorites: UserFavorite.count
+      favorites: UserFavorite.count,
+      review_pending: Venue.where(review_status: Venue::REVIEW_STATUS_PENDING).count,
+      review_rejected: Venue.where(review_status: Venue::REVIEW_STATUS_REJECTED).count
     }
 
     scope = Venue.includes(:venue_subcategory, :venue_images)
@@ -88,7 +90,7 @@ class BlackCoffeeVenuesController < ApplicationController
   private
 
   def set_venue
-    @venue = Venue.includes(:venue_subcategory, :venue_images, :venue_schedules).find(params[:id])
+    @venue = Venue.includes(:venue_subcategory, :venue_images, :venue_schedules, :reviewed_by).find(params[:id])
   end
 
   def prepare_form_state

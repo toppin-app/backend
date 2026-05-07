@@ -113,6 +113,22 @@
             <p class="text-muted text-uppercase mb-2">Estado / Region</p>
             <strong><%= @venue.state.presence || 'Sin region' %></strong>
           </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted text-uppercase mb-2">Revision Black Coffee</p>
+            <span class="badge badge-<%= @venue.review_status_badge_class %> p-2"><%= @venue.review_status_label %></span>
+            <% if @venue.review_rejection_reason.present? %>
+              <div class="text-muted small mt-2"><%= @venue.review_rejection_reason_label %></div>
+            <% end %>
+            <% if @venue.review_rejection_note.present? %>
+              <div class="text-muted small mt-2">Nota: <%= @venue.review_rejection_note %></div>
+            <% end %>
+            <% if @venue.reviewed_at.present? %>
+              <div class="text-muted small mt-2">Revisado: <%= @venue.reviewed_at.strftime('%d/%m/%Y %H:%M') %></div>
+            <% end %>
+            <% if @venue.reviewed_by.present? %>
+              <div class="text-muted small">Por: <%= @venue.reviewed_by.name.presence || @venue.reviewed_by.email %></div>
+            <% end %>
+          </div>
         </div>
 
         <hr>

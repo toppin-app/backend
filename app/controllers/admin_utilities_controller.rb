@@ -32,6 +32,11 @@ class AdminUtilitiesController < ApplicationController
     @current_progress = Rails.cache.read('location_population_progress')
     @platform_progress = Rails.cache.read('platform_population_progress')
     @black_coffee_google_connected_venues = Venue.google_connected.count
+    @black_coffee_review_metrics = black_coffee_review_metrics
+    @latest_black_coffee_review_batch =
+      if ActiveRecord::Base.connection.data_source_exists?('black_coffee_review_batches')
+        BlackCoffeeReviewBatch.recent_first.first
+      end
     @latest_black_coffee_google_sync_batch =
       if ActiveRecord::Base.connection.data_source_exists?('black_coffee_venue_google_sync_batches')
         BlackCoffeeVenueGoogleSyncBatch.recent_first.first
@@ -42,6 +47,20 @@ class AdminUtilitiesController < ApplicationController
       if ActiveRecord::Base.connection.data_source_exists?('black_coffee_fake_favorite_batches')
         BlackCoffeeFakeFavoriteBatch.recent_first.first
       end
+  end
+
+  def black_coffee_review_metrics
+    return { pending: 0, approved: 0, rejected: 0, reviewed: 0 } unless ActiveRecord::Base.connection.column_exists?(:venues, :review_status)
+
+    counts = Venue.group(:review_status).count
+    approved = counts[Venue::REVIEW_STATUS_APPROVED].to_i
+    rejected = counts[Venue::REVIEW_STATUS_REJECTED].to_i
+    {
+      pending: counts[Venue::REVIEW_STATUS_PENDING].to_i,
+      approved: approved,
+      rejected: rejected,
+      reviewed: approved + rejected
+    }
   end
 
   def populate_locations

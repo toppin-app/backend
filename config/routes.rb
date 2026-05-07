@@ -30,6 +30,11 @@ Rails.application.routes.draw do
 
   scope :black_coffee, as: :black_coffee do
     resources :venues, controller: 'black_coffee_venues'
+    resources :reviews, controller: 'black_coffee_venue_reviews', only: [:index, :create, :show] do
+      member do
+        post :complete
+      end
+    end
     resources :fake_favorite_batches, controller: 'black_coffee_fake_favorite_batches', only: [:index, :create, :show] do
       member do
         get :status

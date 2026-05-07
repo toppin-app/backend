@@ -461,6 +461,41 @@
     </div>
 
     <div class="utility-card">
+      <h3><i class="fas fa-clipboard-check"></i> Revision de locales Black Coffee</h3>
+      <p>
+        Revisa en lotes los locales importados desde Google. Rechaza los problemáticos y aprueba automaticamente el resto del lote visible.
+      </p>
+
+      <div class="info-badge">
+        <i class="fas fa-clock"></i>
+        <div>
+          <strong>Pendientes:</strong> <%= number_with_delimiter(@black_coffee_review_metrics[:pending]) %>
+        </div>
+      </div>
+
+      <div class="info-badge">
+        <i class="fas fa-check-circle"></i>
+        <div>
+          <strong>Revisados:</strong> <%= number_with_delimiter(@black_coffee_review_metrics[:reviewed]) %>
+          · <%= number_with_delimiter(@black_coffee_review_metrics[:rejected]) %> rechazados
+        </div>
+      </div>
+
+      <% if @latest_black_coffee_review_batch.present? %>
+        <div class="warning-badge">
+          <i class="fas fa-history"></i>
+          <div>
+            <strong>Ultimo lote:</strong> #<%= @latest_black_coffee_review_batch.id %> · <%= @latest_black_coffee_review_batch.status %>
+          </div>
+        </div>
+      <% end %>
+
+      <%= link_to black_coffee_reviews_path, class: 'btn-start' do %>
+        <i class="fas fa-tasks"></i> Abrir revision
+      <% end %>
+    </div>
+
+    <div class="utility-card">
       <h3><i class="fas fa-sync-alt"></i> Actualizar informacion Google · Black Coffee</h3>
       <p>
         Refresca en bloque los locales de Black Coffee que ya estan conectados a Google: nombre, direccion, horarios, descripcion real, etiquetas internas y fotos Google.

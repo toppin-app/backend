@@ -183,7 +183,9 @@ module Api
       end
 
       def visible_venues
-        Venue.visible_to_app
+        # TODO: Temporalmente permitimos locales pending en la app mientras se completa la revision inicial.
+        # En produccion/futuro, la API deberia devolver solo locales approved.
+        Venue.visible_to_app.not_rejected_for_app
       end
 
       def apply_distance_filter(relation)

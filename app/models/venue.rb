@@ -11,6 +11,22 @@ class Venue < ApplicationRecord
     deportivo
     escape_room
   ].freeze
+  REVIEW_STATUSES = %w[pending approved rejected].freeze
+  REVIEW_STATUS_PENDING = 'pending'.freeze
+  REVIEW_STATUS_APPROVED = 'approved'.freeze
+  REVIEW_STATUS_REJECTED = 'rejected'.freeze
+  REVIEW_STATUS_LABELS = {
+    REVIEW_STATUS_PENDING => 'Pendiente',
+    REVIEW_STATUS_APPROVED => 'Aprobado',
+    REVIEW_STATUS_REJECTED => 'Rechazado'
+  }.freeze
+  REJECTION_REASON_LABELS = {
+    'wrong_category' => 'Categoría incorrecta',
+    'not_interesting' => 'No nos interesa este tipo de local',
+    'bad_photos' => 'Fotos incorrectas o muy malas',
+    'other' => 'Otro motivo'
+  }.freeze
+  REJECTION_REASON_CODES = REJECTION_REASON_LABELS.keys.freeze
   DAY_ORDER = %w[L M X J V S D].freeze
   DAY_LABELS = {
     'L' => 'Lunes',
@@ -34,16 +50,28 @@ class Venue < ApplicationRecord
     deportivo: 'deportivo',
     escape_room: 'escape_room'
   }
+  enum review_status: {
+    pending: REVIEW_STATUS_PENDING,
+    approved: REVIEW_STATUS_APPROVED,
+    rejected: REVIEW_STATUS_REJECTED
+  }, _prefix: :review
 
   belongs_to :venue_subcategory, optional: true
+  belongs_to :reviewed_by, class_name: 'User', optional: true
 
   has_many :venue_images, -> { order(:position) }, dependent: :destroy, inverse_of: :venue
   has_many :venue_schedules, dependent: :destroy, inverse_of: :venue
   has_many :user_favorites, dependent: :destroy
   has_many :favorited_by_users, through: :user_favorites, source: :user
+  has_many :review_batch_items,
+           class_name: 'BlackCoffeeReviewBatchItem',
+           dependent: :destroy,
+           inverse_of: :venue
 
   validates :name, :category, :address, :city, presence: true
   validates :category, inclusion: { in: CATEGORIES }
+  validates :review_status, inclusion: { in: REVIEW_STATUSES }, if: -> { has_attribute?(:review_status) }
+  validates :review_rejection_reason, inclusion: { in: REJECTION_REASON_CODES }, allow_blank: true, if: -> { has_attribute?(:review_rejection_reason) }
   validates :google_place_id, uniqueness: true, allow_blank: true, if: -> { has_attribute?(:google_place_id) }
   validates :latitude, :longitude, numericality: true
 
@@ -63,6 +91,9 @@ class Venue < ApplicationRecord
   scope :featured_first, -> { order_by_favorites(order(featured: :desc)).order(created_at: :desc) }
   scope :not_internal_test, lambda {
     column_names.include?('internal_test') ? where(internal_test: false) : all
+  }
+  scope :not_rejected_for_app, lambda {
+    column_names.include?('review_status') ? where.not(review_status: REVIEW_STATUS_REJECTED) : all
   }
 
   def self.normalize_text(value)
@@ -135,6 +166,14 @@ class Venue < ApplicationRecord
     UserFavorite.where(venue_id: ids).group(:venue_id).count
   end
 
+  def self.review_status_label_for(value)
+    REVIEW_STATUS_LABELS[value.to_s] || value.to_s.presence || 'Pendiente'
+  end
+
+  def self.rejection_reason_label(value)
+    REJECTION_REASON_LABELS[value.to_s] || value.to_s.tr('_', ' ').presence
+  end
+
   def self.distance_sql(lat, lng)
     sanitize_sql_array([
       <<~SQL.squish,
@@ -190,6 +229,29 @@ class Venue < ApplicationRecord
 
   def description_present?
     description.to_s.strip.present?
+  end
+
+  def review_status_for_dashboard
+    has_attribute?(:review_status) ? review_status.presence || REVIEW_STATUS_PENDING : REVIEW_STATUS_PENDING
+  end
+
+  def review_status_label
+    self.class.review_status_label_for(review_status_for_dashboard)
+  end
+
+  def review_status_badge_class
+    case review_status_for_dashboard
+    when REVIEW_STATUS_APPROVED
+      'success'
+    when REVIEW_STATUS_REJECTED
+      'danger'
+    else
+      'warning'
+    end
+  end
+
+  def review_rejection_reason_label
+    self.class.rejection_reason_label(review_rejection_reason)
   end
 
   def google_primary_type_for_dashboard

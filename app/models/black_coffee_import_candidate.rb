@@ -147,6 +147,7 @@ class BlackCoffeeImportCandidate < ApplicationRecord
         featured: false,
         tags: default_tags
       )
+      venue.review_status = Venue::REVIEW_STATUS_PENDING if venue.has_attribute?(:review_status)
       venue.internal_test = false if venue.has_attribute?(:internal_test)
       venue.payment_current = true if venue.has_attribute?(:payment_current)
       venue.visible = true if venue.has_attribute?(:visible)
