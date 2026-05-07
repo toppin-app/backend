@@ -33,7 +33,7 @@ class BlackCoffeeFakeFavoriteBatch < ApplicationRecord
       state_key = entry['state_key'] || entry[:state_key]
       category = entry['category'] || entry[:category]
       label = entry['label'] || entry[:label]
-      venue_ids = normalized_integer_array(entry['venue_ids'] || entry[:venue_ids])
+      venue_ids = normalized_string_array(entry['venue_ids'] || entry[:venue_ids])
       next if category.to_s.strip.blank?
 
       {
@@ -112,6 +112,10 @@ class BlackCoffeeFakeFavoriteBatch < ApplicationRecord
 
   private
 
+  def normalized_string_array(value)
+    Array(value).map { |entry| entry.to_s.strip }.reject(&:blank?).uniq
+  end
+
   def normalized_integer_array(value)
     Array(value).filter_map do |entry|
       normalized = entry.to_s.strip
@@ -119,9 +123,5 @@ class BlackCoffeeFakeFavoriteBatch < ApplicationRecord
 
       normalized.to_i
     end.uniq
-  end
-
-  def normalized_string_array(value)
-    Array(value).map { |entry| entry.to_s.strip }.reject(&:blank?).uniq
   end
 end

@@ -19,7 +19,7 @@ class BlackCoffeeFakeFavoritesRunner
         state_key: state_key,
         category: category,
         label: BlackCoffeeVenueCombinationMatrix.combination_label(state_key, category),
-        venue_ids: Array(matrix.venue_ids_by_combination[[state_key, category]]).map(&:to_i).uniq
+        venue_ids: Array(matrix.venue_ids_by_combination[[state_key, category]]).map(&:to_s).map(&:strip).reject(&:blank?).uniq
       }
     end
 
@@ -228,7 +228,7 @@ class BlackCoffeeFakeFavoritesRunner
 
     now = Time.current
     rows = combination_entries.filter_map do |entry|
-      venue_ids = Array(entry['venue_ids']).map(&:to_i).uniq
+      venue_ids = Array(entry['venue_ids']).map(&:to_s).map(&:strip).reject(&:blank?).uniq
       next if venue_ids.empty?
 
       sampled_venue_id = venue_ids.sample
@@ -243,6 +243,11 @@ class BlackCoffeeFakeFavoritesRunner
     end
 
     unique_rows = rows.uniq { |row| row[:venue_id] }
+    if unique_rows.any?
+      valid_venue_ids = Venue.public_catalog_scope.where(id: unique_rows.map { |row| row[:venue_id] }).pluck(:id).map(&:to_s)
+      unique_rows.select! { |row| valid_venue_ids.include?(row[:venue_id].to_s) }
+    end
+
     UserFavorite.insert_all(unique_rows) if unique_rows.any?
 
     {
