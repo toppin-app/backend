@@ -83,7 +83,7 @@ Rails.application.routes.draw do
   namespace :api, defaults: { format: :json } do
     scope module: 'black_coffee', path: 'blackcoffee' do
       namespace :admin do
-        post 'featured/recalculate', to: 'featured_recalculations#create'
+        match 'featured/recalculate', to: 'featured_recalculations#create', via: [:get, :post]
       end
 
       resources :venues, only: [:index, :show] do
