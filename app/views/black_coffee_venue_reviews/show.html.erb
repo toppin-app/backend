@@ -95,11 +95,12 @@
   }
 
   .review-finalize-panel {
-    background: linear-gradient(180deg, #061631 0%, #123a70 100%);
-    border: 0;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-left: 6px solid #343a40;
     border-radius: 22px;
-    box-shadow: 0 18px 44px rgba(6, 22, 49, 0.32);
-    color: white;
+    box-shadow: 0 14px 32px rgba(33, 37, 41, 0.12);
+    color: #212529;
     margin-bottom: 32px;
     padding: 38px 32px;
   }
@@ -119,9 +120,10 @@
   }
 
   .review-finalize-counter {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: white;
+    border: 1px solid #ced4da;
     border-radius: 14px;
+    color: #343a40;
     display: inline-flex;
     font-size: 17px;
     font-weight: 800;
@@ -129,12 +131,8 @@
     padding: 12px 15px;
   }
 
-  .review-finalize-panel .btn-light {
-    color: #061631 !important;
-  }
-
   .review-finalize-panel .small {
-    color: rgba(255, 255, 255, 0.88);
+    color: #6c757d;
   }
 
   @media (max-width: 767px) {
@@ -362,7 +360,7 @@
           <div class="small mt-2" style="opacity: 0.85;">Solo se actualizaran los <%= @items.size %> locales cargados en este lote.</div>
         </div>
         <%= submit_tag 'Finalizar revision y aprobar el resto',
-                       class: 'btn btn-light mt-4 mt-md-0',
+                       class: 'btn btn-dark mt-4 mt-md-0',
                        data: { confirm: 'Se aprobaran automaticamente todos los locales no rechazados de este lote. Continuar?' } %>
       </div>
     </div>
