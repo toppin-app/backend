@@ -5,6 +5,17 @@
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   }
 
+  .review-summary-card .card-body {
+    padding: 28px 30px;
+  }
+
+  .review-summary-value {
+    font-size: 42px;
+    font-weight: 850;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
   .venue-review-card {
     border: 2px solid #e5e7eb;
     border-radius: 18px;
@@ -84,13 +95,13 @@
   }
 
   .review-finalize-panel {
-    background: linear-gradient(135deg, #052e16 0%, #16a34a 100%);
+    background: linear-gradient(180deg, #8d04a9 0%, #fe52e9 100%);
     border: 0;
     border-radius: 22px;
-    box-shadow: 0 18px 40px rgba(22, 163, 74, 0.35);
+    box-shadow: 0 18px 44px rgba(254, 82, 233, 0.3);
     color: white;
     margin-bottom: 32px;
-    padding: 32px;
+    padding: 38px 32px;
   }
 
   .review-finalize-title {
@@ -108,13 +119,22 @@
   }
 
   .review-finalize-counter {
-    background: rgba(255, 255, 255, 0.16);
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 14px;
     display: inline-flex;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 800;
-    margin: 10px 8px 0 0;
-    padding: 10px 12px;
+    margin: 12px 8px 0 0;
+    padding: 12px 15px;
+  }
+
+  .review-finalize-panel .btn-light {
+    color: #8d04a9 !important;
+  }
+
+  .review-finalize-panel .small {
+    color: rgba(255, 255, 255, 0.88);
   }
 
   @media (max-width: 767px) {
@@ -153,15 +173,15 @@
       </div>
       <div class="col-md-3 mb-3 mb-md-0">
         <div class="venue-review-label">Locales del lote</div>
-        <h3 class="mb-0"><%= number_with_delimiter(@items.size) %></h3>
+        <div class="review-summary-value mb-0"><%= number_with_delimiter(@items.size) %></div>
       </div>
       <div class="col-md-3 mb-3 mb-md-0">
         <div class="venue-review-label">Aprobados</div>
-        <h3 class="mb-0 text-success" id="review-approved-count"><%= @batch.completed? ? @batch.approved_count : @items.size %></h3>
+        <div class="review-summary-value mb-0 text-success" id="review-approved-count"><%= @batch.completed? ? @batch.approved_count : @items.size %></div>
       </div>
       <div class="col-md-3 mb-3 mb-md-0">
         <div class="venue-review-label">Rechazados</div>
-        <h3 class="mb-0 text-danger" id="review-rejected-count"><%= @batch.completed? ? @batch.rejected_count : 0 %></h3>
+        <div class="review-summary-value mb-0 text-danger" id="review-rejected-count"><%= @batch.completed? ? @batch.rejected_count : 0 %></div>
       </div>
     </div>
   </div>
@@ -342,7 +362,7 @@
           <div class="small mt-2" style="opacity: 0.85;">Solo se actualizaran los <%= @items.size %> locales cargados en este lote.</div>
         </div>
         <%= submit_tag 'Finalizar revision y aprobar el resto',
-                       class: 'btn btn-light text-success mt-4 mt-md-0',
+                       class: 'btn btn-light mt-4 mt-md-0',
                        data: { confirm: 'Se aprobaran automaticamente todos los locales no rechazados de este lote. Continuar?' } %>
       </div>
     </div>

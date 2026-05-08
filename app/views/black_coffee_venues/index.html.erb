@@ -11,6 +11,39 @@
     font-weight: 800;
     padding: 8px 10px;
   }
+
+  .black-coffee-review-entry {
+    background: linear-gradient(180deg, #fff7ff 0%, #ffffff 100%);
+    border: 1px solid rgba(254, 82, 233, 0.24);
+    border-radius: 18px;
+    box-shadow: 0 10px 26px rgba(141, 4, 169, 0.08);
+  }
+
+  .black-coffee-review-entry-icon {
+    align-items: center;
+    background: #fe52e9;
+    border-radius: 16px;
+    color: white;
+    display: flex;
+    flex: 0 0 54px;
+    font-size: 22px;
+    height: 54px;
+    justify-content: center;
+    width: 54px;
+  }
+
+  .black-coffee-review-entry .btn-review-entry {
+    background: #fe52e9;
+    border-color: #fe52e9;
+    color: white;
+    font-weight: 800;
+  }
+
+  .black-coffee-review-entry .btn-review-entry:hover {
+    background: #d916c9;
+    border-color: #d916c9;
+    color: white;
+  }
 </style>
 
 <div class="row mb-4">
@@ -53,6 +86,28 @@
   </div>
 </div>
 
+<div class="card black-coffee-review-entry mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center">
+      <div class="d-flex align-items-center mb-3 mb-lg-0">
+        <div class="black-coffee-review-entry-icon mr-3">
+          <i class="fas fa-clipboard-check"></i>
+        </div>
+        <div>
+          <h4 class="mb-1">Revision de locales</h4>
+          <p class="text-muted mb-2">Revisa lotes importados, rechaza lo que no encaje y aprueba el resto con control.</p>
+          <div class="black-coffee-review-summary mt-0">
+            <span class="badge badge-warning"><%= number_with_delimiter(@stats[:review_pending]) %> pendientes</span>
+            <span class="badge badge-success"><%= number_with_delimiter(@stats[:review_approved]) %> aprobados</span>
+            <span class="badge badge-danger"><%= number_with_delimiter(@stats[:review_rejected]) %> rechazados</span>
+          </div>
+        </div>
+      </div>
+      <%= link_to 'Abrir revision de locales', black_coffee_reviews_path, class: 'btn btn-review-entry btn-lg text-white' %>
+    </div>
+  </div>
+</div>
+
 <div class="card mb-4">
   <div class="card-body">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -62,7 +117,6 @@
       </div>
       <div class="mt-3 mt-md-0">
         <%= link_to 'Gestionar subcategorias', black_coffee_subcategories_path, class: 'btn btn-outline-dark mr-2' %>
-        <%= link_to 'Revision de locales', black_coffee_reviews_path, class: 'btn btn-warning text-dark font-weight-bold mr-2' %>
         <%= link_to 'Limpieza masiva',
                     black_coffee_cleanup_path(
                       category: params[:category].presence,
