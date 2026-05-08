@@ -24,6 +24,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
   ].freeze
 
   before_action :check_admin
+  before_action :hide_content_header, only: [:show]
   before_action :ensure_regions_and_categories
   before_action :set_import_run, only: [
     :show,

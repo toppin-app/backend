@@ -1,5 +1,6 @@
 class BlackCoffeeVenueGoogleSyncsController < ApplicationController
   before_action :check_admin
+  before_action :hide_content_header, only: [:index, :show]
   before_action :set_batch, only: [:show, :status, :advance, :retry]
 
   def index

@@ -4,6 +4,7 @@ class BlackCoffeeVenueReviewsController < ApplicationController
   MAX_CUSTOM_BATCH_SIZE = 500
 
   before_action :check_admin
+  before_action :hide_content_header, only: [:index, :show]
   before_action :set_batch, only: [:show, :complete, :destroy]
 
   def index

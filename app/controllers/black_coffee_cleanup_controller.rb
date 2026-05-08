@@ -2,6 +2,7 @@ class BlackCoffeeCleanupController < ApplicationController
   CONFIRMATION_TEXT = 'BORRAR'.freeze
 
   before_action :check_admin
+  before_action :hide_content_header
 
   def show
     @title = 'Limpieza Black Coffee'

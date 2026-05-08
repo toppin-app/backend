@@ -243,23 +243,25 @@
 
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0"><%= @title %></h1>
-          </div><!-- /.col -->
-          <div class="col-sm-6">
+    <% if @title.present? && !@hide_content_header %>
+      <!-- Content Header (Page header) -->
+      <div class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h1 class="m-0"><%= @title %></h1>
+            </div><!-- /.col -->
+            <div class="col-sm-6">
 
-          </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content-header -->
+            </div><!-- /.col -->
+          </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+      </div>
+      <!-- /.content-header -->
+    <% end %>
 
     <!-- Main content -->
-    <section class="content">
+    <section class="content <%= 'pt-3' if @hide_content_header %>">
       <div class="container-fluid">
           <% if alert %>
            <p class="alert alert-danger">

@@ -14,6 +14,10 @@ class ApplicationController < ActionController::Base
         @meta_title = APP_CONFIG["default_meta_title"]
      end
 
+     def hide_content_header
+        @hide_content_header = true
+     end
+
 
   def check_admin
         if current_user and !current_user.admin?

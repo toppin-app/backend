@@ -3,6 +3,7 @@ class BlackCoffeeVenuesController < ApplicationController
   class InvalidSchedulePayloadError < StandardError; end
 
   before_action :check_admin
+  before_action :hide_content_header, only: [:show, :new, :edit, :create, :update]
   before_action :set_venue, only: [:show, :edit, :update, :destroy]
 
   def index

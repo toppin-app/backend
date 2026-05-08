@@ -1,5 +1,6 @@
 class BlackCoffeeBulkImportsController < ApplicationController
   before_action :check_admin
+  before_action :hide_content_header, only: [:show]
   before_action :set_bulk_import, only: [:show, :status, :advance, :retry]
 
   def create

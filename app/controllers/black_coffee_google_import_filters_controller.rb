@@ -2,6 +2,7 @@ class BlackCoffeeGoogleImportFiltersController < ApplicationController
   SUGGESTION_SAMPLE_LIMIT = 400
 
   before_action :check_admin
+  before_action :hide_content_header, only: [:index, :update]
   before_action :set_categories
   before_action :set_filter, only: :update
 

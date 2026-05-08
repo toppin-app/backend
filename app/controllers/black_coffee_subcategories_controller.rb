@@ -1,5 +1,6 @@
 class BlackCoffeeSubcategoriesController < ApplicationController
   before_action :check_admin
+  before_action :hide_content_header, only: [:index]
 
   def index
     @title = 'Black Coffee - Subcategorias'
