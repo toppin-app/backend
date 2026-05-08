@@ -10,8 +10,7 @@ class BlackCoffeeVenueReviewsController < ApplicationController
     @title = 'Revision de locales · Black Coffee'
     @batch_sizes = FIXED_BATCH_SIZES
     @default_batch_size = DEFAULT_BATCH_SIZE
-    @categories = review_categories
-    @subcategory_options = review_subcategory_options
+    @category_options = review_category_options
     @metrics = review_metrics
     @reason_breakdown = rejection_reason_breakdown
     @open_batches = review_batches_available? ? BlackCoffeeReviewBatch.open.recent_first.limit(5) : []
@@ -101,12 +100,6 @@ class BlackCoffeeVenueReviewsController < ApplicationController
     end
     scope = scope.where(category: params[:category]) if params[:category].present?
 
-    normalized_subcategory = Venue.normalize_text(params[:subcategory])
-    if normalized_subcategory.present?
-      scope = scope.joins(:venue_subcategory)
-                   .where('LOWER(venue_subcategories.name) = ?', normalized_subcategory)
-    end
-
     scope
   end
 
@@ -124,13 +117,12 @@ class BlackCoffeeVenueReviewsController < ApplicationController
   end
 
   def review_filter_params
-    params.permit(:category, :subcategory, :batch_size, :custom_batch_size).to_h.symbolize_keys
+    params.permit(:category, :batch_size, :custom_batch_size).to_h.symbolize_keys
   end
 
   def review_filter_payload(batch_size)
     {
       category: params[:category].presence,
-      subcategory: params[:subcategory].presence,
       batch_size: batch_size,
       requested_by_id: current_user&.id,
       requested_at: Time.current.iso8601
@@ -138,21 +130,46 @@ class BlackCoffeeVenueReviewsController < ApplicationController
   end
 
   def review_categories
-    categories = Venue.where.not(category: [nil, '']).distinct.order(:category).pluck(:category)
-    categories.presence || Venue::CATEGORIES
+    configured_categories = Venue::CATEGORIES
+    google_categories =
+      if defined?(GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG)
+        GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG.keys
+      else
+        []
+      end
+    stored_categories = Venue.where.not(category: [nil, '']).distinct.pluck(:category)
+
+    (configured_categories + google_categories + stored_categories)
+      .map { |category| category.to_s.strip }
+      .reject(&:blank?)
+      .uniq
   end
 
-  def review_subcategory_options
-    if ActiveRecord::Base.connection.data_source_exists?('venue_subcategories')
-      VenueSubcategory.order(:category, :name).map do |subcategory|
-        {
-          category: subcategory.category,
-          name: subcategory.name,
-          label: BlackCoffeeTaxonomy.label_for(subcategory.category, subcategory.name)
-        }
-      end
-    else
-      BlackCoffeeTaxonomy.subcategory_options
+  def review_category_options
+    labels = review_category_labels
+    review_categories.map do |category|
+      [labels[category] || category.humanize, category]
+    end
+  end
+
+  def review_category_labels
+    labels = {
+      'restaurante' => 'Restaurantes',
+      'hotel' => 'Hoteles',
+      'pub' => 'Pubs',
+      'cine' => 'Cines',
+      'cafeteria' => 'Cafeterias',
+      'concierto' => 'Conciertos',
+      'festival' => 'Festivales',
+      'discoteca' => 'Discotecas',
+      'deportivo' => 'Deportivos',
+      'escape_room' => 'Escape rooms'
+    }
+
+    return labels unless defined?(GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG)
+
+    GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG.each_with_object(labels) do |(category, config), memo|
+      memo[category.to_s] = config[:label] if config[:label].present?
     end
   end
 
