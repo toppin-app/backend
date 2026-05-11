@@ -123,6 +123,18 @@
             <small class="text-muted">Solo se aplica cuando importas una categoria concreta. Para todas las categorias se usan las busquedas base.</small>
           </div>
 
+          <div class="form-group form-check">
+            <%= check_box_tag :dry_run, '1', ActiveModel::Type::Boolean.new.cast(params[:dry_run]), class: 'form-check-input', id: 'google-import-dry-run' %>
+            <%= label_tag :dry_run, 'Dry run: medir sin guardar candidatos', class: 'form-check-label', for: 'google-import-dry-run' %>
+            <small class="form-text text-muted">Hace la busqueda real en Google, aplica filtros y deduplicacion, pero no escribe en base de datos ni resuelve URLs de fotos.</small>
+          </div>
+
+          <div class="alert alert-light border small">
+            <strong>Control de coste activo:</strong>
+            por defecto se guardan hasta <%= GooglePlacesBlackCoffeeClient.max_photos_per_place %> referencias temporales de foto por local, sin llamar a Place Photos durante la importacion.
+            Las URLs se resuelven solo en acciones explicitas de imagenes o sincronizacion.
+          </div>
+
           <%= submit_tag 'Buscar candidatos', class: 'btn btn-primary btn-block text-white' %>
         <% end %>
       </div>

@@ -264,8 +264,48 @@
 </div>
 
 <div class="alert alert-info">
-  Las fotos se guardan como URLs publicas devueltas por Place Photos, sin exponer la API key. Esta corrida tiene <strong><%= number_with_delimiter(@missing_image_candidates_count) %></strong> candidatos sin imagen; de esos, <strong><%= number_with_delimiter(@refreshable_missing_image_candidates_count) %></strong> tienen datos suficientes de Google para reintentar la descarga.
+  Las importaciones nuevas guardan referencias temporales de foto de Google y evitan resolver URLs durante la busqueda para no disparar coste.
+  Esta corrida tiene <strong><%= number_with_delimiter(@missing_image_candidates_count) %></strong> candidatos sin imagen; de esos, <strong><%= number_with_delimiter(@refreshable_missing_image_candidates_count) %></strong> tienen referencias suficientes para reintentar la resolucion de imagenes bajo demanda.
 </div>
+
+<% if @import_run.has_attribute?(:google_search_requests_count) %>
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white">
+      <strong>Coste y descartes de esta busqueda</strong>
+      <span class="text-muted ml-2">Metrica pensada para detectar gasto innecesario antes de aprobar locales.</span>
+    </div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-lg-2 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Raw Google</div>
+          <h5 class="mb-0"><%= number_with_delimiter(@import_run.raw_candidates_count) %></h5>
+        </div>
+        <div class="col-lg-2 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Ya existian</div>
+          <h5 class="mb-0 text-warning"><%= number_with_delimiter(@import_run.existing_skipped_count) %></h5>
+        </div>
+        <div class="col-lg-2 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Fuera region</div>
+          <h5 class="mb-0 text-danger"><%= number_with_delimiter(@import_run.outside_region_skipped_count) %></h5>
+        </div>
+        <div class="col-lg-2 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Filtro tipos</div>
+          <h5 class="mb-0 text-secondary"><%= number_with_delimiter(@import_run.invalid_category_skipped_count) %></h5>
+        </div>
+        <div class="col-lg-2 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Requests Google</div>
+          <h5 class="mb-0"><%= number_with_delimiter(@import_run.google_search_requests_count + @import_run.google_details_requests_count + @import_run.google_photo_requests_count) %></h5>
+          <div class="text-muted small">S <%= @import_run.google_search_requests_count %> · D <%= @import_run.google_details_requests_count %> · F <%= @import_run.google_photo_requests_count %></div>
+        </div>
+        <div class="col-lg-2 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Fotos</div>
+          <h5 class="mb-0"><%= number_with_delimiter(@import_run.photo_references_saved_count) %> refs</h5>
+          <div class="text-muted small"><%= number_with_delimiter(@import_run.photo_urls_resolved_count) %> URLs resueltas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
 
 <div class="card shadow-sm border-0" id="import-candidates-table">
     <div class="card-header bg-white">

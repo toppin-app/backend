@@ -74,9 +74,10 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     region = BlackCoffeeImportRegion.find(import_params[:region_id])
     category = import_params[:category].to_s
     limit = clamped_limit(import_params[:limit])
+    dry_run = dry_run_enabled?
 
     if category == ALL_CATEGORIES_VALUE
-      create_region_import(region, limit)
+      create_region_import(region, limit, dry_run: dry_run)
       return
     end
 
@@ -84,23 +85,40 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       redirect_to black_coffee_google_imports_path, alert: 'Categoria no valida para Black Coffee.' and return
     end
 
-    result = import_category_for_region(
-      region: region,
-      category: category,
-      limit: limit,
-      query_override: import_params[:query_override]
-    )
+    result = if dry_run
+               dry_run_category_for_region(
+                 region: region,
+                 category: category,
+                 limit: limit,
+                 query_override: import_params[:query_override]
+               )
+             else
+               import_category_for_region(
+                 region: region,
+                 category: category,
+                 limit: limit,
+                 query_override: import_params[:query_override]
+               )
+             end
 
     if result[:success]
-      redirect_to black_coffee_google_import_path(result[:import_run]), notice: 'Busqueda completada. Revisa los candidatos antes de guardar locales.'
+      if dry_run
+        redirect_to black_coffee_google_imports_path(anchor: "region-#{region.id}"), notice: dry_run_notice(result, region: region)
+      else
+        redirect_to black_coffee_google_import_path(result[:import_run]), notice: 'Busqueda completada. Revisa los candidatos antes de guardar locales.'
+      end
     else
       redirect_to black_coffee_google_imports_path, alert: result[:error]
     end
   end
 
-  def create_region_import(region, limit)
+  def create_region_import(region, limit, dry_run: false)
     results = GooglePlacesBlackCoffeeClient.importable_categories.map do |category|
-      import_category_for_region(region: region, category: category, limit: limit, query_override: nil)
+      if dry_run
+        dry_run_category_for_region(region: region, category: category, limit: limit, query_override: nil)
+      else
+        import_category_for_region(region: region, category: category, limit: limit, query_override: nil)
+      end
     end
 
     successful_results = results.select { |result| result[:success] }
@@ -108,7 +126,11 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     found_count = successful_results.sum { |result| result[:found_count].to_i }
     candidates_count = successful_results.sum { |result| result[:candidate_count].to_i }
 
-    flash[:notice] = "Importacion completa ejecutada para #{region.name}: #{successful_results.size}/#{results.size} categorias completadas, #{found_count} encontrados y #{candidates_count} candidatos guardados."
+    flash[:notice] = if dry_run
+                       "Dry run completado para #{region.name}: #{successful_results.size}/#{results.size} categorias simuladas, #{found_count} resultados Google y #{candidates_count} candidatos validos estimados. No se guardo nada."
+                     else
+                       "Importacion completa ejecutada para #{region.name}: #{successful_results.size}/#{results.size} categorias completadas, #{found_count} encontrados y #{candidates_count} candidatos guardados."
+                     end
     if failed_results.any?
       flash[:alert] = compact_flash_errors(
         failed_results.map { |result| "#{GooglePlacesBlackCoffeeClient.config_for(result[:category])[:label]}: #{result[:error]}" },
@@ -117,6 +139,28 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     end
 
     redirect_to black_coffee_google_imports_path(anchor: "region-#{region.id}")
+  end
+
+  def dry_run_category_for_region(region:, category:, limit:, query_override:)
+    response = GooglePlacesBlackCoffeeClient.new.search(
+      region: region,
+      category: category,
+      limit: limit,
+      query_override: query_override,
+      metadata: true,
+      resolve_photo_urls_during_import: false
+    )
+    {
+      success: true,
+      category: category,
+      found_count: response[:raw_candidates_count].to_i,
+      candidate_count: Array(response[:candidates]).size,
+      response: response
+    }
+  rescue GooglePlacesBlackCoffeeClient::MissingApiKeyError, GooglePlacesBlackCoffeeClient::RequestError => e
+    { success: false, category: category, error: e.message }
+  rescue StandardError => e
+    { success: false, category: category, error: "No se pudo completar el dry run: #{e.message}" }
   end
 
   def import_category_for_region(region:, category:, limit:, query_override:)
@@ -135,12 +179,14 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       status: 'running'
     )
 
-    candidates = GooglePlacesBlackCoffeeClient.new.search(
+    response = GooglePlacesBlackCoffeeClient.new.search(
       region: region,
       category: category,
       limit: limit,
-      query_override: query_override
+      query_override: query_override,
+      metadata: true
     )
+    candidates = Array(response[:candidates])
     candidates.each do |candidate_attrs|
       duplicate_venue = duplicate_venue_for(candidate_attrs)
       import_run.import_candidates.create!(
@@ -155,8 +201,9 @@ class BlackCoffeeGoogleImportsController < ApplicationController
 
     import_run.update!(
       status: 'completed',
-      found_count: candidates.size,
-      candidate_count: candidates.size
+      found_count: response[:raw_candidates_count].to_i,
+      candidate_count: candidates.size,
+      **import_metric_attributes(response)
     )
     region_category.update!(last_imported_at: Time.current)
     import_run.refresh_counts!
@@ -165,7 +212,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       success: true,
       category: category,
       import_run: import_run,
-      found_count: candidates.size,
+      found_count: response[:raw_candidates_count].to_i,
       candidate_count: import_run.import_candidates.count
     }
   rescue GooglePlacesBlackCoffeeClient::MissingApiKeyError, GooglePlacesBlackCoffeeClient::RequestError => e
@@ -500,7 +547,36 @@ class BlackCoffeeGoogleImportsController < ApplicationController
   end
 
   def import_params
-    params.permit(:region_id, :category, :limit, :query_override)
+    params.permit(:region_id, :category, :limit, :query_override, :dry_run)
+  end
+
+  def dry_run_enabled?
+    ActiveModel::Type::Boolean.new.cast(import_params[:dry_run])
+  end
+
+  def dry_run_notice(result, region:)
+    response = result[:response] || {}
+    google_requests = response[:google_requests] || {}
+    photos = response[:photos] || {}
+    "Dry run #{region.name}: #{result[:found_count]} resultados Google, #{result[:candidate_count]} candidatos validos, " \
+      "#{response[:already_existing_skipped].to_i} duplicados saltados, #{response[:outside_region_skipped].to_i} fuera de region, " \
+      "#{response[:invalid_category_skipped].to_i} descartados por filtros. Requests: search #{google_requests[:search].to_i}, " \
+      "details #{google_requests[:details].to_i}, photos #{google_requests[:photos].to_i}. Fotos: #{photos[:references_saved].to_i} refs, #{photos[:urls_resolved].to_i} URLs."
+  end
+
+  def import_metric_attributes(response)
+    {
+      raw_candidates_count: response[:raw_candidates_count].to_i,
+      existing_skipped_count: response[:already_existing_skipped].to_i,
+      outside_region_skipped_count: response[:outside_region_skipped].to_i,
+      invalid_category_skipped_count: response[:invalid_category_skipped].to_i,
+      google_search_requests_count: response.dig(:google_requests, :search).to_i,
+      google_details_requests_count: response.dig(:google_requests, :details).to_i,
+      google_photo_requests_count: response.dig(:google_requests, :photos).to_i,
+      photo_references_saved_count: response.dig(:photos, :references_saved).to_i,
+      photo_urls_resolved_count: response.dig(:photos, :urls_resolved).to_i,
+      import_options: response[:import_options]
+    }.select { |column, _value| BlackCoffeeImportRun.column_names.include?(column.to_s) }
   end
 
   def refresh_google_counts_for_region(region, client: GooglePlacesAggregateClient.new, importable_categories: GooglePlacesBlackCoffeeClient.importable_categories)

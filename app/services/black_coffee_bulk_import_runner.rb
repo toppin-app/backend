@@ -27,7 +27,7 @@ class BlackCoffeeBulkImportRunner
     geometry_strategy = bounds.delete(:strategy)
 
     ActiveRecord::Base.transaction do
-      bulk_import = region.bulk_imports.create!(
+      bulk_import_attributes = {
         status: 'pending',
         geometry_strategy: geometry_strategy,
         categories_payload: categories,
@@ -35,7 +35,12 @@ class BlackCoffeeBulkImportRunner
         max_depth: DEFAULT_MAX_DEPTH,
         min_cell_size_meters: DEFAULT_MIN_CELL_SIZE_METERS,
         step_limit: GooglePlacesBlackCoffeeClient::MAX_RESULTS
-      )
+      }
+      if BlackCoffeeBulkImport.column_names.include?('import_options')
+        bulk_import_attributes[:import_options] = GooglePlacesBlackCoffeeClient.import_options_payload
+      end
+
+      bulk_import = region.bulk_imports.create!(bulk_import_attributes)
 
       categories.each do |category|
         region_category = BlackCoffeeImportRegionCategory.find_or_create_by!(
@@ -43,7 +48,7 @@ class BlackCoffeeBulkImportRunner
           category: category
         )
         config = GooglePlacesBlackCoffeeClient.config_for(category)
-        import_run = bulk_import.import_runs.create!(
+        import_run_attributes = {
           black_coffee_import_region: region,
           black_coffee_import_region_category: region_category,
           category: category,
@@ -51,7 +56,11 @@ class BlackCoffeeBulkImportRunner
           google_types: Array(config[:google_types]),
           limit: bulk_import.step_limit,
           status: 'running'
-        )
+        }
+        if BlackCoffeeImportRun.column_names.include?('import_options')
+          import_run_attributes[:import_options] = GooglePlacesBlackCoffeeClient.import_options_payload
+        end
+        import_run = bulk_import.import_runs.create!(import_run_attributes)
         bulk_import.import_steps.create!(
           black_coffee_import_run: import_run,
           category: category,
@@ -190,14 +199,15 @@ class BlackCoffeeBulkImportRunner
         status: 'split',
         found_count: raw_places_count,
         request_count: step.request_count.to_i + requests_count,
-        processed_at: Time.current
+        processed_at: Time.current,
+        **step_metric_attributes(step, response)
       )
       finalize_category_run_if_finished(step.category)
       @bulk_import.refresh_progress!
       return {}
     end
 
-    import_stats = append_candidates_to_run(step, candidates)
+    import_stats = append_candidates_to_run(step, candidates, found_count: raw_places_count, response: response)
     saturated = candidates.size >= @bulk_import.step_limit.to_i && !splittable_step?(step)
     step.update!(
       status: 'completed',
@@ -206,7 +216,8 @@ class BlackCoffeeBulkImportRunner
       duplicate_count: import_stats[:duplicate_count],
       request_count: step.request_count.to_i + requests_count,
       saturated: saturated,
-      processed_at: Time.current
+      processed_at: Time.current,
+      **step_metric_attributes(step, response)
     )
     finalize_category_run_if_finished(step.category)
     @bulk_import.refresh_progress!
@@ -233,7 +244,7 @@ class BlackCoffeeBulkImportRunner
     {}
   end
 
-  def append_candidates_to_run(step, candidates)
+  def append_candidates_to_run(step, candidates, found_count:, response:)
     import_run = step.black_coffee_import_run
     region_category = import_run.black_coffee_import_region_category
     place_ids = candidates.map { |candidate| candidate[:google_place_id].to_s.strip.presence }.compact
@@ -265,7 +276,8 @@ class BlackCoffeeBulkImportRunner
 
     import_run.with_lock do
       import_run.update!(
-        found_count: import_run.found_count.to_i + candidates.size
+        found_count: import_run.found_count.to_i + found_count.to_i,
+        **run_metric_deltas(import_run, response)
       )
     end
     region_category.update!(last_imported_at: Time.current)
@@ -275,6 +287,38 @@ class BlackCoffeeBulkImportRunner
       saved_count: saved_count,
       duplicate_count: duplicate_count
     }
+  end
+
+  def step_metric_attributes(step, response)
+    optional_model_attributes(
+      step,
+      existing_skipped_count: step.existing_skipped_count.to_i + response[:already_existing_skipped].to_i,
+      outside_region_skipped_count: step.outside_region_skipped_count.to_i + response[:outside_region_skipped].to_i,
+      invalid_category_skipped_count: step.invalid_category_skipped_count.to_i + response[:invalid_category_skipped].to_i,
+      photo_requests_count: step.photo_requests_count.to_i + response.dig(:google_requests, :photos).to_i,
+      photo_references_saved_count: step.photo_references_saved_count.to_i + response.dig(:photos, :references_saved).to_i,
+      photo_urls_resolved_count: step.photo_urls_resolved_count.to_i + response.dig(:photos, :urls_resolved).to_i
+    )
+  end
+
+  def run_metric_deltas(import_run, response)
+    optional_model_attributes(
+      import_run,
+      raw_candidates_count: import_run.raw_candidates_count.to_i + response[:raw_candidates_count].to_i,
+      existing_skipped_count: import_run.existing_skipped_count.to_i + response[:already_existing_skipped].to_i,
+      outside_region_skipped_count: import_run.outside_region_skipped_count.to_i + response[:outside_region_skipped].to_i,
+      invalid_category_skipped_count: import_run.invalid_category_skipped_count.to_i + response[:invalid_category_skipped].to_i,
+      google_search_requests_count: import_run.google_search_requests_count.to_i + response.dig(:google_requests, :search).to_i,
+      google_details_requests_count: import_run.google_details_requests_count.to_i + response.dig(:google_requests, :details).to_i,
+      google_photo_requests_count: import_run.google_photo_requests_count.to_i + response.dig(:google_requests, :photos).to_i,
+      photo_references_saved_count: import_run.photo_references_saved_count.to_i + response.dig(:photos, :references_saved).to_i,
+      photo_urls_resolved_count: import_run.photo_urls_resolved_count.to_i + response.dig(:photos, :urls_resolved).to_i,
+      import_options: import_run.import_options.presence || response[:import_options]
+    )
+  end
+
+  def optional_model_attributes(record, attrs)
+    attrs.select { |column, _value| record.has_attribute?(column) }
   end
 
   def should_split_step?(step, candidate_count)

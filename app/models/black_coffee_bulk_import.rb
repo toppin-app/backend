@@ -109,6 +109,12 @@ class BlackCoffeeBulkImport < ApplicationRecord
       foundCount: found_count.to_i,
       savedCandidatesCount: saved_candidates_count.to_i,
       duplicateCandidatesCount: duplicate_candidates_count.to_i,
+      existingSkippedCount: metric_value(:existing_skipped_count),
+      outsideRegionSkippedCount: metric_value(:outside_region_skipped_count),
+      invalidCategorySkippedCount: metric_value(:invalid_category_skipped_count),
+      googlePhotoRequestsCount: metric_value(:google_photo_requests_count),
+      photoReferencesSavedCount: metric_value(:photo_references_saved_count),
+      photoUrlsResolvedCount: metric_value(:photo_urls_resolved_count),
       errorCount: error_count.to_i,
       currentCategory: current_category,
       currentCategoryLabel: current_category.present? ? GooglePlacesBlackCoffeeClient.config_for(current_category)[:label] : nil,
@@ -129,7 +135,7 @@ class BlackCoffeeBulkImport < ApplicationRecord
     next_category = finished? ? nil : (running_step&.category || next_pending_step&.category)
     next_cell_label = finished? ? nil : (running_step&.bounds_label || next_pending_step&.bounds_label)
 
-    update!(
+    attributes = {
       total_steps: step_counts.values.sum,
       pending_steps_count: step_counts['pending'].to_i,
       running_steps_count: step_counts['running'].to_i,
@@ -145,6 +151,18 @@ class BlackCoffeeBulkImport < ApplicationRecord
       error_count: step_counts['failed'].to_i,
       current_category: next_category,
       current_cell_label: next_cell_label
-    )
+    }
+    attributes[:existing_skipped_count] = import_steps.sum(:existing_skipped_count) if has_attribute?(:existing_skipped_count)
+    attributes[:outside_region_skipped_count] = import_steps.sum(:outside_region_skipped_count) if has_attribute?(:outside_region_skipped_count)
+    attributes[:invalid_category_skipped_count] = import_steps.sum(:invalid_category_skipped_count) if has_attribute?(:invalid_category_skipped_count)
+    attributes[:google_photo_requests_count] = import_steps.sum(:photo_requests_count) if has_attribute?(:google_photo_requests_count)
+    attributes[:photo_references_saved_count] = import_steps.sum(:photo_references_saved_count) if has_attribute?(:photo_references_saved_count)
+    attributes[:photo_urls_resolved_count] = import_steps.sum(:photo_urls_resolved_count) if has_attribute?(:photo_urls_resolved_count)
+
+    update!(attributes)
+  end
+
+  def metric_value(column)
+    has_attribute?(column) ? self[column].to_i : 0
   end
 end
