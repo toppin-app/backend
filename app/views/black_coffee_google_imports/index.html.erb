@@ -133,6 +133,7 @@
             <strong>Control de coste activo:</strong>
             por defecto se guardan hasta <%= GooglePlacesBlackCoffeeClient.max_photos_per_place %> referencias temporales de foto por local, sin llamar a Place Photos durante la importacion.
             Las URLs se resuelven solo en acciones explicitas de imagenes o sincronizacion.
+            Los locales sin fotos devueltas por Google se descartan durante la importacion.
           </div>
 
           <%= submit_tag 'Buscar candidatos', class: 'btn btn-primary btn-block text-white' %>

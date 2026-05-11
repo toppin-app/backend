@@ -560,7 +560,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     photos = response[:photos] || {}
     "Dry run #{region.name}: #{result[:found_count]} resultados Google, #{result[:candidate_count]} candidatos validos, " \
       "#{response[:already_existing_skipped].to_i} duplicados saltados, #{response[:outside_region_skipped].to_i} fuera de region, " \
-      "#{response[:invalid_category_skipped].to_i} descartados por filtros. Requests: search #{google_requests[:search].to_i}, " \
+      "#{response[:no_photo_skipped].to_i} sin fotos, #{response[:invalid_category_skipped].to_i} descartados por filtros. Requests: search #{google_requests[:search].to_i}, " \
       "details #{google_requests[:details].to_i}, photos #{google_requests[:photos].to_i}. Fotos: #{photos[:references_saved].to_i} refs, #{photos[:urls_resolved].to_i} URLs."
   end
 
@@ -569,6 +569,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       raw_candidates_count: response[:raw_candidates_count].to_i,
       existing_skipped_count: response[:already_existing_skipped].to_i,
       outside_region_skipped_count: response[:outside_region_skipped].to_i,
+      no_photo_skipped_count: response[:no_photo_skipped].to_i,
       invalid_category_skipped_count: response[:invalid_category_skipped].to_i,
       google_search_requests_count: response.dig(:google_requests, :search).to_i,
       google_details_requests_count: response.dig(:google_requests, :details).to_i,

@@ -111,6 +111,7 @@ class BlackCoffeeBulkImport < ApplicationRecord
       duplicateCandidatesCount: duplicate_candidates_count.to_i,
       existingSkippedCount: metric_value(:existing_skipped_count),
       outsideRegionSkippedCount: metric_value(:outside_region_skipped_count),
+      noPhotoSkippedCount: metric_value(:no_photo_skipped_count),
       invalidCategorySkippedCount: metric_value(:invalid_category_skipped_count),
       googlePhotoRequestsCount: metric_value(:google_photo_requests_count),
       photoReferencesSavedCount: metric_value(:photo_references_saved_count),
@@ -154,6 +155,7 @@ class BlackCoffeeBulkImport < ApplicationRecord
     }
     attributes[:existing_skipped_count] = import_steps.sum(:existing_skipped_count) if has_attribute?(:existing_skipped_count)
     attributes[:outside_region_skipped_count] = import_steps.sum(:outside_region_skipped_count) if has_attribute?(:outside_region_skipped_count)
+    attributes[:no_photo_skipped_count] = import_steps.sum(:no_photo_skipped_count) if has_attribute?(:no_photo_skipped_count)
     attributes[:invalid_category_skipped_count] = import_steps.sum(:invalid_category_skipped_count) if has_attribute?(:invalid_category_skipped_count)
     attributes[:google_photo_requests_count] = import_steps.sum(:photo_requests_count) if has_attribute?(:google_photo_requests_count)
     attributes[:photo_references_saved_count] = import_steps.sum(:photo_references_saved_count) if has_attribute?(:photo_references_saved_count)

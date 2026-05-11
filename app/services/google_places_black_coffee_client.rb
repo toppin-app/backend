@@ -156,12 +156,17 @@ class GooglePlacesBlackCoffeeClient
     ActiveModel::Type::Boolean.new.cast(ENV.fetch('BLACK_COFFEE_STRICT_REGION_FILTER', 'true'))
   end
 
+  def self.require_photos_during_import?
+    ActiveModel::Type::Boolean.new.cast(ENV.fetch('BLACK_COFFEE_REQUIRE_PHOTOS_DURING_IMPORT', 'true'))
+  end
+
   def self.import_options_payload
     {
       max_photos_per_place: max_photos_per_place,
       resolve_photo_urls_during_import: resolve_photo_urls_during_import?,
       skip_existing_places: skip_existing_places?,
-      strict_region_filter: strict_region_filter?
+      strict_region_filter: strict_region_filter?,
+      require_photos_during_import: require_photos_during_import?
     }
   end
 
@@ -198,7 +203,8 @@ class GooglePlacesBlackCoffeeClient
     max_photos_per_place: self.class.max_photos_per_place,
     resolve_photo_urls_during_import: self.class.resolve_photo_urls_during_import?,
     skip_existing_places: self.class.skip_existing_places?,
-    strict_region_filter: self.class.strict_region_filter?
+    strict_region_filter: self.class.strict_region_filter?,
+    require_photos_during_import: self.class.require_photos_during_import?
   )
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
 
@@ -209,7 +215,8 @@ class GooglePlacesBlackCoffeeClient
       max_photos_per_place: max_photos_per_place,
       resolve_photo_urls_during_import: resolve_photo_urls_during_import,
       skip_existing_places: skip_existing_places,
-      strict_region_filter: strict_region_filter
+      strict_region_filter: strict_region_filter,
+      require_photos_during_import: require_photos_during_import
     }
     query = build_query(
       region: region,
@@ -246,6 +253,11 @@ class GooglePlacesBlackCoffeeClient
       )
       unless region_validation.valid?
         stats[:outside_region_skipped] += 1
+        next
+      end
+
+      if require_photos_during_import && Array(place['photos']).blank?
+        stats[:no_photo_skipped] += 1
         next
       end
 
@@ -480,6 +492,7 @@ class GooglePlacesBlackCoffeeClient
       raw_candidates_count: raw_candidates_count.to_i,
       already_existing_skipped: 0,
       outside_region_skipped: 0,
+      no_photo_skipped: 0,
       invalid_category_skipped: invalid_category_skipped_count.to_i,
       google_requests: {
         search: search_requests_count.to_i,
@@ -503,6 +516,7 @@ class GooglePlacesBlackCoffeeClient
       raw_candidates_count: stats[:raw_candidates_count].to_i,
       already_existing_skipped: stats[:already_existing_skipped].to_i,
       outside_region_skipped: stats[:outside_region_skipped].to_i,
+      no_photo_skipped: stats[:no_photo_skipped].to_i,
       invalid_category_skipped: stats[:invalid_category_skipped].to_i,
       new_places_created: candidates.size,
       google_requests: stats[:google_requests],
@@ -524,6 +538,7 @@ class GooglePlacesBlackCoffeeClient
         valid_candidates: valid_candidates_count,
         already_existing_skipped: stats[:already_existing_skipped],
         outside_region_skipped: stats[:outside_region_skipped],
+        no_photo_skipped: stats[:no_photo_skipped],
         invalid_category_skipped: stats[:invalid_category_skipped],
         google_requests: stats[:google_requests],
         photos: stats[:photos],

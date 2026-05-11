@@ -67,27 +67,31 @@
 
       <% if @bulk_import.has_attribute?(:outside_region_skipped_count) %>
         <div class="row text-center mt-3 pt-3 border-top">
-          <div class="col-md-2 col-6 mb-3 mb-md-0">
+          <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="text-muted small text-uppercase">Ya existian</div>
             <h5 class="mb-0 text-warning" id="bulk-import-existing-skipped-value"><%= number_with_delimiter(@bulk_import.existing_skipped_count) %></h5>
           </div>
-          <div class="col-md-2 col-6 mb-3 mb-md-0">
+          <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="text-muted small text-uppercase">Fuera region</div>
             <h5 class="mb-0 text-danger" id="bulk-import-outside-region-value"><%= number_with_delimiter(@bulk_import.outside_region_skipped_count) %></h5>
           </div>
-          <div class="col-md-2 col-6 mb-3 mb-md-0">
+          <div class="col-lg-2 col-md-4 col-6 mb-3">
+            <div class="text-muted small text-uppercase">Sin fotos</div>
+            <h5 class="mb-0 text-warning" id="bulk-import-no-photo-value"><%= number_with_delimiter(@bulk_import.has_attribute?(:no_photo_skipped_count) ? @bulk_import.no_photo_skipped_count : 0) %></h5>
+          </div>
+          <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="text-muted small text-uppercase">Filtro tipos</div>
             <h5 class="mb-0 text-secondary" id="bulk-import-invalid-category-value"><%= number_with_delimiter(@bulk_import.invalid_category_skipped_count) %></h5>
           </div>
-          <div class="col-md-2 col-6">
+          <div class="col-lg-1 col-md-4 col-6 mb-3">
             <div class="text-muted small text-uppercase">Requests foto</div>
             <h5 class="mb-0" id="bulk-import-photo-requests-value"><%= number_with_delimiter(@bulk_import.google_photo_requests_count) %></h5>
           </div>
-          <div class="col-md-2 col-6 mt-3 mt-md-0">
+          <div class="col-lg-1 col-md-4 col-6 mb-3">
             <div class="text-muted small text-uppercase">Refs foto</div>
             <h5 class="mb-0" id="bulk-import-photo-refs-value"><%= number_with_delimiter(@bulk_import.photo_references_saved_count) %></h5>
           </div>
-          <div class="col-md-2 col-6 mt-3 mt-md-0">
+          <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="text-muted small text-uppercase">URLs foto</div>
             <h5 class="mb-0" id="bulk-import-photo-urls-value"><%= number_with_delimiter(@bulk_import.photo_urls_resolved_count) %></h5>
           </div>
@@ -179,6 +183,7 @@
     const duplicatesValue = document.getElementById('bulk-import-duplicates-value');
     const existingSkippedValue = document.getElementById('bulk-import-existing-skipped-value');
     const outsideRegionValue = document.getElementById('bulk-import-outside-region-value');
+    const noPhotoValue = document.getElementById('bulk-import-no-photo-value');
     const invalidCategoryValue = document.getElementById('bulk-import-invalid-category-value');
     const photoRequestsValue = document.getElementById('bulk-import-photo-requests-value');
     const photoRefsValue = document.getElementById('bulk-import-photo-refs-value');
@@ -244,6 +249,7 @@
       duplicatesValue.textContent = formatter.format(data.duplicateCandidatesCount || 0);
       if (existingSkippedValue) existingSkippedValue.textContent = formatter.format(data.existingSkippedCount || 0);
       if (outsideRegionValue) outsideRegionValue.textContent = formatter.format(data.outsideRegionSkippedCount || 0);
+      if (noPhotoValue) noPhotoValue.textContent = formatter.format(data.noPhotoSkippedCount || 0);
       if (invalidCategoryValue) invalidCategoryValue.textContent = formatter.format(data.invalidCategorySkippedCount || 0);
       if (photoRequestsValue) photoRequestsValue.textContent = formatter.format(data.googlePhotoRequestsCount || 0);
       if (photoRefsValue) photoRefsValue.textContent = formatter.format(data.photoReferencesSavedCount || 0);

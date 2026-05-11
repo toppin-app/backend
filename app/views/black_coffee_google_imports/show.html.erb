@@ -289,15 +289,19 @@
           <h5 class="mb-0 text-danger"><%= number_with_delimiter(@import_run.outside_region_skipped_count) %></h5>
         </div>
         <div class="col-lg-2 col-6 mb-3">
+          <div class="text-muted small text-uppercase">Sin fotos</div>
+          <h5 class="mb-0 text-warning"><%= number_with_delimiter(@import_run.has_attribute?(:no_photo_skipped_count) ? @import_run.no_photo_skipped_count : 0) %></h5>
+        </div>
+        <div class="col-lg-2 col-6 mb-3">
           <div class="text-muted small text-uppercase">Filtro tipos</div>
           <h5 class="mb-0 text-secondary"><%= number_with_delimiter(@import_run.invalid_category_skipped_count) %></h5>
         </div>
-        <div class="col-lg-2 col-6 mb-3">
+        <div class="col-lg-1 col-6 mb-3">
           <div class="text-muted small text-uppercase">Requests Google</div>
           <h5 class="mb-0"><%= number_with_delimiter(@import_run.google_search_requests_count + @import_run.google_details_requests_count + @import_run.google_photo_requests_count) %></h5>
           <div class="text-muted small">S <%= @import_run.google_search_requests_count %> · D <%= @import_run.google_details_requests_count %> · F <%= @import_run.google_photo_requests_count %></div>
         </div>
-        <div class="col-lg-2 col-6 mb-3">
+        <div class="col-lg-1 col-6 mb-3">
           <div class="text-muted small text-uppercase">Fotos</div>
           <h5 class="mb-0"><%= number_with_delimiter(@import_run.photo_references_saved_count) %> refs</h5>
           <div class="text-muted small"><%= number_with_delimiter(@import_run.photo_urls_resolved_count) %> URLs resueltas</div>
