@@ -53,7 +53,17 @@
     font-size: 12px;
     font-weight: 700;
     margin: 0 6px 6px 0;
+    max-width: 100%;
+    overflow: hidden;
     padding: 6px 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .venue-review-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .venue-review-photos {
@@ -84,8 +94,20 @@
   }
 
   .rejection-button {
+    align-items: center;
+    display: inline-flex;
     font-weight: 700;
+    justify-content: center;
+    line-height: 1.15;
     margin: 0 8px 8px 0;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .review-rejection-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .review-status-chip {
@@ -113,10 +135,15 @@
   }
 
   .review-finalize-panel .btn {
+    align-items: center;
     border-radius: 14px;
+    display: inline-flex;
     font-size: 18px;
     font-weight: 800;
+    justify-content: center;
+    line-height: 1.15;
     padding: 18px 28px;
+    text-align: center;
   }
 
   .review-finalize-counter {
@@ -147,7 +174,89 @@
   }
 
   .review-lot-actions .btn {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 1.15;
     margin: 0 !important;
+    text-align: center;
+  }
+
+  .review-google-link {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    gap: 6px;
+    justify-content: center;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .venue-review-description {
+    margin-bottom: 0;
+  }
+
+  .review-modal-image-stage {
+    align-items: center;
+    background: #111827;
+    border-radius: 14px;
+    display: flex;
+    justify-content: center;
+    min-height: 280px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .review-modal-image-stage img {
+    max-height: 72vh;
+    object-fit: contain;
+    width: auto;
+  }
+
+  .review-modal-nav {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    height: 44px;
+    justify-content: center;
+    opacity: 0.92;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    z-index: 2;
+  }
+
+  .review-modal-prev {
+    left: 16px;
+  }
+
+  .review-modal-next {
+    right: 16px;
+  }
+
+  .review-modal-thumbs {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .review-modal-thumb {
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    flex: 0 0 76px;
+    height: 58px;
+    object-fit: cover;
+    opacity: 0.72;
+    width: 76px;
+  }
+
+  .review-modal-thumb.is-active {
+    border-color: #007bff;
+    opacity: 1;
   }
 
   @media (max-width: 767px) {
@@ -173,41 +282,103 @@
     }
 
     .review-summary-card .card-body {
-      padding: 18px;
+      padding: 12px 14px;
     }
 
     .review-summary-value {
-      font-size: 30px;
+      font-size: 26px;
     }
 
     .venue-review-card {
       border-radius: 16px;
+      margin-bottom: 14px !important;
     }
 
     .venue-review-card .card-body {
-      padding: 16px;
+      padding: 12px;
     }
 
     .venue-review-title {
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1.2;
+    }
+
+    .venue-review-card .mb-3 {
+      margin-bottom: 0.6rem !important;
+    }
+
+    .venue-review-card hr {
+      margin-bottom: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .venue-review-label {
+      font-size: 10px;
+    }
+
+    .venue-review-description {
+      display: -webkit-box;
+      font-size: 13px;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .venue-review-photos-column {
       order: -1;
-      margin-bottom: 18px;
+      margin-bottom: 10px;
+    }
+
+    .venue-review-photos {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .venue-review-photo,
     .venue-review-empty-photo {
-      height: 150px;
+      height: 88px;
       width: 100%;
     }
 
-    .rejection-button {
-      margin-right: 0;
-      min-height: 46px;
+    .venue-review-empty-photo {
+      grid-column: 1 / -1;
+    }
+
+    .venue-review-pill {
+      font-size: 10px;
+      margin: 0;
+      padding: 4px 7px;
+    }
+
+    .venue-review-tag-list {
+      max-height: 46px;
+      overflow: hidden;
+    }
+
+    .review-google-link {
+      font-size: 12px;
+      min-height: 36px;
+      padding: 8px 10px;
       width: 100%;
+    }
+
+    .review-rejection-actions {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .rejection-button {
+      font-size: 12px;
+      margin: 0;
+      min-height: 40px;
+      padding: 8px 6px;
+      width: 100%;
+    }
+
+    .rejection-button[data-review-undo] {
+      grid-column: 1 / -1;
     }
 
     .review-finalize-panel {
@@ -234,6 +405,23 @@
       font-size: 16px;
       min-height: 54px;
       width: 100%;
+    }
+
+    .review-modal-image-stage {
+      min-height: 220px;
+    }
+
+    .review-modal-nav {
+      height: 38px;
+      width: 38px;
+    }
+
+    .review-modal-prev {
+      left: 8px;
+    }
+
+    .review-modal-next {
+      right: 8px;
     }
   }
 </style>
@@ -317,6 +505,15 @@
               <%= status_label %>
             </span>
             <div class="small text-muted mt-2">ID: <%= venue.id %></div>
+            <% if venue.google_connected? %>
+              <%= link_to venue.google_maps_url,
+                          class: 'btn btn-sm btn-outline-dark review-google-link mt-2',
+                          target: '_blank',
+                          rel: 'noopener' do %>
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Ver en Google</span>
+              <% end %>
+            <% end %>
           </div>
         </div>
 
@@ -324,22 +521,22 @@
           <div class="col-lg-7 venue-review-details-column">
             <div class="mb-3">
               <div class="venue-review-label">Descripcion</div>
-              <p class="mb-0"><%= venue.description.presence || 'Sin descripcion guardada.' %></p>
+              <p class="venue-review-description"><%= venue.description.presence || 'Sin descripcion guardada.' %></p>
             </div>
 
             <div class="row">
-              <div class="col-md-6 mb-3">
+              <div class="col-6 col-md-6 mb-3">
                 <div class="venue-review-label">Categoria interna</div>
                 <span class="badge badge-secondary p-2"><%= venue.category %></span>
               </div>
-              <div class="col-md-6 mb-3">
+              <div class="col-6 col-md-6 mb-3">
                 <div class="venue-review-label">Subcategoria</div>
                 <strong><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name).presence || 'Sin subcategoria' %></strong>
                 <% if venue.subcategory_name.present? %>
                   <div class="text-muted small"><%= venue.subcategory_name %></div>
                 <% end %>
               </div>
-              <div class="col-md-6 mb-3">
+              <div class="col-6 col-md-6 mb-3">
                 <div class="venue-review-label">Google primary type</div>
                 <% if venue.google_primary_type_for_dashboard.present? %>
                   <span class="badge badge-primary p-2"><%= venue.google_primary_type_for_dashboard %></span>
@@ -347,7 +544,7 @@
                   <span class="text-muted">Sin primary type</span>
                 <% end %>
               </div>
-              <div class="col-md-6 mb-3">
+              <div class="col-6 col-md-6 mb-3">
                 <div class="venue-review-label">Ubicacion</div>
                 <strong><%= venue.city.presence || 'Sin ciudad' %></strong>
                 <div class="text-muted small"><%= venue.state.presence || 'Sin region' %> · <%= venue.country.presence || 'Sin pais' %></div>
@@ -357,17 +554,19 @@
             <div class="mb-3">
               <div class="venue-review-label">Tipos secundarios / etiquetas Google</div>
               <% secondary_types = venue.google_secondary_type_list %>
-              <% if secondary_types.any? %>
-                <% secondary_types.each do |tag| %>
-                  <span class="badge badge-dark venue-review-pill"><%= tag %></span>
+              <div class="venue-review-tag-list">
+                <% if secondary_types.any? %>
+                  <% secondary_types.each do |tag| %>
+                    <span class="badge badge-dark venue-review-pill"><%= tag %></span>
+                  <% end %>
+                <% elsif Array(venue.tags).any? %>
+                  <% Array(venue.tags).each do |tag| %>
+                    <span class="badge badge-dark venue-review-pill"><%= tag %></span>
+                  <% end %>
+                <% else %>
+                  <span class="text-muted">Sin etiquetas Google guardadas.</span>
                 <% end %>
-              <% elsif Array(venue.tags).any? %>
-                <% Array(venue.tags).each do |tag| %>
-                  <span class="badge badge-dark venue-review-pill"><%= tag %></span>
-                <% end %>
-              <% else %>
-                <span class="text-muted">Sin etiquetas Google guardadas.</span>
-              <% end %>
+              </div>
             </div>
           </div>
 
@@ -378,7 +577,7 @@
                 <% image_urls.each do |image_url| %>
                   <%= image_tag image_url,
                                 class: 'venue-review-photo',
-                                data: { review_image: true, full_src: image_url },
+                                data: { review_image: true, full_src: image_url, image_title: venue.name },
                                 alt: venue.name %>
                 <% end %>
               <% else %>
@@ -413,17 +612,19 @@
 
           <div class="mb-3">
             <div class="venue-review-label mb-2">Rechazar este local</div>
-            <% @reason_labels.each do |code, label| %>
-              <button type="button"
-                      class="btn btn-outline-danger rejection-button <%= 'active' if item.review_rejection_reason == code %>"
-                      data-rejection-reason="<%= code %>"
-                      data-rejection-label="<%= label %>">
-                <%= label %>
+            <div class="review-rejection-actions">
+              <% @reason_labels.each do |code, label| %>
+                <button type="button"
+                        class="btn btn-outline-danger rejection-button <%= 'active' if item.review_rejection_reason == code %>"
+                        data-rejection-reason="<%= code %>"
+                        data-rejection-label="<%= label %>">
+                  <%= label %>
+                </button>
+              <% end %>
+              <button type="button" class="btn btn-outline-secondary rejection-button" data-review-undo>
+                Deshacer rechazo
               </button>
-            <% end %>
-            <button type="button" class="btn btn-outline-secondary rejection-button" data-review-undo>
-              Deshacer rechazo
-            </button>
+            </div>
           </div>
 
           <div class="form-group mb-0" data-note-wrapper style="<%= item.review_rejection_reason == 'other' ? '' : 'display: none;' %>">
@@ -494,29 +695,52 @@
   </div>
 </div>
 
-<div class="modal fade" id="reviewImageModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade review-image-modal" id="reviewImageModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Imagen del local</h5>
+        <div>
+          <h5 class="modal-title mb-0" id="reviewImageModalTitle">Imagen del local</h5>
+          <div class="text-muted small" id="reviewImageModalCounter"></div>
+        </div>
         <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body text-center">
-        <img id="reviewImageModalImg" src="" alt="Imagen del local" class="img-fluid rounded">
+      <div class="modal-body">
+        <div class="review-modal-image-stage">
+          <button type="button" class="btn btn-light review-modal-nav review-modal-prev" data-review-modal-prev aria-label="Imagen anterior">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <img id="reviewImageModalImg" src="" alt="Imagen del local" class="img-fluid">
+          <button type="button" class="btn btn-light review-modal-nav review-modal-next" data-review-modal-next aria-label="Imagen siguiente">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="review-modal-thumbs" id="reviewImageModalThumbs"></div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  (function() {
+    function initializeBlackCoffeeReviewPage() {
     var cards = Array.prototype.slice.call(document.querySelectorAll('[data-review-card]'));
     var rejectedCounter = document.getElementById('review-live-rejected');
     var approvedCounter = document.getElementById('review-live-approved');
     var rejectedSummary = document.getElementById('review-rejected-count');
     var approvedSummary = document.getElementById('review-approved-count');
+    var modal = document.getElementById('reviewImageModal');
+    var modalImage = document.getElementById('reviewImageModalImg');
+    var modalTitle = document.getElementById('reviewImageModalTitle');
+    var modalCounter = document.getElementById('reviewImageModalCounter');
+    var modalThumbs = document.getElementById('reviewImageModalThumbs');
+    var prevButton = document.querySelector('[data-review-modal-prev]');
+    var nextButton = document.querySelector('[data-review-modal-next]');
+    var galleryImages = [];
+    var galleryIndex = 0;
+    var galleryTitle = 'Imagen del local';
 
     function updateCounters() {
       if (!rejectedCounter || !approvedCounter) return;
@@ -533,7 +757,64 @@
       if (approvedSummary) approvedSummary.textContent = approvedCount;
     }
 
+    function renderGallery() {
+      if (!modalImage || galleryImages.length === 0) return;
+
+      var currentImage = galleryImages[galleryIndex];
+      modalImage.src = currentImage.src;
+      modalImage.alt = galleryTitle;
+
+      if (modalTitle) modalTitle.textContent = galleryTitle;
+      if (modalCounter) modalCounter.textContent = (galleryIndex + 1) + ' de ' + galleryImages.length;
+      if (prevButton) prevButton.style.display = galleryImages.length > 1 ? 'inline-flex' : 'none';
+      if (nextButton) nextButton.style.display = galleryImages.length > 1 ? 'inline-flex' : 'none';
+
+      if (modalThumbs) {
+        modalThumbs.innerHTML = '';
+        galleryImages.forEach(function(image, index) {
+          var thumb = document.createElement('img');
+          thumb.src = image.src;
+          thumb.alt = galleryTitle;
+          thumb.className = 'review-modal-thumb' + (index === galleryIndex ? ' is-active' : '');
+          thumb.addEventListener('click', function() {
+            galleryIndex = index;
+            renderGallery();
+          });
+          modalThumbs.appendChild(thumb);
+        });
+      }
+    }
+
+    function moveGallery(delta) {
+      if (galleryImages.length < 2) return;
+
+      galleryIndex = (galleryIndex + delta + galleryImages.length) % galleryImages.length;
+      renderGallery();
+    }
+
+    function openGallery(clickedImage) {
+      var card = clickedImage.closest('[data-review-card]');
+      var images = card ? Array.prototype.slice.call(card.querySelectorAll('[data-review-image]')) : [clickedImage];
+      galleryImages = images.map(function(image) {
+        return {
+          src: image.getAttribute('data-full-src') || image.src
+        };
+      }).filter(function(image) {
+        return image.src;
+      });
+      galleryIndex = Math.max(0, images.indexOf(clickedImage));
+      galleryTitle = clickedImage.getAttribute('data-image-title') || clickedImage.alt || 'Imagen del local';
+      renderGallery();
+
+      if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+        window.jQuery(modal).modal('show');
+      }
+    }
+
     cards.forEach(function(card) {
+      if (card.getAttribute('data-review-card-bound') === 'true') return;
+      card.setAttribute('data-review-card-bound', 'true');
+
       var reasonInput = card.querySelector('[data-reason-input]');
       var noteInput = card.querySelector('[data-note-input]');
       var noteWrapper = card.querySelector('[data-note-wrapper]');
@@ -597,18 +878,32 @@
     });
 
     Array.prototype.slice.call(document.querySelectorAll('[data-review-image]')).forEach(function(image) {
-      image.addEventListener('click', function() {
-        var modalImage = document.getElementById('reviewImageModalImg');
-        if (modalImage) {
-          modalImage.src = image.getAttribute('data-full-src') || image.src;
-        }
-
-        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
-          window.jQuery('#reviewImageModal').modal('show');
-        }
+      if (image.getAttribute('data-review-image-bound') === 'true') return;
+      image.setAttribute('data-review-image-bound', 'true');
+      image.addEventListener('click', function(event) {
+        event.preventDefault();
+        openGallery(image);
       });
     });
 
+    if (prevButton && prevButton.getAttribute('data-review-gallery-bound') !== 'true') {
+      prevButton.setAttribute('data-review-gallery-bound', 'true');
+      prevButton.addEventListener('click', function() {
+        moveGallery(-1);
+      });
+    }
+
+    if (nextButton && nextButton.getAttribute('data-review-gallery-bound') !== 'true') {
+      nextButton.setAttribute('data-review-gallery-bound', 'true');
+      nextButton.addEventListener('click', function() {
+        moveGallery(1);
+      });
+    }
+
     updateCounters();
-  });
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeBlackCoffeeReviewPage);
+    document.addEventListener('turbolinks:load', initializeBlackCoffeeReviewPage);
+  })();
 </script>

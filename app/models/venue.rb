@@ -1,3 +1,5 @@
+require 'cgi'
+
 class Venue < ApplicationRecord
   CATEGORIES = %w[
     restaurante
@@ -225,6 +227,16 @@ class Venue < ApplicationRecord
 
   def google_connected?
     has_attribute?(:google_place_id) && google_place_id.present?
+  end
+
+  def google_maps_url
+    return nil unless google_connected?
+
+    query = [name, address, city, country].map(&:presence).compact.join(' ').presence || google_place_id
+    encoded_query = CGI.escape(query.to_s)
+    encoded_place_id = CGI.escape(google_place_id.to_s)
+
+    "https://www.google.com/maps/search/?api=1&query=#{encoded_query}&query_place_id=#{encoded_place_id}"
   end
 
   def description_present?

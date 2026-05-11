@@ -38,7 +38,7 @@
     <!-- Left navbar links -->
     <ul class="navbar-nav">
       <li class="nav-item">
-        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+        <a class="nav-link" id="admin-sidebar-toggle" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
      <!-- <li class="nav-item d-none d-sm-inline-block">
         <a href="index3.html" class="nav-link">Home</a>
@@ -190,7 +190,7 @@
           </li>
 
           <li class="nav-item">
-            <%= link_to black_coffee_venues_path, class: "nav-link #{'active' if request.path.start_with?(black_coffee_venues_path) || request.path.start_with?(black_coffee_subcategories_path) || request.path.start_with?(black_coffee_cleanup_path)}" do %>
+            <%= link_to black_coffee_venues_path, class: "nav-link #{'active' if request.path.start_with?(black_coffee_venues_path) || request.path.start_with?(black_coffee_reviews_path) || request.path.start_with?(black_coffee_subcategories_path) || request.path.start_with?(black_coffee_cleanup_path)}" do %>
               <i class="nav-icon fas fa-mug-hot fa-fw"></i>
               <p>
                 Black Coffee
@@ -388,6 +388,37 @@ $( document ).ready(function() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/1.13.1/js/OverlayScrollbars.min.js"></script>
 <!-- AdminLTE App -->
 <script src="/dist/adminlte.min.js"></script>
+
+<script>
+  (function() {
+    function installSidebarToggleFallback() {
+      var toggle = document.getElementById('admin-sidebar-toggle');
+      if (!toggle || toggle.getAttribute('data-sidebar-fallback-bound') === 'true') return;
+
+      toggle.setAttribute('data-sidebar-fallback-bound', 'true');
+      toggle.addEventListener('click', function(event) {
+        event.preventDefault();
+
+        var body = document.body;
+        var beforeClassName = body.className;
+
+        window.setTimeout(function() {
+          if (body.className !== beforeClassName) return;
+
+          if (window.matchMedia('(max-width: 991.98px)').matches) {
+            body.classList.toggle('sidebar-open');
+            return;
+          }
+
+          body.classList.toggle('sidebar-collapse');
+        }, 80);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', installSidebarToggleFallback);
+    document.addEventListener('turbolinks:load', installSidebarToggleFallback);
+  })();
+</script>
 
 <script src="https://media.twiliocdn.com/sdk/js/conversations/releases/2.0.0/twilio-conversations.min.js"
   integrity="sha256-/pQ4lYklKpRl6E4ruYcKqTUcLsfM2FQLUarDWVA9I0o="
