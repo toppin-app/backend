@@ -1,9 +1,120 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
+<style>
+  .black-coffee-detail-header {
+    gap: 16px;
+  }
+
+  .black-coffee-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .black-coffee-detail-actions .btn,
+  .black-coffee-detail-actions form {
+    margin: 0 !important;
+  }
+
+  .black-coffee-detail-section-label {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .black-coffee-tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .black-coffee-tag-cloud .badge {
+    margin: 0 !important;
+    white-space: normal;
+  }
+
+  .black-coffee-detail-image {
+    max-height: 220px;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  @media (max-width: 767px) {
+    .black-coffee-detail-header {
+      align-items: stretch !important;
+      flex-direction: column;
+    }
+
+    .black-coffee-detail-header h2 {
+      font-size: 26px;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+
+    .black-coffee-detail-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      width: 100%;
+    }
+
+    .black-coffee-detail-actions .btn,
+    .black-coffee-detail-actions form,
+    .black-coffee-detail-actions form .btn {
+      min-height: 44px;
+      width: 100%;
+    }
+
+    .black-coffee-detail-card .card-body {
+      padding: 18px;
+    }
+
+    .black-coffee-schedule-table thead {
+      display: none;
+    }
+
+    .black-coffee-schedule-table,
+    .black-coffee-schedule-table tbody,
+    .black-coffee-schedule-table tr,
+    .black-coffee-schedule-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .black-coffee-schedule-table tr {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 16px;
+    }
+
+    .black-coffee-schedule-table td {
+      border: 0;
+      padding: 3px 0;
+      width: 100% !important;
+    }
+
+    .black-coffee-schedule-table td::before {
+      color: #64748b;
+      content: attr(data-label);
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .black-coffee-detail-image {
+      max-height: none;
+    }
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 black-coffee-detail-header">
   <div>
     <p class="text-muted mb-1">Black Coffee / Local</p>
     <h2 class="mb-0"><%= @venue.name %></h2>
   </div>
-  <div>
+  <div class="black-coffee-detail-actions">
     <%= link_to 'Volver', black_coffee_venues_path, class: 'btn btn-outline-secondary mr-2' %>
     <% if @venue.google_connected? %>
       <%= button_to 'Actualizar desde Google',
@@ -19,11 +130,11 @@
 
 <div class="row">
   <div class="col-lg-8">
-    <div class="card mb-4">
+    <div class="card mb-4 black-coffee-detail-card">
       <div class="card-body">
         <div class="row">
           <div class="col-md-8">
-            <p class="text-muted text-uppercase mb-2">Descripcion</p>
+            <p class="black-coffee-detail-section-label mb-2">Descripcion</p>
             <% if @venue.description_present? %>
               <p><%= @venue.description %></p>
             <% else %>
@@ -31,7 +142,7 @@
             <% end %>
           </div>
           <div class="col-md-4">
-            <p class="text-muted text-uppercase mb-2">Estado editorial</p>
+            <p class="black-coffee-detail-section-label mb-2">Estado editorial</p>
             <% if @venue.featured? %>
               <span class="badge badge-success p-2">Destacado</span>
             <% else %>
@@ -44,7 +155,7 @@
 
         <div class="row">
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Visibilidad</p>
+            <p class="black-coffee-detail-section-label mb-2">Visibilidad</p>
             <% if @venue.visible_to_app? %>
               <span class="badge badge-success p-2">Visible en la app</span>
             <% else %>
@@ -52,7 +163,7 @@
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Pago</p>
+            <p class="black-coffee-detail-section-label mb-2">Pago</p>
             <% if @venue.payment_current_for_dashboard? %>
               <span class="badge badge-success p-2">Pago al dia</span>
             <% else %>
@@ -60,7 +171,7 @@
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Uso interno</p>
+            <p class="black-coffee-detail-section-label mb-2">Uso interno</p>
             <% if @venue.internal_test_for_dashboard? %>
               <span class="badge badge-info p-2">Sitio de prueba interno</span>
             <% else %>
@@ -73,7 +184,7 @@
 
         <div class="row">
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Conexion Google</p>
+            <p class="black-coffee-detail-section-label mb-2">Conexion Google</p>
             <% if @venue.google_connected? %>
               <span class="badge badge-success p-2">Conectado</span>
               <div class="text-muted small mt-2"><%= @venue.google_place_id %></div>
@@ -90,7 +201,7 @@
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Etiqueta principal Google</p>
+            <p class="black-coffee-detail-section-label mb-2">Etiqueta principal Google</p>
             <% if @venue.google_primary_type_for_dashboard.present? %>
               <div>
                 <span class="badge badge-primary p-2"><%= @venue.google_primary_type_for_dashboard %></span>
@@ -103,18 +214,18 @@
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Pais</p>
+            <p class="black-coffee-detail-section-label mb-2">Pais</p>
             <strong><%= @venue.country.presence || 'Sin pais' %></strong>
             <% if @venue.country_code.present? %>
               <div class="text-muted small"><%= @venue.country_code %></div>
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Estado / Region</p>
+            <p class="black-coffee-detail-section-label mb-2">Estado / Region</p>
             <strong><%= @venue.state.presence || 'Sin region' %></strong>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Revision Black Coffee</p>
+            <p class="black-coffee-detail-section-label mb-2">Revision Black Coffee</p>
             <span class="badge badge-<%= @venue.review_status_badge_class %> p-2"><%= @venue.review_status_label %></span>
             <% if @venue.review_rejection_reason.present? %>
               <div class="text-muted small mt-2"><%= @venue.review_rejection_reason_label %></div>
@@ -135,47 +246,47 @@
 
         <div class="row">
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Categoria</p>
+            <p class="black-coffee-detail-section-label mb-2">Categoria</p>
             <strong><%= @venue.category %></strong>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Subcategoria</p>
+            <p class="black-coffee-detail-section-label mb-2">Subcategoria</p>
             <strong><%= BlackCoffeeTaxonomy.label_for(@venue.category, @venue.subcategory_name).presence || 'Sin subcategoria' %></strong>
             <% if @venue.subcategory_name.present? %>
               <div class="text-muted small"><%= @venue.subcategory_name %></div>
             <% end %>
           </div>
           <div class="col-md-4 mb-3">
-            <p class="text-muted text-uppercase mb-2">Favoritos</p>
+            <p class="black-coffee-detail-section-label mb-2">Favoritos</p>
             <strong><%= @venue.favorites_count %></strong>
           </div>
           <div class="col-md-6 mb-3">
-            <p class="text-muted text-uppercase mb-2">Direccion</p>
+            <p class="black-coffee-detail-section-label mb-2">Direccion</p>
             <strong><%= @venue.address %></strong>
           </div>
           <div class="col-md-3 mb-3">
-            <p class="text-muted text-uppercase mb-2">Ciudad</p>
+            <p class="black-coffee-detail-section-label mb-2">Ciudad</p>
             <strong><%= @venue.city %></strong>
           </div>
           <div class="col-md-3 mb-3">
-            <p class="text-muted text-uppercase mb-2">Codigo postal</p>
+            <p class="black-coffee-detail-section-label mb-2">Codigo postal</p>
             <strong><%= @venue.postal_code.presence || 'Sin codigo postal' %></strong>
           </div>
           <div class="col-md-3 mb-3">
-            <p class="text-muted text-uppercase mb-2">Coordenadas</p>
+            <p class="black-coffee-detail-section-label mb-2">Coordenadas</p>
             <strong><%= number_with_precision(@venue.latitude, precision: 6) %>, <%= number_with_precision(@venue.longitude, precision: 6) %></strong>
           </div>
         </div>
 
-        <p class="text-muted text-uppercase mb-2">Mapa de etiquetas Google</p>
+        <p class="black-coffee-detail-section-label mb-2">Mapa de etiquetas Google</p>
         <% if @venue.google_primary_type_for_dashboard.present? %>
           <div class="mb-2">
             <span class="badge badge-primary mr-2 mb-2 p-2"><%= @venue.google_primary_type_for_dashboard %></span>
             <span class="text-muted small">Etiqueta principal</span>
           </div>
         <% end %>
-        <p class="text-muted text-uppercase mb-2">Etiquetas Google secundarias</p>
-        <div class="mb-0">
+        <p class="black-coffee-detail-section-label mb-2">Etiquetas Google secundarias</p>
+        <div class="black-coffee-tag-cloud mb-0">
           <% if @venue.google_secondary_type_list.any? %>
             <% @venue.google_secondary_type_list.each do |tag| %>
               <span class="badge badge-dark mr-2 mb-2 p-2"><%= tag %></span>
@@ -198,7 +309,7 @@
         <h4 class="mb-0">Horarios</h4>
       </div>
       <div class="card-body p-0">
-        <table class="table mb-0">
+        <table class="table mb-0 black-coffee-schedule-table">
           <thead>
             <tr>
               <th>Dia</th>
@@ -208,8 +319,8 @@
           <tbody>
             <% @venue.weekly_schedule.each do |entry| %>
               <tr>
-                <td style="width: 180px;"><strong><%= Venue.day_name(entry[:day]) %></strong></td>
-                <td>
+                <td data-label="Dia" style="width: 180px;"><strong><%= Venue.day_name(entry[:day]) %></strong></td>
+                <td data-label="Franja">
                   <% if entry[:closed] %>
                     <span class="text-muted">Cerrado</span>
                   <% else %>
@@ -235,7 +346,7 @@
         <% if @venue.image_urls(base_url: request.base_url).any? %>
           <% @venue.image_urls(base_url: request.base_url).each do |image_url| %>
             <div class="mb-3">
-              <%= image_tag image_url, class: 'img-fluid rounded border', style: 'width: 100%; max-height: 220px; object-fit: cover;' %>
+              <%= image_tag image_url, class: 'img-fluid rounded border black-coffee-detail-image' %>
             </div>
           <% end %>
         <% else %>

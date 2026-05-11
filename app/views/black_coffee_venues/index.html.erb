@@ -45,10 +45,192 @@
     border-color: #1d2124;
     color: white;
   }
+
+  .black-coffee-page-actions,
+  .black-coffee-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .black-coffee-page-actions .btn,
+  .black-coffee-page-actions form,
+  .black-coffee-row-actions .btn,
+  .black-coffee-row-actions form {
+    margin: 0 !important;
+  }
+
+  .black-coffee-row-actions form {
+    display: inline-flex;
+  }
+
+  .black-coffee-cover {
+    height: 64px;
+    object-fit: cover;
+    width: 96px;
+  }
+
+  .black-coffee-cover-placeholder {
+    height: 64px;
+    width: 96px;
+  }
+
+  @media (max-width: 767px) {
+    .black-coffee-review-entry {
+      border-left-width: 0;
+      border-top: 5px solid #343a40;
+    }
+
+    .black-coffee-review-entry .d-flex {
+      align-items: flex-start !important;
+    }
+
+    .black-coffee-review-entry-icon {
+      flex-basis: 46px;
+      height: 46px;
+      width: 46px;
+    }
+
+    .black-coffee-page-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      width: 100%;
+    }
+
+    .black-coffee-page-actions .btn,
+    .black-coffee-page-actions form,
+    .black-coffee-page-actions form .btn,
+    .black-coffee-review-entry .btn-review-entry {
+      width: 100%;
+    }
+
+    .black-coffee-category-badges {
+      display: flex;
+      flex-wrap: nowrap;
+      margin-left: -4px;
+      margin-right: -4px;
+      overflow-x: auto;
+      padding: 0 4px 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .black-coffee-category-badges .badge {
+      flex: 0 0 auto;
+    }
+
+    .black-coffee-filter-actions .btn {
+      min-height: 44px;
+      width: 100%;
+    }
+
+    .black-coffee-venues-table thead {
+      display: none;
+    }
+
+    .black-coffee-venues-table,
+    .black-coffee-venues-table tbody,
+    .black-coffee-venues-table tr,
+    .black-coffee-venues-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .black-coffee-venues-table tr {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      margin: 0 10px 16px;
+      overflow: hidden;
+    }
+
+    .black-coffee-venues-table td {
+      align-items: flex-start;
+      border-top: 0;
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      padding: 10px 14px;
+      text-align: right !important;
+      white-space: normal !important;
+    }
+
+    .black-coffee-venues-table td::before {
+      color: #64748b;
+      content: attr(data-label);
+      flex: 0 0 38%;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .black-coffee-venues-table td[data-label="Portada"] {
+      display: block;
+      padding: 0;
+      text-align: left !important;
+    }
+
+    .black-coffee-venues-table td[data-label="Portada"]::before {
+      display: none;
+    }
+
+    .black-coffee-cover,
+    .black-coffee-cover-placeholder {
+      border: 0;
+      border-radius: 0 !important;
+      height: 170px !important;
+      width: 100% !important;
+    }
+
+    .black-coffee-venues-table td[data-label="Nombre"] {
+      display: block;
+      text-align: left !important;
+    }
+
+    .black-coffee-venues-table td[data-label="Nombre"]::before {
+      display: none;
+    }
+
+    .black-coffee-venues-table td[data-label="Acciones"],
+    .black-coffee-venues-table td[colspan] {
+      display: block;
+      text-align: left !important;
+    }
+
+    .black-coffee-venues-table td[data-label="Acciones"]::before {
+      display: block;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+
+    .black-coffee-venues-table td[colspan] {
+      text-align: center !important;
+    }
+
+    .black-coffee-venues-table td[colspan]::before {
+      display: none;
+    }
+
+    .black-coffee-row-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+    }
+
+    .black-coffee-row-actions .btn,
+    .black-coffee-row-actions form,
+    .black-coffee-row-actions form .btn {
+      min-height: 42px;
+      width: 100%;
+    }
+  }
 </style>
 
 <div class="row mb-4">
-  <div class="col-md-3">
+  <div class="col-6 col-lg-3 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase mb-2">Locales</p>
@@ -61,7 +243,7 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-6 col-lg-3 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase mb-2">Destacados</p>
@@ -69,7 +251,7 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-6 col-lg-3 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase mb-2">Subcategorias</p>
@@ -77,7 +259,7 @@
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-6 col-lg-3 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <p class="text-muted text-uppercase mb-2">Favoritos acumulados</p>
@@ -104,7 +286,7 @@
           </div>
         </div>
       </div>
-      <%= link_to 'Abrir revision de locales', black_coffee_reviews_path, class: 'btn btn-review-entry btn-lg text-white' %>
+      <%= link_to 'Abrir revision de locales', black_coffee_reviews_path, class: 'btn btn-review-entry btn-lg text-white mt-3 mt-lg-0' %>
     </div>
   </div>
 </div>
@@ -116,7 +298,7 @@
         <h4 class="mb-1">Panel de locales</h4>
         <p class="text-muted mb-0">Gestiona los venues que consume el nuevo modulo Black Coffee.</p>
       </div>
-      <div class="mt-3 mt-md-0">
+      <div class="black-coffee-page-actions mt-3 mt-md-0">
         <%= link_to 'Gestionar subcategorias', black_coffee_subcategories_path, class: 'btn btn-outline-dark mr-2' %>
         <%= link_to 'Limpieza masiva',
                     black_coffee_cleanup_path(
@@ -132,7 +314,7 @@
       </div>
     </div>
 
-    <div class="mb-3">
+    <div class="black-coffee-category-badges mb-3">
       <% @categories.each do |category| %>
         <span class="badge badge-light mr-2 mb-2 p-2">
           <strong><%= category %></strong>: <%= @category_counts[category].to_i %>
@@ -165,7 +347,7 @@
           <%= text_field_tag :google_tag, @google_tag_filter, class: 'form-control', placeholder: 'Etiqueta Google' %>
           <small class="text-muted">Ej: butcher_shop</small>
         </div>
-        <div class="col-md-2 mb-3">
+        <div class="col-md-2 mb-3 black-coffee-filter-actions">
           <div class="d-flex">
             <%= submit_tag 'Filtrar', class: 'btn btn-primary flex-fill text-white' %>
           </div>
@@ -177,7 +359,7 @@
 
 <div class="card">
   <div class="card-body table-responsive p-0">
-    <table class="table table-hover mb-0">
+    <table class="table table-hover mb-0 black-coffee-venues-table">
       <thead>
         <tr>
           <th>Portada</th>
@@ -201,16 +383,16 @@
         <% if @venues.any? %>
           <% @venues.each do |venue| %>
             <tr>
-              <td style="width: 120px;">
+              <td data-label="Portada" style="width: 120px;">
                 <% if venue.cover_image_url(base_url: request.base_url).present? %>
-                  <%= image_tag venue.cover_image_url(base_url: request.base_url), class: 'img-thumbnail', style: 'width: 96px; height: 64px; object-fit: cover;' %>
+                  <%= image_tag venue.cover_image_url(base_url: request.base_url), class: 'img-thumbnail black-coffee-cover' %>
                 <% else %>
-                  <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 96px; height: 64px;">
+                  <div class="bg-light d-flex align-items-center justify-content-center rounded black-coffee-cover-placeholder">
                     <i class="fas fa-image text-muted"></i>
                   </div>
                 <% end %>
               </td>
-              <td>
+              <td data-label="Nombre">
                 <strong><%= venue.name %></strong>
                 <div class="text-muted small"><%= venue.address %></div>
                 <% if venue.google_primary_type_for_dashboard.present? %>
@@ -227,75 +409,77 @@
                   </div>
                 <% end %>
               </td>
-              <td><span class="badge badge-secondary"><%= venue.category %></span></td>
-              <td><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name).presence || 'Sin subcategoria' %></td>
-              <td><%= venue.city %></td>
-              <td>
+              <td data-label="Categoria"><span class="badge badge-secondary"><%= venue.category %></span></td>
+              <td data-label="Subcategoria"><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name).presence || 'Sin subcategoria' %></td>
+              <td data-label="Ciudad"><%= venue.city %></td>
+              <td data-label="Pais / Region">
                 <strong><%= venue.country.presence || 'Sin pais' %></strong>
                 <div class="text-muted small"><%= venue.state.presence || 'Sin region' %></div>
               </td>
-              <td>
+              <td data-label="Google">
                 <% if venue.google_connected? %>
                   <span class="badge badge-success">Conectado</span>
                 <% else %>
                   <span class="badge badge-light">Sin Google</span>
                 <% end %>
               </td>
-              <td><%= @favorite_counts_by_venue_id[venue.id].to_i %></td>
-              <td>
+              <td data-label="Favoritos"><%= @favorite_counts_by_venue_id[venue.id].to_i %></td>
+              <td data-label="Revision">
                 <span class="badge badge-<%= venue.review_status_badge_class %>"><%= venue.review_status_label %></span>
                 <% if venue.review_rejection_reason.present? %>
                   <div class="text-muted small mt-1"><%= venue.review_rejection_reason_label %></div>
                 <% end %>
               </td>
-              <td>
+              <td data-label="Destacado">
                 <% if venue.featured? %>
                   <span class="badge badge-success">Si</span>
                 <% else %>
                   <span class="badge badge-light">No</span>
                 <% end %>
               </td>
-              <td>
+              <td data-label="Visible">
                 <% if venue.visible_to_app? %>
                   <span class="badge badge-success">Visible</span>
                 <% else %>
                   <span class="badge badge-danger">Oculto</span>
                 <% end %>
               </td>
-              <td>
+              <td data-label="Pago">
                 <% if venue.payment_current_for_dashboard? %>
                   <span class="badge badge-success">Al dia</span>
                 <% else %>
                   <span class="badge badge-warning">Pendiente</span>
                 <% end %>
               </td>
-              <td>
+              <td data-label="Interno">
                 <% if venue.internal_test_for_dashboard? %>
                   <span class="badge badge-info">Interno</span>
                 <% else %>
                   <span class="badge badge-light">No</span>
                 <% end %>
               </td>
-              <td><%= venue.updated_at.strftime('%d/%m/%Y %H:%M') %></td>
-              <td class="text-right text-nowrap">
-                <%= link_to black_coffee_venue_path(venue), class: 'btn btn-sm btn-info text-white' do %>
-                  <i class="fas fa-eye"></i>
-                <% end %>
-                <%= link_to edit_black_coffee_venue_path(venue), class: 'btn btn-sm btn-primary text-white' do %>
-                  <i class="fas fa-edit"></i>
-                <% end %>
-                <% if venue.google_connected? %>
-                  <%= button_to black_coffee_venue_google_syncs_path(venue_id: venue.id),
-                                method: :post,
-                                class: 'btn btn-sm btn-outline-info d-inline-block',
-                                form_class: 'd-inline-block',
-                                data: { confirm: "Se preparara una sincronizacion Google para #{venue.name}. Continuar?" } do %>
-                    <i class="fas fa-sync-alt"></i>
+              <td data-label="Actualizado"><%= venue.updated_at.strftime('%d/%m/%Y %H:%M') %></td>
+              <td data-label="Acciones" class="text-right text-nowrap">
+                <div class="black-coffee-row-actions">
+                  <%= link_to black_coffee_venue_path(venue), class: 'btn btn-sm btn-info text-white' do %>
+                    <i class="fas fa-eye"></i>
                   <% end %>
-                <% end %>
-                <%= link_to black_coffee_venue_path(venue), method: :delete, data: { confirm: '¿Eliminar este local?' }, class: 'btn btn-sm btn-danger text-white' do %>
-                  <i class="fas fa-trash"></i>
-                <% end %>
+                  <%= link_to edit_black_coffee_venue_path(venue), class: 'btn btn-sm btn-primary text-white' do %>
+                    <i class="fas fa-edit"></i>
+                  <% end %>
+                  <% if venue.google_connected? %>
+                    <%= button_to black_coffee_venue_google_syncs_path(venue_id: venue.id),
+                                  method: :post,
+                                  class: 'btn btn-sm btn-outline-info d-inline-block',
+                                  form_class: 'd-inline-block',
+                                  data: { confirm: "Se preparara una sincronizacion Google para #{venue.name}. Continuar?" } do %>
+                      <i class="fas fa-sync-alt"></i>
+                    <% end %>
+                  <% end %>
+                  <%= link_to black_coffee_venue_path(venue), method: :delete, data: { confirm: '¿Eliminar este local?' }, class: 'btn btn-sm btn-danger text-white' do %>
+                    <i class="fas fa-trash"></i>
+                  <% end %>
+                </div>
               </td>
             </tr>
           <% end %>
