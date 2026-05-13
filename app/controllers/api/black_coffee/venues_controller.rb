@@ -75,6 +75,23 @@ module Api
         }
       end
 
+      def favorites
+        relation = visible_venues.where(id: current_user.user_favorites.select(:venue_id))
+        relation = apply_distance_filter(relation)
+        return if performed?
+
+        relation = relation.order(Arel.sql(favorite_created_at_order_sql))
+        limit = parse_limit(50, max_value: 100)
+        offset = parse_offset
+
+        render json: {
+          venues: serialize_venues(fetch_venues(relation, limit: limit, offset: offset)),
+          total: relation.distinct.count(:id),
+          limit: limit,
+          offset: offset
+        }
+      end
+
       def category
         category = validated_category(params[:category], allow_all: false)
         return if performed?
@@ -205,6 +222,18 @@ module Api
 
       def favorite_action_param
         request.request_parameters['action'].presence || params[:favorite_action].presence
+      end
+
+      def favorite_created_at_order_sql
+        <<~SQL.squish
+          (
+            SELECT user_favorites.created_at
+            FROM user_favorites
+            WHERE user_favorites.venue_id = venues.id
+              AND user_favorites.user_id = #{current_user.id.to_i}
+            LIMIT 1
+          ) DESC
+        SQL
       end
     end
   end

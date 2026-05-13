@@ -96,6 +96,7 @@ Rails.application.routes.draw do
           get :featured
           get :nearby
           get :popular
+          get :favorites
           get 'category/:category', action: :category, as: :category
         end
 
