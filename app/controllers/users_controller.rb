@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :destroy, :block]
-  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes, :sync_stripe_purchases]
+  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes, :add_black_coffee_favorite, :remove_black_coffee_favorite, :sync_stripe_purchases]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet, :cleanup_is_connected]
 
@@ -117,6 +117,8 @@ class UsersController < ApplicationController
     
     # Paginación para usuarios que han bloqueado a este usuario
     @blocked_by_users = Block.where(blocked_user_id: @user.id).includes(:user).order(created_at: :desc).paginate(page: params[:blocked_by_users_page], per_page: 10)
+
+    prepare_black_coffee_favorites_state
     
     # Calcular total gastado en Stripe (succeeded purchases)
     @completed_purchases = @user.purchases_stripes.where(status: 'succeeded')
@@ -890,6 +892,41 @@ end
     likes.update_all(is_rejected: true)
     
     redirect_to show_user_path(id: user.id), notice: "Se rechazaron #{likes_rejected} likes con éxito."
+  end
+
+  def add_black_coffee_favorite
+    user = User.find(params[:id])
+    venue = black_coffee_favorite_venue_scope.find_by(id: params[:venue_id])
+
+    unless venue
+      redirect_to show_user_path(id: user.id, black_coffee_venue_query: params[:black_coffee_venue_query], anchor: 'black-coffee-favorites'), alert: 'Local Black Coffee no encontrado o no disponible para la app.'
+      return
+    end
+
+    favorite = UserFavorite.find_or_initialize_by(user_id: user.id, venue_id: venue.id)
+    if favorite.persisted?
+      redirect_to show_user_path(id: user.id, black_coffee_venue_query: params[:black_coffee_venue_query], anchor: 'black-coffee-favorites'), alert: "#{venue.name} ya estaba en favoritos de Black Coffee."
+      return
+    end
+
+    favorite.save!
+    redirect_to show_user_path(id: user.id, black_coffee_venue_query: params[:black_coffee_venue_query], anchor: 'black-coffee-favorites'), notice: "#{venue.name} agregado a favoritos de Black Coffee."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to show_user_path(id: params[:id], black_coffee_venue_query: params[:black_coffee_venue_query], anchor: 'black-coffee-favorites'), alert: "No se pudo agregar el favorito: #{e.record.errors.full_messages.to_sentence}"
+  end
+
+  def remove_black_coffee_favorite
+    user = User.find(params[:id])
+    favorite = user.user_favorites.find_by(venue_id: params[:venue_id])
+
+    unless favorite
+      redirect_to show_user_path(id: user.id, black_coffee_favorites_page: params[:black_coffee_favorites_page], anchor: 'black-coffee-favorites'), alert: 'Este local ya no estaba guardado como favorito.'
+      return
+    end
+
+    venue_name = favorite.venue&.name || 'Local'
+    favorite.destroy!
+    redirect_to show_user_path(id: user.id, black_coffee_favorites_page: params[:black_coffee_favorites_page], anchor: 'black-coffee-favorites'), notice: "#{venue_name} eliminado de favoritos de Black Coffee."
   end
 
   # Sincronizar compras con Stripe
@@ -2944,6 +2981,41 @@ end
       @user = User.find(params[:id])
     end
 
+    def prepare_black_coffee_favorites_state
+      favorites_scope = @user.user_favorites
+                             .includes(venue: [:venue_subcategory, :venue_images])
+                             .order(created_at: :desc)
+
+      @black_coffee_favorites_count = @user.user_favorites.count
+      @black_coffee_favorites = favorites_scope.paginate(
+        page: params[:black_coffee_favorites_page],
+        per_page: 8
+      )
+
+      @black_coffee_venue_query = params[:black_coffee_venue_query].to_s.strip
+      @black_coffee_favorite_candidates = []
+      return if @black_coffee_venue_query.blank?
+
+      escaped_query = ActiveRecord::Base.sanitize_sql_like(@black_coffee_venue_query)
+      query = "%#{escaped_query}%"
+
+      @black_coffee_favorite_candidates =
+        black_coffee_favorite_venue_scope
+        .includes(:venue_subcategory, :venue_images)
+        .where.not(id: @user.user_favorites.select(:venue_id))
+        .where(
+          'venues.name LIKE :query OR venues.city LIKE :query OR venues.address LIKE :query OR venues.state LIKE :query',
+          query: query
+        )
+        .order(:name)
+        .limit(12)
+        .to_a
+    end
+
+    def black_coffee_favorite_venue_scope
+      Venue.public_catalog_scope.not_rejected_for_app
+    end
+
     # Only allow a list of trusted parameters
     def user_params
       params.require(:user).permit(
@@ -3101,4 +3173,3 @@ end
       AliveChannel.broadcast_to(target_user, websocket_payload)
     end
     end
-

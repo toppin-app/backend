@@ -1,0 +1,290 @@
+<style>
+  .black-coffee-user-favorites {
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  .black-coffee-user-favorites .card-header {
+    align-items: center;
+    background: #111827;
+    color: #ffffff;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  .black-coffee-user-favorites-count {
+    background: #fe52e9;
+    border-radius: 999px;
+    color: #111827;
+    display: inline-flex;
+    font-weight: 900;
+    padding: 6px 12px;
+  }
+
+  .black-coffee-favorite-thumb {
+    background: #f3f4f6;
+    border-radius: 12px;
+    height: 64px;
+    object-fit: cover;
+    width: 88px;
+  }
+
+  .black-coffee-favorite-thumb-placeholder {
+    align-items: center;
+    background: #f3f4f6;
+    border-radius: 12px;
+    color: #9ca3af;
+    display: flex;
+    height: 64px;
+    justify-content: center;
+    width: 88px;
+  }
+
+  .black-coffee-favorite-candidates {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .black-coffee-favorite-candidate {
+    align-items: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .black-coffee-favorite-meta {
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .black-coffee-user-favorites .table td,
+  .black-coffee-user-favorites .table th {
+    vertical-align: middle;
+  }
+
+  .black-coffee-user-favorites-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .black-coffee-user-favorites-actions form {
+    margin: 0;
+  }
+
+  @media (max-width: 767px) {
+    .black-coffee-user-favorites .card-header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .black-coffee-favorite-candidate {
+      align-items: flex-start;
+    }
+
+    .black-coffee-user-favorites-table thead {
+      display: none;
+    }
+
+    .black-coffee-user-favorites-table,
+    .black-coffee-user-favorites-table tbody,
+    .black-coffee-user-favorites-table tr,
+    .black-coffee-user-favorites-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .black-coffee-user-favorites-table tr {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 0;
+    }
+
+    .black-coffee-user-favorites-table td {
+      border: 0;
+      padding: 6px 0;
+    }
+
+    .black-coffee-user-favorites-table td::before {
+      color: #6b7280;
+      content: attr(data-label);
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .black-coffee-user-favorites-actions {
+      justify-content: flex-start;
+    }
+  }
+</style>
+
+<div id="black-coffee-favorites" class="card mb-4 black-coffee-user-favorites">
+  <div class="card-header">
+    <div>
+      <strong><i class="fa fa-coffee"></i> Favoritos Black Coffee</strong>
+      <div class="small text-white-50">Locales que este usuario ha guardado en la app.</div>
+    </div>
+    <span class="black-coffee-user-favorites-count">
+      <%= number_with_delimiter(@black_coffee_favorites_count) %> guardados
+    </span>
+  </div>
+
+  <div class="card-body">
+    <% if current_user&.admin? %>
+      <div class="mb-4">
+        <h5 class="mb-2">Agregar un local a favoritos</h5>
+        <%= form_with url: show_user_path(id: @user.id, anchor: 'black-coffee-favorites'), method: :get, local: true, html: { class: 'mb-3' } do %>
+          <div class="input-group">
+            <%= text_field_tag :black_coffee_venue_query,
+                               @black_coffee_venue_query,
+                               class: 'form-control',
+                               placeholder: 'Buscar local por nombre, ciudad, dirección o región...' %>
+            <div class="input-group-append">
+              <%= submit_tag 'Buscar locales', class: 'btn btn-outline-dark' %>
+            </div>
+          </div>
+        <% end %>
+
+        <% if @black_coffee_venue_query.present? %>
+          <% if @black_coffee_favorite_candidates.any? %>
+            <div class="black-coffee-favorite-candidates">
+              <% @black_coffee_favorite_candidates.each do |venue| %>
+                <% cover_url = venue.cover_image_url(base_url: request.base_url) %>
+                <div class="black-coffee-favorite-candidate">
+                  <% if cover_url.present? %>
+                    <%= image_tag cover_url, class: 'black-coffee-favorite-thumb', alt: venue.name %>
+                  <% else %>
+                    <div class="black-coffee-favorite-thumb-placeholder"><i class="fa fa-image"></i></div>
+                  <% end %>
+
+                  <div class="flex-grow-1">
+                    <strong><%= venue.name %></strong>
+                    <div class="black-coffee-favorite-meta">
+                      <%= venue.category.to_s.humanize %>
+                      <% if venue.subcategory_name.present? %>
+                        · <%= venue.subcategory_name.humanize %>
+                      <% end %>
+                      <br>
+                      <%= [venue.city, venue.state].map(&:presence).compact.join(' · ') %>
+                    </div>
+                  </div>
+
+                  <%= button_to add_black_coffee_favorite_path(id: @user.id),
+                                method: :post,
+                                params: {
+                                  venue_id: venue.id,
+                                  black_coffee_venue_query: @black_coffee_venue_query
+                                },
+                                class: 'btn btn-sm btn-success text-white',
+                                data: { confirm: "¿Agregar #{venue.name} a favoritos de Black Coffee para #{@user.name}?" } do %>
+                    <i class="fa fa-heart"></i> Agregar
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="alert alert-secondary mb-0">
+              No encontré locales disponibles para "<%= @black_coffee_venue_query %>" que no estén ya guardados por este usuario.
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-muted small">Busca un local para poder añadirlo manualmente a favoritos.</div>
+        <% end %>
+      </div>
+
+      <hr>
+    <% end %>
+
+    <h5 class="mb-3">Locales guardados</h5>
+    <% if @black_coffee_favorites.any? %>
+      <div class="table-responsive">
+        <table class="table black-coffee-user-favorites-table">
+          <thead>
+            <tr>
+              <th>Imagen</th>
+              <th>Local</th>
+              <th>Categoría</th>
+              <th>Ubicación</th>
+              <th>Guardado</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @black_coffee_favorites.each do |favorite| %>
+              <% venue = favorite.venue %>
+              <% cover_url = venue.cover_image_url(base_url: request.base_url) %>
+              <tr>
+                <td data-label="Imagen">
+                  <% if cover_url.present? %>
+                    <%= image_tag cover_url, class: 'black-coffee-favorite-thumb', alt: venue.name %>
+                  <% else %>
+                    <div class="black-coffee-favorite-thumb-placeholder"><i class="fa fa-image"></i></div>
+                  <% end %>
+                </td>
+                <td data-label="Local">
+                  <strong><%= venue.name %></strong>
+                  <% if venue.description.present? %>
+                    <div class="black-coffee-favorite-meta"><%= truncate(venue.description, length: 90) %></div>
+                  <% end %>
+                </td>
+                <td data-label="Categoría">
+                  <span class="badge badge-dark"><%= venue.category.to_s.humanize %></span>
+                  <% if venue.subcategory_name.present? %>
+                    <span class="badge badge-light"><%= venue.subcategory_name.humanize %></span>
+                  <% end %>
+                </td>
+                <td data-label="Ubicación">
+                  <%= [venue.city, venue.state].map(&:presence).compact.join(' · ') %>
+                  <% if venue.address.present? %>
+                    <div class="black-coffee-favorite-meta"><%= venue.address %></div>
+                  <% end %>
+                </td>
+                <td data-label="Guardado">
+                  <%= favorite.created_at.strftime('%d-%m-%Y %H:%M') %>
+                </td>
+                <td data-label="Acciones">
+                  <div class="black-coffee-user-favorites-actions">
+                    <%= link_to 'Ver local',
+                                black_coffee_venue_path(venue),
+                                class: 'btn btn-sm btn-outline-dark' %>
+                    <% if current_user&.admin? %>
+                      <%= button_to remove_black_coffee_favorite_path(id: @user.id, venue_id: venue.id),
+                                    method: :delete,
+                                    params: { black_coffee_favorites_page: params[:black_coffee_favorites_page] },
+                                    class: 'btn btn-sm btn-outline-danger',
+                                    data: { confirm: "¿Quitar #{venue.name} de favoritos de Black Coffee para #{@user.name}?" } do %>
+                        <i class="fa fa-trash"></i> Quitar
+                      <% end %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-center">
+        <%= will_paginate @black_coffee_favorites,
+                          param_name: 'black_coffee_favorites_page',
+                          previous_label: '← Anterior',
+                          next_label: 'Siguiente →' %>
+      </div>
+    <% else %>
+      <div class="alert alert-secondary mb-0">
+        Este usuario todavía no tiene locales de Black Coffee guardados en favoritos.
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -269,6 +269,8 @@ Rails.application.routes.draw do
   post '/reject_incoming_like', to: 'users#reject_incoming_like', as: :reject_incoming_like
   post '/match_all_likes', to: 'users#match_all_likes', as: :match_all_likes
   post '/reject_all_likes', to: 'users#reject_all_likes', as: :reject_all_likes
+  post '/users/:id/black_coffee_favorites', to: 'users#add_black_coffee_favorite', as: :add_black_coffee_favorite
+  delete '/users/:id/black_coffee_favorites/:venue_id', to: 'users#remove_black_coffee_favorite', as: :remove_black_coffee_favorite
   post '/sync_stripe_purchases', to: 'users#sync_stripe_purchases', as: :sync_stripe_purchases
   get 'users/:id/matches_status', to: 'users#matches_status'
 
