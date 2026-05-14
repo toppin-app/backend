@@ -29,7 +29,11 @@ Rails.application.routes.draw do
   resources :user_watchlists, only: [:create, :show]
 
   scope :black_coffee, as: :black_coffee do
-    resources :venues, controller: 'black_coffee_venues'
+    resources :venues, controller: 'black_coffee_venues' do
+      member do
+        patch :review
+      end
+    end
     resources :reviews, controller: 'black_coffee_venue_reviews', only: [:index, :create, :show, :destroy] do
       member do
         post :complete

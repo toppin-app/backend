@@ -12,8 +12,16 @@ class BlackCoffeeVenueReviewsController < ApplicationController
     @batch_sizes = FIXED_BATCH_SIZES
     @default_batch_size = DEFAULT_BATCH_SIZE
     @category_options = review_category_options
+    @review_status_options = review_status_options
+    @review_reason_options = Venue::REJECTION_REASON_LABELS.map { |code, label| [label, code] }
     @metrics = review_metrics
     @reason_breakdown = rejection_reason_breakdown
+    @review_filter_status = review_status_filter
+    @review_filter_reason = review_reason_filter
+    @review_filter_category = params[:review_category].to_s.presence
+    @review_filter_query = params[:review_q].to_s.strip
+    @reviewed_venues = reviewed_venues_scope.paginate(page: review_page_param, per_page: 20)
+    @favorite_counts_by_venue_id = Venue.favorite_counts_for(@reviewed_venues.map(&:id))
     @open_batches = review_batches_available? ? BlackCoffeeReviewBatch.open.recent_first.limit(5) : []
     @recent_batches = review_batches_available? ? BlackCoffeeReviewBatch.includes(:reviewed_by).recent_first.limit(20) : []
   end
@@ -151,6 +159,60 @@ class BlackCoffeeVenueReviewsController < ApplicationController
     review_categories.map do |category|
       [labels[category] || category.humanize, category]
     end
+  end
+
+  def review_status_options
+    [
+      ['Todos', 'all'],
+      ['Pendientes', Venue::REVIEW_STATUS_PENDING],
+      ['Aprobados', Venue::REVIEW_STATUS_APPROVED],
+      ['Rechazados', Venue::REVIEW_STATUS_REJECTED]
+    ]
+  end
+
+  def review_status_filter
+    status = params[:review_status].to_s.presence || Venue::REVIEW_STATUS_REJECTED
+    return status if status == 'all' || Venue::REVIEW_STATUSES.include?(status)
+
+    Venue::REVIEW_STATUS_REJECTED
+  end
+
+  def review_reason_filter
+    reason = params[:review_reason].to_s.strip
+    return nil unless Venue::REJECTION_REASON_CODES.include?(reason)
+
+    reason
+  end
+
+  def review_page_param
+    raw_page = params[:review_page].to_s.strip
+    return 1 if raw_page.blank?
+
+    [raw_page.to_i, 1].max
+  end
+
+  def reviewed_venues_scope
+    scope = Venue.includes(
+      :venue_subcategory,
+      :venue_images,
+      :reviewed_by,
+      review_batch_items: :review_batch
+    )
+
+    scope = scope.where(review_status: @review_filter_status) unless @review_filter_status == 'all'
+    scope = scope.where(category: @review_filter_category) if @review_filter_category.present?
+    scope = scope.where(review_rejection_reason: @review_filter_reason) if @review_filter_reason.present?
+
+    if @review_filter_query.present?
+      query = "%#{ActiveRecord::Base.sanitize_sql_like(@review_filter_query)}%"
+      scope = scope.where(
+        'venues.name LIKE :query OR venues.city LIKE :query OR venues.address LIKE :query OR venues.state LIKE :query OR venues.google_place_id LIKE :query',
+        query: query
+      )
+    end
+
+    scope.order(Arel.sql('CASE WHEN venues.reviewed_at IS NULL THEN 1 ELSE 0 END'))
+         .order(reviewed_at: :desc, updated_at: :desc, id: :desc)
   end
 
   def review_category_labels

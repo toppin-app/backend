@@ -4,7 +4,7 @@ class BlackCoffeeVenuesController < ApplicationController
 
   before_action :check_admin
   before_action :hide_content_header, only: [:show, :new, :edit, :create, :update]
-  before_action :set_venue, only: [:show, :edit, :update, :destroy]
+  before_action :set_venue, only: [:show, :edit, :update, :destroy, :review]
 
   def index
     @title = 'Black Coffee'
@@ -89,10 +89,92 @@ class BlackCoffeeVenuesController < ApplicationController
     redirect_to black_coffee_venues_path, notice: 'Local Black Coffee eliminado correctamente.'
   end
 
+  def review
+    status = params[:review_status].to_s.strip
+    unless Venue::REVIEW_STATUSES.include?(status)
+      redirect_to black_coffee_venue_path(@venue), alert: 'Estado de revision no valido.'
+      return
+    end
+
+    attributes = review_attributes_for(status)
+    ActiveRecord::Base.transaction do
+      @venue.update!(attributes)
+      sync_open_review_batch_items!(attributes)
+    end
+
+    redirect_to black_coffee_venue_path(@venue), notice: review_success_message(status)
+  rescue ActiveRecord::ActiveRecordError, ArgumentError => e
+    redirect_to black_coffee_venue_path(@venue), alert: "No se pudo actualizar la revision: #{e.message}"
+  end
+
   private
 
   def set_venue
-    @venue = Venue.includes(:venue_subcategory, :venue_images, :venue_schedules, :reviewed_by).find(params[:id])
+    @venue = Venue.includes(
+      :venue_subcategory,
+      :venue_images,
+      :venue_schedules,
+      :reviewed_by,
+      review_batch_items: :review_batch
+    ).find(params[:id])
+  end
+
+  def review_attributes_for(status)
+    case status
+    when Venue::REVIEW_STATUS_REJECTED
+      reason = params[:review_rejection_reason].to_s.strip
+      unless Venue::REJECTION_REASON_CODES.include?(reason)
+        raise ArgumentError, 'Debes elegir un motivo de rechazo valido.'
+      end
+
+      {
+        review_status: status,
+        review_rejection_reason: reason,
+        review_rejection_note: params[:review_rejection_note].to_s.strip.presence,
+        reviewed_at: Time.current,
+        reviewed_by_id: current_user&.id
+      }
+    when Venue::REVIEW_STATUS_PENDING
+      {
+        review_status: status,
+        review_rejection_reason: nil,
+        review_rejection_note: nil,
+        reviewed_at: nil,
+        reviewed_by_id: nil
+      }
+    else
+      {
+        review_status: status,
+        review_rejection_reason: nil,
+        review_rejection_note: nil,
+        reviewed_at: Time.current,
+        reviewed_by_id: current_user&.id
+      }
+    end
+  end
+
+  def review_success_message(status)
+    case status
+    when Venue::REVIEW_STATUS_REJECTED
+      'Local marcado como rechazado.'
+    when Venue::REVIEW_STATUS_PENDING
+      'Local devuelto a pendiente de revision.'
+    else
+      'Local marcado como aprobado.'
+    end
+  end
+
+  def sync_open_review_batch_items!(attributes)
+    BlackCoffeeReviewBatchItem
+      .joins(:review_batch)
+      .where(venue_id: @venue.id, black_coffee_review_batches: { status: 'open' })
+      .update_all(
+        review_status: attributes[:review_status],
+        review_rejection_reason: attributes[:review_rejection_reason],
+        review_rejection_note: attributes[:review_rejection_note],
+        reviewed_at: attributes[:reviewed_at],
+        updated_at: Time.current
+      )
   end
 
   def prepare_form_state

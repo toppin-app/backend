@@ -50,6 +50,42 @@
     margin: 0 !important;
   }
 
+  .review-status-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .review-status-tabs .btn {
+    border-radius: 999px;
+    font-weight: 800;
+    margin: 0 !important;
+  }
+
+  .review-venues-table .venue-title {
+    color: #1f2937;
+    font-weight: 900;
+  }
+
+  .review-venue-thumb {
+    background: #f1f5f9;
+    border-radius: 12px;
+    height: 54px;
+    object-fit: cover;
+    width: 74px;
+  }
+
+  .review-venue-thumb-placeholder {
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 12px;
+    color: #94a3b8;
+    display: flex;
+    height: 54px;
+    justify-content: center;
+    width: 74px;
+  }
+
   @media (max-width: 767px) {
     .review-page-header {
       align-items: stretch !important;
@@ -91,19 +127,35 @@
       border-radius: 14px;
     }
 
-    .review-history-table thead {
+    .review-status-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .review-status-tabs .btn {
+      min-height: 42px;
+      width: 100%;
+    }
+
+    .review-history-table thead,
+    .review-venues-table thead {
       display: none;
     }
 
     .review-history-table,
     .review-history-table tbody,
     .review-history-table tr,
-    .review-history-table td {
+    .review-history-table td,
+    .review-venues-table,
+    .review-venues-table tbody,
+    .review-venues-table tr,
+    .review-venues-table td {
       display: block;
       width: 100%;
     }
 
-    .review-history-table tr {
+    .review-history-table tr,
+    .review-venues-table tr {
       background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 16px;
@@ -112,7 +164,8 @@
       overflow: hidden;
     }
 
-    .review-history-table td {
+    .review-history-table td,
+    .review-venues-table td {
       align-items: flex-start;
       border-top: 0;
       display: flex;
@@ -123,7 +176,8 @@
       white-space: normal !important;
     }
 
-    .review-history-table td::before {
+    .review-history-table td::before,
+    .review-venues-table td::before {
       color: #64748b;
       content: attr(data-label);
       flex: 0 0 40%;
@@ -135,23 +189,34 @@
     }
 
     .review-history-table td[data-label="Acciones"],
-    .review-history-table td[colspan] {
+    .review-history-table td[colspan],
+    .review-venues-table td[data-label="Acciones"],
+    .review-venues-table td[colspan] {
       display: block;
       text-align: left !important;
     }
 
-    .review-history-table td[data-label="Acciones"]::before {
+    .review-history-table td[data-label="Acciones"]::before,
+    .review-venues-table td[data-label="Acciones"]::before {
       display: block;
       margin-bottom: 8px;
       width: 100%;
     }
 
-    .review-history-table td[colspan] {
+    .review-history-table td[colspan],
+    .review-venues-table td[colspan] {
       text-align: center !important;
     }
 
-    .review-history-table td[colspan]::before {
+    .review-history-table td[colspan]::before,
+    .review-venues-table td[colspan]::before {
       display: none;
+    }
+
+    .review-venue-thumb,
+    .review-venue-thumb-placeholder {
+      height: 88px;
+      width: 100%;
     }
   }
 </style>
@@ -270,6 +335,170 @@
       </div>
     </div>
   </div>
+</div>
+
+<div class="card review-panel mb-4">
+  <div class="card-header bg-white">
+    <div class="d-flex flex-wrap justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-1">Locales por estado de revision</h4>
+        <p class="text-muted mb-0">Filtra pendientes, aprobados o rechazados y revisa motivo, reviewer y origen.</p>
+      </div>
+      <div class="review-status-tabs mt-3 mt-md-0">
+        <% status_tab_options = [
+          ['Rechazados', Venue::REVIEW_STATUS_REJECTED, @metrics[:rejected], 'danger'],
+          ['Aprobados', Venue::REVIEW_STATUS_APPROVED, @metrics[:approved], 'success'],
+          ['Pendientes', Venue::REVIEW_STATUS_PENDING, @metrics[:pending], 'warning'],
+          ['Todos', 'all', @metrics[:total], 'secondary']
+        ] %>
+        <% status_tab_options.each do |label, status, count, color| %>
+          <% active = @review_filter_status == status %>
+          <% tab_params = request.query_parameters.except('review_page').merge(review_status: status) %>
+          <% tab_params = tab_params.except('review_reason') unless [Venue::REVIEW_STATUS_REJECTED, 'all'].include?(status) %>
+          <%= link_to "#{label} · #{number_with_delimiter(count)}",
+                      black_coffee_reviews_path(tab_params),
+                      class: "btn btn-sm #{active ? "btn-#{color} text-white" : "btn-outline-#{color}"}" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <%= form_with url: black_coffee_reviews_path, method: :get, local: true do %>
+      <div class="row align-items-end">
+        <div class="col-md-3 mb-3">
+          <%= label_tag :review_status_select, 'Estado', class: 'font-weight-bold' %>
+          <%= select_tag :review_status,
+                         options_for_select(@review_status_options, @review_filter_status),
+                         class: 'form-control',
+                         id: 'review_status_select' %>
+        </div>
+        <div class="col-md-3 mb-3">
+          <%= label_tag :review_category, 'Categoria', class: 'font-weight-bold' %>
+          <%= select_tag :review_category,
+                         options_for_select([['Todas las categorias', '']] + @category_options, @review_filter_category),
+                         class: 'form-control' %>
+        </div>
+        <div class="col-md-3 mb-3">
+          <%= label_tag :review_reason, 'Motivo rechazo', class: 'font-weight-bold' %>
+          <%= select_tag :review_reason,
+                         options_for_select([['Todos los motivos', '']] + @review_reason_options, @review_filter_reason),
+                         class: 'form-control' %>
+        </div>
+        <div class="col-md-3 mb-3">
+          <%= label_tag :review_q, 'Buscar local', class: 'font-weight-bold' %>
+          <%= text_field_tag :review_q,
+                             @review_filter_query,
+                             class: 'form-control',
+                             placeholder: 'Nombre, ciudad, direccion...' %>
+        </div>
+        <div class="col-md-12 mb-3">
+          <%= submit_tag 'Aplicar filtros', class: 'btn btn-primary text-white mr-2' %>
+          <%= link_to 'Limpiar filtros', black_coffee_reviews_path, class: 'btn btn-outline-secondary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 review-venues-table">
+      <thead>
+        <tr>
+          <th>Imagen</th>
+          <th>Local</th>
+          <th>Estado</th>
+          <th>Motivo</th>
+          <th>Categoria</th>
+          <th>Origen</th>
+          <th>Reviewer</th>
+          <th>Fecha</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @reviewed_venues.any? %>
+          <% @reviewed_venues.each do |venue| %>
+            <% cover_url = venue.cover_image_url(base_url: request.base_url) %>
+            <% review_source = black_coffee_review_source_for(venue) %>
+            <tr>
+              <td data-label="Imagen">
+                <% if cover_url.present? %>
+                  <%= image_tag cover_url, class: 'review-venue-thumb', alt: venue.name %>
+                <% else %>
+                  <div class="review-venue-thumb-placeholder"><i class="fa fa-image"></i></div>
+                <% end %>
+              </td>
+              <td data-label="Local">
+                <div class="venue-title"><%= venue.name %></div>
+                <div class="text-muted small"><%= [venue.city, venue.state].map(&:presence).compact.join(' · ') %></div>
+                <div class="text-muted small">Favoritos: <%= number_with_delimiter(@favorite_counts_by_venue_id[venue.id].to_i) %></div>
+                <% if venue.google_primary_type_for_dashboard.present? %>
+                  <div class="text-muted small">Google: <%= venue.google_primary_type_for_dashboard %></div>
+                <% end %>
+              </td>
+              <td data-label="Estado">
+                <span class="badge badge-<%= venue.review_status_badge_class %> p-2"><%= venue.review_status_label %></span>
+              </td>
+              <td data-label="Motivo">
+                <% if venue.review_rejection_reason.present? %>
+                  <strong><%= venue.review_rejection_reason_label %></strong>
+                  <% if venue.review_rejection_note.present? %>
+                    <div class="text-muted small"><%= truncate(venue.review_rejection_note, length: 90) %></div>
+                  <% end %>
+                <% else %>
+                  <span class="text-muted">Sin motivo</span>
+                <% end %>
+              </td>
+              <td data-label="Categoria">
+                <span class="badge badge-dark"><%= venue.category.to_s.humanize %></span>
+                <% if venue.subcategory_name.present? %>
+                  <div class="text-muted small"><%= venue.subcategory_name.humanize %></div>
+                <% end %>
+              </td>
+              <td data-label="Origen">
+                <% if review_source[:kind] == :batch %>
+                  <%= link_to review_source[:label],
+                              black_coffee_review_path(review_source[:batch]),
+                              class: 'badge badge-info p-2' %>
+                <% elsif review_source[:kind] == :manual %>
+                  <span class="badge badge-info p-2"><%= review_source[:label] %></span>
+                <% else %>
+                  <span class="text-muted"><%= review_source[:label] %></span>
+                <% end %>
+              </td>
+              <td data-label="Reviewer">
+                <%= venue.reviewed_by&.name.presence || venue.reviewed_by&.email.presence || 'Sin reviewer' %>
+              </td>
+              <td data-label="Fecha">
+                <%= venue.reviewed_at&.strftime('%d/%m/%Y %H:%M') || 'Sin fecha' %>
+              </td>
+              <td data-label="Acciones" class="text-right text-nowrap">
+                <%= link_to 'Ver local', black_coffee_venue_path(venue), class: 'btn btn-sm btn-outline-primary mr-2' %>
+                <% if venue.google_connected? %>
+                  <%= link_to 'Google',
+                              venue.google_maps_url,
+                              class: 'btn btn-sm btn-outline-dark',
+                              target: '_blank',
+                              rel: 'noopener' %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="9" class="text-center text-muted py-5">No hay locales que coincidan con estos filtros.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <% if @reviewed_venues.respond_to?(:total_pages) && @reviewed_venues.total_pages > 1 %>
+    <div class="card-footer bg-white text-center">
+      <%= will_paginate @reviewed_venues,
+                        param_name: 'review_page',
+                        previous_label: '← Anterior',
+                        next_label: 'Siguiente →',
+                        params: request.query_parameters.except('review_page') %>
+    </div>
+  <% end %>
 </div>
 
 <% if @open_batches.any? %>
