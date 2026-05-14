@@ -1,7 +1,7 @@
 <style>
   .black-coffee-user-favorites {
     border: 1px solid #e5e7eb;
-    border-radius: 18px;
+    border-radius: 20px;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
     overflow: hidden;
   }
@@ -11,9 +11,33 @@
     background: #111827;
     color: #ffffff;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    gap: 14px;
     justify-content: space-between;
+    padding: 16px 20px;
+  }
+
+  .black-coffee-user-favorites-title {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .black-coffee-user-favorites-title-icon {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    display: flex;
+    flex: 0 0 40px;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+  }
+
+  .black-coffee-user-favorites-title strong {
+    display: block;
+    font-size: 18px;
+    line-height: 1.1;
   }
 
   .black-coffee-user-favorites-count {
@@ -21,16 +45,40 @@
     border-radius: 999px;
     color: #111827;
     display: inline-flex;
+    flex: 0 0 auto;
     font-weight: 900;
-    padding: 6px 12px;
+    margin-left: auto;
+    padding: 8px 14px;
+  }
+
+  .black-coffee-user-favorites .card-body {
+    background: #ffffff;
+    padding: 20px;
+  }
+
+  .black-coffee-add-favorite-panel {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .black-coffee-add-favorite-panel h5 {
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .black-coffee-favorite-search .form-control,
+  .black-coffee-favorite-search .btn {
+    min-height: 44px;
   }
 
   .black-coffee-favorite-thumb {
     background: #f3f4f6;
     border-radius: 12px;
-    height: 64px;
+    height: 70px;
     object-fit: cover;
-    width: 88px;
+    width: 96px;
   }
 
   .black-coffee-favorite-thumb-placeholder {
@@ -39,30 +87,66 @@
     border-radius: 12px;
     color: #9ca3af;
     display: flex;
-    height: 64px;
+    flex: 0 0 auto;
+    height: 70px;
     justify-content: center;
-    width: 88px;
+    width: 96px;
   }
 
   .black-coffee-favorite-candidates {
     display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   }
 
   .black-coffee-favorite-candidate {
     align-items: center;
+    background: #ffffff;
     border: 1px solid #e5e7eb;
-    border-radius: 14px;
+    border-radius: 16px;
     display: flex;
-    gap: 12px;
-    padding: 10px;
+    gap: 14px;
+    min-height: 112px;
+    padding: 14px;
+  }
+
+  .black-coffee-favorite-candidate:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .black-coffee-favorite-copy {
+    min-width: 0;
+  }
+
+  .black-coffee-favorite-name {
+    color: #2d3748;
+    display: block;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-bottom: 4px;
   }
 
   .black-coffee-favorite-meta {
     color: #6b7280;
     font-size: 12px;
     line-height: 1.35;
+  }
+
+  .black-coffee-favorite-candidate form {
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  .black-coffee-favorite-candidate .btn-add-favorite {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    gap: 6px;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 88px;
   }
 
   .black-coffee-user-favorites .table td,
@@ -87,8 +171,40 @@
       flex-direction: column;
     }
 
+    .black-coffee-user-favorites-count {
+      margin-left: 0;
+    }
+
+    .black-coffee-add-favorite-panel {
+      padding: 14px;
+    }
+
+    .black-coffee-favorite-search .input-group {
+      display: block;
+    }
+
+    .black-coffee-favorite-search .form-control,
+    .black-coffee-favorite-search .input-group-append,
+    .black-coffee-favorite-search .btn {
+      display: block;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .black-coffee-favorite-candidates {
+      grid-template-columns: 1fr;
+    }
+
     .black-coffee-favorite-candidate {
       align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .black-coffee-favorite-candidate .black-coffee-favorite-thumb,
+    .black-coffee-favorite-candidate .black-coffee-favorite-thumb-placeholder,
+    .black-coffee-favorite-candidate form,
+    .black-coffee-favorite-candidate .btn-add-favorite {
+      width: 100%;
     }
 
     .black-coffee-user-favorites-table thead {
@@ -132,8 +248,13 @@
 <div id="black-coffee-favorites" class="card mb-4 black-coffee-user-favorites">
   <div class="card-header">
     <div>
-      <strong><i class="fa fa-coffee"></i> Favoritos Black Coffee</strong>
-      <div class="small text-white-50">Locales que este usuario ha guardado en la app.</div>
+      <div class="black-coffee-user-favorites-title">
+        <span class="black-coffee-user-favorites-title-icon"><i class="fa fa-coffee"></i></span>
+        <div>
+          <strong>Favoritos Black Coffee</strong>
+          <div class="small text-white-50">Locales que este usuario ha guardado en la app.</div>
+        </div>
+      </div>
     </div>
     <span class="black-coffee-user-favorites-count">
       <%= number_with_delimiter(@black_coffee_favorites_count) %> guardados
@@ -142,9 +263,9 @@
 
   <div class="card-body">
     <% if current_user&.admin? %>
-      <div class="mb-4">
+      <div class="mb-4 black-coffee-add-favorite-panel">
         <h5 class="mb-2">Agregar un local a favoritos</h5>
-        <%= form_with url: show_user_path(id: @user.id, anchor: 'black-coffee-favorites'), method: :get, local: true, html: { class: 'mb-3' } do %>
+        <%= form_with url: show_user_path(id: @user.id, anchor: 'black-coffee-favorites'), method: :get, local: true, html: { class: 'mb-3 black-coffee-favorite-search' } do %>
           <div class="input-group">
             <%= text_field_tag :black_coffee_venue_query,
                                @black_coffee_venue_query,
@@ -168,8 +289,8 @@
                     <div class="black-coffee-favorite-thumb-placeholder"><i class="fa fa-image"></i></div>
                   <% end %>
 
-                  <div class="flex-grow-1">
-                    <strong><%= venue.name %></strong>
+                  <div class="flex-grow-1 black-coffee-favorite-copy">
+                    <strong class="black-coffee-favorite-name"><%= venue.name %></strong>
                     <div class="black-coffee-favorite-meta">
                       <%= venue.category.to_s.humanize %>
                       <% if venue.subcategory_name.present? %>
@@ -186,7 +307,7 @@
                                   venue_id: venue.id,
                                   black_coffee_venue_query: @black_coffee_venue_query
                                 },
-                                class: 'btn btn-sm btn-success text-white',
+                                class: 'btn btn-sm btn-success text-white btn-add-favorite',
                                 data: { confirm: "¿Agregar #{venue.name} a favoritos de Black Coffee para #{@user.name}?" } do %>
                     <i class="fa fa-heart"></i> Agregar
                   <% end %>

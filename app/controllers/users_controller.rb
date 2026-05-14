@@ -2988,7 +2988,7 @@ end
 
       @black_coffee_favorites_count = @user.user_favorites.count
       @black_coffee_favorites = favorites_scope.paginate(
-        page: params[:black_coffee_favorites_page],
+        page: black_coffee_favorites_page_param,
         per_page: 8
       )
 
@@ -3014,6 +3014,13 @@ end
 
     def black_coffee_favorite_venue_scope
       Venue.public_catalog_scope.not_rejected_for_app
+    end
+
+    def black_coffee_favorites_page_param
+      raw_page = params[:black_coffee_favorites_page].to_s.strip
+      return 1 if raw_page.blank?
+
+      [raw_page.to_i, 1].max
     end
 
     # Only allow a list of trusted parameters
