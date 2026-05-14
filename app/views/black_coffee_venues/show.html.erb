@@ -47,12 +47,74 @@
     width: 100%;
   }
 
-  .black-coffee-review-controls {
+  .black-coffee-review-panel {
     background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .black-coffee-review-panel-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .black-coffee-review-panel-title {
+    color: #1f2937;
+    font-size: 19px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .black-coffee-review-status-summary {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 150px;
+  }
+
+  .black-coffee-review-source-badge,
+  .black-coffee-review-source-badge:focus,
+  .black-coffee-review-source-badge:hover {
+    color: #ffffff !important;
+  }
+
+  .black-coffee-review-meta-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 16px;
+  }
+
+  .black-coffee-review-meta-item {
+    background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
-    margin-top: 14px;
     padding: 12px;
+  }
+
+  .black-coffee-review-meta-value {
+    color: #1f2937;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+
+  .black-coffee-review-actions-layout {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(180px, 0.75fr) minmax(260px, 1.25fr);
+  }
+
+  .black-coffee-review-action-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 14px;
   }
 
   .black-coffee-review-control-actions {
@@ -106,6 +168,17 @@
     .black-coffee-review-reject-form .btn {
       min-height: 44px;
       width: 100%;
+    }
+
+    .black-coffee-review-panel-header,
+    .black-coffee-review-status-summary {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .black-coffee-review-meta-grid,
+    .black-coffee-review-actions-layout {
+      grid-template-columns: 1fr;
     }
 
     .black-coffee-detail-card .card-body {
@@ -277,36 +350,63 @@
             <p class="black-coffee-detail-section-label mb-2">Estado / Region</p>
             <strong><%= @venue.state.presence || 'Sin region' %></strong>
           </div>
-          <div class="col-md-4 mb-3">
-            <p class="black-coffee-detail-section-label mb-2">Revision Black Coffee</p>
-            <span class="badge badge-<%= @venue.review_status_badge_class %> p-2"><%= @venue.review_status_label %></span>
-            <% review_source = black_coffee_review_source_for(@venue) %>
-            <div class="mt-2">
+        </div>
+
+        <hr>
+
+        <% review_source = black_coffee_review_source_for(@venue) %>
+        <div class="black-coffee-review-panel">
+          <div class="black-coffee-review-panel-header">
+            <div>
+              <p class="black-coffee-detail-section-label mb-2">Revision Black Coffee</p>
+              <h3 class="black-coffee-review-panel-title">Gestion manual del estado de revision</h3>
+              <p class="text-muted mb-0">Cambia el estado de este local sin tener que abrir un lote completo.</p>
+            </div>
+            <div class="black-coffee-review-status-summary">
+              <span class="badge badge-<%= @venue.review_status_badge_class %> p-2"><%= @venue.review_status_label %></span>
               <% if review_source[:kind] == :batch %>
                 <%= link_to review_source[:label],
                             black_coffee_review_path(review_source[:batch]),
-                            class: 'badge badge-info p-2' %>
+                            class: 'badge badge-info p-2 black-coffee-review-source-badge' %>
               <% elsif review_source[:kind] == :manual %>
-                <span class="badge badge-info p-2"><%= review_source[:label] %></span>
+                <span class="badge badge-info p-2 black-coffee-review-source-badge"><%= review_source[:label] %></span>
               <% else %>
                 <span class="badge badge-light p-2"><%= review_source[:label] %></span>
               <% end %>
             </div>
-            <% if @venue.review_rejection_reason.present? %>
-              <div class="text-muted small mt-2"><%= @venue.review_rejection_reason_label %></div>
-            <% end %>
-            <% if @venue.review_rejection_note.present? %>
-              <div class="text-muted small mt-2">Nota: <%= @venue.review_rejection_note %></div>
-            <% end %>
-            <% if @venue.reviewed_at.present? %>
-              <div class="text-muted small mt-2">Revisado: <%= @venue.reviewed_at.strftime('%d/%m/%Y %H:%M') %></div>
-            <% end %>
-            <% if @venue.reviewed_by.present? %>
-              <div class="text-muted small">Por: <%= @venue.reviewed_by.name.presence || @venue.reviewed_by.email %></div>
-            <% end %>
+          </div>
 
-            <div class="black-coffee-review-controls">
-              <div class="black-coffee-review-control-actions mb-2">
+          <div class="black-coffee-review-meta-grid">
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Motivo</div>
+              <div class="black-coffee-review-meta-value">
+                <%= @venue.review_rejection_reason.present? ? @venue.review_rejection_reason_label : 'Sin motivo' %>
+              </div>
+            </div>
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Reviewer</div>
+              <div class="black-coffee-review-meta-value">
+                <%= @venue.reviewed_by&.name.presence || @venue.reviewed_by&.email.presence || 'Sin reviewer' %>
+              </div>
+            </div>
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Fecha</div>
+              <div class="black-coffee-review-meta-value">
+                <%= @venue.reviewed_at&.strftime('%d/%m/%Y %H:%M') || 'Sin fecha' %>
+              </div>
+            </div>
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Nota interna</div>
+              <div class="black-coffee-review-meta-value">
+                <%= @venue.review_rejection_note.presence || 'Sin nota' %>
+              </div>
+            </div>
+          </div>
+
+          <div class="black-coffee-review-actions-layout">
+            <div class="black-coffee-review-action-card">
+              <div class="black-coffee-detail-section-label mb-2">Acciones rapidas</div>
+              <div class="black-coffee-review-control-actions">
                 <%= button_to 'Aprobar',
                               review_black_coffee_venue_path(@venue),
                               method: :patch,
@@ -320,27 +420,31 @@
                               class: 'btn btn-sm btn-outline-warning',
                               data: { confirm: "¿Devolver #{@venue.name} a pendiente de revision?" } %>
               </div>
+            </div>
 
+            <div class="black-coffee-review-action-card">
               <%= form_with url: review_black_coffee_venue_path(@venue),
                             method: :patch,
                             local: true,
                             html: { class: 'black-coffee-review-reject-form' } do %>
                 <%= hidden_field_tag :review_status, Venue::REVIEW_STATUS_REJECTED %>
-                <div class="form-group mb-2">
-                  <%= label_tag :review_rejection_reason, 'Rechazar con motivo', class: 'small font-weight-bold mb-1' %>
-                  <%= select_tag :review_rejection_reason,
-                                 options_for_select(Venue::REJECTION_REASON_LABELS.map { |code, label| [label, code] }, @venue.review_rejection_reason),
-                                 class: 'form-control form-control-sm' %>
-                </div>
-                <div class="form-group mb-2">
-                  <%= label_tag :review_rejection_note, 'Nota interna opcional', class: 'small font-weight-bold mb-1' %>
-                  <%= text_area_tag :review_rejection_note,
-                                    @venue.review_rejection_note,
-                                    class: 'form-control form-control-sm',
-                                    placeholder: 'Ej: clasificado por Google como cine, pero es un local que no encaja.' %>
+                <div class="row">
+                  <div class="col-md-5 mb-3 mb-md-0">
+                    <%= label_tag :review_rejection_reason, 'Rechazar con motivo', class: 'black-coffee-detail-section-label mb-2' %>
+                    <%= select_tag :review_rejection_reason,
+                                   options_for_select(Venue::REJECTION_REASON_LABELS.map { |code, label| [label, code] }, @venue.review_rejection_reason),
+                                   class: 'form-control form-control-sm' %>
+                  </div>
+                  <div class="col-md-7">
+                    <%= label_tag :review_rejection_note, 'Nota interna opcional', class: 'black-coffee-detail-section-label mb-2' %>
+                    <%= text_area_tag :review_rejection_note,
+                                      @venue.review_rejection_note,
+                                      class: 'form-control form-control-sm',
+                                      placeholder: 'Ej: clasificado por Google como cine, pero es un local que no encaja.' %>
+                  </div>
                 </div>
                 <%= submit_tag 'Rechazar local',
-                               class: 'btn btn-sm btn-outline-danger btn-block',
+                               class: 'btn btn-sm btn-outline-danger btn-block mt-3',
                                data: { confirm: "¿Marcar #{@venue.name} como rechazado?" } %>
               <% end %>
             </div>

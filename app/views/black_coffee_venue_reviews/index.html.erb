@@ -54,6 +54,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    margin-top: 12px;
   }
 
   .review-status-tabs .btn {
@@ -84,6 +85,12 @@
     height: 54px;
     justify-content: center;
     width: 74px;
+  }
+
+  .review-origin-badge,
+  .review-origin-badge:focus,
+  .review-origin-badge:hover {
+    color: #ffffff !important;
   }
 
   @media (max-width: 767px) {
@@ -340,11 +347,11 @@
 <div class="card review-panel mb-4">
   <div class="card-header bg-white">
     <div class="d-flex flex-wrap justify-content-between align-items-center">
-      <div>
+      <div class="review-status-heading">
         <h4 class="mb-1">Locales por estado de revision</h4>
         <p class="text-muted mb-0">Filtra pendientes, aprobados o rechazados y revisa motivo, reviewer y origen.</p>
       </div>
-      <div class="review-status-tabs mt-3 mt-md-0">
+      <div class="review-status-tabs">
         <% status_tab_options = [
           ['Rechazados', Venue::REVIEW_STATUS_REJECTED, @metrics[:rejected], 'danger'],
           ['Aprobados', Venue::REVIEW_STATUS_APPROVED, @metrics[:approved], 'success'],
@@ -457,9 +464,9 @@
                 <% if review_source[:kind] == :batch %>
                   <%= link_to review_source[:label],
                               black_coffee_review_path(review_source[:batch]),
-                              class: 'badge badge-info p-2' %>
+                              class: 'badge badge-info p-2 review-origin-badge' %>
                 <% elsif review_source[:kind] == :manual %>
-                  <span class="badge badge-info p-2"><%= review_source[:label] %></span>
+                  <span class="badge badge-info p-2 review-origin-badge"><%= review_source[:label] %></span>
                 <% else %>
                   <span class="text-muted"><%= review_source[:label] %></span>
                 <% end %>
