@@ -42,23 +42,29 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
     end
   end
 
+  def without_dynamic_import_filters
+    BlackCoffeeGoogleImportFilter.stub(:enhance_config, ->(_category, config) { config }) { yield }
+  end
+
   test 'search metadata saves photo references without resolving photo URLs by default' do
     client = client_with_places([google_place])
     client.define_singleton_method(:photo_uri_for) do |_photo_name|
       raise 'photo URL resolution should not run in this import mode'
     end
 
-    result = client.search(
-      region: valencian_region,
-      category: 'cafeteria',
-      limit: 10,
-      metadata: true,
-      max_photos_per_place: 2,
-      resolve_photo_urls_during_import: false,
-      skip_existing_places: false,
-      strict_region_filter: true,
-      require_photos_during_import: true
-    )
+    result = without_dynamic_import_filters do
+      client.search(
+        region: valencian_region,
+        category: 'cafeteria',
+        limit: 10,
+        metadata: true,
+        max_photos_per_place: 2,
+        resolve_photo_urls_during_import: false,
+        skip_existing_places: false,
+        strict_region_filter: true,
+        require_photos_during_import: true
+      )
+    end
 
     candidate = result[:candidates].first
     assert_equal 1, result[:requests_count]
@@ -73,16 +79,18 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
   test 'search skips candidates without photos when photos are required' do
     client = client_with_places([google_place(photos: [])])
 
-    result = client.search(
-      region: valencian_region,
-      category: 'cafeteria',
-      limit: 10,
-      metadata: true,
-      resolve_photo_urls_during_import: false,
-      skip_existing_places: false,
-      strict_region_filter: true,
-      require_photos_during_import: true
-    )
+    result = without_dynamic_import_filters do
+      client.search(
+        region: valencian_region,
+        category: 'cafeteria',
+        limit: 10,
+        metadata: true,
+        resolve_photo_urls_during_import: false,
+        skip_existing_places: false,
+        strict_region_filter: true,
+        require_photos_during_import: true
+      )
+    end
 
     assert_empty result[:candidates]
     assert_equal 1, result[:no_photo_skipped]
@@ -97,16 +105,18 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
       raise 'outside-region candidates must be discarded before photo resolution'
     end
 
-    result = client.search(
-      region: valencian_region,
-      category: 'cafeteria',
-      limit: 10,
-      metadata: true,
-      resolve_photo_urls_during_import: true,
-      skip_existing_places: false,
-      strict_region_filter: true,
-      require_photos_during_import: true
-    )
+    result = without_dynamic_import_filters do
+      client.search(
+        region: valencian_region,
+        category: 'cafeteria',
+        limit: 10,
+        metadata: true,
+        resolve_photo_urls_during_import: true,
+        skip_existing_places: false,
+        strict_region_filter: true,
+        require_photos_during_import: true
+      )
+    end
 
     assert_empty result[:candidates]
     assert_equal 1, result[:outside_region_skipped]
@@ -119,16 +129,18 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
       "https://images.example/#{photo_name}"
     end
 
-    result = client.search(
-      region: valencian_region,
-      category: 'cafeteria',
-      limit: 10,
-      metadata: true,
-      resolve_photo_urls_during_import: true,
-      skip_existing_places: false,
-      strict_region_filter: true,
-      require_photos_during_import: true
-    )
+    result = without_dynamic_import_filters do
+      client.search(
+        region: valencian_region,
+        category: 'cafeteria',
+        limit: 10,
+        metadata: true,
+        resolve_photo_urls_during_import: true,
+        skip_existing_places: false,
+        strict_region_filter: true,
+        require_photos_during_import: true
+      )
+    end
 
     candidate = result[:candidates].first
     assert_equal ['https://images.example/photos/one'], candidate[:image_urls]

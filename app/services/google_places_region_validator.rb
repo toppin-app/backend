@@ -7,6 +7,14 @@ class GooglePlacesRegionValidator
     end
   end
 
+  def self.normalize(value)
+    I18n.transliterate(value.to_s)
+        .downcase
+        .gsub(/[^a-z0-9]+/, ' ')
+        .squeeze(' ')
+        .strip
+  end
+
   REGION_RULES = {
     'andalucia' => {
       aliases: ['andalucia', 'andalucía', 'andalusia'],
@@ -96,14 +104,6 @@ class GooglePlacesRegionValidator
 
   def self.validate(place_or_attrs, region:, strict: true)
     new(region, strict: strict).validate(place_or_attrs)
-  end
-
-  def self.normalize(value)
-    I18n.transliterate(value.to_s)
-        .downcase
-        .gsub(/[^a-z0-9]+/, ' ')
-        .squeeze(' ')
-        .strip
   end
 
   def initialize(region, strict: true)
