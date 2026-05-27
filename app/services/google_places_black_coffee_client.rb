@@ -35,6 +35,19 @@ class GooglePlacesBlackCoffeeClient
     places.photos
     nextPageToken
   ].join(',').freeze
+  DRY_RUN_FIELD_MASK = %w[
+    places.id
+    places.name
+    places.displayName
+    places.formattedAddress
+    places.location
+    places.types
+    places.primaryType
+    places.primaryTypeDisplayName
+    places.addressComponents
+    places.photos
+    nextPageToken
+  ].join(',').freeze
   PLACE_DETAILS_PHOTO_FIELD_MASK = 'id,photos'.freeze
   PLACE_DETAILS_SYNC_FIELD_MASK = %w[
     id
@@ -152,6 +165,10 @@ class GooglePlacesBlackCoffeeClient
     ActiveModel::Type::Boolean.new.cast(ENV.fetch('BLACK_COFFEE_SKIP_EXISTING_PLACES', 'true'))
   end
 
+  def self.skip_imported_candidates?
+    ActiveModel::Type::Boolean.new.cast(ENV.fetch('BLACK_COFFEE_SKIP_IMPORTED_CANDIDATES', 'true'))
+  end
+
   def self.strict_region_filter?
     ActiveModel::Type::Boolean.new.cast(ENV.fetch('BLACK_COFFEE_STRICT_REGION_FILTER', 'true'))
   end
@@ -165,6 +182,7 @@ class GooglePlacesBlackCoffeeClient
       max_photos_per_place: max_photos_per_place,
       resolve_photo_urls_during_import: resolve_photo_urls_during_import?,
       skip_existing_places: skip_existing_places?,
+      skip_imported_candidates: skip_imported_candidates?,
       strict_region_filter: strict_region_filter?,
       require_photos_during_import: require_photos_during_import?
     }
@@ -190,6 +208,7 @@ class GooglePlacesBlackCoffeeClient
 
   def initialize(api_key: self.class.api_key)
     @api_key = api_key
+    @photo_uri_cache = {}
   end
 
   def search(
@@ -203,8 +222,10 @@ class GooglePlacesBlackCoffeeClient
     max_photos_per_place: self.class.max_photos_per_place,
     resolve_photo_urls_during_import: self.class.resolve_photo_urls_during_import?,
     skip_existing_places: self.class.skip_existing_places?,
+    skip_imported_candidates: self.class.skip_imported_candidates?,
     strict_region_filter: self.class.strict_region_filter?,
-    require_photos_during_import: self.class.require_photos_during_import?
+    require_photos_during_import: self.class.require_photos_during_import?,
+    search_field_mask: FIELD_MASK
   )
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
 
@@ -215,6 +236,7 @@ class GooglePlacesBlackCoffeeClient
       max_photos_per_place: max_photos_per_place,
       resolve_photo_urls_during_import: resolve_photo_urls_during_import,
       skip_existing_places: skip_existing_places,
+      skip_imported_candidates: skip_imported_candidates,
       strict_region_filter: strict_region_filter,
       require_photos_during_import: require_photos_during_import
     }
@@ -228,7 +250,8 @@ class GooglePlacesBlackCoffeeClient
       query: query,
       config: config,
       limit: requested_limit,
-      location_restriction: location_restriction
+      location_restriction: location_restriction,
+      field_mask: search_field_mask
     )
 
     stats = empty_import_stats(
@@ -237,12 +260,18 @@ class GooglePlacesBlackCoffeeClient
       invalid_category_skipped_count: filter_stats[:invalid_category_skipped]
     )
     existing_place_ids = skip_existing_places ? existing_venue_place_ids(places) : Set.new
+    imported_candidate_place_ids = skip_imported_candidates ? existing_import_candidate_place_ids(places) : Set.new
 
     candidates = []
     places.each do |place|
       place_id = place_id_for(place)
       if place_id.present? && existing_place_ids.include?(place_id)
         stats[:already_existing_skipped] += 1
+        next
+      end
+
+      if place_id.present? && imported_candidate_place_ids.include?(place_id)
+        stats[:already_imported_skipped] += 1
         next
       end
 
@@ -290,17 +319,17 @@ class GooglePlacesBlackCoffeeClient
   def photo_urls_from_references(photo_references, max_photos: self.class.max_photos_per_place)
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
 
-    references = Array(photo_references).first(max_photos)
+    photo_names = Array(photo_references)
+      .filter_map { |reference| extract_photo_name(reference).to_s.strip.presence }
+      .uniq
+      .first(max_photos)
     image_urls = []
     requests_count = 0
 
-    references.each do |reference|
-      photo_name = extract_photo_name(reference)
-      next if photo_name.blank?
-
-      payload = get_json(photo_media_uri(photo_name))
-      requests_count += 1
-      image_url = normalize_photo_uri(payload['photoUri'])
+    photo_names.each do |photo_name|
+      requested = !photo_uri_cached?(photo_name)
+      image_url = photo_uri_for_with_cache(photo_name)
+      requests_count += 1 if requested
       image_urls << image_url if image_url.present?
     end
 
@@ -339,22 +368,26 @@ class GooglePlacesBlackCoffeeClient
       URI.parse("#{PLACE_DETAILS_URL}/#{place_resource}"),
       field_mask: PLACE_DETAILS_SYNC_FIELD_MASK
     )
+    photo_metrics = {
+      google_requests: { photos: 0 },
+      photos: { references_saved: 0, urls_resolved: 0 }
+    }
     attributes = place_to_candidate_attributes(
       payload,
       region: OpenStruct.new(name: fallback_city.to_s.strip.presence || 'Sin ciudad'),
       category: category,
       subcategory: fallback_subcategory,
       max_photos: self.class.max_photos_per_place,
-      resolve_photo_urls: true
+      resolve_photo_urls: true,
+      metrics: photo_metrics
     )
-    photos = Array(payload['photos']).first(self.class.max_photos_per_place)
 
     attributes.merge(
       google_type_tags: BlackCoffeeTaxonomy.google_tags_for_place(payload),
       google_primary_type: BlackCoffeeTaxonomy.google_primary_type_for_place(payload),
       google_secondary_type_tags: BlackCoffeeTaxonomy.google_secondary_tags_for_place(payload),
       google_schedule_payload: schedule_payload_for_place(payload),
-      requests_count: 1 + photos.count { |photo| photo['name'].present? }
+      requests_count: 1 + photo_metrics.dig(:google_requests, :photos).to_i
     )
   end
 
@@ -367,7 +400,7 @@ class GooglePlacesBlackCoffeeClient
     "#{raw_query} en #{region.name}, Espana"
   end
 
-  def fetch_places(query:, config:, limit:, location_restriction: nil)
+  def fetch_places(query:, config:, limit:, location_restriction: nil, field_mask: FIELD_MASK)
     places = []
     next_page_token = nil
     requests_count = 0
@@ -390,7 +423,7 @@ class GooglePlacesBlackCoffeeClient
       body[:locationRestriction] = location_restriction if location_restriction.present?
       body[:pageToken] = next_page_token if next_page_token.present?
 
-      payload = post_json(BASE_URL, body)
+      payload = post_json(BASE_URL, body, field_mask: field_mask)
       requests_count += 1
       page_places = Array(payload['places'])
       raw_places_count += page_places.size
@@ -431,7 +464,9 @@ class GooglePlacesBlackCoffeeClient
   end
 
   def place_to_candidate_attributes(place, region:, category:, subcategory:, max_photos: self.class.max_photos_per_place, resolve_photo_urls: true, metrics: nil)
-    photos = Array(place['photos']).first(max_photos.to_i)
+    photos = Array(place['photos'])
+      .uniq { |photo| photo['name'].to_s }
+      .first(max_photos.to_i)
     address_components = place['addressComponents']
     photo_references = photos.map { |photo| photo_reference_payload(photo) }
     metrics[:photos][:references_saved] += photo_references.size if metrics
@@ -442,8 +477,9 @@ class GooglePlacesBlackCoffeeClient
         photo_name = photo['name']
         next if photo_name.blank?
 
-        metrics[:google_requests][:photos] += 1 if metrics
+        requested = !photo_uri_cached?(photo_name)
         image_url = photo_uri_for(photo_name)
+        metrics[:google_requests][:photos] += 1 if metrics && requested
         image_urls << image_url if image_url.present?
       end
       metrics[:photos][:urls_resolved] += image_urls.size if metrics
@@ -487,10 +523,27 @@ class GooglePlacesBlackCoffeeClient
     Set.new(Venue.where(google_place_id: place_ids).pluck(:google_place_id))
   end
 
+  def existing_import_candidate_place_ids(places)
+    place_ids = Array(places).map { |place| place_id_for(place).to_s.strip.presence }.compact.uniq
+    return Set.new if place_ids.blank?
+    return Set.new unless ActiveRecord::Base.connection.data_source_exists?('black_coffee_import_candidates')
+    return Set.new unless BlackCoffeeImportCandidate.column_names.include?('google_place_id')
+
+    reusable_statuses = BlackCoffeeImportCandidate::STATUSES - ['rejected']
+    Set.new(
+      BlackCoffeeImportCandidate
+        .where(google_place_id: place_ids, status: reusable_statuses)
+        .pluck(:google_place_id)
+    )
+  rescue ActiveRecord::ActiveRecordError
+    Set.new
+  end
+
   def empty_import_stats(raw_candidates_count:, search_requests_count:, invalid_category_skipped_count:)
     {
       raw_candidates_count: raw_candidates_count.to_i,
       already_existing_skipped: 0,
+      already_imported_skipped: 0,
       outside_region_skipped: 0,
       no_photo_skipped: 0,
       invalid_category_skipped: invalid_category_skipped_count.to_i,
@@ -515,6 +568,7 @@ class GooglePlacesBlackCoffeeClient
       raw_places_count: stats[:raw_candidates_count].to_i,
       raw_candidates_count: stats[:raw_candidates_count].to_i,
       already_existing_skipped: stats[:already_existing_skipped].to_i,
+      already_imported_skipped: stats[:already_imported_skipped].to_i,
       outside_region_skipped: stats[:outside_region_skipped].to_i,
       no_photo_skipped: stats[:no_photo_skipped].to_i,
       invalid_category_skipped: stats[:invalid_category_skipped].to_i,
@@ -537,6 +591,7 @@ class GooglePlacesBlackCoffeeClient
         candidates_found: stats[:raw_candidates_count],
         valid_candidates: valid_candidates_count,
         already_existing_skipped: stats[:already_existing_skipped],
+        already_imported_skipped: stats[:already_imported_skipped],
         outside_region_skipped: stats[:outside_region_skipped],
         no_photo_skipped: stats[:no_photo_skipped],
         invalid_category_skipped: stats[:invalid_category_skipped],
@@ -583,13 +638,23 @@ class GooglePlacesBlackCoffeeClient
   end
 
   def photo_uri_for(photo_name)
-    return if photo_name.blank?
-
-    payload = get_json(photo_media_uri(photo_name))
-    normalize_photo_uri(payload['photoUri'])
+    photo_uri_for_with_cache(photo_name)
   rescue RequestError => e
     Rails.logger.warn("Black Coffee Google photo skipped: #{e.message}") if defined?(Rails)
     nil
+  end
+
+  def photo_uri_for_with_cache(photo_name)
+    normalized_photo_name = photo_name.to_s.strip
+    return if normalized_photo_name.blank?
+    return @photo_uri_cache[normalized_photo_name] if @photo_uri_cache.key?(normalized_photo_name)
+
+    payload = get_json(photo_media_uri(normalized_photo_name))
+    @photo_uri_cache[normalized_photo_name] = normalize_photo_uri(payload['photoUri'])
+  end
+
+  def photo_uri_cached?(photo_name)
+    @photo_uri_cache.key?(photo_name.to_s.strip)
   end
 
   def get_json(uri, field_mask: nil)

@@ -147,8 +147,10 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       category: category,
       limit: limit,
       query_override: query_override,
+      location_restriction: google_location_restriction_for(region),
       metadata: true,
-      resolve_photo_urls_during_import: false
+      resolve_photo_urls_during_import: false,
+      search_field_mask: GooglePlacesBlackCoffeeClient::DRY_RUN_FIELD_MASK
     )
     {
       success: true,
@@ -184,6 +186,7 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       category: category,
       limit: limit,
       query_override: query_override,
+      location_restriction: google_location_restriction_for(region),
       metadata: true
     )
     candidates = Array(response[:candidates])
@@ -559,15 +562,18 @@ class BlackCoffeeGoogleImportsController < ApplicationController
     google_requests = response[:google_requests] || {}
     photos = response[:photos] || {}
     "Dry run #{region.name}: #{result[:found_count]} resultados Google, #{result[:candidate_count]} candidatos validos, " \
-      "#{response[:already_existing_skipped].to_i} duplicados saltados, #{response[:outside_region_skipped].to_i} fuera de region, " \
+      "#{response[:already_existing_skipped].to_i} locales ya existentes saltados, #{response[:already_imported_skipped].to_i} candidatos ya importados saltados, " \
+      "#{response[:outside_region_skipped].to_i} fuera de region, " \
       "#{response[:no_photo_skipped].to_i} sin fotos, #{response[:invalid_category_skipped].to_i} descartados por filtros. Requests: search #{google_requests[:search].to_i}, " \
       "details #{google_requests[:details].to_i}, photos #{google_requests[:photos].to_i}. Fotos: #{photos[:references_saved].to_i} refs, #{photos[:urls_resolved].to_i} URLs."
   end
 
   def import_metric_attributes(response)
+    duplicate_or_imported_skips = response[:already_existing_skipped].to_i + response[:already_imported_skipped].to_i
+
     {
       raw_candidates_count: response[:raw_candidates_count].to_i,
-      existing_skipped_count: response[:already_existing_skipped].to_i,
+      existing_skipped_count: duplicate_or_imported_skips,
       outside_region_skipped_count: response[:outside_region_skipped].to_i,
       no_photo_skipped_count: response[:no_photo_skipped].to_i,
       invalid_category_skipped_count: response[:invalid_category_skipped].to_i,
@@ -578,6 +584,14 @@ class BlackCoffeeGoogleImportsController < ApplicationController
       photo_urls_resolved_count: response.dig(:photos, :urls_resolved).to_i,
       import_options: response[:import_options]
     }.select { |column, _value| BlackCoffeeImportRun.column_names.include?(column.to_s) }
+  end
+
+  def google_location_restriction_for(region)
+    @google_location_restrictions_by_region ||= {}
+    @google_location_restrictions_by_region[region.id] ||= begin
+      bounds = GooglePlacesRegionBoundsResolver.static_bounds_for(region)
+      bounds.present? ? { rectangle: bounds } : nil
+    end
   end
 
   def refresh_google_counts_for_region(region, client: GooglePlacesAggregateClient.new, importable_categories: GooglePlacesBlackCoffeeClient.importable_categories)

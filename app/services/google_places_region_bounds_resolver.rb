@@ -5,6 +5,13 @@ require 'uri'
 class GooglePlacesRegionBoundsResolver
   REGION_FIELD_MASK = 'places.id,places.name,places.displayName,places.viewport'.freeze
 
+  def self.static_bounds_for(region)
+    circle = GooglePlacesAggregateClient::FALLBACK_REGION_CIRCLES[region.slug.to_s]
+    return if circle.blank?
+
+    bounds_from_circle(circle)
+  end
+
   def initialize(api_key: GooglePlacesBlackCoffeeClient.api_key)
     @api_key = api_key
   end
@@ -42,6 +49,10 @@ class GooglePlacesRegionBoundsResolver
     circle = GooglePlacesAggregateClient::FALLBACK_REGION_CIRCLES[region.slug.to_s]
     raise GooglePlacesBlackCoffeeClient::RequestError, "No se pudo resolver una geometria util para #{region.name}." if circle.blank?
 
+    self.class.static_bounds_for(region).merge(strategy: 'circle')
+  end
+
+  def self.bounds_from_circle(circle)
     latitude = circle.fetch(:latitude).to_f
     longitude = circle.fetch(:longitude).to_f
     radius_meters = circle.fetch(:radius).to_f
@@ -57,10 +68,11 @@ class GooglePlacesRegionBoundsResolver
       high: {
         latitude: latitude + lat_delta,
         longitude: longitude + lng_delta
-      },
-      strategy: 'circle'
+      }
     }
   end
+
+  private_class_method :bounds_from_circle
 
   def normalize_viewport(viewport)
     low = viewport&.dig('low')

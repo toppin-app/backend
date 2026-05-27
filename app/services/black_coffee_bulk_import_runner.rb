@@ -290,9 +290,11 @@ class BlackCoffeeBulkImportRunner
   end
 
   def step_metric_attributes(step, response)
+    duplicate_or_imported_skips = response[:already_existing_skipped].to_i + response[:already_imported_skipped].to_i
+
     optional_model_attributes(
       step,
-      existing_skipped_count: step.existing_skipped_count.to_i + response[:already_existing_skipped].to_i,
+      existing_skipped_count: step.existing_skipped_count.to_i + duplicate_or_imported_skips,
       outside_region_skipped_count: step.outside_region_skipped_count.to_i + response[:outside_region_skipped].to_i,
       no_photo_skipped_count: step.no_photo_skipped_count.to_i + response[:no_photo_skipped].to_i,
       invalid_category_skipped_count: step.invalid_category_skipped_count.to_i + response[:invalid_category_skipped].to_i,
@@ -303,10 +305,12 @@ class BlackCoffeeBulkImportRunner
   end
 
   def run_metric_deltas(import_run, response)
+    duplicate_or_imported_skips = response[:already_existing_skipped].to_i + response[:already_imported_skipped].to_i
+
     optional_model_attributes(
       import_run,
       raw_candidates_count: import_run.raw_candidates_count.to_i + response[:raw_candidates_count].to_i,
-      existing_skipped_count: import_run.existing_skipped_count.to_i + response[:already_existing_skipped].to_i,
+      existing_skipped_count: import_run.existing_skipped_count.to_i + duplicate_or_imported_skips,
       outside_region_skipped_count: import_run.outside_region_skipped_count.to_i + response[:outside_region_skipped].to_i,
       no_photo_skipped_count: import_run.no_photo_skipped_count.to_i + response[:no_photo_skipped].to_i,
       invalid_category_skipped_count: import_run.invalid_category_skipped_count.to_i + response[:invalid_category_skipped].to_i,

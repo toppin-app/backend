@@ -61,6 +61,7 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
         max_photos_per_place: 2,
         resolve_photo_urls_during_import: false,
         skip_existing_places: false,
+        skip_imported_candidates: false,
         strict_region_filter: true,
         require_photos_during_import: true
       )
@@ -87,6 +88,7 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
         metadata: true,
         resolve_photo_urls_during_import: false,
         skip_existing_places: false,
+        skip_imported_candidates: false,
         strict_region_filter: true,
         require_photos_during_import: true
       )
@@ -113,6 +115,7 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
         metadata: true,
         resolve_photo_urls_during_import: true,
         skip_existing_places: false,
+        skip_imported_candidates: false,
         strict_region_filter: true,
         require_photos_during_import: true
       )
@@ -137,6 +140,7 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
         metadata: true,
         resolve_photo_urls_during_import: true,
         skip_existing_places: false,
+        skip_imported_candidates: false,
         strict_region_filter: true,
         require_photos_during_import: true
       )
@@ -146,5 +150,85 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
     assert_equal ['https://images.example/photos/one'], candidate[:image_urls]
     assert_equal 1, result.dig(:google_requests, :photos)
     assert_equal 1, result.dig(:photos, :urls_resolved)
+  end
+
+  test 'search can use a lean field mask for dry run requests' do
+    captured_field_masks = []
+    place = google_place
+    client = GooglePlacesBlackCoffeeClient.new(api_key: 'test-key')
+    client.define_singleton_method(:post_json) do |_url, _body, field_mask:|
+      captured_field_masks << field_mask
+      { 'places' => [place], 'nextPageToken' => nil }
+    end
+
+    result = without_dynamic_import_filters do
+      client.search(
+        region: valencian_region,
+        category: 'cafeteria',
+        limit: 10,
+        metadata: true,
+        resolve_photo_urls_during_import: false,
+        skip_existing_places: false,
+        skip_imported_candidates: false,
+        strict_region_filter: true,
+        require_photos_during_import: true,
+        search_field_mask: GooglePlacesBlackCoffeeClient::DRY_RUN_FIELD_MASK
+      )
+    end
+
+    assert_equal [GooglePlacesBlackCoffeeClient::DRY_RUN_FIELD_MASK], captured_field_masks
+    assert_equal 1, result[:raw_candidates_count]
+  end
+
+  test 'search skips candidates that already exist in import history before photo handling' do
+    client = client_with_places([google_place])
+    client.define_singleton_method(:existing_import_candidate_place_ids) do |_places|
+      Set.new(['place-1'])
+    end
+    client.define_singleton_method(:photo_uri_for) do |_photo_name|
+      raise 'already imported candidates must be skipped before photo resolution'
+    end
+
+    result = without_dynamic_import_filters do
+      client.search(
+        region: valencian_region,
+        category: 'cafeteria',
+        limit: 10,
+        metadata: true,
+        resolve_photo_urls_during_import: true,
+        skip_existing_places: false,
+        skip_imported_candidates: true,
+        strict_region_filter: true,
+        require_photos_during_import: true
+      )
+    end
+
+    assert_empty result[:candidates]
+    assert_equal 1, result[:already_imported_skipped]
+    assert_equal 0, result.dig(:google_requests, :photos)
+  end
+
+  test 'photo URL refresh deduplicates repeated photo references and reuses cache' do
+    client = GooglePlacesBlackCoffeeClient.new(api_key: 'test-key')
+    requested_uris = []
+    client.define_singleton_method(:get_json) do |uri, field_mask: nil|
+      requested_uris << uri.to_s
+      { 'photoUri' => "https://images.example/#{requested_uris.size}" }
+    end
+
+    first_result = client.photo_urls_from_references(
+      [photo('photos/one'), photo('photos/one'), photo('photos/two')],
+      max_photos: 3
+    )
+    second_result = client.photo_urls_from_references(
+      [photo('photos/one'), photo('photos/two')],
+      max_photos: 2
+    )
+
+    assert_equal 2, first_result[:requests_count]
+    assert_equal 0, second_result[:requests_count]
+    assert_equal 2, requested_uris.size
+    assert_equal ['https://images.example/1', 'https://images.example/2'], first_result[:image_urls]
+    assert_equal first_result[:image_urls], second_result[:image_urls]
   end
 end
