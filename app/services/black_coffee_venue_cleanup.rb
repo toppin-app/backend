@@ -1,4 +1,10 @@
 class BlackCoffeeVenueCleanup
+  OPERATION_DELETE = 'delete'.freeze
+  OPERATION_REJECT = 'reject'.freeze
+  OPERATION_OPTIONS = {
+    OPERATION_DELETE => 'Eliminar definitivamente',
+    OPERATION_REJECT => 'Marcar como rechazados'
+  }.freeze
   SOURCE_OPTIONS = {
     'all' => 'Todos los locales',
     'google' => 'Importados o vinculados a Google',
@@ -11,7 +17,7 @@ class BlackCoffeeVenueCleanup
     'hidden' => 'Solo ocultos'
   }.freeze
 
-  attr_reader :category, :source, :visibility, :google_tag, :google_primary_type
+  attr_reader :category, :source, :visibility, :google_tag, :google_primary_type, :operation, :review_rejection_reason, :review_rejection_note
 
   def initialize(params = {})
     @category = normalized_category(params[:category])
@@ -19,16 +25,30 @@ class BlackCoffeeVenueCleanup
     @visibility = VISIBILITY_OPTIONS.key?(params[:visibility].to_s) ? params[:visibility].to_s : 'all'
     @google_tag = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_tag])
     @google_primary_type = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_primary_type])
+    @operation = OPERATION_OPTIONS.key?(params[:operation].to_s) ? params[:operation].to_s : OPERATION_DELETE
+    @review_rejection_reason = normalized_rejection_reason(params[:review_rejection_reason])
+    @review_rejection_note = params[:review_rejection_note].to_s.strip.presence
   end
 
   def filters
     {
+      operation: operation,
       category: category,
       source: source,
       visibility: visibility,
       google_tag: google_tag,
-      google_primary_type: google_primary_type
+      google_primary_type: google_primary_type,
+      review_rejection_reason: review_rejection_reason,
+      review_rejection_note: review_rejection_note
     }
+  end
+
+  def delete_operation?
+    operation == OPERATION_DELETE
+  end
+
+  def reject_operation?
+    operation == OPERATION_REJECT
   end
 
   def scope
@@ -72,6 +92,9 @@ class BlackCoffeeVenueCleanup
       internal_test_count: flag_count(relation, :internal_test, true),
       visible_count: flag_count(relation, :visible, true),
       hidden_count: flag_count(relation, :visible, false),
+      review_pending_count: flag_count(relation, :review_status, Venue::REVIEW_STATUS_PENDING),
+      review_approved_count: flag_count(relation, :review_status, Venue::REVIEW_STATUS_APPROVED),
+      review_rejected_count: flag_count(relation, :review_status, Venue::REVIEW_STATUS_REJECTED),
       linked_approved_candidates_count: linked_approved_candidates(selected_ids).count,
       linked_duplicate_candidates_count: linked_duplicate_candidates(selected_ids).count,
       orphaned_approved_candidates_count: orphaned_approved_candidates.count,
@@ -99,11 +122,48 @@ class BlackCoffeeVenueCleanup
     }.merge(import_cleanup)
   end
 
+  def reject!(reviewed_by: nil)
+    raise 'Esta instalacion no tiene columna review_status en locales.' unless has_venue_column?(:review_status)
+    raise 'Selecciona un motivo de rechazo valido.' unless Venue::REJECTION_REASON_CODES.include?(review_rejection_reason)
+
+    affected_count = 0
+    affected_ids = []
+
+    ActiveRecord::Base.transaction do
+      affected_ids = scope.pluck(:id)
+      affected_count = affected_ids.size
+
+      attributes = {
+        review_status: Venue::REVIEW_STATUS_REJECTED,
+        review_rejection_reason: review_rejection_reason,
+        review_rejection_note: review_rejection_note,
+        reviewed_at: Time.current,
+        updated_at: Time.current
+      }
+      attributes[:reviewed_by_id] = reviewed_by.id if reviewed_by.present? && has_venue_column?(:reviewed_by_id)
+      attributes[:featured] = false if has_venue_column?(:featured)
+
+      Venue.where(id: affected_ids).update_all(attributes)
+    end
+
+    {
+      rejected_count: affected_count,
+      rejected_ids_count: affected_ids.size,
+      review_rejection_reason: review_rejection_reason,
+      review_rejection_note_present: review_rejection_note.present?
+    }
+  end
+
   private
 
   def normalized_category(value)
     category = value.to_s.strip
     Venue::CATEGORIES.include?(category) ? category : nil
+  end
+
+  def normalized_rejection_reason(value)
+    reason = value.to_s.strip
+    Venue::REJECTION_REASON_CODES.include?(reason) ? reason : Venue::REJECTION_REASON_CODES.first
   end
 
   def has_venue_column?(column_name)

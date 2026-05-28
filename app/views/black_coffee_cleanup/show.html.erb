@@ -10,8 +10,8 @@
 </div>
 
 <div class="alert alert-warning">
-  <strong>Herramienta destructiva.</strong>
-  Borra locales Black Coffee segun los filtros elegidos y despues limpia el importador: los candidatos aprobados o duplicados que apuntaban a esos locales vuelven a <strong>pending</strong>, para que puedas revisarlos e importarlos otra vez.
+  <strong>Herramienta sensible.</strong>
+  Puedes usarla en modo destructivo para borrar locales Black Coffee, o en modo revision para marcarlos masivamente como rechazados sin eliminarlos. El borrado sigue limpiando el importador como antes; el rechazo conserva el local y lo oculta de la app mediante su estado de revision.
 </div>
 
 <div class="card shadow-sm border-0 mb-4">
@@ -21,6 +21,13 @@
   <div class="card-body">
     <%= form_with url: black_coffee_cleanup_path, method: :get, local: true do %>
       <div class="row align-items-end">
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :operation, 'Accion masiva' %>
+          <%= select_tag :operation,
+                         options_for_select(@operation_options.map { |value, label| [label, value] }, @cleanup.operation),
+                         class: 'form-control' %>
+          <small class="text-muted">Eliminar borra; rechazar conserva el local y cambia su revision.</small>
+        </div>
         <div class="col-lg-2 col-md-6 mb-3">
           <%= label_tag :category, 'Categoria' %>
           <%= select_tag :category,
@@ -49,8 +56,22 @@
           <%= text_field_tag :google_tag, @cleanup.google_tag, class: 'form-control', placeholder: 'Ej: butcher_shop' %>
           <small class="text-muted">Busca en las etiquetas internas guardadas en Black Coffee.</small>
         </div>
-        <div class="col-lg-2 col-md-6 mb-3">
-          <%= submit_tag 'Previsualizar limpieza', class: 'btn btn-primary btn-block text-white' %>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :review_rejection_reason, 'Motivo si rechazas' %>
+          <%= select_tag :review_rejection_reason,
+                         options_for_select(@rejection_reason_options, @cleanup.review_rejection_reason),
+                         class: 'form-control' %>
+          <small class="text-muted">Solo se aplica con la accion "Marcar como rechazados".</small>
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <%= label_tag :review_rejection_note, 'Nota interna si rechazas (opcional)' %>
+          <%= text_field_tag :review_rejection_note,
+                             @cleanup.review_rejection_note,
+                             class: 'form-control',
+                             placeholder: 'Ej: limpieza masiva por categoria incorrecta' %>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= submit_tag 'Previsualizar accion', class: 'btn btn-primary btn-block text-white' %>
         </div>
       </div>
     <% end %>
@@ -61,8 +82,8 @@
   <div class="col-md-3 mb-3 mb-md-0">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <p class="text-muted text-uppercase mb-2">Locales a borrar</p>
-        <h2 class="mb-0 text-danger"><%= number_with_delimiter(@preview[:venue_count]) %></h2>
+        <p class="text-muted text-uppercase mb-2"><%= @cleanup.reject_operation? ? 'Locales a rechazar' : 'Locales a borrar' %></p>
+        <h2 class="mb-0 <%= @cleanup.reject_operation? ? 'text-warning' : 'text-danger' %>"><%= number_with_delimiter(@preview[:venue_count]) %></h2>
       </div>
     </div>
   </div>
@@ -77,16 +98,16 @@
   <div class="col-md-3 mb-3 mb-md-0">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <p class="text-muted text-uppercase mb-2">Candidatos aprobados a reabrir</p>
-        <h2 class="mb-0 text-warning"><%= number_with_delimiter(@preview[:linked_approved_candidates_count]) %></h2>
+        <p class="text-muted text-uppercase mb-2"><%= @cleanup.reject_operation? ? 'Aprobados a pasar a rechazado' : 'Candidatos aprobados a reabrir' %></p>
+        <h2 class="mb-0 text-warning"><%= number_with_delimiter(@cleanup.reject_operation? ? @preview[:review_approved_count] : @preview[:linked_approved_candidates_count]) %></h2>
       </div>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
-        <p class="text-muted text-uppercase mb-2">Duplicados a reabrir</p>
-        <h2 class="mb-0 text-warning"><%= number_with_delimiter(@preview[:linked_duplicate_candidates_count]) %></h2>
+        <p class="text-muted text-uppercase mb-2"><%= @cleanup.reject_operation? ? 'Ya estaban rechazados' : 'Duplicados a reabrir' %></p>
+        <h2 class="mb-0 text-warning"><%= number_with_delimiter(@cleanup.reject_operation? ? @preview[:review_rejected_count] : @preview[:linked_duplicate_candidates_count]) %></h2>
       </div>
     </div>
   </div>
@@ -167,6 +188,10 @@
                     <% end %>
                   </td>
                   <td>
+                    <span class="badge badge-<%= venue.review_status_badge_class %> mr-1"><%= venue.review_status_label %></span>
+                    <% if venue.review_rejection_reason.present? %>
+                      <div class="text-muted small mb-1"><%= venue.review_rejection_reason_label %></div>
+                    <% end %>
                     <% if venue.internal_test_for_dashboard? %>
                       <span class="badge badge-info mr-1">Interno</span>
                     <% end %>
@@ -190,14 +215,18 @@
   </div>
 </div>
 
-<div class="card border-danger shadow-sm mb-5">
-  <div class="card-header bg-danger text-white">
-    <strong>2. Confirmar borrado</strong>
+<% cleanup_is_reject = @cleanup.reject_operation? %>
+<% can_run_cleanup = cleanup_is_reject ? @preview[:venue_count].to_i.positive? : (@preview[:venue_count].to_i.positive? || @preview[:orphaned_approved_candidates_count].to_i.positive? || @preview[:orphaned_duplicate_candidates_count].to_i.positive?) %>
+<% confirmation_border_class = cleanup_is_reject ? 'border-warning' : 'border-danger' %>
+<% confirmation_header_class = cleanup_is_reject ? 'bg-warning text-dark' : 'bg-danger text-white' %>
+<% confirmation_button_class = cleanup_is_reject ? 'btn btn-warning text-dark font-weight-bold' : 'btn btn-danger text-white' %>
+
+<div class="card <%= confirmation_border_class %> shadow-sm mb-5">
+  <div class="card-header <%= confirmation_header_class %>">
+    <strong>2. Confirmar <%= cleanup_is_reject ? 'rechazo masivo' : 'borrado' %></strong>
   </div>
   <div class="card-body">
-    <% can_run_cleanup = @preview[:venue_count].to_i.positive? || @preview[:orphaned_approved_candidates_count].to_i.positive? || @preview[:orphaned_duplicate_candidates_count].to_i.positive? %>
-
-    <% if @preview[:orphaned_approved_candidates_count].to_i.positive? || @preview[:orphaned_duplicate_candidates_count].to_i.positive? %>
+    <% if !cleanup_is_reject && (@preview[:orphaned_approved_candidates_count].to_i.positive? || @preview[:orphaned_duplicate_candidates_count].to_i.positive?) %>
       <div class="alert alert-info">
         Tambien se limpiaran enlaces antiguos ya huerfanos del importador:
         <strong><%= @preview[:orphaned_approved_candidates_count] %></strong> aprobados y
@@ -205,27 +234,38 @@
       </div>
     <% end %>
 
-    <p>
-      Esta accion borrara <strong><%= number_with_delimiter(@preview[:venue_count]) %></strong> locales y reabrira candidatos del importador que dependian de ellos.
-      No borra las corridas de Google; las deja consistentes para revisar o aprobar de nuevo.
-    </p>
+    <% if cleanup_is_reject %>
+      <div class="alert alert-light border">
+        Esta accion marcara como <strong>rechazados</strong> <strong><%= number_with_delimiter(@preview[:venue_count]) %></strong> locales sin borrarlos.
+        Motivo: <strong><%= Venue.rejection_reason_label(@cleanup.review_rejection_reason) %></strong>.
+        Los locales rechazados no se devuelven a la app, pero quedan disponibles en el dashboard para auditoria o correccion posterior.
+      </div>
+    <% else %>
+      <p>
+        Esta accion borrara <strong><%= number_with_delimiter(@preview[:venue_count]) %></strong> locales y reabrira candidatos del importador que dependian de ellos.
+        No borra las corridas de Google; las deja consistentes para revisar o aprobar de nuevo.
+      </p>
+    <% end %>
 
     <%= form_with url: black_coffee_cleanup_path, method: :post, local: true do %>
+      <%= hidden_field_tag :operation, @cleanup.operation %>
       <%= hidden_field_tag :category, @cleanup.category %>
       <%= hidden_field_tag :source, @cleanup.source %>
       <%= hidden_field_tag :visibility, @cleanup.visibility %>
       <%= hidden_field_tag :google_primary_type, @cleanup.google_primary_type %>
       <%= hidden_field_tag :google_tag, @cleanup.google_tag %>
+      <%= hidden_field_tag :review_rejection_reason, @cleanup.review_rejection_reason %>
+      <%= hidden_field_tag :review_rejection_note, @cleanup.review_rejection_note %>
 
       <div class="form-group">
         <%= label_tag :confirm_text, "Escribe #{@confirmation_text} para confirmar" %>
         <%= text_field_tag :confirm_text, nil, class: 'form-control', placeholder: @confirmation_text, autocomplete: 'off' %>
       </div>
 
-      <%= submit_tag "Ejecutar limpieza masiva",
-                     class: 'btn btn-danger text-white',
+      <%= submit_tag(cleanup_is_reject ? 'Marcar locales como rechazados' : 'Ejecutar limpieza masiva',
+                     class: confirmation_button_class,
                      disabled: !can_run_cleanup,
-                     data: { confirm: "Confirmar limpieza masiva? Se borraran #{@preview[:venue_count]} locales Black Coffee y se reabriran enlaces huerfanos del importador. Esta accion no se puede deshacer." } %>
+                     data: { confirm: cleanup_is_reject ? "Confirmar rechazo masivo? Se marcaran #{@preview[:venue_count]} locales como rechazados con motivo #{Venue.rejection_reason_label(@cleanup.review_rejection_reason)}." : "Confirmar limpieza masiva? Se borraran #{@preview[:venue_count]} locales Black Coffee y se reabriran enlaces huerfanos del importador. Esta accion no se puede deshacer." }) %>
     <% end %>
   </div>
 </div>
