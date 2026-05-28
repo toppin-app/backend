@@ -20,27 +20,57 @@
   </div>
   <div class="card-body">
     <%= form_with url: black_coffee_cleanup_path, method: :get, local: true do %>
+      <div class="mb-4">
+        <label class="d-block font-weight-bold mb-2">Accion masiva</label>
+        <p class="text-muted mb-3">
+          Elige si quieres borrar locales de forma definitiva o marcarlos como rechazados para conservarlos como historial de revision.
+        </p>
+        <div class="row">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <%= radio_button_tag :operation,
+                                 BlackCoffeeVenueCleanup::OPERATION_DELETE,
+                                 @cleanup.delete_operation?,
+                                 id: 'operation_delete',
+                                 class: 'black-coffee-cleanup-operation-input' %>
+            <label class="black-coffee-cleanup-operation-card black-coffee-cleanup-operation-card--delete"
+                   for="operation_delete">
+              <span class="black-coffee-cleanup-operation-eyebrow">Modo destructivo</span>
+              <strong>Eliminar definitivamente</strong>
+              <span>Borra los locales seleccionados y mantiene la limpieza del importador como hasta ahora.</span>
+              <span class="black-coffee-cleanup-operation-confirm">Confirmacion requerida: BORRAR</span>
+            </label>
+          </div>
+          <div class="col-md-6">
+            <%= radio_button_tag :operation,
+                                 BlackCoffeeVenueCleanup::OPERATION_REJECT,
+                                 @cleanup.reject_operation?,
+                                 id: 'operation_reject',
+                                 class: 'black-coffee-cleanup-operation-input' %>
+            <label class="black-coffee-cleanup-operation-card black-coffee-cleanup-operation-card--reject"
+                   for="operation_reject">
+              <span class="black-coffee-cleanup-operation-eyebrow">Modo revision</span>
+              <strong>Marcar como rechazados</strong>
+              <span>No elimina locales. Cambia su estado a rechazado, guarda motivo y los oculta de la app.</span>
+              <span class="black-coffee-cleanup-operation-confirm">Confirmacion requerida: RECHAZAR</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div class="row align-items-end">
         <div class="col-lg-3 col-md-6 mb-3">
-          <%= label_tag :operation, 'Accion masiva' %>
-          <%= select_tag :operation,
-                         options_for_select(@operation_options.map { |value, label| [label, value] }, @cleanup.operation),
-                         class: 'form-control' %>
-          <small class="text-muted">Eliminar borra; rechazar conserva el local y cambia su revision.</small>
-        </div>
-        <div class="col-lg-2 col-md-6 mb-3">
           <%= label_tag :category, 'Categoria' %>
           <%= select_tag :category,
                          options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, @cleanup.category),
                          class: 'form-control' %>
         </div>
-        <div class="col-lg-2 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
           <%= label_tag :source, 'Origen' %>
           <%= select_tag :source,
                          options_for_select(@source_options.map { |value, label| [label, value] }, @cleanup.source),
                          class: 'form-control' %>
         </div>
-        <div class="col-lg-2 col-md-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
           <%= label_tag :visibility, 'Visibilidad' %>
           <%= select_tag :visibility,
                          options_for_select(@visibility_options.map { |value, label| [label, value] }, @cleanup.visibility),
@@ -77,6 +107,90 @@
     <% end %>
   </div>
 </div>
+
+<style>
+  .black-coffee-cleanup-operation-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .black-coffee-cleanup-operation-card {
+    border: 2px solid #d7dde6;
+    border-radius: 14px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    min-height: 170px;
+    padding: 20px;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    width: 100%;
+  }
+
+  .black-coffee-cleanup-operation-card:hover {
+    border-color: #7d8798;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .1);
+    transform: translateY(-1px);
+  }
+
+  .black-coffee-cleanup-operation-card strong {
+    color: #1f2937;
+    display: block;
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+  }
+
+  .black-coffee-cleanup-operation-card span {
+    color: #5f6b7a;
+    line-height: 1.35;
+  }
+
+  .black-coffee-cleanup-operation-eyebrow {
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .black-coffee-cleanup-operation-confirm {
+    border-radius: 999px;
+    display: inline-flex;
+    font-weight: 800;
+    margin-top: auto;
+    padding: 8px 12px;
+    width: fit-content;
+  }
+
+  .black-coffee-cleanup-operation-card--delete .black-coffee-cleanup-operation-confirm {
+    background: #fdecef;
+    color: #dc3545;
+  }
+
+  .black-coffee-cleanup-operation-card--reject .black-coffee-cleanup-operation-confirm {
+    background: #fff3cd;
+    color: #8a5a00;
+  }
+
+  .black-coffee-cleanup-operation-input:checked + .black-coffee-cleanup-operation-card {
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .14);
+  }
+
+  .black-coffee-cleanup-operation-input:checked + .black-coffee-cleanup-operation-card--delete {
+    border-color: #dc3545;
+  }
+
+  .black-coffee-cleanup-operation-input:checked + .black-coffee-cleanup-operation-card--reject {
+    border-color: #f0ad00;
+  }
+
+  @media (max-width: 767.98px) {
+    .black-coffee-cleanup-operation-card {
+      min-height: 0;
+      padding: 16px;
+    }
+  }
+</style>
 
 <div class="row mb-4">
   <div class="col-md-3 mb-3 mb-md-0">
