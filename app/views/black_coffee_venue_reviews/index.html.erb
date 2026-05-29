@@ -306,10 +306,11 @@
                              id: 'review-batch-size-select' %>
               <small class="text-muted">Por defecto revisamos 20 locales pendientes.</small>
             </div>
-            <div class="col-md-6 mb-3" id="review-custom-size-wrapper" style="display: none;">
+            <% custom_batch_selected = params[:batch_size].to_s == 'custom' %>
+            <div class="col-md-6 mb-3" id="review-custom-size-wrapper" style="<%= custom_batch_selected ? '' : 'display: none;' %>">
               <label class="font-weight-bold">Tamano personalizado</label>
               <%= number_field_tag :custom_batch_size,
-                                   params[:custom_batch_size],
+                                   params[:custom_batch_size].presence || @default_batch_size,
                                    min: 1,
                                    max: BlackCoffeeVenueReviewsController::MAX_CUSTOM_BATCH_SIZE,
                                    class: 'form-control',
@@ -610,6 +611,7 @@
             <li><strong><%= number_with_delimiter(batch.total_places) %></strong> locales volveran a pendiente de revision.</li>
             <li><strong><%= number_with_delimiter(batch.approved_count) %></strong> aprobaciones se desharan.</li>
             <li><strong><%= number_with_delimiter(batch.rejected_count) %></strong> rechazos se desharan, incluyendo motivo y nota interna.</li>
+            <li>Las categorias corregidas dentro del lote volveran a su valor anterior.</li>
             <li>Se borrara el lote #<%= batch.id %> del historial de revisiones.</li>
           </ul>
         </div>
@@ -627,18 +629,31 @@
 <% end %>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  (function() {
+    function initializeReviewBatchSizeInput() {
     var select = document.getElementById('review-batch-size-select');
     var wrapper = document.getElementById('review-custom-size-wrapper');
+    var input = wrapper ? wrapper.querySelector('input[name="custom_batch_size"]') : null;
 
     function toggleCustomSize() {
       if (!select || !wrapper) return;
-      wrapper.style.display = select.value === 'custom' ? 'block' : 'none';
+      var customSelected = select.value === 'custom';
+      wrapper.style.display = customSelected ? 'block' : 'none';
+      if (input) input.disabled = !customSelected;
     }
 
     if (select) {
+      if (select.getAttribute('data-custom-size-bound') === 'true') {
+        toggleCustomSize();
+        return;
+      }
+      select.setAttribute('data-custom-size-bound', 'true');
       select.addEventListener('change', toggleCustomSize);
       toggleCustomSize();
     }
-  });
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeReviewBatchSizeInput);
+    document.addEventListener('turbolinks:load', initializeReviewBatchSizeInput);
+  })();
 </script>

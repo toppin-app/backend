@@ -33,6 +33,11 @@
     background: #fff7f7;
   }
 
+  .venue-review-card.is-corrected {
+    border-color: #198754;
+    background: #f3fff7;
+  }
+
   .venue-review-title {
     color: #1f2937;
     font-size: 22px;
@@ -190,6 +195,19 @@
     justify-content: center;
     line-height: 1.15;
     text-align: center;
+  }
+
+  .review-image-tools {
+    border: 1px solid #f1c2c7;
+    border-left: 6px solid #dc3545;
+    border-radius: 16px;
+  }
+
+  .category-correction-panel {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    padding: 14px;
   }
 
   .venue-review-description {
@@ -476,6 +494,24 @@
   <div class="alert alert-info">
     Marca como rechazados solo los locales que no deben salir en Black Coffee. Al finalizar, todos los demas locales de este lote se aprobaran automaticamente.
   </div>
+
+  <div class="card review-image-tools mb-4">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+      <div class="mr-md-3 mb-3 mb-md-0">
+        <strong>Revision rapida de imagenes con problemas</strong>
+        <div class="text-muted small">
+          Si alguna miniatura falla al cargar, puedes marcar esos locales como
+          <strong>Fotos incorrectas o muy malas</strong> en un solo paso.
+        </div>
+        <div class="small mt-1" data-broken-images-summary>Buscando imagenes con error...</div>
+      </div>
+      <button type="button"
+              class="btn btn-outline-danger font-weight-bold"
+              data-mark-broken-images>
+        Marcar imagenes con problemas como rechazo por fotos
+      </button>
+    </div>
+  </div>
 <% end %>
 
 <%= form_with url: complete_black_coffee_review_path(@batch), method: :post, local: true, id: 'black-coffee-review-form' do %>
@@ -602,6 +638,13 @@
               <% if item.review_rejection_note.present? %>
                 <span class="text-muted ml-2">Nota: <%= item.review_rejection_note %></span>
               <% end %>
+            <% elsif item.category_corrected? %>
+              <span class="text-muted ml-2">
+                Categoria corregida:
+                <strong><%= item.category_correction_from %></strong>
+                a
+                <strong><%= item.category_correction_to %></strong>
+              </span>
             <% end %>
           </div>
         <% else %>
@@ -609,6 +652,10 @@
                  name="rejections[<%= venue.id %>][reason]"
                  value="<%= item.review_rejection_reason %>"
                  data-reason-input>
+          <input type="hidden"
+                 name="rejections[<%= venue.id %>][correct_category]"
+                 value="0"
+                 data-correct-category-hidden>
 
           <div class="mb-3">
             <div class="venue-review-label mb-2">Rechazar este local</div>
@@ -625,6 +672,29 @@
                 Deshacer rechazo
               </button>
             </div>
+          </div>
+
+          <div class="category-correction-panel mb-3"
+               data-category-correction-wrapper
+               style="<%= item.review_rejection_reason == 'wrong_category' ? '' : 'display: none;' %>">
+            <div class="custom-control custom-checkbox mb-3">
+              <input type="checkbox"
+                     class="custom-control-input"
+                     id="correctCategory<%= venue.id %>"
+                     data-correct-category-toggle>
+              <label class="custom-control-label font-weight-bold" for="correctCategory<%= venue.id %>">
+                Corregir categoria y aprobar este local en lugar de rechazarlo
+              </label>
+            </div>
+            <label class="font-weight-bold">Nueva categoria correcta</label>
+            <%= select_tag "rejections[#{venue.id}][corrected_category]",
+                           options_for_select([['Selecciona categoria correcta', '']] + @category_options.select { |_label, value| Venue::CATEGORIES.include?(value) }.reject { |_label, value| value == venue.category }),
+                           class: 'form-control',
+                           disabled: true,
+                           data: { corrected_category_select: true } %>
+            <small class="text-muted">
+              Si activas esta opcion, el local quedara aprobado y cambiaremos su categoria interna.
+            </small>
           </div>
 
           <div class="form-group mb-0" data-note-wrapper style="<%= item.review_rejection_reason == 'other' ? '' : 'display: none;' %>">
@@ -680,6 +750,7 @@
           <li><strong><%= number_with_delimiter(@batch.total_places) %></strong> locales volveran a pendiente de revision.</li>
           <li><strong><%= number_with_delimiter(@batch.approved_count) %></strong> aprobaciones se desharan.</li>
           <li><strong><%= number_with_delimiter(@batch.rejected_count) %></strong> rechazos se desharan, incluyendo motivo y nota interna.</li>
+          <li>Las categorias corregidas dentro de este lote volveran a su valor anterior.</li>
           <li>Se borrara el lote #<%= @batch.id %> del historial de revisiones.</li>
         </ul>
       </div>
@@ -738,16 +809,37 @@
     var modalThumbs = document.getElementById('reviewImageModalThumbs');
     var prevButton = document.querySelector('[data-review-modal-prev]');
     var nextButton = document.querySelector('[data-review-modal-next]');
+    var brokenImagesButton = document.querySelector('[data-mark-broken-images]');
+    var brokenImagesSummary = document.querySelector('[data-broken-images-summary]');
     var galleryImages = [];
     var galleryIndex = 0;
     var galleryTitle = 'Imagen del local';
+
+    function cardIsCategoryCorrection(card) {
+      var reasonInput = card.querySelector('[data-reason-input]');
+      var toggle = card.querySelector('[data-correct-category-toggle]');
+      var select = card.querySelector('[data-corrected-category-select]');
+
+      return !!(
+        reasonInput &&
+        reasonInput.value === 'wrong_category' &&
+        toggle &&
+        toggle.checked &&
+        select &&
+        select.value
+      );
+    }
+
+    function cardIsRejected(card) {
+      var input = card.querySelector('[data-reason-input]');
+      return !!(input && input.value && !cardIsCategoryCorrection(card));
+    }
 
     function updateCounters() {
       if (!rejectedCounter || !approvedCounter) return;
 
       var rejectedCount = cards.filter(function(card) {
-        var input = card.querySelector('[data-reason-input]');
-        return input && input.value;
+        return cardIsRejected(card);
       }).length;
       var approvedCount = cards.length - rejectedCount;
 
@@ -755,6 +847,24 @@
       if (approvedCounter) approvedCounter.textContent = approvedCount;
       if (rejectedSummary) rejectedSummary.textContent = rejectedCount;
       if (approvedSummary) approvedSummary.textContent = approvedCount;
+    }
+
+    function updateBrokenImagesSummary() {
+      if (!brokenImagesSummary && !brokenImagesButton) return;
+
+      var affectedCards = cards.filter(function(card) {
+        return !!card.querySelector('[data-review-image][data-image-broken="true"]');
+      });
+      var count = affectedCards.length;
+
+      if (brokenImagesSummary) {
+        brokenImagesSummary.textContent = count > 0 ?
+          count + ' locales del lote tienen al menos una imagen que no carga.' :
+          'No se han detectado imagenes rotas en este lote.';
+      }
+      if (brokenImagesButton) {
+        brokenImagesButton.disabled = count === 0;
+      }
     }
 
     function renderGallery() {
@@ -821,6 +931,57 @@
       var status = card.querySelector('[data-review-status]');
       var buttons = Array.prototype.slice.call(card.querySelectorAll('[data-rejection-reason]'));
       var undoButton = card.querySelector('[data-review-undo]');
+      var categoryCorrectionWrapper = card.querySelector('[data-category-correction-wrapper]');
+      var correctCategoryHidden = card.querySelector('[data-correct-category-hidden]');
+      var correctCategoryToggle = card.querySelector('[data-correct-category-toggle]');
+      var correctedCategorySelect = card.querySelector('[data-corrected-category-select]');
+
+      function selectedCategoryLabel() {
+        if (!correctedCategorySelect || !correctedCategorySelect.value) return '';
+
+        var option = correctedCategorySelect.options[correctedCategorySelect.selectedIndex];
+        return option ? option.text : correctedCategorySelect.value;
+      }
+
+      function syncCategoryCorrectionState() {
+        if (!reasonInput) return;
+
+        var isWrongCategory = reasonInput.value === 'wrong_category';
+        var correctionRequested = !!(isWrongCategory && correctCategoryToggle && correctCategoryToggle.checked);
+        var correctionReady = correctionRequested && correctedCategorySelect && correctedCategorySelect.value;
+
+        if (categoryCorrectionWrapper) {
+          categoryCorrectionWrapper.style.display = isWrongCategory ? 'block' : 'none';
+        }
+
+        if (!isWrongCategory) {
+          if (correctCategoryToggle) correctCategoryToggle.checked = false;
+          if (correctCategoryHidden) correctCategoryHidden.value = '0';
+          if (correctedCategorySelect) correctedCategorySelect.value = '';
+        }
+
+        if (correctCategoryHidden) {
+          correctCategoryHidden.value = correctionRequested ? '1' : '0';
+        }
+
+        if (correctedCategorySelect) {
+          correctedCategorySelect.disabled = !correctionRequested;
+          correctedCategorySelect.required = correctionRequested;
+        }
+
+        card.classList.toggle('is-corrected', !!correctionReady);
+        card.classList.toggle('is-rejected', !!(reasonInput.value && !correctionReady));
+
+        if (status && correctionRequested) {
+          status.classList.remove('badge-warning', 'badge-danger');
+          status.classList.add(correctionReady ? 'badge-success' : 'badge-warning');
+          status.textContent = correctionReady ?
+            'Se aprobara corrigiendo a: ' + selectedCategoryLabel() :
+            'Selecciona la categoria correcta';
+        }
+
+        updateCounters();
+      }
 
       function setReason(reason, label) {
         if (!reasonInput) return;
@@ -828,7 +989,7 @@
         reasonInput.value = reason;
         card.classList.add('is-rejected');
         if (status) {
-          status.classList.remove('badge-warning');
+          status.classList.remove('badge-warning', 'badge-success');
           status.classList.add('badge-danger');
           status.textContent = 'Rechazado: ' + label;
         }
@@ -841,6 +1002,7 @@
         if (reason !== 'other' && noteInput) {
           noteInput.value = '';
         }
+        syncCategoryCorrectionState();
         updateCounters();
       }
 
@@ -849,8 +1011,9 @@
 
         reasonInput.value = '';
         card.classList.remove('is-rejected');
+        card.classList.remove('is-corrected');
         if (status) {
-          status.classList.remove('badge-danger');
+          status.classList.remove('badge-danger', 'badge-success');
           status.classList.add('badge-warning');
           status.textContent = 'Pendiente en este lote';
         }
@@ -863,8 +1026,11 @@
         if (noteInput) {
           noteInput.value = '';
         }
+        syncCategoryCorrectionState();
         updateCounters();
       }
+
+      card.blackCoffeeSetReviewReason = setReason;
 
       buttons.forEach(function(button) {
         button.addEventListener('click', function() {
@@ -872,19 +1038,63 @@
         });
       });
 
+      if (correctCategoryToggle) {
+        correctCategoryToggle.addEventListener('change', syncCategoryCorrectionState);
+      }
+
+      if (correctedCategorySelect) {
+        correctedCategorySelect.addEventListener('change', syncCategoryCorrectionState);
+      }
+
       if (undoButton) {
         undoButton.addEventListener('click', clearReason);
       }
+
+      syncCategoryCorrectionState();
     });
 
     Array.prototype.slice.call(document.querySelectorAll('[data-review-image]')).forEach(function(image) {
       if (image.getAttribute('data-review-image-bound') === 'true') return;
       image.setAttribute('data-review-image-bound', 'true');
+
+      function markImageAsBroken() {
+        image.setAttribute('data-image-broken', 'true');
+        updateBrokenImagesSummary();
+      }
+
+      function markImageAsLoaded() {
+        if (image.naturalWidth > 0) {
+          image.removeAttribute('data-image-broken');
+          updateBrokenImagesSummary();
+        }
+      }
+
+      image.addEventListener('error', markImageAsBroken);
+      image.addEventListener('load', markImageAsLoaded);
+      if (image.complete && image.naturalWidth === 0) {
+        markImageAsBroken();
+      }
+
       image.addEventListener('click', function(event) {
         event.preventDefault();
         openGallery(image);
       });
     });
+
+    if (brokenImagesButton && brokenImagesButton.getAttribute('data-broken-images-bound') !== 'true') {
+      brokenImagesButton.setAttribute('data-broken-images-bound', 'true');
+      brokenImagesButton.addEventListener('click', function() {
+        var affectedCards = cards.filter(function(card) {
+          return !!card.querySelector('[data-review-image][data-image-broken="true"]');
+        });
+
+        affectedCards.forEach(function(card) {
+          if (typeof card.blackCoffeeSetReviewReason === 'function') {
+            card.blackCoffeeSetReviewReason('bad_photos', 'Fotos incorrectas o muy malas');
+          }
+        });
+      });
+    }
 
     if (prevButton && prevButton.getAttribute('data-review-gallery-bound') !== 'true') {
       prevButton.setAttribute('data-review-gallery-bound', 'true');
@@ -901,6 +1111,7 @@
     }
 
     updateCounters();
+    updateBrokenImagesSummary();
     }
 
     document.addEventListener('DOMContentLoaded', initializeBlackCoffeeReviewPage);

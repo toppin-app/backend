@@ -7,6 +7,8 @@ class BlackCoffeeReviewBatchItem < ApplicationRecord
 
   validates :review_status, inclusion: { in: Venue::REVIEW_STATUSES }
   validates :review_rejection_reason, inclusion: { in: Venue::REJECTION_REASON_CODES }, allow_blank: true
+  validates :category_correction_from, inclusion: { in: Venue::CATEGORIES }, allow_blank: true
+  validates :category_correction_to, inclusion: { in: Venue::CATEGORIES }, allow_blank: true
   validates :venue_id, uniqueness: { scope: :black_coffee_review_batch_id }
 
   scope :ordered, -> { order(:id) }
@@ -25,5 +27,9 @@ class BlackCoffeeReviewBatchItem < ApplicationRecord
 
   def rejection_reason_label
     Venue.rejection_reason_label(review_rejection_reason)
+  end
+
+  def category_corrected?
+    category_correction_from.present? && category_correction_to.present?
   end
 end

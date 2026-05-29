@@ -67,6 +67,7 @@ class BlackCoffeeVenueReviewsController < ApplicationController
     @title = "Revision Black Coffee ##{@batch.id}"
     @items = @batch.review_items.includes(venue: [:venue_subcategory, :venue_images]).ordered
     @reason_labels = Venue::REJECTION_REASON_LABELS
+    @category_options = review_category_options
   end
 
   def complete
@@ -76,8 +77,10 @@ class BlackCoffeeVenueReviewsController < ApplicationController
       rejections: params[:rejections] || {}
     )
 
-    redirect_to black_coffee_review_path(@batch),
-                notice: "Lote finalizado: #{result.approved_count} aprobados y #{result.rejected_count} rechazados."
+    message = "Lote finalizado: #{result.approved_count} aprobados y #{result.rejected_count} rechazados."
+    message += " #{result.corrected_count} locales fueron aprobados corrigiendo su categoria." if result.corrected_count.to_i.positive?
+
+    redirect_to black_coffee_review_path(@batch), notice: message
   rescue ArgumentError, ActiveRecord::ActiveRecordError => e
     redirect_to black_coffee_review_path(@batch), alert: "No se pudo finalizar el lote: #{e.message}"
   end
