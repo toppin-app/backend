@@ -124,6 +124,12 @@ class Venue < ApplicationRecord
     scope.where("JSON_SEARCH(COALESCE(venues.tags, JSON_ARRAY()), 'one', ?) IS NOT NULL", normalized_tag)
   end
 
+  def self.stable_black_coffee_image_urls(urls)
+    Array(urls).map(&:to_s).map(&:strip).reject(&:blank?).uniq.reject do |url|
+      VenueImage.temporary_google_place_photo_url?(url)
+    end
+  end
+
   def self.filter_by_google_primary_type(scope, google_primary_type)
     normalized_type = BlackCoffeeTaxonomy.normalize_google_tag(google_primary_type)
     return scope if normalized_type.blank?
@@ -419,7 +425,7 @@ class Venue < ApplicationRecord
   end
 
   def sync_google_images!(image_urls:, author_attributions_by_index: [])
-    desired_urls = Array(image_urls).map(&:to_s).map(&:strip).reject(&:blank?).uniq.first(10)
+    desired_urls = self.class.stable_black_coffee_image_urls(image_urls).first(10)
     return false if desired_urls.empty?
 
     current_google_urls = google_managed_images.map { |image| image.url.to_s.strip }.reject(&:blank?)

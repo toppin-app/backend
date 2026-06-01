@@ -73,6 +73,19 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     assert_equal 'invalid_url', invalid_result.error_type
   end
 
+  test 'image checker rejects temporary Google Places photo urls without network calls' do
+    checker = BlackCoffeePendingImageAuditRunner::ImageChecker.new
+    checker.define_singleton_method(:request_with_redirects) do |_uri|
+      raise 'network should not be called for temporary Google photo urls'
+    end
+
+    result = checker.check('https://lh3.googleusercontent.com/place-photos/AJRVUZExample=s4800-w1200')
+
+    assert_equal 'failed', result.status
+    assert_equal 'temporary_google_photo_uri', result.error_type
+    assert_nil result.http_status
+  end
+
   test 'reject_failed marks only pending failed venues as bad photos' do
     batch = FakeBatch.new(7, [])
     runner = BlackCoffeePendingImageAuditRunner.new(batch: batch)

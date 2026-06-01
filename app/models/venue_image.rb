@@ -1,4 +1,8 @@
 class VenueImage < ApplicationRecord
+  # Google Places photoUri values are temporary and must not be treated as durable image assets.
+  TEMPORARY_GOOGLE_PHOTO_HOST_PATTERN = /(^|\.)googleusercontent\.com\z/.freeze
+  TEMPORARY_GOOGLE_PLACE_PHOTO_PATH = '/place-photos/'.freeze
+
   belongs_to :venue
   mount_uploader :image, BlackCoffeeImageUploader
 
@@ -9,9 +13,21 @@ class VenueImage < ApplicationRecord
 
   before_validation :normalize_url
 
+  def self.temporary_google_place_photo_url?(value)
+    uri = URI.parse(value.to_s.strip)
+    return false unless uri.is_a?(URI::HTTP)
+
+    uri.host.to_s.match?(TEMPORARY_GOOGLE_PHOTO_HOST_PATTERN) &&
+      uri.path.to_s.include?(TEMPORARY_GOOGLE_PLACE_PHOTO_PATH)
+  rescue URI::InvalidURIError
+    false
+  end
+
   def public_url(base_url: nil)
     raw_value = external_image? ? url : image.url
     return if raw_value.blank?
+    return if self.class.temporary_google_place_photo_url?(raw_value)
+
     return "https:#{raw_value}" if raw_value.start_with?('//')
     return raw_value if raw_value.start_with?('http://', 'https://')
     return raw_value if base_url.blank?
@@ -34,6 +50,10 @@ class VenueImage < ApplicationRecord
     return :uploaded if uploaded_image?
 
     :unknown
+  end
+
+  def temporary_google_place_photo_url?
+    external_image? && self.class.temporary_google_place_photo_url?(url)
   end
 
   private

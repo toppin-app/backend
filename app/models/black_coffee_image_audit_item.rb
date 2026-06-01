@@ -7,6 +7,7 @@ class BlackCoffeeImageAuditItem < ApplicationRecord
     'network_error' => 'Error de red',
     'not_image' => 'No parece una imagen',
     'http_error' => 'Error HTTP',
+    'temporary_google_photo_uri' => 'URL temporal de Google Places',
     'unknown_error' => 'Error desconocido'
   }.freeze
 

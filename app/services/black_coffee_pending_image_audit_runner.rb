@@ -61,11 +61,41 @@ class BlackCoffeePendingImageAuditRunner
         end
 
         images.each do |image|
+          if image.temporary_google_place_photo_url?
+            rows << item_row(
+              batch: batch,
+              venue: venue,
+              venue_image: image,
+              image_url: image.url,
+              status: 'failed',
+              error_type: 'temporary_google_photo_uri',
+              error_message: 'URL temporal de Google Places guardada como imagen estable. No se vuelve a comprobar por red.',
+              checked_at: now
+            )
+            flush_rows!(rows)
+            next
+          end
+
+          public_url = image.public_url(base_url: base_url)
+          if public_url.blank?
+            rows << item_row(
+              batch: batch,
+              venue: venue,
+              venue_image: image,
+              status: 'failed',
+              error_type: 'missing_image',
+              error_message: 'La imagen no tiene URL publica utilizable.',
+              checked_at: now
+            )
+            flush_rows!(rows)
+            next
+          end
+
           rows << item_row(
             batch: batch,
             venue: venue,
             venue_image: image,
-            image_url: image.public_url(base_url: base_url),
+            image_url: public_url,
             status: 'pending'
           )
           flush_rows!(rows)
@@ -222,6 +252,7 @@ class BlackCoffeePendingImageAuditRunner
 
     def check(url)
       return failure('missing_image', 'El local no tiene imagenes guardadas.') if url.blank?
+      return failure('temporary_google_photo_uri', 'URL temporal de Google Places; no se comprueba por red para evitar gasto recurrente.') if VenueImage.temporary_google_place_photo_url?(url)
 
       uri = URI.parse(url)
       return failure('invalid_url', 'La URL no usa http o https.') unless uri.is_a?(URI::HTTP)

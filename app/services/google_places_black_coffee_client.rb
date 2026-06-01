@@ -157,7 +157,14 @@ class GooglePlacesBlackCoffeeClient
     [[value, 0].max, 10].min
   end
 
+  def self.allow_google_photo_url_resolution?
+    # Google photoUri values are temporary; keep media requests behind an explicit cost gate.
+    ActiveModel::Type::Boolean.new.cast(ENV.fetch('BLACK_COFFEE_ALLOW_GOOGLE_PHOTO_URL_RESOLUTION', 'false'))
+  end
+
   def self.resolve_photo_urls_during_import?
+    return false unless allow_google_photo_url_resolution?
+
     ActiveModel::Type::Boolean.new.cast(ENV.fetch('BLACK_COFFEE_RESOLVE_PHOTO_URLS_DURING_IMPORT', 'false'))
   end
 
@@ -180,6 +187,7 @@ class GooglePlacesBlackCoffeeClient
   def self.import_options_payload
     {
       max_photos_per_place: max_photos_per_place,
+      allow_google_photo_url_resolution: allow_google_photo_url_resolution?,
       resolve_photo_urls_during_import: resolve_photo_urls_during_import?,
       skip_existing_places: skip_existing_places?,
       skip_imported_candidates: skip_imported_candidates?,
@@ -318,6 +326,7 @@ class GooglePlacesBlackCoffeeClient
 
   def photo_urls_from_references(photo_references, max_photos: self.class.max_photos_per_place)
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
+    return empty_photo_url_result unless self.class.allow_google_photo_url_resolution?
 
     photo_names = Array(photo_references)
       .filter_map { |reference| extract_photo_name(reference).to_s.strip.presence }
@@ -341,6 +350,7 @@ class GooglePlacesBlackCoffeeClient
 
   def fetch_place_photo_bundle(place_id:, max_photos: self.class.max_photos_per_place)
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
+    return empty_photo_bundle unless self.class.allow_google_photo_url_resolution?
 
     place_resource = normalized_place_resource(place_id)
     payload = get_json(
@@ -392,6 +402,23 @@ class GooglePlacesBlackCoffeeClient
   end
 
   private
+
+  def empty_photo_url_result
+    {
+      image_urls: [],
+      requests_count: 0
+    }
+  end
+
+  def empty_photo_bundle
+    {
+      google_photo_references: [],
+      image_urls: [],
+      author_attributions: [],
+      raw_photos: [],
+      requests_count: 0
+    }
+  end
 
   def build_query(region:, config:, query_override:, append_region_to_query:)
     raw_query = query_override.to_s.strip.presence || config.fetch(:query)
@@ -472,7 +499,7 @@ class GooglePlacesBlackCoffeeClient
     metrics[:photos][:references_saved] += photo_references.size if metrics
     image_urls = []
 
-    if resolve_photo_urls
+    if resolve_photo_urls && self.class.allow_google_photo_url_resolution?
       photos.each do |photo|
         photo_name = photo['name']
         next if photo_name.blank?

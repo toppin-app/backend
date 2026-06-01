@@ -157,12 +157,12 @@ class BlackCoffeeImportPhotoRefreshRunner
   def process_candidate(candidate)
     requests_count = 0
 
-    unless candidate.respond_to?(:image_url_list)
+    unless candidate.respond_to?(:stable_image_url_list)
       mark_candidate_skipped!(candidate_id: candidate.id, candidate_name: nil, requests_count: requests_count)
       return {}
     end
 
-    if candidate.image_url_list.any?
+    if candidate.stable_image_url_list.any?
       mark_candidate_skipped!(candidate_id: candidate.id, candidate_name: candidate.name, requests_count: requests_count)
       return {}
     end

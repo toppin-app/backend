@@ -60,8 +60,12 @@ class BlackCoffeeImportCandidate < ApplicationRecord
     Array(image_urls).map(&:to_s).reject(&:blank?)
   end
 
+  def stable_image_url_list
+    Venue.stable_black_coffee_image_urls(image_url_list)
+  end
+
   def missing_images?
-    image_url_list.empty?
+    stable_image_url_list.empty?
   end
 
   def google_photo_reference_list
@@ -163,7 +167,7 @@ class BlackCoffeeImportCandidate < ApplicationRecord
       end
       venue.save!
 
-      image_url_list.first(10).each_with_index do |url, index|
+      stable_image_url_list.first(10).each_with_index do |url, index|
         image = venue.venue_images.build(url: url, position: index)
         image.source = 'google_places' if image.has_attribute?(:source)
         if image.has_attribute?(:author_attributions)

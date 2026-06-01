@@ -46,6 +46,18 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
     BlackCoffeeGoogleImportFilter.stub(:enhance_config, ->(_category, config) { config }) { yield }
   end
 
+  def with_google_photo_url_resolution(enabled)
+    previous = ENV['BLACK_COFFEE_ALLOW_GOOGLE_PHOTO_URL_RESOLUTION']
+    ENV['BLACK_COFFEE_ALLOW_GOOGLE_PHOTO_URL_RESOLUTION'] = enabled ? 'true' : 'false'
+    yield
+  ensure
+    if previous.nil?
+      ENV.delete('BLACK_COFFEE_ALLOW_GOOGLE_PHOTO_URL_RESOLUTION')
+    else
+      ENV['BLACK_COFFEE_ALLOW_GOOGLE_PHOTO_URL_RESOLUTION'] = previous
+    end
+  end
+
   test 'search metadata saves photo references without resolving photo URLs by default' do
     client = client_with_places([google_place])
     client.define_singleton_method(:photo_uri_for) do |_photo_name|
@@ -132,24 +144,54 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
       "https://images.example/#{photo_name}"
     end
 
-    result = without_dynamic_import_filters do
-      client.search(
-        region: valencian_region,
-        category: 'cafeteria',
-        limit: 10,
-        metadata: true,
-        resolve_photo_urls_during_import: true,
-        skip_existing_places: false,
-        skip_imported_candidates: false,
-        strict_region_filter: true,
-        require_photos_during_import: true
-      )
+    result = with_google_photo_url_resolution(true) do
+      without_dynamic_import_filters do
+        client.search(
+          region: valencian_region,
+          category: 'cafeteria',
+          limit: 10,
+          metadata: true,
+          resolve_photo_urls_during_import: true,
+          skip_existing_places: false,
+          skip_imported_candidates: false,
+          strict_region_filter: true,
+          require_photos_during_import: true
+        )
+      end
     end
 
     candidate = result[:candidates].first
     assert_equal ['https://images.example/photos/one'], candidate[:image_urls]
     assert_equal 1, result.dig(:google_requests, :photos)
     assert_equal 1, result.dig(:photos, :urls_resolved)
+  end
+
+  test 'search does not resolve photo URLs unless the safety flag allows it' do
+    client = client_with_places([google_place(photos: [photo('photos/one')])])
+    client.define_singleton_method(:photo_uri_for) do |_photo_name|
+      raise 'photo URL resolution must stay blocked by default'
+    end
+
+    result = with_google_photo_url_resolution(false) do
+      without_dynamic_import_filters do
+        client.search(
+          region: valencian_region,
+          category: 'cafeteria',
+          limit: 10,
+          metadata: true,
+          resolve_photo_urls_during_import: true,
+          skip_existing_places: false,
+          skip_imported_candidates: false,
+          strict_region_filter: true,
+          require_photos_during_import: true
+        )
+      end
+    end
+
+    candidate = result[:candidates].first
+    assert_equal [], candidate[:image_urls]
+    assert_equal 0, result.dig(:google_requests, :photos)
+    assert_equal 0, result.dig(:photos, :urls_resolved)
   end
 
   test 'search can use a lean field mask for dry run requests' do
@@ -216,19 +258,37 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
       { 'photoUri' => "https://images.example/#{requested_uris.size}" }
     end
 
-    first_result = client.photo_urls_from_references(
-      [photo('photos/one'), photo('photos/one'), photo('photos/two')],
-      max_photos: 3
-    )
-    second_result = client.photo_urls_from_references(
-      [photo('photos/one'), photo('photos/two')],
-      max_photos: 2
-    )
+    first_result = with_google_photo_url_resolution(true) do
+      client.photo_urls_from_references(
+        [photo('photos/one'), photo('photos/one'), photo('photos/two')],
+        max_photos: 3
+      )
+    end
+    second_result = with_google_photo_url_resolution(true) do
+      client.photo_urls_from_references(
+        [photo('photos/one'), photo('photos/two')],
+        max_photos: 2
+      )
+    end
 
     assert_equal 2, first_result[:requests_count]
     assert_equal 0, second_result[:requests_count]
     assert_equal 2, requested_uris.size
     assert_equal ['https://images.example/1', 'https://images.example/2'], first_result[:image_urls]
     assert_equal first_result[:image_urls], second_result[:image_urls]
+  end
+
+  test 'photo URL refresh is blocked by default to avoid recurring Google photo costs' do
+    client = GooglePlacesBlackCoffeeClient.new(api_key: 'test-key')
+    client.define_singleton_method(:get_json) do |_uri, field_mask: nil|
+      raise 'Google photo media endpoint should not be called without safety flag'
+    end
+
+    result = with_google_photo_url_resolution(false) do
+      client.photo_urls_from_references([photo('photos/one')], max_photos: 1)
+    end
+
+    assert_equal [], result[:image_urls]
+    assert_equal 0, result[:requests_count]
   end
 end
