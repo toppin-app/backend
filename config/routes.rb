@@ -39,6 +39,12 @@ Rails.application.routes.draw do
         post :complete
       end
     end
+    resources :image_audits, controller: 'black_coffee_image_audits', only: [:index, :create, :show] do
+      member do
+        post :advance
+        post :reject_failed
+      end
+    end
     resources :fake_favorite_batches, controller: 'black_coffee_fake_favorite_batches', only: [:index, :create, :show] do
       member do
         get :status

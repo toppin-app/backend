@@ -302,7 +302,10 @@
           </div>
         </div>
       </div>
-      <%= link_to 'Abrir revision de locales', black_coffee_reviews_path, class: 'btn btn-review-entry btn-lg text-white mt-3 mt-lg-0' %>
+      <div class="d-flex flex-wrap justify-content-end">
+        <%= link_to 'Auditar imagenes pendientes', black_coffee_image_audits_path, class: 'btn btn-outline-danger btn-lg mr-2 mt-3 mt-lg-0' %>
+        <%= link_to 'Abrir revision de locales', black_coffee_reviews_path, class: 'btn btn-review-entry btn-lg text-white mt-3 mt-lg-0' %>
+      </div>
     </div>
   </div>
 </div>
