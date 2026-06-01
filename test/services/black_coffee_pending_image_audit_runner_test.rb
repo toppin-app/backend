@@ -125,4 +125,11 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
 
     assert_includes error.message, 'Termina de procesar todas las imagenes'
   end
+
+  test 'audit batch exposes failed state helper used by the runner' do
+    batch = BlackCoffeeImageAuditBatch.new(status: 'failed')
+
+    assert batch.failed?
+    assert batch.finished?
+  end
 end

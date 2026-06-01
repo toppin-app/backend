@@ -24,12 +24,16 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
     status == 'completed'
   end
 
+  def failed?
+    status == 'failed'
+  end
+
   def rejected?
     status == 'rejected'
   end
 
   def finished?
-    completed? || rejected?
+    completed? || failed? || rejected?
   end
 
   def pending_checks?
