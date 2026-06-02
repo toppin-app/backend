@@ -47,6 +47,26 @@
     width: 100%;
   }
 
+  .black-coffee-image-card-header {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+  }
+
+  .black-coffee-image-card-header form {
+    margin: 0;
+  }
+
+  .black-coffee-image-card-header .btn {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+    line-height: 1.15;
+    min-height: 34px;
+  }
+
   .black-coffee-review-panel {
     background: #f8fafc;
     border: 1px solid #dbe3ef;
@@ -248,8 +268,20 @@
     .black-coffee-detail-image {
       max-height: none;
     }
+
+    .black-coffee-image-card-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .black-coffee-image-card-header form,
+    .black-coffee-image-card-header .btn {
+      width: 100%;
+    }
   }
 </style>
+
+<% linked_images_count = @venue.venue_images.to_a.count(&:external_image?) %>
 
 <div class="d-flex justify-content-between align-items-center mb-4 black-coffee-detail-header">
   <div>
@@ -475,10 +507,24 @@
 
   <div class="col-lg-4">
     <div class="card">
-      <div class="card-header bg-white">
+      <div class="card-header bg-white black-coffee-image-card-header">
         <h4 class="mb-0">Imagenes</h4>
+        <% if linked_images_count.positive? %>
+          <%= button_to 'Transformar links en binarios',
+                        convert_linked_images_black_coffee_venue_path(@venue),
+                        method: :post,
+                        class: 'btn btn-sm btn-outline-info',
+                        data: {
+                          confirm: "Se descargaran #{linked_images_count} imagen(es) enlazadas y se reemplazaran por archivos internos. Las imagenes que fallen quedaran sin cambios. Continuar?"
+                        } %>
+        <% end %>
       </div>
       <div class="card-body">
+        <% if linked_images_count.positive? %>
+          <p class="text-muted small mb-3">
+            <strong><%= linked_images_count %></strong> imagen(es) siguen como link externo.
+          </p>
+        <% end %>
         <% if @venue.image_urls(base_url: request.base_url).any? %>
           <% @venue.image_urls(base_url: request.base_url).each do |image_url| %>
             <div class="mb-3">

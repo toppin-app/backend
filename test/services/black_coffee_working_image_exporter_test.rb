@@ -96,7 +96,7 @@ class BlackCoffeeWorkingImageExporterTest < ActiveSupport::TestCase
     end
 
     Net::HTTP.stub(:start, net_http_start) do
-      result = BlackCoffeeWorkingImageExporter::ImageDownloader.new.download('https://cdn.toppin.test/image.jpg')
+      result = BlackCoffeeImageDownloader.new.download('https://cdn.toppin.test/image.jpg')
 
       assert result.ok?
       assert_equal 'hello-image', result.body

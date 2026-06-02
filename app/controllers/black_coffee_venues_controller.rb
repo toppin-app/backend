@@ -4,7 +4,7 @@ class BlackCoffeeVenuesController < ApplicationController
 
   before_action :check_admin
   before_action :hide_content_header, only: [:show, :new, :edit, :create, :update]
-  before_action :set_venue, only: [:show, :edit, :update, :destroy, :review]
+  before_action :set_venue, only: [:show, :edit, :update, :destroy, :review, :convert_linked_images]
 
   def index
     @title = 'Black Coffee'
@@ -107,6 +107,19 @@ class BlackCoffeeVenuesController < ApplicationController
     redirect_to black_coffee_venue_path(@venue), alert: "No se pudo actualizar la revision: #{e.message}"
   end
 
+  def convert_linked_images
+    result = BlackCoffeeVenueImageLinkConverter.convert!(venue: @venue)
+
+    flash[:notice] = "Imagenes convertidas: #{result.converted_count}. Saltadas: #{result.skipped_count}. Fallidas: #{result.failed_count}."
+    if result.failed_count.positive?
+      flash[:alert] = "Algunas imagenes no se pudieron convertir: #{conversion_failure_summary(result)}"
+    end
+
+    redirect_to black_coffee_venue_path(@venue)
+  rescue StandardError => e
+    redirect_to black_coffee_venue_path(@venue), alert: "No se pudieron transformar las imagenes enlazadas: #{e.message}"
+  end
+
   private
 
   def set_venue
@@ -175,6 +188,15 @@ class BlackCoffeeVenuesController < ApplicationController
         reviewed_at: attributes[:reviewed_at],
         updated_at: Time.current
       )
+  end
+
+  def conversion_failure_summary(result)
+    failures = result.failed_items.first(3).map do |item|
+      "Imagen ##{item.venue_image_id}: #{item.error_message.presence || item.error_type}"
+    end
+
+    suffix = result.failed_count > failures.size ? " y #{result.failed_count - failures.size} mas" : nil
+    ([failures.to_sentence, suffix].compact.join).presence || 'sin detalle'
   end
 
   def prepare_form_state

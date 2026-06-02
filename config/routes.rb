@@ -32,6 +32,7 @@ Rails.application.routes.draw do
     resources :venues, controller: 'black_coffee_venues' do
       member do
         patch :review
+        post :convert_linked_images
       end
     end
     resources :reviews, controller: 'black_coffee_venue_reviews', only: [:index, :create, :show, :destroy] do
