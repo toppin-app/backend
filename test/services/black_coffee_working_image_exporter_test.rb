@@ -3,6 +3,16 @@ require 'zip'
 
 class BlackCoffeeWorkingImageExporterTest < ActiveSupport::TestCase
   FakeVenue = Struct.new(:name)
+  FakeStreamingResponse = Struct.new(:code, :headers, :chunks) do
+    def [](key)
+      headers.to_h[key.to_s.downcase]
+    end
+
+    def read_body
+      chunks.each { |chunk| yield chunk }
+    end
+  end
+
   FakeImage = Struct.new(:id, :venue_id, :position, :url, :venue, keyword_init: true) do
     def temporary_google_place_photo_url?
       VenueImage.temporary_google_place_photo_url?(url)
@@ -72,6 +82,27 @@ class BlackCoffeeWorkingImageExporterTest < ActiveSupport::TestCase
     assert_equal 2, manifest['skipped_count']
     assert_equal 'temporary_google_photo_uri', manifest['skipped'].first['error_type']
     assert zip_entries.keys.any? { |name| name.end_with?('.jpg') }
+  end
+
+  test 'real downloader returns a download result from Net HTTP streaming responses' do
+    response = FakeStreamingResponse.new('200', { 'content-type' => 'image/jpeg' }, ['hello-', 'image'])
+    fake_http = Object.new
+    fake_http.define_singleton_method(:request) do |_request, &block|
+      block.call(response)
+      response
+    end
+    net_http_start = lambda do |_host, _port, use_ssl:, open_timeout:, read_timeout:, &block|
+      block.call(fake_http)
+    end
+
+    Net::HTTP.stub(:start, net_http_start) do
+      result = BlackCoffeeWorkingImageExporter::ImageDownloader.new.download('https://cdn.toppin.test/image.jpg')
+
+      assert result.ok?
+      assert_equal 'hello-image', result.body
+      assert_equal 'image/jpeg', result.content_type
+      assert_equal 200, result.http_status
+    end
   end
 
   private

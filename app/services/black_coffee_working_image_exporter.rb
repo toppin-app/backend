@@ -213,6 +213,7 @@ class BlackCoffeeWorkingImageExporter
       request = Net::HTTP::Get.new(uri)
       request['User-Agent'] = USER_AGENT
 
+      result = nil
       Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', open_timeout: 4, read_timeout: 8) do |http|
         http.request(request) do |response|
           code = response.code.to_i
@@ -237,7 +238,7 @@ class BlackCoffeeWorkingImageExporter
 
           return failure('empty_image', 'La imagen responde 200 pero no tiene contenido.', code) if body.blank?
 
-          DownloadResult.new(
+          result = DownloadResult.new(
             ok?: true,
             body: body,
             content_type: content_type,
@@ -246,6 +247,7 @@ class BlackCoffeeWorkingImageExporter
           )
         end
       end
+      result || failure('empty_response', 'No se pudo leer la respuesta de la imagen.')
     end
 
     def redirect?(code)
