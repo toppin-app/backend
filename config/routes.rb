@@ -190,6 +190,7 @@ Rails.application.routes.draw do
   post '/admin/utilities/fix_tmdb_problem', to: 'admin_utilities#fix_tmdb_problem', as: :fix_tmdb_problem_admin_utilities
   post '/admin/utilities/fix_all_tmdb', to: 'admin_utilities#fix_all_tmdb', as: :fix_all_tmdb_admin_utilities
   post '/admin/utilities/cleanup_is_connected', to: 'admin_utilities#cleanup_is_connected', as: :cleanup_is_connected_admin_utilities
+  post '/admin/utilities/download_black_coffee_working_images', to: 'admin_utilities#download_black_coffee_working_images', as: :download_black_coffee_working_images_admin_utilities
   
   get '/users' => 'users#index', as: :users
   get '/users/:id' => 'users#show', as: :show_user

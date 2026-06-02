@@ -488,6 +488,92 @@
     </div>
 
     <div class="utility-card">
+      <h3><i class="fas fa-file-archive"></i> Descargar imagenes funcionales · Black Coffee</h3>
+      <p>
+        Busca imagenes existentes de locales Black Coffee, comprueba que respondan como imagen con HTTP 200 y descarga un ZIP para estimar peso real.
+      </p>
+
+      <div class="info-badge">
+        <i class="fas fa-images"></i>
+        <div>
+          <strong>Imagenes candidatas:</strong> <%= number_with_delimiter(@black_coffee_image_export_candidates) %>
+        </div>
+      </div>
+
+      <% if @black_coffee_temporary_google_images.to_i.positive? %>
+        <div class="warning-badge">
+          <i class="fas fa-shield-alt"></i>
+          <div>
+            <strong>Proteccion de coste:</strong>
+            <%= number_with_delimiter(@black_coffee_temporary_google_images) %> URLs temporales de Google Places se saltaran sin hacer peticiones.
+          </div>
+        </div>
+      <% end %>
+
+      <%= form_with url: download_black_coffee_working_images_admin_utilities_path, method: :post, local: true do |f| %>
+        <div class="info-badge">
+          <i class="fas fa-layer-group"></i>
+          <div style="flex: 1;">
+            <strong>Tamano del lote:</strong>
+            <%= select_tag :black_coffee_image_batch_size,
+                options_for_select([
+                  ['50 imagenes', '50'],
+                  ['100 imagenes', '100'],
+                  ['150 imagenes', '150'],
+                  ['200 imagenes', '200'],
+                  ['Personalizado', 'custom']
+                ], '100'),
+                class: 'form-select',
+                style: 'margin-top: 8px; cursor: pointer;' %>
+            <small style="display: block; margin-top: 6px; color: #64748b;">
+              Maximo seguro: <%= BlackCoffeeWorkingImageExporter::MAX_LIMIT %> imagenes por ZIP.
+            </small>
+          </div>
+        </div>
+
+        <div class="info-badge">
+          <i class="fas fa-sliders-h"></i>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; flex: 1;">
+            <label style="font-size: 12px; color: #0c4a6e; font-weight: 700;">
+              Personalizado
+              <%= number_field_tag :black_coffee_image_custom_batch_size,
+                                   nil,
+                                   min: 1,
+                                   max: BlackCoffeeWorkingImageExporter::MAX_LIMIT,
+                                   placeholder: 'Ej: 100',
+                                   class: 'form-control',
+                                   style: 'margin-top: 6px;' %>
+            </label>
+            <label style="font-size: 12px; color: #0c4a6e; font-weight: 700;">
+              Saltar primeras
+              <%= number_field_tag :black_coffee_image_offset,
+                                   0,
+                                   min: 0,
+                                   step: 1,
+                                   class: 'form-control',
+                                   style: 'margin-top: 6px;' %>
+            </label>
+          </div>
+        </div>
+
+        <div class="warning-badge">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            <strong>Importante:</strong> esta utilidad no llama a Google Places Photos ni resuelve URLs nuevas.
+            Solo descarga URLs ya guardadas que sigan funcionando.
+          </div>
+        </div>
+
+        <%= button_tag type: :submit,
+                       class: 'btn-start',
+                       data: { disable_with: 'Generando ZIP...' },
+                       style: 'margin-top: 10px;' do %>
+          <i class="fas fa-download"></i> Descargar ZIP de imagenes
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="utility-card">
       <h3><i class="fas fa-heart"></i> Generar favoritos aleatorios con usuarios fake</h3>
       <p>
         Regenera favoritos simulados para usuarios fake/BOC. Borra los favoritos fake anteriores y crea nuevos por combinaciones dinamicas de region y categoria.

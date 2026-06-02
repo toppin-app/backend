@@ -32,6 +32,10 @@ class AdminUtilitiesController < ApplicationController
     @current_progress = Rails.cache.read('location_population_progress')
     @platform_progress = Rails.cache.read('platform_population_progress')
     @black_coffee_google_connected_venues = Venue.google_connected.count
+    @black_coffee_image_export_candidates = VenueImage.joins(:venue).count
+    @black_coffee_temporary_google_images = VenueImage
+                                              .where("url LIKE '%googleusercontent.com/place-photos/%'")
+                                              .count
     @latest_black_coffee_google_sync_batch =
       if ActiveRecord::Base.connection.data_source_exists?('black_coffee_venue_google_sync_batches')
         BlackCoffeeVenueGoogleSyncBatch.recent_first.first
@@ -461,7 +465,35 @@ class AdminUtilitiesController < ApplicationController
     redirect_to admin_utilities_path
   end
 
+  def download_black_coffee_working_images
+    result = BlackCoffeeWorkingImageExporter.new(
+      limit: black_coffee_image_export_limit,
+      offset: black_coffee_image_export_offset,
+      base_url: request.base_url
+    ).export
+
+    send_data(
+      result.zip_data,
+      filename: result.filename,
+      type: 'application/zip',
+      disposition: 'attachment'
+    )
+  rescue => e
+    Rails.logger.error "Error descargando imagenes Black Coffee: #{e.message}\n#{e.backtrace&.first(10)&.join("\n")}"
+    redirect_to admin_utilities_path, alert: "No se pudo generar el ZIP de imagenes Black Coffee: #{e.message}"
+  end
+
   private
+
+  def black_coffee_image_export_limit
+    selected = params[:black_coffee_image_batch_size].to_s
+    raw_value = selected == 'custom' ? params[:black_coffee_image_custom_batch_size] : selected
+    raw_value.presence || BlackCoffeeWorkingImageExporter::DEFAULT_LIMIT
+  end
+
+  def black_coffee_image_export_offset
+    params[:black_coffee_image_offset].presence || 0
+  end
 
   def find_problematic_movie_ids
     problem_ids = []
