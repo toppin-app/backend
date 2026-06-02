@@ -6,7 +6,7 @@ require 'zip'
 
 class BlackCoffeeWorkingImageExporter
   DEFAULT_LIMIT = 100
-  MAX_LIMIT = 250
+  MAX_LIMIT = 1_000
   MAX_DOWNLOAD_BYTES = 25.megabytes
   MAX_SCAN_MULTIPLIER = 8
   USER_AGENT = 'Toppin Black Coffee Image Exporter/1.0'.freeze

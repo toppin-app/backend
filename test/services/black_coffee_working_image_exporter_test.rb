@@ -105,6 +105,16 @@ class BlackCoffeeWorkingImageExporterTest < ActiveSupport::TestCase
     end
   end
 
+  test 'requested limit is clamped to the maximum allowed batch size' do
+    result = BlackCoffeeWorkingImageExporter.new(
+      limit: 2_500,
+      base_url: 'https://admin.toppin.test',
+      image_scope: []
+    ).export
+
+    assert_equal 1_000, result.manifest[:requested_limit]
+  end
+
   private
 
   def fake_image(id, url)

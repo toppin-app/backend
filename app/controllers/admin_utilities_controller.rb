@@ -486,9 +486,7 @@ class AdminUtilitiesController < ApplicationController
   private
 
   def black_coffee_image_export_limit
-    selected = params[:black_coffee_image_batch_size].to_s
-    raw_value = selected == 'custom' ? params[:black_coffee_image_custom_batch_size] : selected
-    raw_value.presence || BlackCoffeeWorkingImageExporter::DEFAULT_LIMIT
+    params[:black_coffee_image_batch_size].presence || BlackCoffeeWorkingImageExporter::DEFAULT_LIMIT
   end
 
   def black_coffee_image_export_offset
