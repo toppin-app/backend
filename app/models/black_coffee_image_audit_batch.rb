@@ -1,5 +1,5 @@
 class BlackCoffeeImageAuditBatch < ApplicationRecord
-  STATUSES = %w[pending running completed failed rejected].freeze
+  STATUSES = %w[pending running completed failed rejected cancelled].freeze
 
   belongs_to :rejected_by, class_name: 'User', optional: true
   has_many :items,
@@ -32,8 +32,12 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
     status == 'rejected'
   end
 
+  def cancelled?
+    status == 'cancelled'
+  end
+
   def finished?
-    completed? || failed? || rejected?
+    completed? || failed? || rejected? || cancelled?
   end
 
   def pending_checks?
@@ -60,6 +64,8 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
       'Fallido'
     when 'rejected'
       'Rechazos aplicados'
+    when 'cancelled'
+      'Cancelado'
     else
       'Pendiente'
     end
@@ -73,6 +79,8 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
       'danger'
     when 'rejected'
       'dark'
+    when 'cancelled'
+      'secondary'
     when 'running'
       'info'
     else

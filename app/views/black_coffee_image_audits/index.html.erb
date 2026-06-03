@@ -35,13 +35,17 @@
 
 <div class="card shadow-sm border-0">
   <div class="card-header bg-white">
-    <h4 class="mb-0">Auditorias recientes</h4>
+    <h4 class="mb-0">Procesos recientes de imagenes</h4>
+    <p class="text-muted mb-0">
+      Incluye auditorias de imagenes e internalizaciones, para que tambien veas procesos completados, cancelados o iniciados desde la herramienta de conversion.
+    </p>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead>
         <tr>
           <th>#</th>
+          <th>Tipo</th>
           <th>Estado</th>
           <th>Progreso</th>
           <th>Locales con fallo</th>
@@ -52,27 +56,28 @@
         </tr>
       </thead>
       <tbody>
-        <% if @recent_batches.any? %>
-          <% @recent_batches.each do |batch| %>
+        <% if @recent_image_processes.any? %>
+          <% @recent_image_processes.each do |process| %>
             <tr>
-              <td><strong>#<%= batch.id %></strong></td>
-              <td><span class="badge badge-<%= batch.status_badge_class %> p-2"><%= batch.status_label %></span></td>
+              <td><strong>#<%= process[:id] %></strong></td>
+              <td><span class="badge badge-light border p-2"><%= process[:type] %></span></td>
+              <td><span class="badge badge-<%= process[:badge_class] %> p-2"><%= process[:status_label] %></span></td>
               <td>
-                <strong><%= batch.progress_percentage %>%</strong>
-                <div class="text-muted small"><%= number_with_delimiter(batch.checked_images) %>/<%= number_with_delimiter(batch.total_images) %> checks</div>
+                <strong><%= process[:progress_percentage] %>%</strong>
+                <div class="text-muted small"><%= number_with_delimiter(process[:processed]) %>/<%= number_with_delimiter(process[:total]) %> <%= process[:unit] %></div>
               </td>
-              <td class="text-danger"><%= number_with_delimiter(batch.failed_venues_count) %></td>
-              <td class="text-danger"><%= number_with_delimiter(batch.failed_images_count) %></td>
-              <td><%= number_with_delimiter(batch.rejected_venues_count) %></td>
-              <td><%= batch.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+              <td class="text-danger"><%= number_with_delimiter(process[:failed_venues_count]) %></td>
+              <td class="text-danger"><%= number_with_delimiter(process[:failed_images_count]) %></td>
+              <td><%= process[:rejected_venues_count].nil? ? '-' : number_with_delimiter(process[:rejected_venues_count]) %></td>
+              <td><%= process[:created_at].strftime('%d/%m/%Y %H:%M') %></td>
               <td class="text-right">
-                <%= link_to 'Ver reporte', black_coffee_image_audit_path(batch), class: 'btn btn-sm btn-outline-primary' %>
+                <%= link_to process[:action_label], process[:path], class: 'btn btn-sm btn-outline-primary' %>
               </td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="8" class="text-center text-muted py-5">Todavia no hay auditorias de imagenes.</td>
+            <td colspan="9" class="text-center text-muted py-5">Todavia no hay procesos de imagenes.</td>
           </tr>
         <% end %>
       </tbody>
