@@ -236,7 +236,7 @@
       <div class="mb-3 mb-md-0">
         <h4 class="mb-1">Progreso de internalizacion</h4>
         <p class="text-muted mb-0">
-          Cada bloque descarga, valida y guarda hasta <%= BlackCoffeeImageInternalizationRunner::MAX_LIMIT %> imagenes.
+          Cada bloque intenta hasta <%= BlackCoffeeImageInternalizationRunner::MAX_LIMIT %> imagenes, con corte de seguridad por tiempo para evitar timeouts.
         </p>
       </div>
       <div class="image-internalization-actions image-internalization-control-row">
@@ -285,6 +285,7 @@
     </div>
     <p class="text-muted small mt-2 mb-0">
       No se llaman endpoints de Google Places. Las URLs temporales de Google Places se marcan como fallo sin pedirlas por red.
+      Si un bloque se acerca al limite seguro de tiempo, se detiene limpio y el modo automatico continua con el siguiente bloque.
     </p>
 
     <% if @auto_processing && !@batch.finished? && @batch.pending_items? %>

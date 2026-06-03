@@ -13,6 +13,7 @@ class BlackCoffeeImageInternalizationItem < ApplicationRecord
     'image_too_large' => 'Imagen demasiado grande',
     'empty_image' => 'Imagen vacia',
     'save_error' => 'Error guardando archivo',
+    'unexpected_item_error' => 'Error interno de item',
     'unknown_error' => 'Error desconocido'
   }.freeze
 

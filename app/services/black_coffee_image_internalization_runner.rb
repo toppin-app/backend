@@ -1,14 +1,15 @@
 class BlackCoffeeImageInternalizationRunner
-  DEFAULT_LIMIT = 25
-  MAX_LIMIT = 100
+  DEFAULT_LIMIT = 250
+  MAX_LIMIT = 1_000
+  MAX_BLOCK_RUNTIME_SECONDS = 55
   INSERT_BATCH_SIZE = 1_000
 
   def self.create_batch!(created_by: nil)
     new(created_by: created_by).create_batch!
   end
 
-  def self.advance!(batch:, limit: DEFAULT_LIMIT)
-    new(batch: batch, limit: limit).advance!
+  def self.advance!(batch:, limit: DEFAULT_LIMIT, downloader: nil)
+    new(batch: batch, limit: limit, downloader: downloader).advance!
   end
 
   def initialize(batch: nil, created_by: nil, limit: DEFAULT_LIMIT, downloader: nil)
@@ -52,10 +53,14 @@ class BlackCoffeeImageInternalizationRunner
 
     batch.update!(status: 'running', started_at: batch.started_at || Time.current)
     items = batch.items.pending.includes(:venue_image).ordered.limit(limit).to_a
+    block_started_at = monotonic_time
+    processed_in_block = 0
 
     items.each do |item|
-      item_result = convert_item(item)
-      apply_item_result!(item, item_result)
+      break if time_budget_exhausted?(block_started_at, processed_in_block)
+
+      process_item_safely!(item)
+      processed_in_block += 1
     end
 
     refresh_counts!(batch)
@@ -67,6 +72,32 @@ class BlackCoffeeImageInternalizationRunner
   private
 
   attr_reader :batch, :created_by, :limit, :downloader
+
+  def process_item_safely!(item)
+    item_result = convert_item(item)
+    apply_item_result!(item, item_result)
+  rescue StandardError => e
+    apply_item_result!(
+      item,
+      BlackCoffeeVenueImageLinkConverter::ItemResult.new(
+        venue_image_id: item.venue_image_id,
+        status: 'failed',
+        source_url: item.source_url,
+        error_type: 'unexpected_item_error',
+        error_message: "Error interno procesando esta imagen: #{e.class} - #{e.message}"
+      )
+    )
+  end
+
+  def time_budget_exhausted?(block_started_at, processed_in_block)
+    return false if processed_in_block.zero?
+
+    (monotonic_time - block_started_at) >= MAX_BLOCK_RUNTIME_SECONDS
+  end
+
+  def monotonic_time
+    Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  end
 
   def item_row(batch:, image:)
     now = Time.current
