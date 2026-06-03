@@ -12,5 +12,12 @@ class BlackCoffeeImageInternalizationBatchTest < ActiveSupport::TestCase
     assert_equal 'Procesando', BlackCoffeeImageInternalizationBatch.new(status: 'running').status_label
     assert_equal 'Completado', BlackCoffeeImageInternalizationBatch.new(status: 'completed').status_label
     assert_equal 'Fallido', BlackCoffeeImageInternalizationBatch.new(status: 'failed').status_label
+    assert_equal 'Cancelado', BlackCoffeeImageInternalizationBatch.new(status: 'cancelled').status_label
+  end
+
+  test 'cancelled batches are treated as finished' do
+    batch = BlackCoffeeImageInternalizationBatch.new(status: 'cancelled')
+
+    assert batch.finished?
   end
 end

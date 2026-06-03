@@ -17,16 +17,62 @@
     color: #1f2937;
     font-size: 28px;
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
     line-height: 1;
+    white-space: nowrap;
   }
 
-  .image-internalization-report {
+  .image-internalization-report,
+  .image-internalization-report.form-control,
+  .image-internalization-report.form-control[readonly] {
     background: #0f172a;
     border: 0;
     border-radius: 12px;
-    color: #dbeafe;
+    color: #f8fafc !important;
     font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.55;
     min-height: 220px;
+    opacity: 1;
+  }
+
+  .image-internalization-report::placeholder {
+    color: #94a3b8;
+  }
+
+  .image-internalization-auto-panel {
+    background: #ecfeff;
+    border: 1px solid #67e8f9;
+    border-radius: 14px;
+    color: #155e75;
+    padding: 14px 16px;
+  }
+
+  .image-internalization-control-row {
+    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .image-internalization-control-row form {
+    margin: 0;
+  }
+
+  .image-internalization-control-row .input-group {
+    width: auto;
+  }
+
+  .image-internalization-control-row .btn,
+  .image-internalization-control-row input[type="submit"],
+  .image-internalization-control-row button {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 42px;
   }
 
   .image-internalization-url {
@@ -43,9 +89,20 @@
     }
 
     .image-internalization-actions .btn,
-    .image-internalization-actions input[type="submit"] {
+    .image-internalization-actions input[type="submit"],
+    .image-internalization-control-row .btn,
+    .image-internalization-control-row input[type="submit"],
+    .image-internalization-control-row button,
+    .image-internalization-control-row form,
+    .image-internalization-control-row .input-group {
       min-height: 44px;
       width: 100%;
+    }
+
+    .image-internalization-value {
+      font-size: 23px;
+      white-space: normal;
+      word-break: keep-all;
     }
 
     .image-internalization-table thead {
@@ -114,6 +171,14 @@
   </div>
 <% end %>
 
+<% if @auto_processing && !@batch.finished? && @batch.pending_items? %>
+  <div class="image-internalization-auto-panel mb-4">
+    <strong>Procesamiento automatico activo.</strong>
+    Esta pantalla procesara bloques de <%= @process_limit %> imagenes hasta terminar o hasta que pulses cancelar.
+    Puedes cerrar esta pestana si solo quieres detener el auto-procesado del navegador; para detener el lote, usa <strong>Cancelar lote</strong>.
+  </div>
+<% end %>
+
 <div class="row mb-4">
   <div class="col-6 col-lg-2 mb-3">
     <div class="card image-internalization-card h-100">
@@ -174,12 +239,12 @@
           Cada bloque descarga, valida y guarda hasta <%= BlackCoffeeImageInternalizationRunner::MAX_LIMIT %> imagenes.
         </p>
       </div>
-      <div class="image-internalization-actions">
+      <div class="image-internalization-actions image-internalization-control-row">
         <% unless @batch.finished? %>
           <%= form_with url: advance_black_coffee_image_internalization_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
             <div class="input-group">
               <%= number_field_tag :limit,
-                                   BlackCoffeeImageInternalizationRunner::DEFAULT_LIMIT,
+                                   @process_limit,
                                    min: 1,
                                    max: BlackCoffeeImageInternalizationRunner::MAX_LIMIT,
                                    class: 'form-control',
@@ -188,8 +253,22 @@
                 <%= submit_tag 'Procesar siguiente bloque',
                                class: 'btn btn-primary text-white',
                                data: { confirm: 'Se descargaran y guardaran imagenes de este bloque. Las que fallen quedaran como link externo. Continuar?' } %>
+                <%= button_tag 'Procesar automaticamente',
+                               type: 'submit',
+                               name: 'auto',
+                               value: '1',
+                               class: 'btn btn-info text-white',
+                               data: { confirm: 'Se procesaran bloques automaticamente hasta terminar o cancelar. Continuar?' } %>
               </div>
             </div>
+          <% end %>
+          <%= form_with url: cancel_black_coffee_image_internalization_path(@batch),
+                        method: :post,
+                        local: true,
+                        html: { id: 'image-internalization-cancel-form' } do %>
+            <%= submit_tag 'Cancelar lote',
+                           class: 'btn btn-outline-danger',
+                           data: { confirm: 'Se cancelara este lote. Las imagenes ya convertidas se mantienen y las pendientes quedan sin tocar. Continuar?' } %>
           <% end %>
         <% end %>
       </div>
@@ -207,6 +286,35 @@
     <p class="text-muted small mt-2 mb-0">
       No se llaman endpoints de Google Places. Las URLs temporales de Google Places se marcan como fallo sin pedirlas por red.
     </p>
+
+    <% if @auto_processing && !@batch.finished? && @batch.pending_items? %>
+      <%= form_with url: advance_black_coffee_image_internalization_path(@batch),
+                    method: :post,
+                    local: true,
+                    html: { id: 'image-internalization-auto-form', class: 'd-none' } do %>
+        <%= hidden_field_tag :limit, @process_limit %>
+        <%= hidden_field_tag :auto, '1' %>
+      <% end %>
+      <script>
+        (function() {
+          var autoForm = document.getElementById('image-internalization-auto-form');
+          var cancelForm = document.getElementById('image-internalization-cancel-form');
+          var cancelled = false;
+
+          if (cancelForm) {
+            cancelForm.addEventListener('submit', function() {
+              cancelled = true;
+            });
+          }
+
+          window.setTimeout(function() {
+            if (!cancelled && autoForm) {
+              autoForm.submit();
+            }
+          }, 900);
+        })();
+      </script>
+    <% end %>
   </div>
 </div>
 

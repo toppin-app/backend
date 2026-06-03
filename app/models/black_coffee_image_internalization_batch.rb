@@ -1,5 +1,5 @@
 class BlackCoffeeImageInternalizationBatch < ApplicationRecord
-  STATUSES = %w[pending running completed failed].freeze
+  STATUSES = %w[pending running completed failed cancelled].freeze
 
   belongs_to :created_by, class_name: 'User', optional: true
   has_many :items,
@@ -28,8 +28,12 @@ class BlackCoffeeImageInternalizationBatch < ApplicationRecord
     status == 'failed'
   end
 
+  def cancelled?
+    status == 'cancelled'
+  end
+
   def finished?
-    completed? || failed?
+    completed? || failed? || cancelled?
   end
 
   def pending_items?
@@ -50,6 +54,8 @@ class BlackCoffeeImageInternalizationBatch < ApplicationRecord
       'Completado'
     when 'failed'
       'Fallido'
+    when 'cancelled'
+      'Cancelado'
     else
       'Pendiente'
     end
@@ -63,6 +69,8 @@ class BlackCoffeeImageInternalizationBatch < ApplicationRecord
       'danger'
     when 'running'
       'info'
+    when 'cancelled'
+      'secondary'
     else
       'warning'
     end

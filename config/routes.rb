@@ -49,6 +49,7 @@ Rails.application.routes.draw do
     resources :image_internalizations, controller: 'black_coffee_image_internalizations', only: [:index, :create, :show] do
       member do
         post :advance
+        post :cancel
       end
     end
     resources :fake_favorite_batches, controller: 'black_coffee_fake_favorite_batches', only: [:index, :create, :show] do

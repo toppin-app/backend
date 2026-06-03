@@ -123,7 +123,9 @@ class BlackCoffeeImageInternalizationRunner
     failed_venues = internalization_batch.items.failed.select(:venue_id).distinct.count
     skipped_items = internalization_batch.items.skipped.count
     status =
-      if internalization_batch.failed?
+      if internalization_batch.cancelled?
+        'cancelled'
+      elsif internalization_batch.failed?
         'failed'
       elsif internalization_batch.items.pending.exists?
         processed_items.positive? ? 'running' : 'pending'
