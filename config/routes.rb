@@ -48,6 +48,7 @@ Rails.application.routes.draw do
     end
     resources :image_internalizations, controller: 'black_coffee_image_internalizations', only: [:index, :create, :show] do
       member do
+        post :start_background
         post :advance
         post :cancel
       end

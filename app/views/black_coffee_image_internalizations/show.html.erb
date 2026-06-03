@@ -49,6 +49,20 @@
     padding: 14px 16px;
   }
 
+  .image-internalization-server-panel {
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+    border-radius: 14px;
+    color: #1e3a8a;
+    padding: 14px 16px;
+  }
+
+  .image-internalization-server-panel.is-stale {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #9a3412;
+  }
+
   .image-internalization-control-row {
     align-items: stretch;
     display: flex;
@@ -179,12 +193,30 @@
   </div>
 <% end %>
 
+<% if @batch.server_processing? %>
+  <div class="image-internalization-server-panel <%= 'is-stale' if @batch.server_processing_stale? %> mb-4">
+    <strong>Procesamiento en servidor activo.</strong>
+    El lote sigue trabajando aunque cierres esta pantalla o apagues tu ordenador.
+    Puedes volver luego para monitorear el avance o pulsar <strong>Cancelar lote</strong> para detenerlo.
+    <% if @batch.background_requested_limit.present? %>
+      Bloques configurados: hasta <%= number_with_delimiter(@batch.background_requested_limit) %> imagenes.
+    <% end %>
+    <% if @batch.last_worker_heartbeat_at.present? %>
+      Ultima senal del worker: <%= l(@batch.last_worker_heartbeat_at, format: :short) %>.
+    <% end %>
+    <% if @batch.server_processing_stale? %>
+      Si este aviso se mantiene varios minutos, pulsa de nuevo <strong>Procesar en servidor</strong> para reanudar la cadena de jobs.
+    <% end %>
+  </div>
+<% end %>
+
 <div class="row mb-4">
   <div class="col-6 col-lg-2 mb-3">
     <div class="card image-internalization-card h-100">
       <div class="card-body">
         <div class="image-internalization-label">Estado</div>
         <span class="badge badge-<%= @batch.status_badge_class %> p-2 mt-2"><%= @batch.status_label %></span>
+        <div class="text-muted small mt-2"><%= @batch.processing_mode_label %></div>
       </div>
     </div>
   </div>
@@ -241,7 +273,7 @@
       </div>
       <div class="image-internalization-actions image-internalization-control-row">
         <% unless @batch.finished? %>
-          <%= form_with url: advance_black_coffee_image_internalization_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
+          <%= form_with url: start_background_black_coffee_image_internalization_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
             <div class="input-group">
               <%= number_field_tag :limit,
                                    @process_limit,
@@ -250,17 +282,34 @@
                                    class: 'form-control',
                                    style: 'max-width: 110px;' %>
               <div class="input-group-append">
-                <%= submit_tag 'Procesar siguiente bloque',
+                <%= submit_tag(@batch.server_processing? ? 'Reanudar en servidor' : 'Procesar en servidor',
                                class: 'btn btn-primary text-white',
-                               data: { confirm: 'Se descargaran y guardaran imagenes de este bloque. Las que fallen quedaran como link externo. Continuar?' } %>
-                <%= button_tag 'Procesar automaticamente',
-                               type: 'submit',
-                               name: 'auto',
-                               value: '1',
-                               class: 'btn btn-info text-white',
-                               data: { confirm: 'Se procesaran bloques automaticamente hasta terminar o cancelar. Continuar?' } %>
+                               data: { confirm: 'El servidor seguira procesando aunque cierres esta pantalla. Podras monitorear y cancelar desde el dashboard. Continuar?' }) %>
               </div>
             </div>
+          <% end %>
+          <% unless @batch.server_processing? %>
+            <%= form_with url: advance_black_coffee_image_internalization_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
+              <div class="input-group">
+                <%= number_field_tag :limit,
+                                     @process_limit,
+                                     min: 1,
+                                     max: BlackCoffeeImageInternalizationRunner::MAX_LIMIT,
+                                     class: 'form-control',
+                                     style: 'max-width: 110px;' %>
+                <div class="input-group-append">
+                  <%= submit_tag 'Procesar siguiente bloque',
+                                 class: 'btn btn-outline-primary',
+                                 data: { confirm: 'Se descargaran y guardaran imagenes de este bloque. Las que fallen quedaran como link externo. Continuar?' } %>
+                  <%= button_tag 'Auto en esta pantalla',
+                                 type: 'submit',
+                                 name: 'auto',
+                                 value: '1',
+                                 class: 'btn btn-outline-info',
+                                 data: { confirm: 'Este modo depende de mantener abierta esta pantalla. Para dejarlo corriendo sin estar presente usa Procesar en servidor. Continuar?' } %>
+                </div>
+              </div>
+            <% end %>
           <% end %>
           <%= form_with url: cancel_black_coffee_image_internalization_path(@batch),
                         method: :post,
@@ -314,6 +363,14 @@
             }
           }, 900);
         })();
+      </script>
+    <% end %>
+
+    <% if @batch.server_processing? && !@auto_processing %>
+      <script>
+        window.setTimeout(function() {
+          window.location.reload();
+        }, 10000);
       </script>
     <% end %>
   </div>

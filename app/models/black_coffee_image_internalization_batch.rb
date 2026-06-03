@@ -1,5 +1,6 @@
 class BlackCoffeeImageInternalizationBatch < ApplicationRecord
   STATUSES = %w[pending running completed failed cancelled].freeze
+  PROCESSING_MODES = %w[manual browser server].freeze
 
   belongs_to :created_by, class_name: 'User', optional: true
   has_many :items,
@@ -9,6 +10,7 @@ class BlackCoffeeImageInternalizationBatch < ApplicationRecord
            inverse_of: :batch
 
   validates :status, inclusion: { in: STATUSES }
+  validates :processing_mode, inclusion: { in: PROCESSING_MODES }, if: -> { has_attribute?(:processing_mode) }
 
   scope :recent_first, -> { order(id: :desc) }
 
@@ -34,6 +36,20 @@ class BlackCoffeeImageInternalizationBatch < ApplicationRecord
 
   def finished?
     completed? || failed? || cancelled?
+  end
+
+  def server_processing?
+    has_attribute?(:processing_mode) &&
+      processing_mode == 'server' &&
+      running? &&
+      pending_items?
+  end
+
+  def server_processing_stale?
+    server_processing? &&
+      has_attribute?(:last_worker_heartbeat_at) &&
+      last_worker_heartbeat_at.present? &&
+      last_worker_heartbeat_at < 5.minutes.ago
   end
 
   def pending_items?
@@ -73,6 +89,17 @@ class BlackCoffeeImageInternalizationBatch < ApplicationRecord
       'secondary'
     else
       'warning'
+    end
+  end
+
+  def processing_mode_label
+    case has_attribute?(:processing_mode) ? processing_mode : nil
+    when 'server'
+      'Servidor'
+    when 'browser'
+      'Navegador'
+    else
+      'Manual'
     end
   end
 end

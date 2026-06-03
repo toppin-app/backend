@@ -20,4 +20,10 @@ class BlackCoffeeImageInternalizationBatchTest < ActiveSupport::TestCase
 
     assert batch.finished?
   end
+
+  test 'labels server processing mode' do
+    batch = BlackCoffeeImageInternalizationBatch.new(processing_mode: 'server')
+
+    assert_equal 'Servidor', batch.processing_mode_label
+  end
 end

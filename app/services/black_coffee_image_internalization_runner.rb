@@ -2,6 +2,7 @@ class BlackCoffeeImageInternalizationRunner
   DEFAULT_LIMIT = 250
   MAX_LIMIT = 1_000
   MAX_BLOCK_RUNTIME_SECONDS = 55
+  CANCELLATION_CHECK_INTERVAL = 10
   INSERT_BATCH_SIZE = 1_000
 
   def self.create_batch!(created_by: nil)
@@ -58,6 +59,7 @@ class BlackCoffeeImageInternalizationRunner
 
     items.each do |item|
       break if time_budget_exhausted?(block_started_at, processed_in_block)
+      break if cancellation_requested?(processed_in_block)
 
       process_item_safely!(item)
       processed_in_block += 1
@@ -93,6 +95,13 @@ class BlackCoffeeImageInternalizationRunner
     return false if processed_in_block.zero?
 
     (monotonic_time - block_started_at) >= MAX_BLOCK_RUNTIME_SECONDS
+  end
+
+  def cancellation_requested?(processed_in_block)
+    return false if processed_in_block.zero?
+    return false unless (processed_in_block % CANCELLATION_CHECK_INTERVAL).zero?
+
+    batch.reload.cancelled?
   end
 
   def monotonic_time
@@ -145,6 +154,7 @@ class BlackCoffeeImageInternalizationRunner
   end
 
   def refresh_counts!(internalization_batch)
+    internalization_batch.reload
     pending_venue_ids = internalization_batch.items.pending.distinct.pluck(:venue_id)
     total_items = internalization_batch.items.count
     processed_items = internalization_batch.items.processed.count
