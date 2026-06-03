@@ -88,6 +88,19 @@ class BlackCoffeeVenueImageLinkConverterTest < ActiveSupport::TestCase
     assert_equal ['https://cdn.toppin.test/place.jpg'], downloader.requested_urls
   end
 
+  test 'converts one image directly for batch internalization' do
+    image = FakeImage.new(id: 15, url: 'https://cdn.toppin.test/direct.jpg')
+    downloader = FakeDownloader.new(success_urls: [image.url])
+
+    result = BlackCoffeeVenueImageLinkConverter.convert_image!(image: image, downloader: downloader)
+
+    assert_equal 'converted', result.status
+    assert_nil image.url
+    assert image.saved?
+    assert_equal 'internalized_link', image.source
+    assert_equal ['https://cdn.toppin.test/direct.jpg'], downloader.requested_urls
+  end
+
   test 'keeps the original link when download fails' do
     image = FakeImage.new(id: 13, url: 'https://cdn.toppin.test/expired.jpg')
     downloader = FakeDownloader.new(success_urls: [])

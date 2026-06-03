@@ -1,0 +1,357 @@
+<style>
+  .image-internalization-card {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .image-internalization-label {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .image-internalization-value {
+    color: #1f2937;
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .image-internalization-report {
+    background: #0f172a;
+    border: 0;
+    border-radius: 12px;
+    color: #dbeafe;
+    font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    min-height: 220px;
+  }
+
+  .image-internalization-url {
+    max-width: 420px;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 767px) {
+    .image-internalization-actions {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr;
+      width: 100%;
+    }
+
+    .image-internalization-actions .btn,
+    .image-internalization-actions input[type="submit"] {
+      min-height: 44px;
+      width: 100%;
+    }
+
+    .image-internalization-table thead {
+      display: none;
+    }
+
+    .image-internalization-table,
+    .image-internalization-table tbody,
+    .image-internalization-table tr,
+    .image-internalization-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .image-internalization-table tr {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 0;
+    }
+
+    .image-internalization-table td {
+      border-top: 0;
+      padding: 6px 12px;
+    }
+
+    .image-internalization-table td::before {
+      color: #64748b;
+      content: attr(data-label);
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+  }
+</style>
+
+<% failure_lines = @failed_items.map do |item|
+     [
+       "venue_id=#{item.venue_id}",
+       "local=#{item.venue_name}",
+       "venue_image_id=#{item.venue_image_id}",
+       "fallo=#{item.error_type_label}",
+       "http=#{item.http_status.presence || 'n/a'}",
+       "mensaje=#{item.error_message}",
+       "url=#{item.source_url.presence || 'sin_url'}"
+     ].join(' | ')
+   end %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Imagenes</p>
+    <h2 class="mb-0">Internalizacion de imagenes #<%= @batch.id %></h2>
+    <p class="text-muted mb-0">Convierte links externos en binarios internos sin tocar los que fallen.</p>
+  </div>
+  <div class="image-internalization-actions mt-3 mt-md-0">
+    <%= link_to 'Volver a lotes', black_coffee_image_internalizations_path, class: 'btn btn-outline-secondary mr-2' %>
+    <%= link_to 'Locales', black_coffee_venues_path, class: 'btn btn-outline-dark' %>
+  </div>
+</div>
+
+<% if @batch.error_message.present? %>
+  <div class="alert alert-danger">
+    <strong>El lote encontro un error interno:</strong>
+    <%= @batch.error_message %>
+  </div>
+<% end %>
+
+<div class="row mb-4">
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card image-internalization-card h-100">
+      <div class="card-body">
+        <div class="image-internalization-label">Estado</div>
+        <span class="badge badge-<%= @batch.status_badge_class %> p-2 mt-2"><%= @batch.status_label %></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card image-internalization-card h-100">
+      <div class="card-body">
+        <div class="image-internalization-label">Locales</div>
+        <div class="image-internalization-value"><%= number_with_delimiter(@batch.processed_venues) %>/<%= number_with_delimiter(@batch.total_venues) %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card image-internalization-card h-100">
+      <div class="card-body">
+        <div class="image-internalization-label">Imagenes</div>
+        <div class="image-internalization-value"><%= number_with_delimiter(@batch.processed_images) %>/<%= number_with_delimiter(@batch.total_images) %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card image-internalization-card h-100">
+      <div class="card-body">
+        <div class="image-internalization-label">Convertidas</div>
+        <div class="image-internalization-value text-success"><%= number_with_delimiter(@batch.converted_images_count) %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card image-internalization-card h-100">
+      <div class="card-body">
+        <div class="image-internalization-label">Fallidas</div>
+        <div class="image-internalization-value text-danger"><%= number_with_delimiter(@batch.failed_images_count) %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card image-internalization-card h-100">
+      <div class="card-body">
+        <div class="image-internalization-label">Saltadas</div>
+        <div class="image-internalization-value"><%= number_with_delimiter(@batch.skipped_images_count) %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card image-internalization-card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div class="mb-3 mb-md-0">
+        <h4 class="mb-1">Progreso de internalizacion</h4>
+        <p class="text-muted mb-0">
+          Cada bloque descarga, valida y guarda hasta <%= BlackCoffeeImageInternalizationRunner::MAX_LIMIT %> imagenes.
+        </p>
+      </div>
+      <div class="image-internalization-actions">
+        <% unless @batch.finished? %>
+          <%= form_with url: advance_black_coffee_image_internalization_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
+            <div class="input-group">
+              <%= number_field_tag :limit,
+                                   BlackCoffeeImageInternalizationRunner::DEFAULT_LIMIT,
+                                   min: 1,
+                                   max: BlackCoffeeImageInternalizationRunner::MAX_LIMIT,
+                                   class: 'form-control',
+                                   style: 'max-width: 110px;' %>
+              <div class="input-group-append">
+                <%= submit_tag 'Procesar siguiente bloque',
+                               class: 'btn btn-primary text-white',
+                               data: { confirm: 'Se descargaran y guardaran imagenes de este bloque. Las que fallen quedaran como link externo. Continuar?' } %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+    <div class="progress" style="height: 18px;">
+      <div class="progress-bar bg-info"
+           role="progressbar"
+           style="width: <%= @batch.progress_percentage %>%;"
+           aria-valuenow="<%= @batch.progress_percentage %>"
+           aria-valuemin="0"
+           aria-valuemax="100">
+        <%= @batch.progress_percentage %>%
+      </div>
+    </div>
+    <p class="text-muted small mt-2 mb-0">
+      No se llaman endpoints de Google Places. Las URLs temporales de Google Places se marcan como fallo sin pedirlas por red.
+    </p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4 mb-4">
+    <div class="card image-internalization-card h-100">
+      <div class="card-header bg-white">
+        <h4 class="mb-0">Resumen de fallos</h4>
+      </div>
+      <div class="card-body">
+        <% if @error_breakdown.any? %>
+          <% @error_breakdown.each do |error_type, count| %>
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+              <div>
+                <strong><%= BlackCoffeeImageInternalizationItem::ERROR_TYPE_LABELS[error_type.to_s] || error_type %></strong>
+                <div class="text-muted small"><%= error_type.presence || 'sin_detalle' %></div>
+              </div>
+              <span class="badge badge-danger p-2"><%= number_with_delimiter(count) %></span>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-muted mb-0">Todavia no hay fallos.</p>
+        <% end %>
+
+        <% if @skipped_breakdown.any? %>
+          <hr>
+          <div class="image-internalization-label mb-2">Saltadas</div>
+          <% @skipped_breakdown.each do |error_type, count| %>
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+              <div>
+                <strong><%= BlackCoffeeImageInternalizationItem::ERROR_TYPE_LABELS[error_type.to_s] || error_type %></strong>
+                <div class="text-muted small"><%= error_type.presence || 'sin_detalle' %></div>
+              </div>
+              <span class="badge badge-secondary p-2"><%= number_with_delimiter(count) %></span>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 mb-4">
+    <div class="card image-internalization-card h-100">
+      <div class="card-header bg-white">
+        <h4 class="mb-0">Reporte rapido de fallos</h4>
+      </div>
+      <div class="card-body">
+        <p class="text-muted">
+          Muestra hasta 200 fallos para diagnosticar URLs expiradas, HTTP o proveedores.
+        </p>
+        <%= text_area_tag :image_internalization_report,
+                          failure_lines.join("\n"),
+                          class: 'form-control image-internalization-report',
+                          readonly: true,
+                          rows: 10,
+                          placeholder: 'El reporte aparecera aqui cuando existan fallos.' %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card image-internalization-card mb-4">
+  <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+    <h4 class="mb-0">Imagenes con fallo</h4>
+    <span class="text-muted small">Mostrando maximo 200 filas</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 image-internalization-table">
+      <thead>
+        <tr>
+          <th>Local</th>
+          <th>Fallo</th>
+          <th>HTTP</th>
+          <th>Mensaje</th>
+          <th>URL</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @failed_items.any? %>
+          <% @failed_items.each do |item| %>
+            <tr>
+              <td data-label="Local">
+                <strong><%= item.venue_name %></strong>
+                <div class="text-muted small"><%= item.venue_id %> · imagen #<%= item.venue_image_id %></div>
+              </td>
+              <td data-label="Fallo"><span class="badge badge-danger p-2"><%= item.error_type_label %></span></td>
+              <td data-label="HTTP"><%= item.http_status.presence || 'n/a' %></td>
+              <td data-label="Mensaje"><%= item.error_message.presence || 'Sin mensaje' %></td>
+              <td data-label="URL" class="image-internalization-url"><%= item.source_url.presence || 'Sin URL' %></td>
+              <td data-label="Acciones" class="text-right">
+                <%= link_to 'Ver local', black_coffee_venue_path(item.venue_id), class: 'btn btn-sm btn-outline-primary' %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">No hay imagenes fallidas en este lote.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card image-internalization-card">
+  <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+    <h4 class="mb-0">Ultimas convertidas</h4>
+    <span class="text-muted small">Mostrando maximo 100 filas</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 image-internalization-table">
+      <thead>
+        <tr>
+          <th>Local</th>
+          <th>Imagen</th>
+          <th>Tipo</th>
+          <th>Peso</th>
+          <th>Fecha</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @converted_items.any? %>
+          <% @converted_items.each do |item| %>
+            <tr>
+              <td data-label="Local">
+                <strong><%= item.venue_name %></strong>
+                <div class="text-muted small"><%= item.venue_id %></div>
+              </td>
+              <td data-label="Imagen">#<%= item.venue_image_id %></td>
+              <td data-label="Tipo"><%= item.content_type.presence || 'n/a' %></td>
+              <td data-label="Peso"><%= number_to_human_size(item.file_size.to_i) %></td>
+              <td data-label="Fecha"><%= item.processed_at&.strftime('%d/%m/%Y %H:%M') || 'n/a' %></td>
+              <td data-label="Acciones" class="text-right">
+                <%= link_to 'Ver local', black_coffee_venue_path(item.venue_id), class: 'btn btn-sm btn-outline-primary' %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">Todavia no hay imagenes convertidas en este lote.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

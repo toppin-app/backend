@@ -33,13 +33,19 @@ class BlackCoffeeVenueImageLinkConverter
     new(venue: venue, downloader: downloader, limit: limit).convert!
   end
 
-  def initialize(venue:, downloader: nil, limit: nil)
+  def self.convert_image!(image:, downloader: nil)
+    new(downloader: downloader).convert_image(image)
+  end
+
+  def initialize(venue: nil, downloader: nil, limit: nil)
     @venue = venue
     @downloader = downloader || self.class.default_downloader
     @limit = limit.to_i.positive? ? limit.to_i : nil
   end
 
   def convert!
+    raise ArgumentError, 'Debes indicar un local Black Coffee.' unless venue
+
     items = candidate_images.map { |image| convert_image(image) }
 
     Result.new(
@@ -65,6 +71,8 @@ class BlackCoffeeVenueImageLinkConverter
     images
   end
 
+  public
+
   def convert_image(image)
     return skipped_item(image, 'not_external_link', 'La imagen ya es interna o no tiene link externo.') unless image.external_image?
 
@@ -85,6 +93,8 @@ class BlackCoffeeVenueImageLinkConverter
   rescue ActiveRecord::ActiveRecordError, CarrierWave::IntegrityError, CarrierWave::ProcessingError => e
     failed_item_from_error(image, source_url, 'save_error', e.message)
   end
+
+  private
 
   def attach_download!(image, download)
     uploaded_io = upload_io_for(image, download)
