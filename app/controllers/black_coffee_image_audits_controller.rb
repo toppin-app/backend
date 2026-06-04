@@ -76,7 +76,7 @@ class BlackCoffeeImageAuditsController < ApplicationController
 
   def reject_failed
     rejected_count = BlackCoffeePendingImageAuditRunner.reject_failed!(batch: @batch, reviewer: current_user)
-    redirect_to black_coffee_image_audit_path(@batch), notice: "#{rejected_count} locales pendientes fueron marcados como rechazados por problemas de imagen."
+    redirect_to black_coffee_image_audit_path(@batch), notice: "#{rejected_count} #{@batch.rejection_scope_label} fueron marcados como rechazados por problemas de imagen."
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_image_audit_path(@batch), alert: "No se pudieron marcar rechazos: #{e.message}"
   end

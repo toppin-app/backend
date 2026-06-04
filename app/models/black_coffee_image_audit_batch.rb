@@ -98,6 +98,25 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
     self.class.review_status_filter_label(has_attribute?(:review_status_filter) ? review_status_filter : Venue::REVIEW_STATUS_PENDING)
   end
 
+  def rejection_scope_label
+    case has_attribute?(:review_status_filter) ? review_status_filter : Venue::REVIEW_STATUS_PENDING
+    when Venue::REVIEW_STATUS_APPROVED
+      'locales aprobados'
+    when BlackCoffeeImageAuditBatch::REVIEW_STATUS_FILTER_ALL
+      'locales pendientes o aprobados'
+    when Venue::REVIEW_STATUS_REJECTED
+      'ningun local ya rechazado'
+    else
+      'locales pendientes'
+    end
+  end
+
+  def image_rejections_applicable?
+    return true unless has_attribute?(:review_status_filter)
+
+    review_status_filter != Venue::REVIEW_STATUS_REJECTED
+  end
+
   def status_label
     case status
     when 'running'

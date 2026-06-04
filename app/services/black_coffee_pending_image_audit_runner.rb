@@ -140,13 +140,15 @@ class BlackCoffeePendingImageAuditRunner
   def reject_failed!(reviewer:)
     raise ArgumentError, 'No hay auditoria de imagenes.' unless batch
     raise ArgumentError, 'Termina de procesar todas las imagenes antes de aplicar rechazos.' if batch.items.pending.exists?
+    if batch_review_status_filter == Venue::REVIEW_STATUS_REJECTED
+      raise ArgumentError, 'Esta auditoria revisa locales ya rechazados; no hay nuevos rechazos que aplicar.'
+    end
 
     failed_venue_ids = batch.failed_venue_ids
     rejected_count = 0
 
     BlackCoffeeImageAuditBatch.transaction do
-      rejected_count = Venue
-                       .where(id: failed_venue_ids, review_status: Venue::REVIEW_STATUS_PENDING)
+      rejected_count = rejectable_failed_venues_scope(failed_venue_ids)
                        .update_all(
                          review_status: Venue::REVIEW_STATUS_REJECTED,
                          review_rejection_reason: IMAGE_REJECTION_REASON,
@@ -191,6 +193,28 @@ class BlackCoffeePendingImageAuditRunner
     return scope if review_status_filter == BlackCoffeeImageAuditBatch::REVIEW_STATUS_FILTER_ALL
 
     scope.where(review_status: review_status_filter)
+  end
+
+  def rejectable_failed_venues_scope(failed_venue_ids)
+    scope = Venue.where(id: failed_venue_ids)
+    filter = batch_review_status_filter
+
+    case filter
+    when BlackCoffeeImageAuditBatch::REVIEW_STATUS_FILTER_ALL
+      scope.where.not(review_status: Venue::REVIEW_STATUS_REJECTED)
+    when Venue::REVIEW_STATUS_PENDING, Venue::REVIEW_STATUS_APPROVED
+      scope.where(review_status: filter)
+    else
+      scope.none
+    end
+  end
+
+  def batch_review_status_filter
+    if batch.respond_to?(:review_status_filter)
+      batch.review_status_filter.presence || Venue::REVIEW_STATUS_PENDING
+    else
+      Venue::REVIEW_STATUS_PENDING
+    end
   end
 
   def process_item_safely!(item)

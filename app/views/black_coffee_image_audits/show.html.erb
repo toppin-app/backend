@@ -295,8 +295,8 @@
         <%= form_with url: reject_failed_black_coffee_image_audit_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
           <%= submit_tag 'Rechazar locales con fallos',
                          class: 'btn btn-danger text-white',
-                         disabled: @batch.failed_venues_count.to_i.zero? || @batch.rejected? || @batch.cancelled? || @batch.failed? || @batch.pending_checks?,
-                         data: { confirm: "Se marcaran #{@batch.failed_venues_count} locales pendientes como rechazados con motivo Fotos incorrectas o muy malas. Esta accion no borra locales. Continuar?" } %>
+                         disabled: @batch.failed_venues_count.to_i.zero? || @batch.rejected? || @batch.cancelled? || @batch.failed? || @batch.pending_checks? || !@batch.image_rejections_applicable?,
+                         data: { confirm: "Se marcaran como rechazados los #{@batch.rejection_scope_label} con fallos de esta auditoria, con motivo Fotos incorrectas o muy malas. Esta accion no borra locales. Continuar?" } %>
         <% end %>
       </div>
     </div>
@@ -312,7 +312,11 @@
     </div>
     <p class="text-muted small mt-2 mb-0">
       Para aplicar rechazos primero termina todos los checks. Las URLs temporales de Google Places se marcan como fallo sin consultar la red.
-      Solo se rechazaran locales que sigan en estado pendiente.
+      <% if @batch.image_rejections_applicable? %>
+        Se rechazaran solo los <%= @batch.rejection_scope_label %> con fallos incluidos en esta auditoria.
+      <% else %>
+        Esta auditoria revisa locales ya rechazados, asi que no se aplican nuevos rechazos.
+      <% end %>
     </p>
 
     <% if @batch.server_processing? %>

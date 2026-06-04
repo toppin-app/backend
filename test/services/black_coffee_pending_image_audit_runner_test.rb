@@ -8,7 +8,7 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  FakeBatch = Struct.new(:id, :updates) do
+  FakeBatch = Struct.new(:id, :updates, :review_status_filter) do
     def items
       OpenStruct.new(pending: OpenStruct.new(exists?: false))
     end
@@ -22,10 +22,34 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     end
   end
 
-  FakeVenueUpdateScope = Struct.new(:updates) do
+  FakeVenueUpdateScope = Struct.new(:updates, :where_filters, :not_filters) do
+    def where(filters = nil)
+      return FakeWhereChain.new(self) if filters.nil?
+
+      where_filters << filters
+      self
+    end
+
+    def none
+      FakeVenueEmptyScope.new
+    end
+
     def update_all(attributes)
       updates << attributes
       2
+    end
+  end
+
+  FakeWhereChain = Struct.new(:scope) do
+    def not(filters)
+      scope.not_filters << filters
+      scope
+    end
+  end
+
+  FakeVenueEmptyScope = Struct.new(:updates) do
+    def update_all(_attributes)
+      0
     end
   end
 
@@ -86,20 +110,22 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     assert_nil result.http_status
   end
 
-  test 'reject_failed marks only pending failed venues as bad photos' do
+  test 'reject_failed marks pending failed venues by default as bad photos' do
     batch = FakeBatch.new(7, [])
     runner = BlackCoffeePendingImageAuditRunner.new(batch: batch)
     runner.define_singleton_method(:refresh_counts!) { |audit_batch| audit_batch }
 
     fixed_time = Time.zone.parse('2026-06-01 10:00:00')
     reviewer = OpenStruct.new(id: 101)
-    where_filters = []
+    base_where_filters = []
+    chained_where_filters = []
+    not_filters = []
     venue_updates = []
 
     transaction = ->(&block) { block.call }
     where = lambda do |filters|
-      where_filters << filters
-      FakeVenueUpdateScope.new(venue_updates)
+      base_where_filters << filters
+      FakeVenueUpdateScope.new(venue_updates, chained_where_filters, not_filters)
     end
 
     BlackCoffeeImageAuditBatch.stub(:transaction, transaction) do
@@ -113,9 +139,14 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     end
 
     assert_equal(
-      [{ id: %w[ven_1 ven_2], review_status: Venue::REVIEW_STATUS_PENDING }],
-      where_filters
+      [{ id: %w[ven_1 ven_2] }],
+      base_where_filters
     )
+    assert_equal(
+      [{ review_status: Venue::REVIEW_STATUS_PENDING }],
+      chained_where_filters
+    )
+    assert_empty not_filters
     assert_equal 1, venue_updates.size
     assert_equal Venue::REVIEW_STATUS_REJECTED, venue_updates.first[:review_status]
     assert_equal 'bad_photos', venue_updates.first[:review_rejection_reason]
@@ -129,6 +160,48 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     assert_equal 101, batch.updates.first[:rejected_by_id]
   end
 
+  test 'reject_failed marks approved failed venues when audit filter is approved' do
+    batch = FakeBatch.new(9, [], Venue::REVIEW_STATUS_APPROVED)
+    runner = BlackCoffeePendingImageAuditRunner.new(batch: batch)
+    runner.define_singleton_method(:refresh_counts!) { |audit_batch| audit_batch }
+
+    fixed_time = Time.zone.parse('2026-06-01 10:00:00')
+    reviewer = OpenStruct.new(id: 101)
+    base_where_filters = []
+    chained_where_filters = []
+    not_filters = []
+    venue_updates = []
+
+    transaction = ->(&block) { block.call }
+    where = lambda do |filters|
+      base_where_filters << filters
+      FakeVenueUpdateScope.new(venue_updates, chained_where_filters, not_filters)
+    end
+
+    BlackCoffeeImageAuditBatch.stub(:transaction, transaction) do
+      Time.stub(:current, fixed_time) do
+        Venue.stub(:where, where) do
+          rejected_count = runner.reject_failed!(reviewer: reviewer)
+
+          assert_equal 2, rejected_count
+        end
+      end
+    end
+
+    assert_equal(
+      [{ id: %w[ven_1 ven_2] }],
+      base_where_filters
+    )
+    assert_equal(
+      [{ review_status: Venue::REVIEW_STATUS_APPROVED }],
+      chained_where_filters
+    )
+    assert_empty not_filters
+    assert_equal Venue::REVIEW_STATUS_REJECTED, venue_updates.first[:review_status]
+    assert_equal 'bad_photos', venue_updates.first[:review_rejection_reason]
+    assert_equal 2, batch.updates.first[:rejected_venues_count]
+  end
+
   test 'reject_failed refuses to apply before all image checks are done' do
     runner = BlackCoffeePendingImageAuditRunner.new(batch: PendingBatch.new(8))
 
@@ -137,6 +210,18 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     end
 
     assert_includes error.message, 'Termina de procesar todas las imagenes'
+  end
+
+  test 'reject_failed refuses to apply on audits filtered to already rejected venues' do
+    runner = BlackCoffeePendingImageAuditRunner.new(
+      batch: FakeBatch.new(10, [], Venue::REVIEW_STATUS_REJECTED)
+    )
+
+    error = assert_raises(ArgumentError) do
+      runner.reject_failed!(reviewer: nil)
+    end
+
+    assert_includes error.message, 'ya rechazados'
   end
 
   test 'runner rejects invalid review status filters before creating a batch' do
