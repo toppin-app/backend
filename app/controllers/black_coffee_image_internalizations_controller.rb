@@ -1,13 +1,13 @@
 class BlackCoffeeImageInternalizationsController < ApplicationController
+  include BlackCoffeeImageToolsDashboard
+
   before_action :check_admin
   before_action :hide_content_header
   before_action :set_batch, only: [:show, :start_background, :advance, :cancel]
 
   def index
-    @title = 'Internalizacion de imagenes Black Coffee'
-    @linked_images_count = VenueImage.where.not(url: [nil, '']).count
-    @linked_venues_count = VenueImage.where.not(url: [nil, '']).select(:venue_id).distinct.count
-    @recent_batches = BlackCoffeeImageInternalizationBatch.recent_first.limit(20)
+    @title = 'Herramientas de imagenes Black Coffee'
+    prepare_black_coffee_image_tools_dashboard
   end
 
   def create
