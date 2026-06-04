@@ -15,14 +15,21 @@ class BlackCoffeeImageAuditsController < ApplicationController
       base_url: request.base_url,
       review_status_filter: review_status_filter
     )
-    redirect_to black_coffee_image_audit_path(batch),
-                notice: "Auditoria creada para #{batch.review_status_filter_label.downcase}: #{batch.total_venues} locales y #{batch.total_images} comprobaciones de imagen."
+    if start_background_after_create?
+      start_background_for(batch)
+      redirect_to black_coffee_image_audit_path(batch),
+                  notice: "Auditoria creada y arrancada en servidor para #{batch.review_status_filter_label.downcase}: #{batch.total_venues} locales y #{batch.total_images} comprobaciones."
+    else
+      redirect_to black_coffee_image_audit_path(batch),
+                  notice: "Auditoria creada para #{batch.review_status_filter_label.downcase}: #{batch.total_venues} locales y #{batch.total_images} comprobaciones de imagen. Pulsa Procesar en servidor para arrancarla en background."
+    end
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_image_audits_path, alert: "No se pudo crear la auditoria: #{e.message}"
   end
 
   def show
     @title = "Auditoria de imagenes ##{@batch.id}"
+    normalize_prepared_batch_status!
     @process_limit = process_limit
     @server_processing = @batch.server_processing?
     @failed_items = @batch.items.failed.includes(:venue).ordered.limit(200)
@@ -36,15 +43,7 @@ class BlackCoffeeImageAuditsController < ApplicationController
     end
 
     token = SecureRandom.hex(16)
-    @batch.update!(
-      status: 'running',
-      processing_mode: 'server',
-      background_started_at: @batch.background_started_at || Time.current,
-      background_requested_limit: process_limit,
-      last_worker_heartbeat_at: Time.current,
-      worker_token: token
-    )
-    BlackCoffeeImageAuditJob.perform_later(@batch.id, process_limit, token)
+    start_background_for(@batch, token: token)
     redirect_to black_coffee_image_audit_path(@batch),
                 notice: "Auditoria en servidor iniciada con bloques de hasta #{process_limit} imagenes. Puedes cerrar esta pantalla y volver luego."
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
@@ -95,5 +94,30 @@ class BlackCoffeeImageAuditsController < ApplicationController
 
   def review_status_filter
     params[:review_status_filter].presence || Venue::REVIEW_STATUS_PENDING
+  end
+
+  def start_background_after_create?
+    ActiveModel::Type::Boolean.new.cast(params[:start_background])
+  end
+
+  def start_background_for(batch, token: SecureRandom.hex(16))
+    batch.update!(
+      status: 'running',
+      processing_mode: 'server',
+      started_at: batch.started_at || Time.current,
+      background_started_at: batch.background_started_at || Time.current,
+      background_requested_limit: process_limit,
+      last_worker_heartbeat_at: Time.current,
+      worker_token: token
+    )
+    BlackCoffeeImageAuditJob.perform_later(batch.id, process_limit, token)
+  end
+
+  def normalize_prepared_batch_status!
+    return unless @batch.running?
+    return if @batch.started_at.present?
+    return if @batch.server_processing?
+
+    BlackCoffeePendingImageAuditRunner.refresh!(batch: @batch)
   end
 end

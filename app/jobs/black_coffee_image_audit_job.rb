@@ -35,6 +35,7 @@ class BlackCoffeeImageAuditJob < ApplicationJob
     batch.update_columns(
       status: 'running',
       processing_mode: 'server',
+      started_at: batch.started_at || Time.current,
       background_started_at: batch.background_started_at || Time.current,
       background_requested_limit: limit.to_i,
       last_worker_heartbeat_at: Time.current,

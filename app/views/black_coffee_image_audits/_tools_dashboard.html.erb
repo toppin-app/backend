@@ -161,9 +161,15 @@
                     Todos: <%= number_with_delimiter(@auditable_venues_count) %>
                   </div>
                 </div>
-                <%= submit_tag 'Crear auditoria',
+                <%= button_tag 'Crear y procesar en servidor',
+                               type: 'submit',
+                               name: 'start_background',
+                               value: '1',
                                class: 'btn btn-danger btn-lg text-white btn-block',
-                               data: { confirm: 'Se creara una auditoria de imagenes para el estado seleccionado. No se modifican locales hasta que apliques rechazos. Continuar?' } %>
+                               data: { confirm: 'Se creara una auditoria de imagenes y el servidor empezara a procesarla en background. No se modifican locales hasta que apliques rechazos. Continuar?' } %>
+                <%= submit_tag 'Solo preparar auditoria',
+                               class: 'btn btn-outline-danger btn-block mt-2',
+                               data: { confirm: 'Se creara la auditoria, pero no empezara a procesarse hasta que pulses Procesar en servidor dentro del lote. Continuar?' } %>
               <% end %>
             </div>
           </div>

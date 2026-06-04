@@ -23,6 +23,10 @@ class BlackCoffeePendingImageAuditRunner
     new(batch: batch).reject_failed!(reviewer: reviewer)
   end
 
+  def self.refresh!(batch:)
+    new(batch: batch).refresh!
+  end
+
   def initialize(batch: nil, base_url: nil, limit: DEFAULT_LIMIT, checker: nil, review_status_filter: Venue::REVIEW_STATUS_PENDING)
     @batch = batch
     @base_url = base_url
@@ -164,6 +168,12 @@ class BlackCoffeePendingImageAuditRunner
     rejected_count
   end
 
+  def refresh!
+    raise ArgumentError, 'No hay auditoria de imagenes.' unless batch
+
+    refresh_counts!(batch)
+  end
+
   private
 
   attr_reader :batch, :base_url, :limit, :checker
@@ -257,7 +267,7 @@ class BlackCoffeePendingImageAuditRunner
       elsif audit_batch.failed?
         'failed'
       elsif audit_batch.items.pending.exists?
-        checked_items.positive? ? 'running' : 'pending'
+        audit_batch.started_at.present? ? 'running' : 'pending'
       else
         'completed'
       end
