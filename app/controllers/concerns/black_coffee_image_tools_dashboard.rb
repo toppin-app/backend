@@ -5,6 +5,9 @@ module BlackCoffeeImageToolsDashboard
 
   def prepare_black_coffee_image_tools_dashboard
     @pending_venues_count = Venue.where(review_status: Venue::REVIEW_STATUS_PENDING).count
+    @review_status_filter_options = BlackCoffeeImageAuditBatch.review_status_filter_options
+    @review_status_counts = Venue.group(:review_status).count
+    @auditable_venues_count = Venue.count
     @linked_images_count = VenueImage.where.not(url: [nil, '']).count
     @linked_venues_count = VenueImage.where.not(url: [nil, '']).select(:venue_id).distinct.count
     @recent_image_processes = recent_black_coffee_image_processes
@@ -31,6 +34,7 @@ module BlackCoffeeImageToolsDashboard
         failed_venues_count: batch.failed_venues_count,
         failed_images_count: batch.failed_images_count,
         rejected_venues_count: batch.rejected_venues_count,
+        filter_label: batch.review_status_filter_label,
         created_at: batch.created_at,
         action_label: 'Ver reporte',
         path: black_coffee_image_audit_path(batch)
@@ -54,6 +58,7 @@ module BlackCoffeeImageToolsDashboard
         failed_venues_count: batch.failed_venues_count,
         failed_images_count: batch.failed_images_count,
         rejected_venues_count: nil,
+        filter_label: nil,
         created_at: batch.created_at,
         action_label: 'Ver lote',
         path: black_coffee_image_internalization_path(batch)

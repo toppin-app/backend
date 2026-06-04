@@ -42,7 +42,9 @@ Rails.application.routes.draw do
     end
     resources :image_audits, controller: 'black_coffee_image_audits', only: [:index, :create, :show] do
       member do
+        post :start_background
         post :advance
+        post :cancel
         post :reject_failed
       end
     end

@@ -3,7 +3,7 @@ class BlackCoffeeImageAuditsController < ApplicationController
 
   before_action :check_admin
   before_action :hide_content_header
-  before_action :set_batch, only: [:show, :advance, :reject_failed]
+  before_action :set_batch, only: [:show, :start_background, :advance, :cancel, :reject_failed]
 
   def index
     @title = 'Herramientas de imagenes Black Coffee'
@@ -11,23 +11,68 @@ class BlackCoffeeImageAuditsController < ApplicationController
   end
 
   def create
-    batch = BlackCoffeePendingImageAuditRunner.create_batch!(base_url: request.base_url)
-    redirect_to black_coffee_image_audit_path(batch), notice: "Auditoria creada con #{batch.total_venues} locales pendientes y #{batch.total_images} comprobaciones de imagen."
+    batch = BlackCoffeePendingImageAuditRunner.create_batch!(
+      base_url: request.base_url,
+      review_status_filter: review_status_filter
+    )
+    redirect_to black_coffee_image_audit_path(batch),
+                notice: "Auditoria creada para #{batch.review_status_filter_label.downcase}: #{batch.total_venues} locales y #{batch.total_images} comprobaciones de imagen."
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_image_audits_path, alert: "No se pudo crear la auditoria: #{e.message}"
   end
 
   def show
     @title = "Auditoria de imagenes ##{@batch.id}"
+    @process_limit = process_limit
+    @server_processing = @batch.server_processing?
     @failed_items = @batch.items.failed.includes(:venue).ordered.limit(200)
     @error_breakdown = @batch.items.failed.group(:error_type).count
   end
 
+  def start_background
+    if @batch.finished?
+      redirect_to black_coffee_image_audit_path(@batch), alert: 'Esta auditoria ya esta finalizada.'
+      return
+    end
+
+    token = SecureRandom.hex(16)
+    @batch.update!(
+      status: 'running',
+      processing_mode: 'server',
+      background_started_at: @batch.background_started_at || Time.current,
+      background_requested_limit: process_limit,
+      last_worker_heartbeat_at: Time.current,
+      worker_token: token
+    )
+    BlackCoffeeImageAuditJob.perform_later(@batch.id, process_limit, token)
+    redirect_to black_coffee_image_audit_path(@batch),
+                notice: "Auditoria en servidor iniciada con bloques de hasta #{process_limit} imagenes. Puedes cerrar esta pantalla y volver luego."
+  rescue ActiveRecord::ActiveRecordError, ArgumentError => e
+    redirect_to black_coffee_image_audit_path(@batch), alert: "No se pudo iniciar la auditoria en servidor: #{e.message}"
+  end
+
   def advance
+    @batch.update_columns(processing_mode: 'manual', worker_token: nil, updated_at: Time.current) if @batch.has_attribute?(:processing_mode)
     BlackCoffeePendingImageAuditRunner.advance!(batch: @batch, limit: process_limit)
     redirect_to black_coffee_image_audit_path(@batch), notice: 'Bloque de imagenes procesado.'
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_image_audit_path(@batch), alert: "No se pudo procesar el bloque: #{e.message}"
+  end
+
+  def cancel
+    if @batch.finished?
+      redirect_to black_coffee_image_audit_path(@batch), alert: 'Esta auditoria ya esta finalizada.'
+      return
+    end
+
+    @batch.update!(
+      status: 'cancelled',
+      completed_at: Time.current,
+      worker_token: nil
+    )
+    redirect_to black_coffee_image_audit_path(@batch), notice: 'Auditoria cancelada. Las comprobaciones pendientes quedan sin tocar.'
+  rescue ActiveRecord::ActiveRecordError => e
+    redirect_to black_coffee_image_audit_path(@batch), alert: "No se pudo cancelar la auditoria: #{e.message}"
   end
 
   def reject_failed
@@ -44,6 +89,11 @@ class BlackCoffeeImageAuditsController < ApplicationController
   end
 
   def process_limit
-    [[params[:limit].to_i, 1].max, BlackCoffeePendingImageAuditRunner::MAX_LIMIT].min
+    raw_limit = params[:limit].presence || BlackCoffeePendingImageAuditRunner::DEFAULT_LIMIT
+    [[raw_limit.to_i, 1].max, BlackCoffeePendingImageAuditRunner::MAX_LIMIT].min
+  end
+
+  def review_status_filter
+    params[:review_status_filter].presence || Venue::REVIEW_STATUS_PENDING
   end
 end

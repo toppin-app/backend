@@ -2,50 +2,51 @@ require 'net/http'
 require 'uri'
 
 class BlackCoffeePendingImageAuditRunner
-  DEFAULT_LIMIT = 100
-  MAX_LIMIT = 500
+  DEFAULT_LIMIT = 250
+  MAX_LIMIT = 1_000
+  MAX_BLOCK_RUNTIME_SECONDS = 55
+  CANCELLATION_CHECK_INTERVAL = 10
   INSERT_BATCH_SIZE = 1_000
   IMAGE_REJECTION_REASON = 'bad_photos'.freeze
 
   CheckResult = Struct.new(:status, :error_type, :http_status, :error_message, keyword_init: true)
 
-  def self.create_batch!(base_url:)
-    new(base_url: base_url).create_batch!
+  def self.create_batch!(base_url:, review_status_filter: Venue::REVIEW_STATUS_PENDING)
+    new(base_url: base_url, review_status_filter: review_status_filter).create_batch!
   end
 
-  def self.advance!(batch:, limit: DEFAULT_LIMIT)
-    new(batch: batch, limit: limit).advance!
+  def self.advance!(batch:, limit: DEFAULT_LIMIT, checker: nil)
+    new(batch: batch, limit: limit, checker: checker).advance!
   end
 
   def self.reject_failed!(batch:, reviewer:)
     new(batch: batch).reject_failed!(reviewer: reviewer)
   end
 
-  def initialize(batch: nil, base_url: nil, limit: DEFAULT_LIMIT, checker: nil)
+  def initialize(batch: nil, base_url: nil, limit: DEFAULT_LIMIT, checker: nil, review_status_filter: Venue::REVIEW_STATUS_PENDING)
     @batch = batch
     @base_url = base_url
     @limit = [[limit.to_i, 1].max, MAX_LIMIT].min
     @checker = checker || ImageChecker.new
+    @review_status_filter = normalize_review_status_filter(review_status_filter)
   end
 
   def create_batch!
     batch = nil
 
     BlackCoffeeImageAuditBatch.transaction do
-      pending_venues = Venue
-                       .includes(:venue_images)
-                       .where(review_status: Venue::REVIEW_STATUS_PENDING)
-                       .order(:id)
+      candidate_venues = audited_venues_scope
       batch = BlackCoffeeImageAuditBatch.create!(
         status: 'pending',
-        total_venues: pending_venues.count,
+        review_status_filter: review_status_filter,
+        total_venues: candidate_venues.count,
         report_payload: {}
       )
 
       now = Time.current
       rows = []
 
-      pending_venues.find_each do |venue|
+      candidate_venues.find_each do |venue|
         images = venue.venue_images.to_a.sort_by(&:position)
         if images.empty?
           rows << item_row(
@@ -115,17 +116,15 @@ class BlackCoffeePendingImageAuditRunner
 
     batch.update!(status: 'running', started_at: batch.started_at || Time.current)
     items = batch.items.pending.ordered.limit(limit).to_a
+    block_started_at = monotonic_time
+    processed_in_block = 0
 
     items.each do |item|
-      result = checker.check(item.image_url)
-      item.update_columns(
-        status: result.status,
-        error_type: result.error_type,
-        http_status: result.http_status,
-        error_message: result.error_message,
-        checked_at: Time.current,
-        updated_at: Time.current
-      )
+      break if time_budget_exhausted?(block_started_at, processed_in_block)
+      break if cancellation_requested?(processed_in_block)
+
+      process_item_safely!(item)
+      processed_in_block += 1
     end
 
     refresh_counts!(batch)
@@ -168,6 +167,63 @@ class BlackCoffeePendingImageAuditRunner
   private
 
   attr_reader :batch, :base_url, :limit, :checker
+  attr_reader :review_status_filter
+
+  def normalize_review_status_filter(value)
+    filter = value.to_s.presence || Venue::REVIEW_STATUS_PENDING
+    return filter if BlackCoffeeImageAuditBatch.review_status_filter_values.include?(filter)
+
+    raise ArgumentError, "Estado de revision no valido para auditoria de imagenes: #{value}"
+  end
+
+  def audited_venues_scope
+    scope = Venue.includes(:venue_images).order(:id)
+    return scope if review_status_filter == BlackCoffeeImageAuditBatch::REVIEW_STATUS_FILTER_ALL
+
+    scope.where(review_status: review_status_filter)
+  end
+
+  def process_item_safely!(item)
+    result = checker.check(item.image_url)
+    apply_item_result!(item, result)
+  rescue StandardError => e
+    apply_item_result!(
+      item,
+      CheckResult.new(
+        status: 'failed',
+        error_type: 'unexpected_item_error',
+        error_message: "Error interno procesando esta imagen: #{e.class} - #{e.message}"
+      )
+    )
+  end
+
+  def apply_item_result!(item, result)
+    item.update_columns(
+      status: result.status,
+      error_type: result.error_type,
+      http_status: result.http_status,
+      error_message: result.error_message,
+      checked_at: Time.current,
+      updated_at: Time.current
+    )
+  end
+
+  def time_budget_exhausted?(block_started_at, processed_in_block)
+    return false if processed_in_block.zero?
+
+    (monotonic_time - block_started_at) >= MAX_BLOCK_RUNTIME_SECONDS
+  end
+
+  def cancellation_requested?(processed_in_block)
+    return false if processed_in_block.zero?
+    return false unless (processed_in_block % CANCELLATION_CHECK_INTERVAL).zero?
+
+    batch.reload.cancelled?
+  end
+
+  def monotonic_time
+    Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  end
 
   def item_row(batch:, venue:, venue_image: nil, image_url: nil, status:, error_type: nil, error_message: nil, checked_at: nil)
     now = Time.current
@@ -187,13 +243,16 @@ class BlackCoffeePendingImageAuditRunner
   end
 
   def refresh_counts!(audit_batch)
+    audit_batch.reload
     pending_venue_ids = audit_batch.items.pending.distinct.pluck(:venue_id)
     total_items = audit_batch.items.count
     failed_items = audit_batch.items.failed.count
     checked_items = audit_batch.items.checked.count
     failed_venues = audit_batch.items.failed.select(:venue_id).distinct.count
     status =
-      if audit_batch.rejected?
+      if audit_batch.cancelled?
+        'cancelled'
+      elsif audit_batch.rejected?
         'rejected'
       elsif audit_batch.failed?
         'failed'

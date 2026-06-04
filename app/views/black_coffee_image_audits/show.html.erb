@@ -17,16 +17,64 @@
     color: #1f2937;
     font-size: 28px;
     font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
     line-height: 1;
+    white-space: nowrap;
   }
 
-  .image-audit-report {
+  .image-audit-report,
+  .image-audit-report.form-control,
+  .image-audit-report.form-control[readonly] {
     background: #0f172a;
     border: 0;
     border-radius: 12px;
-    color: #dbeafe;
+    color: #f8fafc !important;
     font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.55;
     min-height: 220px;
+    opacity: 1;
+  }
+
+  .image-audit-server-panel {
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+    border-radius: 14px;
+    color: #1e3a8a;
+    padding: 14px 16px;
+  }
+
+  .image-audit-server-panel.is-stale {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #9a3412;
+  }
+
+  .image-audit-control-row {
+    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .image-audit-control-row form {
+    margin: 0;
+  }
+
+  .image-audit-control-row .input-group {
+    width: auto;
+  }
+
+  .image-audit-control-row .btn,
+  .image-audit-control-row input[type="submit"],
+  .image-audit-control-row button {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 42px;
   }
 
   .image-audit-url {
@@ -43,9 +91,20 @@
     }
 
     .image-audit-actions .btn,
-    .image-audit-actions input[type="submit"] {
+    .image-audit-actions input[type="submit"],
+    .image-audit-control-row .btn,
+    .image-audit-control-row input[type="submit"],
+    .image-audit-control-row button,
+    .image-audit-control-row form,
+    .image-audit-control-row .input-group {
       min-height: 44px;
       width: 100%;
+    }
+
+    .image-audit-value {
+      font-size: 23px;
+      white-space: normal;
+      word-break: keep-all;
     }
 
     .image-audit-table thead {
@@ -98,7 +157,7 @@
   <div>
     <p class="text-muted mb-1">Black Coffee / Imagenes</p>
     <h2 class="mb-0">Auditoria de imagenes #<%= @batch.id %></h2>
-    <p class="text-muted mb-0">Ping de imagenes de locales pendientes y reporte de fallos para revision.</p>
+    <p class="text-muted mb-0">Ping de imagenes de locales filtrados por estado y reporte de fallos para revision.</p>
   </div>
   <div class="image-audit-actions mt-3 mt-md-0">
     <%= link_to 'Volver a auditorias', black_coffee_image_audits_path, class: 'btn btn-outline-secondary mr-2' %>
@@ -113,12 +172,31 @@
   </div>
 <% end %>
 
+<% if @batch.server_processing? %>
+  <div class="image-audit-server-panel <%= 'is-stale' if @batch.server_processing_stale? %> mb-4">
+    <strong>Auditoria en servidor activa.</strong>
+    El proceso sigue trabajando aunque cierres esta pantalla o apagues tu ordenador.
+    Puedes volver luego para monitorear el avance o pulsar <strong>Cancelar auditoria</strong> para detenerlo.
+    <% if @batch.background_requested_limit.present? %>
+      Bloques configurados: hasta <%= number_with_delimiter(@batch.background_requested_limit) %> imagenes.
+    <% end %>
+    <% if @batch.last_worker_heartbeat_at.present? %>
+      Ultima senal del worker: <%= l(@batch.last_worker_heartbeat_at, format: :short) %>.
+    <% end %>
+    <% if @batch.server_processing_stale? %>
+      Si este aviso se mantiene varios minutos, pulsa de nuevo <strong>Procesar en servidor</strong> para reanudar la cadena de jobs.
+    <% end %>
+  </div>
+<% end %>
+
 <div class="row mb-4">
   <div class="col-6 col-lg-2 mb-3">
     <div class="card image-audit-card h-100">
       <div class="card-body">
         <div class="image-audit-label">Estado</div>
         <span class="badge badge-<%= @batch.status_badge_class %> p-2 mt-2"><%= @batch.status_label %></span>
+        <div class="text-muted small mt-2"><%= @batch.processing_mode_label %></div>
+        <div class="text-muted small">Filtro: <%= @batch.review_status_filter_label %></div>
       </div>
     </div>
   </div>
@@ -173,27 +251,51 @@
           Se comprueba con HEAD y solo se usa GET parcial si el servidor bloquea HEAD.
         </p>
       </div>
-      <div class="image-audit-actions">
+      <div class="image-audit-actions image-audit-control-row">
         <% unless @batch.finished? %>
-          <%= form_with url: advance_black_coffee_image_audit_path(@batch), method: :post, local: true, class: 'd-inline-block mr-2' do %>
+          <%= form_with url: start_background_black_coffee_image_audit_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
             <div class="input-group">
               <%= number_field_tag :limit,
-                                   BlackCoffeePendingImageAuditRunner::DEFAULT_LIMIT,
+                                   @process_limit,
                                    min: 1,
                                    max: BlackCoffeePendingImageAuditRunner::MAX_LIMIT,
                                    class: 'form-control',
                                    style: 'max-width: 110px;' %>
               <div class="input-group-append">
-                <%= submit_tag 'Procesar siguiente bloque', class: 'btn btn-primary text-white' %>
+                <%= submit_tag(@batch.server_processing? ? 'Reanudar en servidor' : 'Procesar en servidor',
+                               class: 'btn btn-primary text-white',
+                               data: { confirm: 'El servidor seguira auditando aunque cierres esta pantalla. Podras monitorear y cancelar desde el dashboard. Continuar?' }) %>
               </div>
             </div>
+          <% end %>
+
+          <% unless @batch.server_processing? %>
+            <%= form_with url: advance_black_coffee_image_audit_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
+              <div class="input-group">
+                <%= number_field_tag :limit,
+                                     @process_limit,
+                                     min: 1,
+                                     max: BlackCoffeePendingImageAuditRunner::MAX_LIMIT,
+                                     class: 'form-control',
+                                     style: 'max-width: 110px;' %>
+                <div class="input-group-append">
+                  <%= submit_tag 'Procesar siguiente bloque', class: 'btn btn-outline-primary' %>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+
+          <%= form_with url: cancel_black_coffee_image_audit_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
+            <%= submit_tag 'Cancelar auditoria',
+                           class: 'btn btn-outline-danger',
+                           data: { confirm: 'Se cancelara esta auditoria. Los checks ya hechos se mantienen y los pendientes quedan sin tocar. Continuar?' } %>
           <% end %>
         <% end %>
 
         <%= form_with url: reject_failed_black_coffee_image_audit_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
           <%= submit_tag 'Rechazar locales con fallos',
                          class: 'btn btn-danger text-white',
-                         disabled: @batch.failed_venues_count.to_i.zero? || @batch.rejected? || @batch.pending_checks?,
+                         disabled: @batch.failed_venues_count.to_i.zero? || @batch.rejected? || @batch.cancelled? || @batch.failed? || @batch.pending_checks?,
                          data: { confirm: "Se marcaran #{@batch.failed_venues_count} locales pendientes como rechazados con motivo Fotos incorrectas o muy malas. Esta accion no borra locales. Continuar?" } %>
         <% end %>
       </div>
@@ -212,6 +314,14 @@
       Para aplicar rechazos primero termina todos los checks. Las URLs temporales de Google Places se marcan como fallo sin consultar la red.
       Solo se rechazaran locales que sigan en estado pendiente.
     </p>
+
+    <% if @batch.server_processing? %>
+      <script>
+        window.setTimeout(function() {
+          window.location.reload();
+        }, 10000);
+      </script>
+    <% end %>
   </div>
 </div>
 

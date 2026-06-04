@@ -1,5 +1,13 @@
 class BlackCoffeeImageAuditBatch < ApplicationRecord
   STATUSES = %w[pending running completed failed rejected cancelled].freeze
+  PROCESSING_MODES = %w[manual browser server].freeze
+  REVIEW_STATUS_FILTER_ALL = 'all'.freeze
+  REVIEW_STATUS_FILTER_LABELS = {
+    Venue::REVIEW_STATUS_PENDING => 'Pendientes',
+    Venue::REVIEW_STATUS_APPROVED => 'Aprobados',
+    Venue::REVIEW_STATUS_REJECTED => 'Rechazados',
+    REVIEW_STATUS_FILTER_ALL => 'Todos'
+  }.freeze
 
   belongs_to :rejected_by, class_name: 'User', optional: true
   has_many :items,
@@ -9,8 +17,26 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
            inverse_of: :batch
 
   validates :status, inclusion: { in: STATUSES }
+  validates :processing_mode, inclusion: { in: PROCESSING_MODES }, if: -> { has_attribute?(:processing_mode) }
+  validates :review_status_filter,
+            inclusion: { in: ->(_batch) { BlackCoffeeImageAuditBatch.review_status_filter_values } },
+            if: -> { has_attribute?(:review_status_filter) }
 
   scope :recent_first, -> { order(id: :desc) }
+
+  def self.review_status_filter_values
+    Venue::REVIEW_STATUSES + [REVIEW_STATUS_FILTER_ALL]
+  end
+
+  def self.review_status_filter_options
+    review_status_filter_values.map do |value|
+      [review_status_filter_label(value), value]
+    end
+  end
+
+  def self.review_status_filter_label(value)
+    REVIEW_STATUS_FILTER_LABELS[value.to_s] || value.to_s.presence || REVIEW_STATUS_FILTER_LABELS[Venue::REVIEW_STATUS_PENDING]
+  end
 
   def pending?
     status == 'pending'
@@ -40,6 +66,20 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
     completed? || failed? || rejected? || cancelled?
   end
 
+  def server_processing?
+    has_attribute?(:processing_mode) &&
+      processing_mode == 'server' &&
+      running? &&
+      pending_checks?
+  end
+
+  def server_processing_stale?
+    server_processing? &&
+      has_attribute?(:last_worker_heartbeat_at) &&
+      last_worker_heartbeat_at.present? &&
+      last_worker_heartbeat_at < 5.minutes.ago
+  end
+
   def pending_checks?
     items.pending.exists?
   end
@@ -52,6 +92,10 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
 
   def failed_venue_ids
     items.failed.distinct.pluck(:venue_id)
+  end
+
+  def review_status_filter_label
+    self.class.review_status_filter_label(has_attribute?(:review_status_filter) ? review_status_filter : Venue::REVIEW_STATUS_PENDING)
   end
 
   def status_label
@@ -85,6 +129,17 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
       'info'
     else
       'warning'
+    end
+  end
+
+  def processing_mode_label
+    case has_attribute?(:processing_mode) ? processing_mode : nil
+    when 'server'
+      'Servidor'
+    when 'browser'
+      'Navegador'
+    else
+      'Manual'
     end
   end
 end

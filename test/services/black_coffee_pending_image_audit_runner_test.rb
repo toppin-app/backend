@@ -139,6 +139,17 @@ class BlackCoffeePendingImageAuditRunnerTest < ActiveSupport::TestCase
     assert_includes error.message, 'Termina de procesar todas las imagenes'
   end
 
+  test 'runner rejects invalid review status filters before creating a batch' do
+    error = assert_raises(ArgumentError) do
+      BlackCoffeePendingImageAuditRunner.new(
+        base_url: 'https://example.com',
+        review_status_filter: 'archived'
+      )
+    end
+
+    assert_includes error.message, 'Estado de revision no valido'
+  end
+
   test 'audit batch exposes failed state helper used by the runner' do
     batch = BlackCoffeeImageAuditBatch.new(status: 'failed')
 

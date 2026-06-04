@@ -133,22 +133,37 @@
       <div class="col-lg-6 mb-3 mb-lg-0">
         <div class="black-coffee-image-tool black-coffee-image-tool-warning">
           <div class="black-coffee-image-label mb-2">Revision no destructiva</div>
-          <h3 class="black-coffee-image-tool-title mb-2">Auditar imagenes pendientes</h3>
+          <h3 class="black-coffee-image-tool-title mb-2">Auditar imagenes por estado</h3>
           <p class="black-coffee-image-tool-copy">
-            Comprueba URLs de imagen de locales en estado <span class="badge badge-warning">Pendiente</span> y permite rechazarlos luego con motivo <strong>Fotos incorrectas o muy malas</strong>.
+            Comprueba URLs de imagen de locales segun estado de revision y permite rechazar luego los pendientes con motivo <strong>Fotos incorrectas o muy malas</strong>.
             Las URLs temporales de Google Places se detectan sin peticiones de red.
           </p>
           <div class="row align-items-end mt-3">
-            <div class="col-md-6 mb-3 mb-md-0">
-              <div class="black-coffee-image-label">Locales pendientes</div>
+            <div class="col-md-5 mb-3 mb-md-0">
+              <div class="black-coffee-image-label">Pendientes actuales</div>
               <div class="black-coffee-image-value"><%= number_with_delimiter(@pending_venues_count) %></div>
-              <div class="text-muted small">Solo estos entran en una nueva auditoria.</div>
+              <div class="text-muted small">
+                Pendientes ahora. Tambien puedes auditar aprobados, rechazados o todos.
+              </div>
             </div>
-            <div class="col-md-6 text-md-right">
+            <div class="col-md-7">
               <%= form_with url: black_coffee_image_audits_path, method: :post, local: true do %>
+                <div class="form-group text-left">
+                  <label class="black-coffee-image-label" for="review_status_filter">Estado a revisar</label>
+                  <%= select_tag :review_status_filter,
+                                 options_for_select(@review_status_filter_options, Venue::REVIEW_STATUS_PENDING),
+                                 id: 'review_status_filter',
+                                 class: 'form-control' %>
+                  <div class="text-muted small mt-1">
+                    Pendientes: <%= number_with_delimiter(@review_status_counts[Venue::REVIEW_STATUS_PENDING].to_i) %> ·
+                    Aprobados: <%= number_with_delimiter(@review_status_counts[Venue::REVIEW_STATUS_APPROVED].to_i) %> ·
+                    Rechazados: <%= number_with_delimiter(@review_status_counts[Venue::REVIEW_STATUS_REJECTED].to_i) %> ·
+                    Todos: <%= number_with_delimiter(@auditable_venues_count) %>
+                  </div>
+                </div>
                 <%= submit_tag 'Crear auditoria',
-                               class: 'btn btn-danger btn-lg text-white',
-                               data: { confirm: "Se creara una auditoria para #{@pending_venues_count} locales pendientes. Continuar?" } %>
+                               class: 'btn btn-danger btn-lg text-white btn-block',
+                               data: { confirm: 'Se creara una auditoria de imagenes para el estado seleccionado. No se modifican locales hasta que apliques rechazos. Continuar?' } %>
               <% end %>
             </div>
           </div>
@@ -218,7 +233,12 @@
           <% @recent_image_processes.each do |process| %>
             <tr>
               <td data-label="#"><strong>#<%= process[:id] %></strong></td>
-              <td data-label="Tipo"><span class="badge badge-light border p-2"><%= process[:type] %></span></td>
+              <td data-label="Tipo">
+                <span class="badge badge-light border p-2"><%= process[:type] %></span>
+                <% if process[:filter_label].present? %>
+                  <div class="text-muted small mt-1"><%= process[:filter_label] %></div>
+                <% end %>
+              </td>
               <td data-label="Estado"><span class="badge badge-<%= process[:badge_class] %> p-2"><%= process[:status_label] %></span></td>
               <td data-label="Progreso">
                 <strong><%= process[:progress_percentage] %>%</strong>
