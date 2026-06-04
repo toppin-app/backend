@@ -12,6 +12,10 @@
     padding: 8px 10px;
   }
 
+  .black-coffee-review-summary a.badge:hover {
+    text-decoration: none;
+  }
+
   .black-coffee-review-entry {
     background: #ffffff;
     border: 1px solid #dee2e6;
@@ -252,9 +256,18 @@
         <p class="text-muted text-uppercase mb-2">Locales</p>
         <h2 class="mb-0"><%= @stats[:venues] %></h2>
         <div class="black-coffee-review-summary">
-          <span class="badge badge-warning"><%= number_with_delimiter(@stats[:review_pending]) %> pendientes</span>
-          <span class="badge badge-success"><%= number_with_delimiter(@stats[:review_approved]) %> aprobados</span>
-          <span class="badge badge-danger"><%= number_with_delimiter(@stats[:review_rejected]) %> rechazados</span>
+          <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_PENDING)),
+                      class: 'badge badge-warning' do %>
+            <%= number_with_delimiter(@stats[:review_pending]) %> pendientes
+          <% end %>
+          <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_APPROVED)),
+                      class: 'badge badge-success' do %>
+            <%= number_with_delimiter(@stats[:review_approved]) %> aprobados
+          <% end %>
+          <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_REJECTED)),
+                      class: 'badge badge-danger' do %>
+            <%= number_with_delimiter(@stats[:review_rejected]) %> rechazados
+          <% end %>
         </div>
       </div>
     </div>
@@ -296,9 +309,18 @@
           <h4 class="mb-1">Revision de locales</h4>
           <p class="text-muted mb-2">Revisa lotes importados, rechaza lo que no encaje y aprueba el resto con control.</p>
           <div class="black-coffee-review-summary mt-0">
-            <span class="badge badge-warning"><%= number_with_delimiter(@stats[:review_pending]) %> pendientes</span>
-            <span class="badge badge-success"><%= number_with_delimiter(@stats[:review_approved]) %> aprobados</span>
-            <span class="badge badge-danger"><%= number_with_delimiter(@stats[:review_rejected]) %> rechazados</span>
+            <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_PENDING)),
+                        class: 'badge badge-warning' do %>
+              <%= number_with_delimiter(@stats[:review_pending]) %> pendientes
+            <% end %>
+            <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_APPROVED)),
+                        class: 'badge badge-success' do %>
+              <%= number_with_delimiter(@stats[:review_approved]) %> aprobados
+            <% end %>
+            <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_REJECTED)),
+                        class: 'badge badge-danger' do %>
+              <%= number_with_delimiter(@stats[:review_rejected]) %> rechazados
+            <% end %>
           </div>
         </div>
       </div>
@@ -357,6 +379,12 @@
                            params[:subcategory]
                          ),
                          class: 'form-control' %>
+        </div>
+        <div class="col-md-2 mb-3">
+          <%= select_tag :review_status,
+                         options_for_select([['Todos los estados', '']] + @review_status_options, @review_status_filter),
+                         class: 'form-control' %>
+          <small class="text-muted">Estado de revision</small>
         </div>
         <div class="col-md-2 mb-3">
           <%= text_field_tag :google_primary_type, @google_primary_type_filter, class: 'form-control', placeholder: 'Primary type' %>

@@ -12,6 +12,8 @@ class BlackCoffeeVenuesController < ApplicationController
     @subcategory_options = BlackCoffeeTaxonomy.subcategory_options(params[:category].presence)
     @google_tag_filter = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_tag])
     @google_primary_type_filter = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_primary_type])
+    @review_status_filter = review_status_filter
+    @review_status_options = review_status_options
     @category_counts = Venue.group(:category).count
     @stats = {
       venues: Venue.count,
@@ -25,6 +27,7 @@ class BlackCoffeeVenuesController < ApplicationController
 
     scope = Venue.includes(:venue_subcategory, :venue_images)
     scope = scope.where(category: params[:category]) if params[:category].present? && Venue::CATEGORIES.include?(params[:category])
+    scope = scope.where(review_status: @review_status_filter) if @review_status_filter.present?
 
     normalized_subcategory = Venue.normalize_text(params[:subcategory])
     if normalized_subcategory.present?
@@ -208,6 +211,19 @@ class BlackCoffeeVenuesController < ApplicationController
     @image_order_payload = image_order_payload_for(@image_entries)
     @subcategory_input = params.dig(:venue, :subcategory_name).presence || @venue.subcategory_name
     @schedule_payload = params.dig(:venue, :schedule_payload).presence || @venue.weekly_schedule.to_json
+  end
+
+  def review_status_filter
+    status = params[:review_status].to_s.strip
+    return status if Venue::REVIEW_STATUSES.include?(status)
+
+    nil
+  end
+
+  def review_status_options
+    Venue::REVIEW_STATUSES.map do |status|
+      [Venue.review_status_label_for(status).pluralize, status]
+    end
   end
 
   def persist_venue
