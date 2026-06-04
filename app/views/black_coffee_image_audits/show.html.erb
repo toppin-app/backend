@@ -295,7 +295,7 @@
         <%= form_with url: reject_failed_black_coffee_image_audit_path(@batch), method: :post, local: true, class: 'd-inline-block' do %>
           <%= submit_tag 'Rechazar locales con fallos',
                          class: 'btn btn-danger text-white',
-                         disabled: @batch.failed_venues_count.to_i.zero? || @batch.rejected? || @batch.cancelled? || @batch.failed? || @batch.pending_checks? || !@batch.image_rejections_applicable?,
+                         disabled: @batch.failed_venues_count.to_i.zero? || @batch.image_rejections_already_applied? || @batch.cancelled? || @batch.failed? || @batch.pending_checks? || !@batch.image_rejections_applicable?,
                          data: { confirm: "Se marcaran como rechazados los #{@batch.rejection_scope_label} con fallos de esta auditoria, con motivo Fotos incorrectas o muy malas. Esta accion no borra locales. Continuar?" } %>
         <% end %>
       </div>

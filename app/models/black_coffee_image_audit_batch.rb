@@ -117,6 +117,10 @@ class BlackCoffeeImageAuditBatch < ApplicationRecord
     review_status_filter != Venue::REVIEW_STATUS_REJECTED
   end
 
+  def image_rejections_already_applied?
+    rejected? && rejected_venues_count.to_i.positive?
+  end
+
   def status_label
     case status
     when 'running'
