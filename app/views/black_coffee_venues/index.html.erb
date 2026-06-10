@@ -7,9 +7,12 @@
   }
 
   .black-coffee-review-summary .black-coffee-review-badge {
-    border: 1px solid transparent;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #d8dee6;
+    border-left-width: 5px;
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
     display: inline-flex;
     font-size: 12px;
     font-weight: 800;
@@ -18,26 +21,27 @@
   }
 
   .black-coffee-review-summary a.black-coffee-review-badge:hover {
-    filter: brightness(0.92);
+    background: #f8fafc;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     text-decoration: none;
   }
 
   .black-coffee-review-badge--pending {
-    background: #9a6400;
-    border-color: #7c4f00;
-    color: #ffffff;
+    border-color: #d8dee6;
+    border-left-color: #b77900;
+    color: #835000 !important;
   }
 
   .black-coffee-review-badge--approved {
-    background: #1f7a3f;
-    border-color: #176132;
-    color: #ffffff;
+    border-color: #d8dee6;
+    border-left-color: #1f8a4c;
+    color: #176132 !important;
   }
 
   .black-coffee-review-badge--rejected {
-    background: #bd2d3e;
-    border-color: #9f2231;
-    color: #ffffff;
+    border-color: #d8dee6;
+    border-left-color: #c92f46;
+    color: #a51f34 !important;
   }
 
   .black-coffee-review-entry {
