@@ -6,14 +6,38 @@
     margin-top: 12px;
   }
 
-  .black-coffee-review-summary .badge {
+  .black-coffee-review-summary .black-coffee-review-badge {
+    border: 1px solid transparent;
+    border-radius: 8px;
+    box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.06);
+    display: inline-flex;
     font-size: 12px;
     font-weight: 800;
+    line-height: 1.1;
     padding: 8px 10px;
   }
 
-  .black-coffee-review-summary a.badge:hover {
+  .black-coffee-review-summary a.black-coffee-review-badge:hover {
+    filter: brightness(0.97);
     text-decoration: none;
+  }
+
+  .black-coffee-review-badge--pending {
+    background: #fff4c2;
+    border-color: #f2bf24;
+    color: #684000;
+  }
+
+  .black-coffee-review-badge--approved {
+    background: #dff7e7;
+    border-color: #51bd6a;
+    color: #14572a;
+  }
+
+  .black-coffee-review-badge--rejected {
+    background: #ffe1e8;
+    border-color: #e64c64;
+    color: #861528;
   }
 
   .black-coffee-review-entry {
@@ -257,15 +281,15 @@
         <h2 class="mb-0"><%= @stats[:venues] %></h2>
         <div class="black-coffee-review-summary">
           <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_PENDING)),
-                      class: 'badge badge-warning' do %>
+                      class: 'black-coffee-review-badge black-coffee-review-badge--pending' do %>
             <%= number_with_delimiter(@stats[:review_pending]) %> pendientes
           <% end %>
           <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_APPROVED)),
-                      class: 'badge badge-success' do %>
+                      class: 'black-coffee-review-badge black-coffee-review-badge--approved' do %>
             <%= number_with_delimiter(@stats[:review_approved]) %> aprobados
           <% end %>
           <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_REJECTED)),
-                      class: 'badge badge-danger' do %>
+                      class: 'black-coffee-review-badge black-coffee-review-badge--rejected' do %>
             <%= number_with_delimiter(@stats[:review_rejected]) %> rechazados
           <% end %>
         </div>
@@ -310,15 +334,15 @@
           <p class="text-muted mb-2">Revisa lotes importados, rechaza lo que no encaje y aprueba el resto con control.</p>
           <div class="black-coffee-review-summary mt-0">
             <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_PENDING)),
-                        class: 'badge badge-warning' do %>
+                        class: 'black-coffee-review-badge black-coffee-review-badge--pending' do %>
               <%= number_with_delimiter(@stats[:review_pending]) %> pendientes
             <% end %>
             <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_APPROVED)),
-                        class: 'badge badge-success' do %>
+                        class: 'black-coffee-review-badge black-coffee-review-badge--approved' do %>
               <%= number_with_delimiter(@stats[:review_approved]) %> aprobados
             <% end %>
             <%= link_to black_coffee_venues_path(request.query_parameters.except('page').merge(review_status: Venue::REVIEW_STATUS_REJECTED)),
-                        class: 'badge badge-danger' do %>
+                        class: 'black-coffee-review-badge black-coffee-review-badge--rejected' do %>
               <%= number_with_delimiter(@stats[:review_rejected]) %> rechazados
             <% end %>
           </div>
