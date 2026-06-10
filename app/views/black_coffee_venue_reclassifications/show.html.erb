@@ -1,0 +1,467 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <p class="text-muted mb-1">Black Coffee / Locales</p>
+    <h2 class="mb-0">Reclasificacion masiva de locales</h2>
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-dark mr-2' %>
+    <%= link_to 'Importador Google', black_coffee_google_imports_path, class: 'btn btn-outline-primary' %>
+  </div>
+</div>
+
+<div class="alert alert-warning">
+  <strong>Herramienta sensible.</strong>
+  Esta pantalla cambia la categoria interna de locales existentes. La operacion exige categoria destino, seleccion explicita y confirmacion por texto.
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <strong>1. Buscar locales</strong>
+  </div>
+  <div class="card-body">
+    <%= form_with url: black_coffee_venue_reclassification_path, method: :get, local: true do %>
+      <div class="row align-items-end">
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :name_query, 'Nombre del local' %>
+          <%= text_field_tag :name_query,
+                             @reclassifier.name_query,
+                             class: 'form-control',
+                             placeholder: 'bar, cerveceria, taberna...' %>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :categories, 'Categorias actuales' %>
+          <%= select_tag :categories,
+                         options_for_select(@categories.map { |category| [category, category] }, @reclassifier.categories),
+                         multiple: true,
+                         size: [@categories.size, 6].min,
+                         class: 'form-control' %>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-3">
+          <%= label_tag :city, 'Ciudad' %>
+          <%= text_field_tag :city, @reclassifier.city, class: 'form-control', placeholder: 'Valencia' %>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-3">
+          <%= label_tag :state, 'Provincia / region' %>
+          <%= text_field_tag :state, @reclassifier.state, class: 'form-control', placeholder: 'Valencia' %>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-3">
+          <%= label_tag :country, 'Pais' %>
+          <%= text_field_tag :country, @reclassifier.country, class: 'form-control', placeholder: 'Espana' %>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :google_primary_type, 'Primary type Google' %>
+          <%= text_field_tag :google_primary_type,
+                             @reclassifier.google_primary_type,
+                             class: 'form-control',
+                             placeholder: 'cafe, restaurant, bar...' %>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :google_tag, 'Etiqueta Google' %>
+          <%= text_field_tag :google_tag,
+                             @reclassifier.google_tag,
+                             class: 'form-control',
+                             placeholder: 'coffee_shop, food...' %>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= submit_tag 'Filtrar', class: 'btn btn-primary btn-block text-white' %>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= link_to 'Limpiar filtros', black_coffee_venue_reclassification_path, class: 'btn btn-outline-secondary btn-block' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3 mb-3 mb-md-0">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Resultados filtrados</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@preview[:venue_count]) %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3 mb-md-0">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Con Google Place ID</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@preview[:google_linked_count]) %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3 mb-md-0">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Seleccionados visibles</p>
+        <h2 class="mb-0" id="selected-visible-count">0</h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase mb-2">Pagina actual</p>
+        <h2 class="mb-0"><%= number_with_delimiter(@venues.size) %></h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%= form_with url: black_coffee_venue_reclassification_path,
+              method: :post,
+              local: true,
+              html: { id: 'black-coffee-reclassification-form' } do %>
+  <%= hidden_field_tag :name_query, @reclassifier.name_query %>
+  <% @reclassifier.categories.each do |category| %>
+    <%= hidden_field_tag 'categories[]', category %>
+  <% end %>
+  <%= hidden_field_tag :city, @reclassifier.city %>
+  <%= hidden_field_tag :state, @reclassifier.state %>
+  <%= hidden_field_tag :country, @reclassifier.country %>
+  <%= hidden_field_tag :google_primary_type, @reclassifier.google_primary_type %>
+  <%= hidden_field_tag :google_tag, @reclassifier.google_tag %>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white">
+      <strong>2. Elegir accion</strong>
+    </div>
+    <div class="card-body">
+      <div class="row align-items-end">
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :target_category, 'Categoria destino' %>
+          <%= select_tag :target_category,
+                         options_for_select([['Elige categoria', '']] + @categories.map { |category| [category, category] }, params[:target_category]),
+                         class: 'form-control',
+                         id: 'target-category-select' %>
+        </div>
+        <div class="col-lg-5 col-md-6 mb-3">
+          <label class="d-block">Alcance</label>
+          <% @selection_options.each do |value, label| %>
+            <div class="custom-control custom-radio custom-control-inline">
+              <%= radio_button_tag :selection_mode,
+                                   value,
+                                   value == BlackCoffeeVenueReclassifier::SELECTION_SELECTED,
+                                   id: "selection_mode_#{value}",
+                                   class: 'custom-control-input black-coffee-selection-mode',
+                                   disabled: value == BlackCoffeeVenueReclassifier::SELECTION_FILTERED && !@reclassifier.filters_present? %>
+              <%= label_tag "selection_mode_#{value}", label, class: 'custom-control-label' %>
+            </div>
+          <% end %>
+        </div>
+        <div class="col-lg-4 mb-3 text-lg-right">
+          <button type="button" class="btn btn-outline-secondary mr-2" id="select-visible-venues">
+            <i class="fas fa-check-square mr-1"></i> Seleccionar pagina
+          </button>
+          <button type="button" class="btn btn-outline-secondary mr-2" id="clear-visible-venues">
+            <i class="fas fa-square mr-1"></i> Deseleccionar
+          </button>
+          <button type="button"
+                  class="btn btn-warning text-dark font-weight-bold"
+                  id="open-reclassification-modal"
+                  data-toggle="modal"
+                  data-target="#blackCoffeeReclassificationModal"
+                  <%= 'disabled' if @preview[:venue_count].to_i.zero? %>>
+            Reclasificar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-lg-5 mb-4 mb-lg-0">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white">
+          <strong>Categorias actuales filtradas</strong>
+        </div>
+        <div class="card-body p-0">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th class="text-right">Locales</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @preview[:category_counts].any? %>
+                <% @preview[:category_counts].each do |category, count| %>
+                  <tr>
+                    <td><%= category %></td>
+                    <td class="text-right"><%= number_with_delimiter(count) %></td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="2" class="text-center text-muted py-4">No hay resultados.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white">
+          <strong>Tipos Google principales</strong>
+        </div>
+        <div class="card-body">
+          <% if @preview[:google_primary_type_counts].any? %>
+            <% @preview[:google_primary_type_counts].each do |google_type, count| %>
+              <span class="badge badge-light border mr-2 mb-2 p-2">
+                <%= google_type %>: <%= number_with_delimiter(count) %>
+              </span>
+            <% end %>
+          <% else %>
+            <span class="text-muted">No hay primary types guardados para este alcance.</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+      <strong>Resultados</strong>
+      <span class="text-muted small"><%= number_with_delimiter(@preview[:venue_count]) %> locales coinciden con los filtros</span>
+    </div>
+    <div class="card-body table-responsive p-0">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th style="width: 48px;"></th>
+            <th>Local</th>
+            <th>Categoria actual</th>
+            <th>Tipos Google</th>
+            <th>Ubicacion</th>
+            <th>Telefono</th>
+            <th>IDs</th>
+            <th>Actualizado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @venues.any? %>
+            <% @venues.each do |venue| %>
+              <% phone = venue.has_attribute?(:phone) ? venue[:phone].presence : nil %>
+              <% google_place_id = venue.has_attribute?(:google_place_id) ? venue.google_place_id.to_s.presence : nil %>
+              <tr>
+                <td>
+                  <%= check_box_tag 'venue_ids[]',
+                                    venue.id,
+                                    false,
+                                    class: 'black-coffee-venue-checkbox',
+                                    data: { category: venue.category, name: venue.name } %>
+                </td>
+                <td>
+                  <strong><%= venue.name %></strong>
+                  <div class="text-muted small"><%= venue.address %></div>
+                  <% if venue.google_connected? %>
+                    <%= link_to 'Google Maps', venue.google_maps_url, target: '_blank', rel: 'noopener', class: 'small' %>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="badge badge-secondary"><%= venue.category %></span>
+                  <% if venue.subcategory_name.present? %>
+                    <div class="text-muted small mt-1"><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name) || venue.subcategory_name %></div>
+                  <% end %>
+                </td>
+                <td>
+                  <% if venue.google_primary_type_for_dashboard.present? %>
+                    <span class="badge badge-primary mr-1">Principal</span>
+                    <span class="small"><%= venue.google_primary_type_for_dashboard %></span>
+                  <% else %>
+                    <span class="text-muted small">Sin primary type</span>
+                  <% end %>
+                  <% if venue.google_secondary_type_list.any? %>
+                    <div class="mt-1">
+                      <% venue.google_secondary_type_list.first(5).each do |tag| %>
+                        <span class="badge badge-light border mr-1 mb-1"><%= tag %></span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </td>
+                <td>
+                  <strong><%= venue.city.presence || 'Sin ciudad' %></strong>
+                  <div class="text-muted small"><%= [venue.state.presence, venue.country.presence].compact.join(' / ').presence || 'Sin region' %></div>
+                </td>
+                <td><%= phone.presence || content_tag(:span, 'No guardado', class: 'text-muted small') %></td>
+                <td>
+                  <div class="small"><strong>ID:</strong> <%= venue.id %></div>
+                  <div class="small text-muted"><strong>Google:</strong> <%= google_place_id.presence || 'Sin Place ID' %></div>
+                </td>
+                <td>
+                  <%= venue.updated_at.strftime('%d/%m/%Y %H:%M') %>
+                  <div class="text-muted small">Creado: <%= venue.created_at.strftime('%d/%m/%Y') %></div>
+                </td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="8" class="text-center text-muted py-5">No hay locales que coincidan con los filtros actuales.</td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal fade" id="blackCoffeeReclassificationModal" tabindex="-1" role="dialog" aria-labelledby="blackCoffeeReclassificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title" id="blackCoffeeReclassificationModalLabel">Confirmar reclasificacion masiva</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-light border">
+            Se actualizaran <strong id="modal-affected-count">0</strong> locales a
+            <strong id="modal-target-category">sin categoria destino</strong>.
+          </div>
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Alcance</dt>
+            <dd class="col-sm-8" id="modal-selection-label">Solo locales seleccionados</dd>
+            <dt class="col-sm-4">Categorias detectadas</dt>
+            <dd class="col-sm-8" id="modal-current-categories">Sin seleccion</dd>
+            <dt class="col-sm-4">Resultados filtrados</dt>
+            <dd class="col-sm-8"><%= number_with_delimiter(@preview[:venue_count]) %></dd>
+          </dl>
+          <div class="form-group mt-4">
+            <%= label_tag :confirm_text, "Escribe #{@confirmation_text} para confirmar" %>
+            <%= text_field_tag :confirm_text, nil, class: 'form-control', placeholder: @confirmation_text, autocomplete: 'off', id: 'reclassification-confirm-text' %>
+          </div>
+          <div class="alert alert-danger mb-0" id="modal-validation-message" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+          <%= submit_tag 'Confirmar reclasificacion',
+                         class: 'btn btn-warning text-dark font-weight-bold',
+                         id: 'confirm-reclassification-submit',
+                         disabled: true,
+                         data: { disable_with: 'Reclasificando...' } %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<div class="mt-4">
+  <%= will_paginate @venues if @venues.respond_to?(:total_pages) %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.black-coffee-venue-checkbox'));
+    var selectedCount = document.getElementById('selected-visible-count');
+    var selectVisible = document.getElementById('select-visible-venues');
+    var clearVisible = document.getElementById('clear-visible-venues');
+    var targetCategory = document.getElementById('target-category-select');
+    var confirmText = document.getElementById('reclassification-confirm-text');
+    var submitButton = document.getElementById('confirm-reclassification-submit');
+    var modalAffectedCount = document.getElementById('modal-affected-count');
+    var modalTargetCategory = document.getElementById('modal-target-category');
+    var modalSelectionLabel = document.getElementById('modal-selection-label');
+    var modalCurrentCategories = document.getElementById('modal-current-categories');
+    var modalValidationMessage = document.getElementById('modal-validation-message');
+    var filteredCount = <%= @preview[:venue_count].to_i %>;
+    var filtersPresent = <%= @reclassifier.filters_present? ? 'true' : 'false' %>;
+    var filteredCategoryCounts = <%= raw @preview[:category_counts].map { |category, count| "#{category}: #{count}" }.join(', ').presence.to_json %>;
+    var confirmationText = <%= @confirmation_text.to_json.html_safe %>;
+
+    function selectionMode() {
+      var checkedMode = document.querySelector('.black-coffee-selection-mode:checked');
+      return checkedMode ? checkedMode.value : 'selected';
+    }
+
+    function selectedCheckboxes() {
+      return checkboxes.filter(function (checkbox) { return checkbox.checked; });
+    }
+
+    function selectedCategorySummary() {
+      var counts = {};
+      selectedCheckboxes().forEach(function (checkbox) {
+        var category = checkbox.dataset.category || 'sin categoria';
+        counts[category] = (counts[category] || 0) + 1;
+      });
+
+      var summary = Object.keys(counts).sort().map(function (category) {
+        return category + ': ' + counts[category];
+      }).join(', ');
+
+      return summary || 'Sin seleccion';
+    }
+
+    function updateSelectedCount() {
+      selectedCount.textContent = selectedCheckboxes().length;
+    }
+
+    function updateModalState() {
+      var mode = selectionMode();
+      var selectedTotal = selectedCheckboxes().length;
+      var affectedCount = mode === 'filtered' ? filteredCount : selectedTotal;
+      var target = targetCategory.value;
+      var validationMessage = '';
+
+      modalAffectedCount.textContent = affectedCount;
+      modalTargetCategory.textContent = target || 'sin categoria destino';
+      modalSelectionLabel.textContent = mode === 'filtered' ? 'Todos los resultados filtrados' : 'Solo locales seleccionados';
+      modalCurrentCategories.textContent = mode === 'filtered' ? (filteredCategoryCounts || 'Sin resultados') : selectedCategorySummary();
+
+      if (!target) {
+        validationMessage = 'Elige una categoria destino.';
+      } else if (mode === 'selected' && selectedTotal === 0) {
+        validationMessage = 'Selecciona al menos un local visible.';
+      } else if (mode === 'filtered' && !filtersPresent) {
+        validationMessage = 'Aplica al menos un filtro antes de reclasificar todos los resultados.';
+      } else if (mode === 'filtered' && filteredCount === 0) {
+        validationMessage = 'No hay resultados filtrados para reclasificar.';
+      } else if (confirmText.value !== confirmationText) {
+        validationMessage = 'La confirmacion por texto todavia no coincide.';
+      }
+
+      if (validationMessage) {
+        modalValidationMessage.textContent = validationMessage;
+        modalValidationMessage.style.display = 'block';
+        submitButton.disabled = true;
+      } else {
+        modalValidationMessage.style.display = 'none';
+        submitButton.disabled = false;
+      }
+    }
+
+    checkboxes.forEach(function (checkbox) {
+      checkbox.addEventListener('change', function () {
+        updateSelectedCount();
+        updateModalState();
+      });
+    });
+
+    if (selectVisible) {
+      selectVisible.addEventListener('click', function () {
+        checkboxes.forEach(function (checkbox) { checkbox.checked = true; });
+        updateSelectedCount();
+        updateModalState();
+      });
+    }
+
+    if (clearVisible) {
+      clearVisible.addEventListener('click', function () {
+        checkboxes.forEach(function (checkbox) { checkbox.checked = false; });
+        updateSelectedCount();
+        updateModalState();
+      });
+    }
+
+    Array.prototype.slice.call(document.querySelectorAll('.black-coffee-selection-mode')).forEach(function (input) {
+      input.addEventListener('change', updateModalState);
+    });
+
+    targetCategory.addEventListener('change', updateModalState);
+    confirmText.addEventListener('input', updateModalState);
+
+    $('#blackCoffeeReclassificationModal').on('show.bs.modal', updateModalState);
+    updateSelectedCount();
+  });
+</script>

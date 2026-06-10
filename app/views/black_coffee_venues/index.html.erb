@@ -369,6 +369,13 @@
       </div>
       <div class="black-coffee-page-actions mt-3 mt-md-0">
         <%= link_to 'Gestionar subcategorias', black_coffee_subcategories_path, class: 'btn btn-outline-dark mr-2' %>
+        <%= link_to 'Reclasificacion masiva',
+                    black_coffee_venue_reclassification_path(
+                      categories: [params[:category].presence].compact,
+                      google_primary_type: @google_primary_type_filter.presence,
+                      google_tag: @google_tag_filter.presence
+                    ),
+                    class: 'btn btn-outline-warning mr-2' %>
         <%= link_to 'Limpieza masiva',
                     black_coffee_cleanup_path(
                       category: params[:category].presence,

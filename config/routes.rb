@@ -70,6 +70,7 @@ Rails.application.routes.draw do
       end
     end
     resource :cleanup, controller: 'black_coffee_cleanup', only: [:show, :create]
+    resource :venue_reclassification, controller: 'black_coffee_venue_reclassifications', only: [:show, :create]
     resources :subcategories, controller: 'black_coffee_subcategories', except: [:show]
     resources :google_filters, controller: 'black_coffee_google_import_filters', only: [:index, :update], param: :category
     resources :bulk_imports, controller: 'black_coffee_bulk_imports', only: [:create, :show] do
