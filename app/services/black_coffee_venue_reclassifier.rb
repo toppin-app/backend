@@ -36,13 +36,21 @@ class BlackCoffeeVenueReclassifier
     'ç' => 'c'
   }.freeze
 
-  attr_reader :name_query, :categories, :city, :state, :country, :google_primary_type, :google_tag
+  attr_reader :name_query,
+              :excluded_name_query,
+              :categories,
+              :city,
+              :state,
+              :country,
+              :google_primary_type,
+              :google_tag
 
   def initialize(params = {})
     normalized_params = params.respond_to?(:to_unsafe_h) ? params.to_unsafe_h : params.to_h
     normalized_params = normalized_params.with_indifferent_access
 
     @name_query = normalized_free_text(normalized_params[:name_query] || normalized_params[:q])
+    @excluded_name_query = normalized_free_text(normalized_params[:excluded_name_query])
     @categories = normalized_categories(normalized_params[:categories] || normalized_params[:category])
     @city = normalized_free_text(normalized_params[:city])
     @state = normalized_free_text(normalized_params[:state])
@@ -54,6 +62,7 @@ class BlackCoffeeVenueReclassifier
   def filters
     {
       name_query: name_query,
+      excluded_name_query: excluded_name_query,
       categories: categories,
       city: city,
       state: state,
@@ -65,6 +74,7 @@ class BlackCoffeeVenueReclassifier
 
   def filters_present?
     name_query.present? ||
+      excluded_name_query.present? ||
       categories.any? ||
       city.present? ||
       state.present? ||
@@ -76,6 +86,7 @@ class BlackCoffeeVenueReclassifier
   def scope
     relation = Venue.all
     relation = apply_name_filter(relation)
+    relation = apply_excluded_name_filter(relation)
     relation = relation.where(category: categories) if categories.any?
     relation = apply_location_filter(relation, :city, city)
     relation = apply_location_filter(relation, :state, state)
@@ -146,6 +157,12 @@ class BlackCoffeeVenueReclassifier
     end
   end
 
+  def apply_excluded_name_filter(relation)
+    folded_terms(excluded_name_query).reduce(relation) do |current_relation, term|
+      current_relation.where("#{folded_sql('venues.name')} NOT LIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(term)}%")
+    end
+  end
+
   def apply_location_filter(relation, column_name, value)
     return relation if value.blank? || !has_venue_column?(column_name)
 
@@ -182,7 +199,7 @@ class BlackCoffeeVenueReclassifier
   end
 
   def folded_terms(value)
-    fold_text(value).split(/\s+/).reject(&:blank?)
+    fold_text(value).scan(/[a-z0-9]+/)
   end
 
   def fold_text(value)

@@ -13,12 +13,14 @@ class BlackCoffeeVenueReclassifierTest < ActiveSupport::TestCase
   test 'normalizes filters and refuses all filtered selection without any filter' do
     reclassifier = BlackCoffeeVenueReclassifier.new(
       name_query: '  ',
+      excluded_name_query: ' ',
       categories: ['not_a_category'],
       city: nil,
       google_tag: ' '
     )
 
     refute reclassifier.filters_present?
+    assert_nil reclassifier.excluded_name_query
     assert_equal [], reclassifier.categories
 
     error = assert_raises(ArgumentError) do
@@ -31,6 +33,16 @@ class BlackCoffeeVenueReclassifierTest < ActiveSupport::TestCase
     end
 
     assert_equal 'Aplica al menos un filtro antes de reclasificar todos los resultados.', error.message
+  end
+
+  test 'excluded name query is treated as a filter and included in audit filters' do
+    reclassifier = BlackCoffeeVenueReclassifier.new(
+      excluded_name_query: '  Hotel, Peluqueria  '
+    )
+
+    assert reclassifier.filters_present?
+    assert_equal 'Hotel, Peluqueria', reclassifier.excluded_name_query
+    assert_equal 'Hotel, Peluqueria', reclassifier.filters[:excluded_name_query]
   end
 
   test 'selected reclassification updates changed venues and logs audit payload' do

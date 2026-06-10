@@ -14,6 +14,19 @@
   Esta pantalla cambia la categoria interna de locales existentes. La operacion exige categoria destino, seleccion explicita y confirmacion por texto.
 </div>
 
+<style>
+  .black-coffee-reclassification-cover {
+    height: 74px;
+    object-fit: cover;
+    width: 112px;
+  }
+
+  .black-coffee-reclassification-cover-placeholder {
+    height: 74px;
+    width: 112px;
+  }
+</style>
+
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-header bg-white">
     <strong>1. Buscar locales</strong>
@@ -27,6 +40,13 @@
                              @reclassifier.name_query,
                              class: 'form-control',
                              placeholder: 'bar, cerveceria, taberna...' %>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <%= label_tag :excluded_name_query, 'Nombre no contiene' %>
+          <%= text_field_tag :excluded_name_query,
+                             @reclassifier.excluded_name_query,
+                             class: 'form-control',
+                             placeholder: 'hotel, peluqueria...' %>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
           <%= label_tag :categories, 'Categorias actuales' %>
@@ -113,6 +133,7 @@
               local: true,
               html: { id: 'black-coffee-reclassification-form' } do %>
   <%= hidden_field_tag :name_query, @reclassifier.name_query %>
+  <%= hidden_field_tag :excluded_name_query, @reclassifier.excluded_name_query %>
   <% @reclassifier.categories.each do |category| %>
     <%= hidden_field_tag 'categories[]', category %>
   <% end %>
@@ -231,6 +252,7 @@
         <thead>
           <tr>
             <th style="width: 48px;"></th>
+            <th>Imagen</th>
             <th>Local</th>
             <th>Categoria actual</th>
             <th>Tipos Google</th>
@@ -245,6 +267,7 @@
             <% @venues.each do |venue| %>
               <% phone = venue.has_attribute?(:phone) ? venue[:phone].presence : nil %>
               <% google_place_id = venue.has_attribute?(:google_place_id) ? venue.google_place_id.to_s.presence : nil %>
+              <% cover_url = venue.cover_image_url(base_url: request.base_url) %>
               <tr>
                 <td>
                   <%= check_box_tag 'venue_ids[]',
@@ -252,6 +275,17 @@
                                     false,
                                     class: 'black-coffee-venue-checkbox',
                                     data: { category: venue.category, name: venue.name } %>
+                </td>
+                <td>
+                  <% if cover_url.present? %>
+                    <%= image_tag cover_url,
+                                  class: 'img-thumbnail black-coffee-reclassification-cover',
+                                  alt: venue.name %>
+                  <% else %>
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded black-coffee-reclassification-cover-placeholder">
+                      <i class="fas fa-image text-muted"></i>
+                    </div>
+                  <% end %>
                 </td>
                 <td>
                   <strong><%= venue.name %></strong>
@@ -298,7 +332,7 @@
             <% end %>
           <% else %>
             <tr>
-              <td colspan="8" class="text-center text-muted py-5">No hay locales que coincidan con los filtros actuales.</td>
+              <td colspan="9" class="text-center text-muted py-5">No hay locales que coincidan con los filtros actuales.</td>
             </tr>
           <% end %>
         </tbody>

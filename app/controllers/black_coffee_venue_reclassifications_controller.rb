@@ -35,7 +35,7 @@ class BlackCoffeeVenueReclassificationsController < ApplicationController
     @reclassifier ||= BlackCoffeeVenueReclassifier.new(filter_params)
     @preview = @reclassifier.preview
     @venues = @reclassifier.scope
-                             .includes(:venue_subcategory)
+                             .includes(:venue_subcategory, :venue_images)
                              .order(updated_at: :desc)
                              .paginate(page: params[:page], per_page: 30)
   end
@@ -43,6 +43,7 @@ class BlackCoffeeVenueReclassificationsController < ApplicationController
   def filter_params
     params.permit(
       :name_query,
+      :excluded_name_query,
       :city,
       :state,
       :country,
