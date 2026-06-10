@@ -386,11 +386,18 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
+  (function () {
+  function initializeBlackCoffeeReclassification() {
+    var form = document.getElementById('black-coffee-reclassification-form');
+    if (!form || form.dataset.reclassificationBound === 'true') return;
+
+    form.dataset.reclassificationBound = 'true';
+
     var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.black-coffee-venue-checkbox'));
     var selectedCount = document.getElementById('selected-visible-count');
     var selectVisible = document.getElementById('select-visible-venues');
     var clearVisible = document.getElementById('clear-visible-venues');
+    var openModalButton = document.getElementById('open-reclassification-modal');
     var targetCategory = document.getElementById('target-category-select');
     var confirmText = document.getElementById('reclassification-confirm-text');
     var submitButton = document.getElementById('confirm-reclassification-submit');
@@ -403,6 +410,8 @@
     var filtersPresent = <%= @reclassifier.filters_present? ? 'true' : 'false' %>;
     var filteredCategoryCounts = <%= raw @preview[:category_counts].map { |category, count| "#{category}: #{count}" }.join(', ').presence.to_json %>;
     var confirmationText = <%= @confirmation_text.to_json.html_safe %>;
+
+    if (!targetCategory || !confirmText || !submitButton) return;
 
     function selectionMode() {
       var checkedMode = document.querySelector('.black-coffee-selection-mode:checked');
@@ -494,8 +503,26 @@
 
     targetCategory.addEventListener('change', updateModalState);
     confirmText.addEventListener('input', updateModalState);
+    if (openModalButton) {
+      openModalButton.addEventListener('click', updateModalState);
+    }
 
-    $('#blackCoffeeReclassificationModal').on('show.bs.modal', updateModalState);
+    if (window.jQuery) {
+      window.jQuery('#blackCoffeeReclassificationModal').on('show.bs.modal', updateModalState);
+    }
     updateSelectedCount();
+    updateModalState();
+  }
+
+  document.addEventListener('DOMContentLoaded', initializeBlackCoffeeReclassification);
+  document.addEventListener('turbolinks:load', initializeBlackCoffeeReclassification);
+  document.addEventListener('turbolinks:before-cache', function () {
+    var form = document.getElementById('black-coffee-reclassification-form');
+    if (form) delete form.dataset.reclassificationBound;
   });
+
+  if (document.readyState !== 'loading') {
+    initializeBlackCoffeeReclassification();
+  }
+  })();
 </script>
