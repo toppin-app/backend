@@ -26,7 +26,8 @@ class BlackCoffeeVenuesController < ApplicationController
     }
 
     scope = Venue.includes(:venue_subcategory, :venue_images)
-    scope = scope.where(category: params[:category]) if params[:category].present? && Venue::CATEGORIES.include?(params[:category])
+    selected_category = Venue.normalize_category(params[:category])
+    scope = scope.where(category: selected_category) if selected_category.present? && Venue::CATEGORIES.include?(selected_category)
     scope = scope.where(review_status: @review_status_filter) if @review_status_filter.present?
 
     normalized_subcategory = Venue.normalize_text(params[:subcategory])

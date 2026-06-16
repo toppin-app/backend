@@ -292,9 +292,9 @@
                   <div class="flex-grow-1 black-coffee-favorite-copy">
                     <strong class="black-coffee-favorite-name"><%= venue.name %></strong>
                     <div class="black-coffee-favorite-meta">
-                      <%= venue.category.to_s.humanize %>
+                      <%= Venue.category_label_for(venue.category) %>
                       <% if venue.subcategory_name.present? %>
-                        · <%= venue.subcategory_name.humanize %>
+                        · <%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name) || venue.subcategory_name.humanize %>
                       <% end %>
                       <br>
                       <%= [venue.city, venue.state].map(&:presence).compact.join(' · ') %>
@@ -360,9 +360,9 @@
                   <% end %>
                 </td>
                 <td data-label="Categoría">
-                  <span class="badge badge-dark"><%= venue.category.to_s.humanize %></span>
+                  <span class="badge badge-dark"><%= Venue.category_label_for(venue.category) %></span>
                   <% if venue.subcategory_name.present? %>
-                    <span class="badge badge-light"><%= venue.subcategory_name.humanize %></span>
+                    <span class="badge badge-light"><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name) || venue.subcategory_name.humanize %></span>
                   <% end %>
                 </td>
                 <td data-label="Ubicación">

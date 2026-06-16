@@ -45,6 +45,12 @@ class BlackCoffeeVenueReclassifierTest < ActiveSupport::TestCase
     assert_equal 'Hotel, Peluqueria', reclassifier.filters[:excluded_name_query]
   end
 
+  test 'normalizes legacy nightlife categories in filters' do
+    reclassifier = BlackCoffeeVenueReclassifier.new(categories: %w[pub discoteca cafeteria])
+
+    assert_equal %w[nightlife cafeteria], reclassifier.categories
+  end
+
   test 'selected reclassification updates changed venues and logs audit payload' do
     reclassifier = BlackCoffeeVenueReclassifier.new(name_query: 'bar', categories: ['cafeteria'])
     reclassifier.define_singleton_method(:venue_ids_for_selection) do |selection_mode, selected_ids|

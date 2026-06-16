@@ -54,7 +54,7 @@ class BlackCoffeeVenueReclassificationsController < ApplicationController
   end
 
   def reclassification_success_message(result)
-    message = "Reclasificacion completada: #{result[:changed_count]} locales pasaron a #{result[:new_category]}."
+    message = "Reclasificacion completada: #{result[:changed_count]} locales pasaron a #{Venue.category_label_for(result[:new_category])}."
     if result[:unchanged_count].positive?
       message += " #{result[:unchanged_count]} ya estaban en esa categoria y no se modificaron."
     end

@@ -415,7 +415,7 @@
         <div class="row">
           <div class="col-md-4 mb-3">
             <p class="black-coffee-detail-section-label mb-2">Categoria</p>
-            <strong><%= @venue.category %></strong>
+            <strong><%= Venue.category_label_for(@venue.category) %></strong>
           </div>
           <div class="col-md-4 mb-3">
             <p class="black-coffee-detail-section-label mb-2">Subcategoria</p>

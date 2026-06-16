@@ -4,12 +4,12 @@ class VenueSubcategory < ApplicationRecord
   enum category: {
     restaurante: 'restaurante',
     hotel: 'hotel',
-    pub: 'pub',
+    nightlife: Venue::CATEGORY_NIGHTLIFE,
     cine: 'cine',
     cafeteria: 'cafeteria',
     concierto: 'concierto',
     festival: 'festival',
-    discoteca: 'discoteca',
+    museums_galleries: Venue::CATEGORY_MUSEUMS_GALLERIES,
     deportivo: 'deportivo',
     escape_room: 'escape_room'
   }

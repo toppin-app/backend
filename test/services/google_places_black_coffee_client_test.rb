@@ -58,6 +58,18 @@ class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
     end
   end
 
+  test 'category catalog exposes unified nightlife and museums without legacy top-level categories' do
+    assert_includes GooglePlacesBlackCoffeeClient.importable_categories, 'nightlife'
+    assert_includes GooglePlacesBlackCoffeeClient.importable_categories, 'museums_galleries'
+    refute_includes GooglePlacesBlackCoffeeClient.importable_categories, 'pub'
+    refute_includes GooglePlacesBlackCoffeeClient.importable_categories, 'discoteca'
+
+    assert_equal GooglePlacesBlackCoffeeClient.config_for('nightlife'), GooglePlacesBlackCoffeeClient.config_for('pub')
+    assert_equal GooglePlacesBlackCoffeeClient.config_for('nightlife'), GooglePlacesBlackCoffeeClient.config_for('discoteca')
+    assert_equal 'Locales de ocio nocturno', GooglePlacesBlackCoffeeClient.config_for('nightlife')[:label]
+    assert_equal 'Museos y galerias', GooglePlacesBlackCoffeeClient.config_for('museums_galleries')[:label]
+  end
+
   test 'search metadata saves photo references without resolving photo URLs by default' do
     client = client_with_places([google_place])
     client.define_singleton_method(:photo_uri_for) do |_photo_name|

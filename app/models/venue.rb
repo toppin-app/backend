@@ -1,18 +1,33 @@
 require 'cgi'
 
 class Venue < ApplicationRecord
+  CATEGORY_NIGHTLIFE = 'nightlife'.freeze
+  CATEGORY_MUSEUMS_GALLERIES = 'museums_galleries'.freeze
+  LEGACY_NIGHTLIFE_CATEGORIES = %w[pub discoteca].freeze
   CATEGORIES = %w[
     restaurante
     hotel
-    pub
+    nightlife
     cine
     cafeteria
     concierto
     festival
-    discoteca
+    museums_galleries
     deportivo
     escape_room
   ].freeze
+  CATEGORY_LABELS = {
+    'restaurante' => 'Restaurantes',
+    'hotel' => 'Hoteles',
+    CATEGORY_NIGHTLIFE => 'Locales de ocio nocturno',
+    'cine' => 'Cines',
+    'cafeteria' => 'Cafeterias',
+    'concierto' => 'Conciertos',
+    'festival' => 'Festivales',
+    CATEGORY_MUSEUMS_GALLERIES => 'Museos y galerias',
+    'deportivo' => 'Deportivos',
+    'escape_room' => 'Escape rooms'
+  }.freeze
   REVIEW_STATUSES = %w[pending approved rejected].freeze
   REVIEW_STATUS_PENDING = 'pending'.freeze
   REVIEW_STATUS_APPROVED = 'approved'.freeze
@@ -43,12 +58,12 @@ class Venue < ApplicationRecord
   enum category: {
     restaurante: 'restaurante',
     hotel: 'hotel',
-    pub: 'pub',
+    nightlife: CATEGORY_NIGHTLIFE,
     cine: 'cine',
     cafeteria: 'cafeteria',
     concierto: 'concierto',
     festival: 'festival',
-    discoteca: 'discoteca',
+    museums_galleries: CATEGORY_MUSEUMS_GALLERIES,
     deportivo: 'deportivo',
     escape_room: 'escape_room'
   }
@@ -102,8 +117,21 @@ class Venue < ApplicationRecord
     value.to_s.strip.downcase.presence
   end
 
+  def self.normalize_category(value)
+    normalized_category = normalize_text(value)
+    return nil if normalized_category.blank?
+    return CATEGORY_NIGHTLIFE if LEGACY_NIGHTLIFE_CATEGORIES.include?(normalized_category)
+
+    normalized_category
+  end
+
+  def self.category_label_for(value)
+    normalized_category = normalize_category(value)
+    CATEGORY_LABELS[normalized_category] || normalized_category.to_s.humanize.presence
+  end
+
   def self.filter_by_category(scope, category)
-    normalized_category = normalize_text(category)
+    normalized_category = normalize_category(category)
     return scope if normalized_category.blank? || normalized_category == 'all'
 
     scope.where(category: normalized_category)

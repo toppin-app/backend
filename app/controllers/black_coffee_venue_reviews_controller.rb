@@ -18,7 +18,7 @@ class BlackCoffeeVenueReviewsController < ApplicationController
     @reason_breakdown = rejection_reason_breakdown
     @review_filter_status = review_status_filter
     @review_filter_reason = review_reason_filter
-    @review_filter_category = params[:review_category].to_s.presence
+    @review_filter_category = normalized_review_category(params[:review_category])
     @review_filter_query = params[:review_q].to_s.strip
     @reviewed_venues = reviewed_venues_scope.paginate(page: review_page_param, per_page: 20)
     @favorite_counts_by_venue_id = Venue.favorite_counts_for(@reviewed_venues.map(&:id))
@@ -110,7 +110,8 @@ class BlackCoffeeVenueReviewsController < ApplicationController
                              .select(:venue_id)
       scope = scope.where.not(id: open_batch_venue_ids)
     end
-    scope = scope.where(category: params[:category]) if params[:category].present?
+    selected_category = normalized_review_category(params[:category])
+    scope = scope.where(category: selected_category) if selected_category.present?
 
     scope
   end
@@ -134,7 +135,7 @@ class BlackCoffeeVenueReviewsController < ApplicationController
 
   def review_filter_payload(batch_size)
     {
-      category: params[:category].presence,
+      category: normalized_review_category(params[:category]),
       batch_size: batch_size,
       requested_by_id: current_user&.id,
       requested_at: Time.current.iso8601
@@ -160,7 +161,7 @@ class BlackCoffeeVenueReviewsController < ApplicationController
   def review_category_options
     labels = review_category_labels
     review_categories.map do |category|
-      [labels[category] || category.humanize, category]
+      [labels[category] || Venue.category_label_for(category) || category.humanize, category]
     end
   end
 
@@ -219,24 +220,18 @@ class BlackCoffeeVenueReviewsController < ApplicationController
   end
 
   def review_category_labels
-    labels = {
-      'restaurante' => 'Restaurantes',
-      'hotel' => 'Hoteles',
-      'pub' => 'Pubs',
-      'cine' => 'Cines',
-      'cafeteria' => 'Cafeterias',
-      'concierto' => 'Conciertos',
-      'festival' => 'Festivales',
-      'discoteca' => 'Discotecas',
-      'deportivo' => 'Deportivos',
-      'escape_room' => 'Escape rooms'
-    }
+    labels = Venue::CATEGORY_LABELS.dup
 
     return labels unless defined?(GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG)
 
     GooglePlacesBlackCoffeeClient::CATEGORY_CONFIG.each_with_object(labels) do |(category, config), memo|
       memo[category.to_s] = config[:label] if config[:label].present?
     end
+  end
+
+  def normalized_review_category(value)
+    category = Venue.normalize_category(value)
+    Venue::CATEGORIES.include?(category) ? category : nil
   end
 
   def review_metrics

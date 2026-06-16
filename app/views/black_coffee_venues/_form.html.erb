@@ -32,7 +32,7 @@
         <div class="col-md-3">
           <div class="mb-3">
             <%= form.label :category, 'Categoria *' %>
-            <%= form.select :category, options_for_select(@categories.map { |category| [category, category] }, @venue.category), { include_blank: 'Selecciona una categoria' }, class: 'form-control', required: true, id: 'venue-category-select' %>
+            <%= form.select :category, options_for_select(@categories.map { |category| [Venue.category_label_for(category), category] }, @venue.category), { include_blank: 'Selecciona una categoria' }, class: 'form-control', required: true, id: 'venue-category-select' %>
           </div>
         </div>
         <div class="col-md-3">

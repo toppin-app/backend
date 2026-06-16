@@ -457,9 +457,9 @@
                 <% end %>
               </td>
               <td data-label="Categoria">
-                <span class="badge badge-dark"><%= venue.category.to_s.humanize %></span>
+                <span class="badge badge-dark"><%= Venue.category_label_for(venue.category) %></span>
                 <% if venue.subcategory_name.present? %>
-                  <div class="text-muted small"><%= venue.subcategory_name.humanize %></div>
+                  <div class="text-muted small"><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name) || venue.subcategory_name.humanize %></div>
                 <% end %>
               </td>
               <td data-label="Origen">

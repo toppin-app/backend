@@ -393,7 +393,7 @@
     <div class="black-coffee-category-badges mb-3">
       <% @categories.each do |category| %>
         <span class="badge badge-light mr-2 mb-2 p-2">
-          <strong><%= category %></strong>: <%= @category_counts[category].to_i %>
+          <strong><%= Venue.category_label_for(category) %></strong>: <%= @category_counts[category].to_i %>
         </span>
       <% end %>
     </div>
@@ -404,13 +404,13 @@
           <%= text_field_tag :q, params[:q], class: 'form-control', placeholder: 'Buscar por nombre, ciudad o direccion' %>
         </div>
         <div class="col-md-2 mb-3">
-          <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, params[:category]), class: 'form-control' %>
+          <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [Venue.category_label_for(category), category] }, Venue.normalize_category(params[:category])), class: 'form-control' %>
         </div>
         <div class="col-md-2 mb-3">
           <%= select_tag :subcategory,
                          options_for_select(
                            [['Todas las subcategorias', '']] +
-                           @subcategory_options.map { |entry| ["#{entry[:label]} (#{entry[:category]})", entry[:name]] },
+                           @subcategory_options.map { |entry| ["#{entry[:label]} (#{Venue.category_label_for(entry[:category])})", entry[:name]] },
                            params[:subcategory]
                          ),
                          class: 'form-control' %>
@@ -491,7 +491,7 @@
                   </div>
                 <% end %>
               </td>
-              <td data-label="Categoria"><span class="badge badge-secondary"><%= venue.category %></span></td>
+              <td data-label="Categoria"><span class="badge badge-secondary"><%= Venue.category_label_for(venue.category) %></span></td>
               <td data-label="Subcategoria"><%= BlackCoffeeTaxonomy.label_for(venue.category, venue.subcategory_name).presence || 'Sin subcategoria' %></td>
               <td data-label="Ciudad"><%= venue.city %></td>
               <td data-label="Pais / Region">

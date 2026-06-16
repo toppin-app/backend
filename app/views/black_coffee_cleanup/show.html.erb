@@ -61,7 +61,7 @@
         <div class="col-lg-3 col-md-6 mb-3">
           <%= label_tag :category, 'Categoria' %>
           <%= select_tag :category,
-                         options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, @cleanup.category),
+                         options_for_select([['Todas las categorias', '']] + @categories.map { |category| [Venue.category_label_for(category), category] }, @cleanup.category),
                          class: 'form-control' %>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
@@ -245,7 +245,7 @@
             <% if @preview[:category_counts].any? %>
               <% @preview[:category_counts].each do |category, count| %>
                 <tr>
-                  <td><%= category %></td>
+                  <td><%= Venue.category_label_for(category) %></td>
                   <td class="text-right"><%= number_with_delimiter(count) %></td>
                 </tr>
               <% end %>
@@ -293,7 +293,7 @@
                       </div>
                     <% end %>
                   </td>
-                  <td><%= venue.category %></td>
+                  <td><%= Venue.category_label_for(venue.category) %></td>
                   <td>
                     <% if venue.google_connected? %>
                       <span class="badge badge-success">Google</span>

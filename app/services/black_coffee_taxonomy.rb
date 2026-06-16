@@ -111,14 +111,17 @@ module BlackCoffeeTaxonomy
       { name: 'bed_and_breakfast', label: 'Bed and breakfast', google_types: %w[bed_and_breakfast], keywords: %w[bed breakfast bnb desayuno] },
       { name: 'motel', label: 'Motel', google_types: %w[motel], keywords: %w[motel carretera] }
     ],
-    'pub' => [
+    'nightlife' => [
       { name: 'cocteleria', label: 'Cocteleria', google_types: %w[cocktail_bar], keywords: %w[coctel cocteleria cocktail cocktails mixology speakeasy] },
       { name: 'cerveceria', label: 'Cerveceria', google_types: %w[beer_garden brewery brewpub pub], keywords: %w[cerveceria cerveza beer craft ipa pub] },
       { name: 'vinoteca', label: 'Vinoteca', google_types: %w[wine_bar winery], keywords: %w[vino wine vinoteca bodega vermut] },
       { name: 'tapas', label: 'Tapas y raciones', google_types: %w[bar_and_grill gastropub], keywords: %w[tapas taberna gastrobar raciones] },
       { name: 'rooftop', label: 'Rooftop', google_types: [], keywords: %w[rooftop terraza azotea views vistas atardecer] },
       { name: 'lounge', label: 'Lounge', google_types: %w[lounge_bar], keywords: %w[lounge chill chillout sofa premium] },
-      { name: 'sports_bar', label: 'Sports bar', google_types: %w[sports_bar], keywords: %w[sports sport futbol partido pantalla] }
+      { name: 'sports_bar', label: 'Sports bar', google_types: %w[sports_bar], keywords: %w[sports sport futbol partido pantalla] },
+      { name: 'discoteca', label: 'Discoteca', google_types: %w[night_club dance_hall], keywords: %w[discoteca nightclub noche dance] },
+      { name: 'club', label: 'Club', google_types: %w[night_club], keywords: %w[club dance house techno] },
+      { name: 'electro', label: 'Electronica', google_types: [], keywords: %w[electro electronica techno house edm] }
     ],
     'cine' => [
       { name: 'cine', label: 'Cine', google_types: %w[movie_theater], keywords: %w[cine cinema movie theater peliculas] }
@@ -145,12 +148,10 @@ module BlackCoffeeTaxonomy
       { name: 'cultural', label: 'Cultural', google_types: %w[cultural_center performing_arts_theater auditorium], keywords: %w[cultural cultura teatro arte exposicion] },
       { name: 'convencion', label: 'Convencion', google_types: %w[convention_center], keywords: %w[convencion congreso expo convention] }
     ],
-    'discoteca' => [
-      { name: 'discoteca', label: 'Discoteca', google_types: %w[night_club dance_hall], keywords: %w[discoteca nightclub noche dance] },
-      { name: 'club', label: 'Club', google_types: %w[night_club], keywords: %w[club dance house techno] },
-      { name: 'electro', label: 'Electronica', google_types: [], keywords: %w[electro electronica techno house edm] },
-      { name: 'lounge', label: 'Lounge', google_types: %w[lounge_bar], keywords: %w[lounge chill premium sofa] },
-      { name: 'rooftop', label: 'Rooftop', google_types: [], keywords: %w[rooftop terraza azotea vistas] }
+    'museums_galleries' => [
+      { name: 'museo', label: 'Museo', google_types: %w[museum], keywords: %w[museo museum exposicion arte historia ciencia] },
+      { name: 'galeria_arte', label: 'Galeria de arte', google_types: %w[art_gallery], keywords: %w[galeria gallery arte exposicion coleccion artista] },
+      { name: 'centro_cultural', label: 'Centro cultural', google_types: %w[cultural_center], keywords: %w[centro cultural cultura exposicion sala] }
     ],
     'deportivo' => [
       { name: 'deporte', label: 'Actividad deportiva', google_types: %w[sports_activity_location sports_complex sports_club], keywords: %w[deporte deportivo sport sports] },
@@ -175,17 +176,28 @@ module BlackCoffeeTaxonomy
   LEGACY_ALIASES = {
     ['restaurante', 'restaurante'] => nil,
     ['pub', 'pub'] => nil,
-    ['bar', 'cerveceria'] => ['pub', 'cerveceria'],
-    ['bar', 'cocteleria'] => ['pub', 'cocteleria'],
-    ['bar', 'tapas'] => ['pub', 'tapas'],
+    ['bar', 'cerveceria'] => ['nightlife', 'cerveceria'],
+    ['bar', 'cocteleria'] => ['nightlife', 'cocteleria'],
+    ['bar', 'tapas'] => ['nightlife', 'tapas'],
     ['escape_room', 'escape room'] => ['escape_room', 'escape_room'],
-    ['discoteca', 'club'] => ['discoteca', 'club']
+    ['pub', 'cocteleria'] => ['nightlife', 'cocteleria'],
+    ['pub', 'cerveceria'] => ['nightlife', 'cerveceria'],
+    ['pub', 'vinoteca'] => ['nightlife', 'vinoteca'],
+    ['pub', 'tapas'] => ['nightlife', 'tapas'],
+    ['pub', 'rooftop'] => ['nightlife', 'rooftop'],
+    ['pub', 'lounge'] => ['nightlife', 'lounge'],
+    ['pub', 'sports_bar'] => ['nightlife', 'sports_bar'],
+    ['discoteca', 'discoteca'] => ['nightlife', 'discoteca'],
+    ['discoteca', 'club'] => ['nightlife', 'club'],
+    ['discoteca', 'electro'] => ['nightlife', 'electro'],
+    ['discoteca', 'lounge'] => ['nightlife', 'lounge'],
+    ['discoteca', 'rooftop'] => ['nightlife', 'rooftop']
   }.freeze
 
   module_function
 
   def subcategories_for(category)
-    SUBCATEGORIES.fetch(category.to_s, [])
+    SUBCATEGORIES.fetch(normalize_category(category), [])
   end
 
   def subcategory_names(category)
@@ -206,7 +218,7 @@ module BlackCoffeeTaxonomy
   end
 
   def subcategory_options(category = nil)
-    categories = category.present? ? [category.to_s] : SUBCATEGORIES.keys
+    categories = category.present? ? [normalize_category(category)] : SUBCATEGORIES.keys
     categories.flat_map do |category_name|
       subcategories_for(category_name).map do |entry|
         entry.merge(category: category_name)
@@ -215,11 +227,11 @@ module BlackCoffeeTaxonomy
   end
 
   def subcategory_id(category, name)
-    "sub_#{Digest::SHA256.hexdigest("#{category}:#{normalize_name(name)}")[0, 12]}"
+    "sub_#{Digest::SHA256.hexdigest("#{normalize_category(category)}:#{normalize_name(name)}")[0, 12]}"
   end
 
   def subcategory_for_google_place(place, category:, fallback: nil)
-    normalized_category = category.to_s
+    normalized_category = normalize_category(category)
     tags = google_tags_for_place(place)
     text = normalized_match_text(
       [
@@ -262,7 +274,14 @@ module BlackCoffeeTaxonomy
   end
 
   def fallback_internal_tags(category, subcategory)
-    [category, subcategory].map { |tag| normalize_google_tag(tag) }.reject(&:blank?).uniq
+    [normalize_category(category), subcategory].map { |tag| normalize_google_tag(tag) }.reject(&:blank?).uniq
+  end
+
+  def normalize_category(category)
+    normalized = category.to_s.strip
+    return Venue.normalize_category(normalized) if defined?(Venue)
+
+    %w[pub discoteca].include?(normalized) ? 'nightlife' : normalized
   end
 
   def normalize_name(value)

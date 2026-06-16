@@ -85,12 +85,11 @@ class GooglePlacesBlackCoffeeClient
       aggregate_primary_types: %w[hotel hostel motel bed_and_breakfast guest_house resort_hotel inn extended_stay_hotel],
       subcategory: nil
     },
-    'pub' => {
-      label: 'Pubs',
-      query: 'pubs bares coctelerias',
-      included_type: 'bar',
-      google_types: %w[bar],
-      aggregate_types: %w[pub bar bar_and_grill wine_bar],
+    'nightlife' => {
+      label: 'Locales de ocio nocturno',
+      query: 'discotecas pubs bares coctelerias ocio nocturno',
+      google_types: %w[bar night_club],
+      aggregate_types: %w[pub bar bar_and_grill wine_bar cocktail_bar lounge_bar sports_bar night_club dance_hall],
       subcategory: nil
     },
     'cine' => {
@@ -123,12 +122,11 @@ class GooglePlacesBlackCoffeeClient
       aggregate_types: %w[event_venue amphitheatre convention_center cultural_center],
       subcategory: nil
     },
-    'discoteca' => {
-      label: 'Discotecas',
-      query: 'discotecas clubs nocturnos',
-      included_type: 'night_club',
-      google_types: %w[night_club],
-      aggregate_types: %w[night_club dance_hall],
+    'museums_galleries' => {
+      label: 'Museos y galerias',
+      query: 'museos galerias de arte centros culturales',
+      google_types: %w[museum art_gallery cultural_center],
+      aggregate_types: %w[museum art_gallery cultural_center],
       subcategory: nil
     },
     'deportivo' => {
@@ -202,7 +200,7 @@ class GooglePlacesBlackCoffeeClient
 
   def self.category_options
     importable_categories.map do |category|
-      [CATEGORY_CONFIG.dig(category, :label) || category.humanize, category]
+      [CATEGORY_CONFIG.dig(category, :label) || Venue.category_label_for(category) || category.humanize, category]
     end
   end
 
@@ -211,7 +209,7 @@ class GooglePlacesBlackCoffeeClient
   end
 
   def self.config_for(category)
-    CATEGORY_CONFIG.fetch(category.to_s)
+    CATEGORY_CONFIG.fetch(Venue.normalize_category(category))
   end
 
   def initialize(api_key: self.class.api_key)
@@ -237,7 +235,7 @@ class GooglePlacesBlackCoffeeClient
   )
     raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
 
-    normalized_category = category.to_s
+    normalized_category = Venue.normalize_category(category)
     config = BlackCoffeeGoogleImportFilter.enhance_config(normalized_category, self.class.config_for(normalized_category))
     requested_limit = [[limit.to_i, 1].max, MAX_RESULTS].min
     import_options = {

@@ -10,7 +10,7 @@ class BlackCoffeeGoogleTagCatalog
     cocktail_bar lounge_bar sports_bar bar_and_grill gastropub brunch_restaurant breakfast_restaurant diner
     steak_house mediterranean_restaurant spanish_restaurant tapas_restaurant italian_restaurant pizza_restaurant
     sushi_restaurant japanese_restaurant mexican_restaurant burger_restaurant hamburger_restaurant vegan_restaurant
-    vegetarian_restaurant tennis_court swimming_pool golf_course indoor_golf_course
+    vegetarian_restaurant tennis_court swimming_pool golf_course indoor_golf_course museum art_gallery cultural_center
   ].freeze
 
   def self.all_tags

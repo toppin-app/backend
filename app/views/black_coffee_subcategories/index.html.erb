@@ -20,7 +20,7 @@
           <%= text_field_tag :q, params[:q], class: 'form-control', placeholder: 'Buscar por nombre' %>
         </div>
         <div class="col-md-4 mb-3">
-          <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [category, category] }, params[:category]), class: 'form-control' %>
+          <%= select_tag :category, options_for_select([['Todas las categorias', '']] + @categories.map { |category| [Venue.category_label_for(category), category] }, Venue.normalize_category(params[:category])), class: 'form-control' %>
         </div>
         <div class="col-md-3 mb-3">
           <%= submit_tag 'Filtrar', class: 'btn btn-primary btn-block text-white' %>
@@ -48,7 +48,7 @@
             <tr>
               <td><strong><%= subcategory[:name] %></strong></td>
               <td><%= subcategory[:label] %></td>
-              <td><span class="badge badge-secondary"><%= subcategory[:category] %></span></td>
+              <td><span class="badge badge-secondary"><%= Venue.category_label_for(subcategory[:category]) %></span></td>
               <td class="small" style="max-width: 420px;">
                 <% if Array(subcategory[:google_types]).any? %>
                   <% Array(subcategory[:google_types]).each do |google_type| %>

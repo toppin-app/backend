@@ -6,7 +6,7 @@ class BlackCoffeeGoogleImportAudit
   MAX_LIVE_LIMIT = 200
   MAX_LIVE_ERROR_DETAILS_LENGTH = 20_000
   LOW_VOLUME_REGION_SLUGS = %w[ceuta melilla].freeze
-  OPTIONAL_ZERO_COUNT_CATEGORIES = %w[cine discoteca escape_room].freeze
+  OPTIONAL_ZERO_COUNT_CATEGORIES = %w[cine nightlife escape_room].freeze
 
   attr_reader :regions, :categories, :category_labels
 
@@ -650,7 +650,7 @@ class BlackCoffeeGoogleImportAudit
   def label_for(category)
     GooglePlacesBlackCoffeeClient.config_for(category)[:label]
   rescue KeyError
-    category.to_s.humanize
+    Venue.category_label_for(category) || category.to_s.humanize
   end
 
   def percentage_for(value, total)

@@ -33,10 +33,10 @@
           <div class="mb-3">
             <%= form.label :category, 'Categoria asociada *' %>
             <% if @subcategory.persisted? %>
-              <%= form.select :category, options_for_select(@categories.map { |category| [category, category] }, @subcategory.category), {}, class: 'form-control', disabled: true %>
+              <%= form.select :category, options_for_select(@categories.map { |category| [Venue.category_label_for(category), category] }, @subcategory.category), {}, class: 'form-control', disabled: true %>
               <small class="form-text text-muted">La edicion solo permite renombrar para evitar inconsistencias entre locales y categoria.</small>
             <% else %>
-              <%= form.select :category, options_for_select(@categories.map { |category| [category, category] }, @subcategory.category), { include_blank: 'Selecciona una categoria' }, class: 'form-control', required: true %>
+              <%= form.select :category, options_for_select(@categories.map { |category| [Venue.category_label_for(category), category] }, @subcategory.category), { include_blank: 'Selecciona una categoria' }, class: 'form-control', required: true %>
             <% end %>
           </div>
         </div>

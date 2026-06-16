@@ -26,6 +26,25 @@ class BlackCoffeeVenueReviewFinalizerTest < ActiveSupport::TestCase
     assert_equal 'bad_photos', decisions['ven_2'][:reason]
   end
 
+  test 'normalizes legacy nightlife category corrections' do
+    finalizer = BlackCoffeeVenueReviewFinalizer.new(
+      batch: nil,
+      reviewer: nil,
+      rejections: {
+        'ven_1' => {
+          reason: 'wrong_category',
+          correct_category: '1',
+          corrected_category: 'discoteca'
+        }
+      }
+    )
+
+    decisions = finalizer.send(:normalize_decisions)
+
+    assert_equal :correct_category, decisions['ven_1'][:action]
+    assert_equal 'nightlife', decisions['ven_1'][:corrected_category]
+  end
+
   test 'raises clearly when a requested category correction has an invalid category' do
     finalizer = BlackCoffeeVenueReviewFinalizer.new(
       batch: nil,

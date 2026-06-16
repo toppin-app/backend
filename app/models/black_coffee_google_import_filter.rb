@@ -24,7 +24,7 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
   end
 
   def self.for_category(category)
-    normalized_category = category.to_s
+    normalized_category = normalize_category_key(category)
     return new(category: normalized_category) unless storage_ready?
 
     find_or_initialize_by(category: normalized_category)
@@ -64,11 +64,15 @@ class BlackCoffeeGoogleImportFilter < ApplicationRecord
     global_filter = global
 
     new(
-      category: category.to_s,
+      category: normalize_category_key(category),
       excluded_primary_types: (global_filter.excluded_primary_types_list + category_filter.excluded_primary_types_list).uniq,
       excluded_types: (global_filter.excluded_types_list + category_filter.excluded_types_list).uniq,
       excluded_keywords: (global_filter.excluded_keywords_list + category_filter.excluded_keywords_list).uniq
     )
+  end
+
+  def self.normalize_category_key(category)
+    category.to_s == GLOBAL_CATEGORY_KEY ? GLOBAL_CATEGORY_KEY : Venue.normalize_category(category)
   end
 
   def excluded_primary_types_list

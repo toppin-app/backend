@@ -10,7 +10,7 @@ class BlackCoffeeSubcategoriesController < ApplicationController
                   .group('venue_subcategories.category', 'venue_subcategories.name')
                   .count
     query = params[:q].to_s.strip.downcase
-    selected_category = params[:category].presence
+    selected_category = Venue.normalize_category(params[:category])
     selected_category = nil unless Venue::CATEGORIES.include?(selected_category)
 
     @subcategories = BlackCoffeeTaxonomy.subcategory_options(selected_category).filter_map do |entry|

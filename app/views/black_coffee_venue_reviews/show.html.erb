@@ -563,7 +563,7 @@
             <div class="row">
               <div class="col-6 col-md-6 mb-3">
                 <div class="venue-review-label">Categoria interna</div>
-                <span class="badge badge-secondary p-2"><%= venue.category %></span>
+                <span class="badge badge-secondary p-2"><%= Venue.category_label_for(venue.category) %></span>
               </div>
               <div class="col-6 col-md-6 mb-3">
                 <div class="venue-review-label">Subcategoria</div>
@@ -641,9 +641,9 @@
             <% elsif item.category_corrected? %>
               <span class="text-muted ml-2">
                 Categoria corregida:
-                <strong><%= item.category_correction_from %></strong>
+                <strong><%= Venue.category_label_for(item.category_correction_from) %></strong>
                 a
-                <strong><%= item.category_correction_to %></strong>
+                <strong><%= Venue.category_label_for(item.category_correction_to) %></strong>
               </span>
             <% end %>
           </div>

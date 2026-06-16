@@ -190,7 +190,7 @@ class BlackCoffeeVenueReclassifier
   end
 
   def normalized_category(value)
-    category = value.to_s.strip
+    category = Venue.normalize_category(value)
     Venue::CATEGORIES.include?(category) ? category : nil
   end
 

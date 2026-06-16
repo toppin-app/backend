@@ -82,7 +82,7 @@ class BlackCoffeeVenueReviewFinalizer
       end
 
       if reason == 'wrong_category' && ActiveModel::Type::Boolean.new.cast(payload_hash[:correct_category])
-        corrected_category = payload_hash[:corrected_category].to_s.strip
+        corrected_category = Venue.normalize_category(payload_hash[:corrected_category])
         unless Venue::CATEGORIES.include?(corrected_category)
           raise ArgumentError, "Categoria corregida no valida para #{venue_id}: #{corrected_category.presence || 'sin categoria'}"
         end

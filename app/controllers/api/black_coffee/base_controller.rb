@@ -62,7 +62,7 @@ module Api
       end
 
       def validated_category(value, allow_all: false)
-        normalized_value = Venue.normalize_text(value)
+        normalized_value = Venue.normalize_category(value)
         return nil if normalized_value.blank?
         return 'all' if allow_all && normalized_value == 'all'
         return normalized_value if Venue::CATEGORIES.include?(normalized_value)
