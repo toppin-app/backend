@@ -4,33 +4,7 @@ class UnifyBlackCoffeeNightlifeCategories < ActiveRecord::Migration[6.0]
   OLD_CATEGORIES = %w[pub discoteca].freeze
   NEW_CATEGORY = 'nightlife'.freeze
   MUSEUMS_CATEGORY = 'museums_galleries'.freeze
-  NIGHTLIFE_SUBCATEGORIES = %w[
-    cocteleria
-    cerveceria
-    vinoteca
-    tapas
-    rooftop
-    lounge
-    sports_bar
-    discoteca
-    club
-    electro
-  ].freeze
   MUSEUMS_SUBCATEGORIES = %w[museo galeria_arte centro_cultural].freeze
-  SUBCATEGORY_TARGETS = {
-    ['pub', 'cocteleria'] => 'cocteleria',
-    ['pub', 'cerveceria'] => 'cerveceria',
-    ['pub', 'vinoteca'] => 'vinoteca',
-    ['pub', 'tapas'] => 'tapas',
-    ['pub', 'rooftop'] => 'rooftop',
-    ['pub', 'lounge'] => 'lounge',
-    ['pub', 'sports_bar'] => 'sports_bar',
-    ['discoteca', 'discoteca'] => 'discoteca',
-    ['discoteca', 'club'] => 'club',
-    ['discoteca', 'electro'] => 'electro',
-    ['discoteca', 'lounge'] => 'lounge',
-    ['discoteca', 'rooftop'] => 'rooftop'
-  }.freeze
   CATEGORY_COLUMNS = {
     'venues' => %w[category],
     'black_coffee_import_candidates' => %w[category],
@@ -102,10 +76,7 @@ class UnifyBlackCoffeeNightlifeCategories < ActiveRecord::Migration[6.0]
     return unless data_source_exists?('venue_subcategories')
 
     now = Time.current
-    {
-      NEW_CATEGORY => NIGHTLIFE_SUBCATEGORIES,
-      MUSEUMS_CATEGORY => MUSEUMS_SUBCATEGORIES
-    }.each do |category, names|
+    { MUSEUMS_CATEGORY => MUSEUMS_SUBCATEGORIES }.each do |category, names|
       names.each do |name|
         next if VenueSubcategoryRecord.where(category: category, name: name).exists?
 
@@ -125,9 +96,7 @@ class UnifyBlackCoffeeNightlifeCategories < ActiveRecord::Migration[6.0]
     return unless data_source_exists?('venues') && column_exists?(:venues, :venue_subcategory_id)
 
     VenueSubcategoryRecord.where(category: OLD_CATEGORIES).find_each do |subcategory|
-      target_name = SUBCATEGORY_TARGETS[[subcategory.category, subcategory.name]]
-      target_id = target_name.present? ? subcategory_id_for(NEW_CATEGORY, target_name) : nil
-      VenueRecord.where(venue_subcategory_id: subcategory.id).update_all(venue_subcategory_id: target_id)
+      VenueRecord.where(venue_subcategory_id: subcategory.id).update_all(venue_subcategory_id: nil)
     end
 
     VenueSubcategoryRecord.where(category: OLD_CATEGORIES).delete_all

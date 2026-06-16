@@ -111,18 +111,7 @@ module BlackCoffeeTaxonomy
       { name: 'bed_and_breakfast', label: 'Bed and breakfast', google_types: %w[bed_and_breakfast], keywords: %w[bed breakfast bnb desayuno] },
       { name: 'motel', label: 'Motel', google_types: %w[motel], keywords: %w[motel carretera] }
     ],
-    'nightlife' => [
-      { name: 'cocteleria', label: 'Cocteleria', google_types: %w[cocktail_bar], keywords: %w[coctel cocteleria cocktail cocktails mixology speakeasy] },
-      { name: 'cerveceria', label: 'Cerveceria', google_types: %w[beer_garden brewery brewpub pub], keywords: %w[cerveceria cerveza beer craft ipa pub] },
-      { name: 'vinoteca', label: 'Vinoteca', google_types: %w[wine_bar winery], keywords: %w[vino wine vinoteca bodega vermut] },
-      { name: 'tapas', label: 'Tapas y raciones', google_types: %w[bar_and_grill gastropub], keywords: %w[tapas taberna gastrobar raciones] },
-      { name: 'rooftop', label: 'Rooftop', google_types: [], keywords: %w[rooftop terraza azotea views vistas atardecer] },
-      { name: 'lounge', label: 'Lounge', google_types: %w[lounge_bar], keywords: %w[lounge chill chillout sofa premium] },
-      { name: 'sports_bar', label: 'Sports bar', google_types: %w[sports_bar], keywords: %w[sports sport futbol partido pantalla] },
-      { name: 'discoteca', label: 'Discoteca', google_types: %w[night_club dance_hall], keywords: %w[discoteca nightclub noche dance] },
-      { name: 'club', label: 'Club', google_types: %w[night_club], keywords: %w[club dance house techno] },
-      { name: 'electro', label: 'Electronica', google_types: [], keywords: %w[electro electronica techno house edm] }
-    ],
+    'nightlife' => [],
     'cine' => [
       { name: 'cine', label: 'Cine', google_types: %w[movie_theater], keywords: %w[cine cinema movie theater peliculas] }
     ],
@@ -176,22 +165,22 @@ module BlackCoffeeTaxonomy
   LEGACY_ALIASES = {
     ['restaurante', 'restaurante'] => nil,
     ['pub', 'pub'] => nil,
-    ['bar', 'cerveceria'] => ['nightlife', 'cerveceria'],
-    ['bar', 'cocteleria'] => ['nightlife', 'cocteleria'],
-    ['bar', 'tapas'] => ['nightlife', 'tapas'],
+    ['bar', 'cerveceria'] => nil,
+    ['bar', 'cocteleria'] => nil,
+    ['bar', 'tapas'] => nil,
     ['escape_room', 'escape room'] => ['escape_room', 'escape_room'],
-    ['pub', 'cocteleria'] => ['nightlife', 'cocteleria'],
-    ['pub', 'cerveceria'] => ['nightlife', 'cerveceria'],
-    ['pub', 'vinoteca'] => ['nightlife', 'vinoteca'],
-    ['pub', 'tapas'] => ['nightlife', 'tapas'],
-    ['pub', 'rooftop'] => ['nightlife', 'rooftop'],
-    ['pub', 'lounge'] => ['nightlife', 'lounge'],
-    ['pub', 'sports_bar'] => ['nightlife', 'sports_bar'],
-    ['discoteca', 'discoteca'] => ['nightlife', 'discoteca'],
-    ['discoteca', 'club'] => ['nightlife', 'club'],
-    ['discoteca', 'electro'] => ['nightlife', 'electro'],
-    ['discoteca', 'lounge'] => ['nightlife', 'lounge'],
-    ['discoteca', 'rooftop'] => ['nightlife', 'rooftop']
+    ['pub', 'cocteleria'] => nil,
+    ['pub', 'cerveceria'] => nil,
+    ['pub', 'vinoteca'] => nil,
+    ['pub', 'tapas'] => nil,
+    ['pub', 'rooftop'] => nil,
+    ['pub', 'lounge'] => nil,
+    ['pub', 'sports_bar'] => nil,
+    ['discoteca', 'discoteca'] => nil,
+    ['discoteca', 'club'] => nil,
+    ['discoteca', 'electro'] => nil,
+    ['discoteca', 'lounge'] => nil,
+    ['discoteca', 'rooftop'] => nil
   }.freeze
 
   module_function
