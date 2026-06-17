@@ -1,0 +1,152 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <div class="text-muted font-weight-bold">Black Coffee / FanMusicFest</div>
+    <h1 class="mb-1">Importacion FanMusicFest #<%= @run.id %></h1>
+    <p class="text-muted mb-0">Historial de candidatos, descartes y locales creados.</p>
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver al importador', black_coffee_festival_imports_path, class: 'btn btn-outline-secondary mr-2' %>
+    <%= link_to 'Locales', black_coffee_venues_path(category: 'festival'), class: 'btn btn-outline-primary' %>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase font-weight-bold mb-2">Estado</p>
+        <span class="badge badge-<%= @run.status_badge_class %> p-2"><%= @run.status_label %></span>
+        <div class="small text-muted mt-2"><%= @run.mode_label %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase font-weight-bold mb-2">Candidatos</p>
+        <h2 class="mb-0"><%= @run.candidates_found_count %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase font-weight-bold mb-2">Creados</p>
+        <h2 class="mb-0 text-success"><%= @run.venues_created_count %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase font-weight-bold mb-2">Fuera ES</p>
+        <h2 class="mb-0 text-warning"><%= @run.outside_country_skipped_count %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase font-weight-bold mb-2">Duplicados</p>
+        <h2 class="mb-0"><%= @run.duplicate_skipped_count %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted text-uppercase font-weight-bold mb-2">Requests</p>
+        <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i %></h2>
+        <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · detalle <%= @run.detail_requests_count %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-1">Configuracion de esta corrida</h4>
+      <p class="text-muted mb-0">
+        Paginas: <strong><%= @run.max_pages %></strong> ·
+        Detalles: <strong><%= @run.import_details? ? "si (max #{@run.max_details})" : 'no' %></strong> ·
+        Delay: <strong><%= @run.request_delay_seconds.to_f.to_i %>s</strong> ·
+        Pais: <strong><%= @run.strict_country_code %></strong> ·
+        Autopublicar: <strong><%= @run.auto_publish? ? 'si' : 'no' %></strong>
+      </p>
+      <% if @run.error_message.present? %>
+        <div class="alert alert-danger mt-3 mb-0"><%= @run.error_message %></div>
+      <% end %>
+    </div>
+    <% unless @run.finished? %>
+      <%= button_to 'Cancelar importacion',
+                    cancel_black_coffee_festival_import_path(@run),
+                    method: :post,
+                    class: 'btn btn-outline-danger mt-3 mt-md-0',
+                    data: { confirm: 'Cancelar esta importacion? No se borraran los locales ya creados.' } %>
+    <% end %>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white">
+    <h4 class="mb-0">Items de la importacion</h4>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Festival</th>
+          <th>Ubicacion</th>
+          <th>Fechas</th>
+          <th>Imagen</th>
+          <th>Venue</th>
+          <th>Mensaje</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @items.any? %>
+          <% @items.each do |item| %>
+            <tr>
+              <td><span class="badge badge-<%= item.status_badge_class %>"><%= item.status_label %></span></td>
+              <td>
+                <strong><%= item.name.presence || 'Sin nombre' %></strong>
+                <% if item.source_url.present? %>
+                  <div class="small"><%= link_to 'Fuente', item.source_url, target: '_blank', rel: 'noopener' %></div>
+                <% end %>
+              </td>
+              <td>
+                <%= [item.city, item.state, item.country].compact.reject(&:blank?).join(' · ') %>
+                <div class="small text-muted"><%= item.country_code %></div>
+              </td>
+              <td><%= [item.start_date, item.end_date].compact.map { |date| l(date, format: :short) }.join(' - ') %></td>
+              <td>
+                <% if item.image_url.present? %>
+                  <%= link_to 'URL imagen', item.image_url, target: '_blank', rel: 'noopener' %>
+                <% else %>
+                  <span class="text-muted">Sin imagen</span>
+                <% end %>
+              </td>
+              <td>
+                <% if item.venue.present? %>
+                  <%= link_to item.venue_id, black_coffee_venue_path(item.venue), class: 'btn btn-sm btn-outline-primary' %>
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+              <td class="small text-muted"><%= item.error_message %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Aun no hay items. Si esta procesando, recarga en unos segundos.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer bg-white">
+    <%= will_paginate @items if @items.respond_to?(:total_pages) %>
+  </div>
+</div>

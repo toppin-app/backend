@@ -8,7 +8,7 @@ Bundler.require(*Rails.groups)
 
 module RailsToppin
   class Application < Rails::Application
-    config.web_console.permissions = '0.0.0.0/0'
+    config.web_console.permissions = '0.0.0.0/0' if config.respond_to?(:web_console)
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 6.0
     config.time_zone = "Europe/Madrid"

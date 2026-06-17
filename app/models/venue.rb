@@ -84,6 +84,10 @@ class Venue < ApplicationRecord
            class_name: 'BlackCoffeeReviewBatchItem',
            dependent: :destroy,
            inverse_of: :venue
+  has_many :festival_import_items,
+           class_name: 'BlackCoffeeFestivalImportItem',
+           dependent: :nullify,
+           inverse_of: :venue
 
   validates :name, :category, :address, :city, presence: true
   validates :category, inclusion: { in: CATEGORIES }
