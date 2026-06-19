@@ -9,12 +9,12 @@ module FanMusicFest
     PORTUGAL_COUNTRY_NAMES = %w[PT Portugal].freeze
 
     def normalize(raw_payload)
-      raw = stringify_hash(raw_payload)
-      location = stringify_hash(raw['location'])
-      address = stringify_hash(location['address'])
-      geo = stringify_hash(location['geo'])
-      detail = stringify_hash(raw['_fanmusicfest_detail'])
-      detail_coordinates = stringify_hash(detail['coordinates'])
+      raw = stringify_hash_or_empty(raw_payload)
+      location = stringify_hash_or_empty(raw['location'])
+      address = stringify_hash_or_empty(location['address'])
+      geo = stringify_hash_or_empty(location['geo'])
+      detail = stringify_hash_or_empty(raw['_fanmusicfest_detail'])
+      detail_coordinates = stringify_hash_or_empty(detail['coordinates'])
 
       source_url = source_url_for(raw)
       organizer_name = clean_text(dig_hash(raw, 'organizer', 'name'))
@@ -93,6 +93,11 @@ module FanMusicFest
       else
         value
       end
+    end
+
+    def stringify_hash_or_empty(value)
+      normalized = stringify_hash(value)
+      normalized.is_a?(Hash) ? normalized : {}
     end
 
     def dig_hash(hash, *keys)

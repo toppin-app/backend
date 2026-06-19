@@ -150,7 +150,12 @@ module FanMusicFest
         create_venue_item!(raw_event, normalized)
       end
     rescue StandardError => e
-      create_item!(raw_event, normalized || {}, status: 'failed', error_message: "#{e.class} - #{e.message}")
+      create_item!(
+        raw_event,
+        failure_context_for(raw_event, normalized),
+        status: 'failed',
+        error_message: "#{e.class} - #{e.message}"
+      )
     end
 
     def enrich_with_detail_if_needed(raw_event, normalized)
@@ -195,6 +200,26 @@ module FanMusicFest
 
     def create_skipped_item!(raw_event, normalized, status, message)
       create_item!(raw_event, normalized, status: status, error_message: message)
+    end
+
+    def failure_context_for(raw_event, normalized)
+      return normalized if normalized.present?
+      return {} unless raw_event.is_a?(Hash)
+
+      raw = raw_event.deep_stringify_keys
+      location = raw['location'].is_a?(Hash) ? raw['location'] : {}
+      address = location['address'].is_a?(Hash) ? location['address'] : {}
+
+      {
+        source_url: raw['url'].presence || raw['@id'].to_s.sub(/#event\z/, '').presence,
+        source_event_id: raw['@id'],
+        name: raw['name'],
+        city: address['addressLocality'],
+        state: address['addressRegion'],
+        country: address['addressCountry'],
+        start_date: raw['startDate'],
+        end_date: raw['endDate']
+      }
     end
 
     def create_venue_item!(raw_event, normalized)

@@ -61,4 +61,26 @@ class FanMusicFestNormalizerTest < ActiveSupport::TestCase
     assert_nil normalized[:latitude]
     assert_nil normalized[:longitude]
   end
+
+  test 'marks incomplete festivals invalid instead of raising when location is missing' do
+    normalized = FanMusicFest::Normalizer.new.normalize(
+      '@id' => 'https://fanmusicfest.com/content/incomplete-fest-2026#event',
+      'name' => 'Incomplete Fest 2026',
+      'url' => 'https://fanmusicfest.com/content/incomplete-fest-2026'
+    )
+
+    assert_equal 'Incomplete Fest', normalized[:name]
+    assert_equal 'https://fanmusicfest.com/content/incomplete-fest-2026', normalized[:source_url]
+    assert_equal 'Direccion pendiente de revisar', normalized[:address]
+    refute normalized[:valid]
+    refute normalized[:outside_country]
+  end
+
+  test 'handles an empty payload without raising' do
+    normalized = FanMusicFest::Normalizer.new.normalize(nil)
+
+    assert_nil normalized[:name]
+    assert_nil normalized[:source_url]
+    refute normalized[:valid]
+  end
 end
