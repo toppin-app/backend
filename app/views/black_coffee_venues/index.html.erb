@@ -557,6 +557,18 @@
                       <span class="black-coffee-action-label">Google</span>
                     <% end %>
                   <% end %>
+                  <% if venue.safe_fan_music_fest_source_url.present? %>
+                    <%= link_to venue.safe_fan_music_fest_source_url,
+                                class: 'btn btn-sm btn-outline-primary',
+                                target: '_blank',
+                                rel: 'noopener noreferrer',
+                                title: 'Ver en FanMusicFest' do %>
+                      <i class="fas fa-external-link-alt"></i>
+                      <span class="black-coffee-action-label">FanMusicFest</span>
+                    <% end %>
+                  <% elsif venue.fan_music_fest_source? %>
+                    <span class="small text-muted black-coffee-action-label">Sin URL de origen</span>
+                  <% end %>
                   <%= link_to edit_black_coffee_venue_path(venue), class: 'btn btn-sm btn-primary text-white' do %>
                     <i class="fas fa-edit"></i>
                   <% end %>

@@ -550,6 +550,17 @@
                 <span>Ver en Google</span>
               <% end %>
             <% end %>
+            <% if venue.safe_fan_music_fest_source_url.present? %>
+              <%= link_to venue.safe_fan_music_fest_source_url,
+                          class: 'btn btn-sm btn-outline-primary review-google-link mt-2',
+                          target: '_blank',
+                          rel: 'noopener noreferrer' do %>
+                <i class="fas fa-external-link-alt"></i>
+                <span>Ver en FanMusicFest</span>
+              <% end %>
+            <% elsif venue.fan_music_fest_source? %>
+              <div class="small text-muted mt-2">Sin URL de origen</div>
+            <% end %>
           </div>
         </div>
 

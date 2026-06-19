@@ -25,39 +25,53 @@
         <%= form_with url: black_coffee_festival_imports_path, method: :post, local: true do %>
           <div class="form-row">
             <div class="form-group col-md-6">
+              <%= label_tag :operation, 'Operacion' %>
+              <%= select_tag :operation,
+                             options_for_select([
+                               ['Descubrir festivales nuevos', 'import'],
+                               ['Reprocesar detalles de festivales existentes', 'refresh_details']
+                             ], 'import'),
+                             class: 'form-control' %>
+              <small class="text-muted">El reprocesado completa fuente, coordenadas, entradas y descripcion sin duplicar venues.</small>
+            </div>
+            <div class="form-group col-md-6">
               <%= label_tag :mode, 'Modo' %>
               <%= select_tag :mode,
                              options_for_select([
                                ['Dry run: solo simular y registrar candidatos', 'dry_run'],
-                               ['Importar: crear locales pendientes/no visibles', 'import']
+                               ['Aplicar cambios: crear o actualizar festivales', 'import']
                              ], 'dry_run'),
                              class: 'form-control' %>
               <small class="text-muted">Usa dry-run para medir antes de crear venues.</small>
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group col-md-3">
               <%= label_tag :max_pages, 'Paginas' %>
               <%= number_field_tag :max_pages, 1, min: 1, max: BlackCoffeeFestivalImportsController::MAX_PAGES, class: 'form-control' %>
-              <small class="text-muted">Maximo 13.</small>
+              <small class="text-muted">Solo para descubrir. Maximo 13.</small>
             </div>
             <div class="form-group col-md-3">
               <%= label_tag :request_delay_seconds, 'Delay seg.' %>
               <%= number_field_tag :request_delay_seconds, 10, min: 10, max: 120, step: 1, class: 'form-control' %>
               <small class="text-muted">robots.txt pide 10.</small>
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-3">
+              <%= label_tag :max_details, 'Max. detalles' %>
+              <%= number_field_tag :max_details, 100, min: 0, max: BlackCoffeeFestivalImportsController::MAX_DETAILS, class: 'form-control' %>
+              <small class="text-muted">Limite de fichas y peticiones de detalle.</small>
+            </div>
+            <div class="form-group col-md-3">
               <div class="custom-control custom-switch mt-4">
                 <%= check_box_tag :import_details, '1', false, class: 'custom-control-input', id: 'fanmusicfest_import_details' %>
                 <%= label_tag :fanmusicfest_import_details, 'Consultar fichas de detalle', class: 'custom-control-label' %>
               </div>
-              <small class="text-muted">Cada ficha suma una peticion y respeta el delay.</small>
+              <small class="text-muted">En reprocesado siempre se consulta la ficha.</small>
             </div>
-            <div class="form-group col-md-3">
-              <%= label_tag :max_details, 'Max. detalles' %>
-              <%= number_field_tag :max_details, 0, min: 0, max: BlackCoffeeFestivalImportsController::MAX_DETAILS, class: 'form-control' %>
-            </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group col-md-3">
               <div class="custom-control custom-switch mt-4">
                 <%= check_box_tag :auto_publish, '1', false, class: 'custom-control-input', id: 'fanmusicfest_auto_publish' %>
@@ -85,6 +99,7 @@
           <li>Los locales importados quedan con categoria festival.</li>
           <li>Sin autopublicar: review pendiente y visible=false.</li>
           <li>Se salta cualquier duplicado por fuente/fingerprint antes de crear venue.</li>
+          <li>El reprocesado conserva datos manuales y nunca publica la descripcion externa sin aprobarla.</li>
         </ul>
       </div>
     </div>
@@ -102,9 +117,11 @@
           <th>#</th>
           <th>Estado</th>
           <th>Modo</th>
+          <th>Operacion</th>
           <th>Paginas</th>
           <th>Candidatos</th>
           <th>Creados</th>
+          <th>Actualizados</th>
           <th>Saltados</th>
           <th>Requests</th>
           <th>Fecha</th>
@@ -118,9 +135,11 @@
               <td><strong>#<%= run.id %></strong></td>
               <td><span class="badge badge-<%= run.status_badge_class %>"><%= run.status_label %></span></td>
               <td><%= run.mode_label %></td>
+              <td><%= run.operation_label %></td>
               <td><%= run.max_pages %></td>
               <td><%= run.candidates_found_count %></td>
               <td class="text-success"><%= run.venues_created_count %></td>
+              <td class="text-info"><%= run.venues_updated_count %></td>
               <td><%= run.outside_country_skipped_count.to_i + run.duplicate_skipped_count.to_i + run.invalid_skipped_count.to_i %></td>
               <td><%= run.robots_requests_count.to_i + run.listing_requests_count.to_i + run.detail_requests_count.to_i %></td>
               <td><%= l(run.created_at, format: :short) %></td>
@@ -129,7 +148,7 @@
           <% end %>
         <% else %>
           <tr>
-            <td colspan="10" class="text-center text-muted py-4">Todavia no hay importaciones FanMusicFest.</td>
+            <td colspan="12" class="text-center text-muted py-4">Todavia no hay importaciones FanMusicFest.</td>
           </tr>
         <% end %>
       </tbody>

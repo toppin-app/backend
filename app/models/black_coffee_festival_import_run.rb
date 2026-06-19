@@ -1,6 +1,7 @@
 class BlackCoffeeFestivalImportRun < ApplicationRecord
   STATUSES = %w[pending running completed failed cancelled].freeze
   MODES = %w[dry_run import].freeze
+  OPERATIONS = %w[import refresh_details].freeze
   SOURCE_FAN_MUSIC_FEST = 'fanmusicfest'.freeze
 
   belongs_to :created_by, class_name: 'User', optional: true
@@ -10,10 +11,11 @@ class BlackCoffeeFestivalImportRun < ApplicationRecord
            dependent: :destroy,
            inverse_of: :run
 
-  validates :source, :status, :mode, :strict_country_code, presence: true
+  validates :source, :status, :mode, :operation, :strict_country_code, presence: true
   validates :source, inclusion: { in: [SOURCE_FAN_MUSIC_FEST] }
   validates :status, inclusion: { in: STATUSES }
   validates :mode, inclusion: { in: MODES }
+  validates :operation, inclusion: { in: OPERATIONS }
   validates :max_pages, numericality: { greater_than: 0, less_than_or_equal_to: 13, only_integer: true }
   validates :max_details, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 500, only_integer: true }
   validates :request_delay_seconds, numericality: { greater_than_or_equal_to: 10, less_than_or_equal_to: 120 }
@@ -26,6 +28,10 @@ class BlackCoffeeFestivalImportRun < ApplicationRecord
 
   def import?
     mode == 'import'
+  end
+
+  def refresh_details?
+    operation == 'refresh_details'
   end
 
   def running?
@@ -84,6 +90,10 @@ class BlackCoffeeFestivalImportRun < ApplicationRecord
 
   def mode_label
     dry_run? ? 'Dry run' : 'Importacion'
+  end
+
+  def operation_label
+    refresh_details? ? 'Reprocesar detalles' : 'Descubrir festivales'
   end
 
   def progress_label

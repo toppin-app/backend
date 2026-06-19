@@ -69,7 +69,8 @@
       <h4 class="mb-1">Configuracion de esta corrida</h4>
       <p class="text-muted mb-0">
         Paginas: <strong><%= @run.max_pages %></strong> ·
-        Detalles: <strong><%= @run.import_details? ? "si (max #{@run.max_details})" : 'no' %></strong> ·
+        Operacion: <strong><%= @run.operation_label %></strong> ·
+        Detalles: <strong><%= @run.refresh_details? || @run.import_details? ? "si (max #{@run.max_details})" : 'no' %></strong> ·
         Delay: <strong><%= @run.request_delay_seconds.to_f.to_i %>s</strong> ·
         Pais: <strong><%= @run.strict_country_code %></strong> ·
         Autopublicar: <strong><%= @run.auto_publish? ? 'si' : 'no' %></strong>
@@ -100,7 +101,8 @@
           <th>Festival</th>
           <th>Ubicacion</th>
           <th>Fechas</th>
-          <th>Imagen</th>
+          <th>Coordenadas</th>
+          <th>Descripcion fuente</th>
           <th>Venue</th>
           <th>Mensaje</th>
         </tr>
@@ -112,8 +114,16 @@
               <td><span class="badge badge-<%= item.status_badge_class %>"><%= item.status_label %></span></td>
               <td>
                 <strong><%= item.name.presence || 'Sin nombre' %></strong>
-                <% if item.source_url.present? %>
-                  <div class="small"><%= link_to 'Fuente', item.source_url, target: '_blank', rel: 'noopener' %></div>
+                <% if item.safe_source_url.present? %>
+                  <div class="mt-2">
+                    <%= link_to 'Ver en FanMusicFest',
+                                item.safe_source_url,
+                                target: '_blank',
+                                rel: 'noopener noreferrer',
+                                class: 'btn btn-sm btn-outline-primary' %>
+                  </div>
+                <% else %>
+                  <div class="small text-muted mt-1">Sin URL de origen</div>
                 <% end %>
               </td>
               <td>
@@ -122,10 +132,23 @@
               </td>
               <td><%= [item.start_date, item.end_date].compact.map { |date| l(date, format: :short) }.join(' - ') %></td>
               <td>
-                <% if item.image_url.present? %>
-                  <%= link_to 'URL imagen', item.image_url, target: '_blank', rel: 'noopener' %>
+                <% if item.coordinates_present? %>
+                  <strong><%= number_with_precision(item.latitude, precision: 6) %>, <%= number_with_precision(item.longitude, precision: 6) %></strong>
+                  <div class="small text-muted"><%= item.coordinates_source.presence || 'Fuente sin registrar' %> · <%= item.coordinates_confidence.presence || 'sin confianza' %></div>
+                  <%= link_to 'Abrir mapa', item.map_url, target: '_blank', rel: 'noopener noreferrer', class: 'small' %>
                 <% else %>
-                  <span class="text-muted">Sin imagen</span>
+                  <span class="badge badge-warning">Sin coordenadas</span>
+                <% end %>
+              </td>
+              <td class="small" style="min-width: 240px;">
+                <% if item.source_description.present? %>
+                  <div class="mb-1">
+                    <span class="badge badge-warning"><%= item.source_description_status.presence || 'needs_review' %></span>
+                    <span class="text-muted"><%= item.source_description_language.presence || 'idioma sin registrar' %></span>
+                  </div>
+                  <%= truncate(item.source_description, length: 220) %>
+                <% else %>
+                  <span class="text-muted">No encontrada</span>
                 <% end %>
               </td>
               <td>
@@ -135,12 +158,19 @@
                   <span class="text-muted">-</span>
                 <% end %>
               </td>
-              <td class="small text-muted"><%= item.error_message %></td>
+              <td class="small">
+                <% if item.error_message.present? %>
+                  <div class="text-danger"><%= item.error_message %></div>
+                <% end %>
+                <% if item.warning_message.present? %>
+                  <div class="text-warning"><%= item.warning_message %></div>
+                <% end %>
+              </td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">Aun no hay items. Si esta procesando, recarga en unos segundos.</td>
+            <td colspan="8" class="text-center text-muted py-4">Aun no hay items. Si esta procesando, recarga en unos segundos.</td>
           </tr>
         <% end %>
       </tbody>

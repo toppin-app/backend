@@ -4,7 +4,7 @@ class BlackCoffeeVenuesController < ApplicationController
 
   before_action :check_admin
   before_action :hide_content_header, only: [:show, :new, :edit, :create, :update]
-  before_action :set_venue, only: [:show, :edit, :update, :destroy, :review, :convert_linked_images]
+  before_action :set_venue, only: [:show, :edit, :update, :destroy, :review, :review_festival_description, :convert_linked_images, :refresh_festival_details]
 
   def index
     @title = 'Black Coffee'
@@ -122,6 +122,34 @@ class BlackCoffeeVenuesController < ApplicationController
     redirect_to black_coffee_venue_path(@venue)
   rescue StandardError => e
     redirect_to black_coffee_venue_path(@venue), alert: "No se pudieron transformar las imagenes enlazadas: #{e.message}"
+  end
+
+  def refresh_festival_details
+    result = FanMusicFest::DetailRefresher.new.call(
+      venue: @venue,
+      dry_run: false,
+      preserve_manual_edits: true
+    )
+    changed_labels = result.changes.keys.map { |key| key.to_s.humanize.downcase }
+    message = changed_labels.any? ? "Datos actualizados: #{changed_labels.to_sentence}." : 'La ficha ya estaba actualizada.'
+    message += " Avisos: #{result.warnings.to_sentence}" if result.warnings.any?
+
+    redirect_to black_coffee_venue_path(@venue), notice: message
+  rescue StandardError => e
+    redirect_to black_coffee_venue_path(@venue), alert: "No se pudo actualizar desde FanMusicFest: #{e.message}"
+  end
+
+  def review_festival_description
+    status = params[:source_description_status].to_s
+    unless %w[needs_review approved rejected].include?(status)
+      redirect_to black_coffee_venue_path(@venue), alert: 'Estado de descripcion no valido.'
+      return
+    end
+
+    @venue.update!(source_description_status: status)
+    redirect_to black_coffee_venue_path(@venue), notice: 'Estado de la descripcion externa actualizado.'
+  rescue ActiveRecord::ActiveRecordError => e
+    redirect_to black_coffee_venue_path(@venue), alert: "No se pudo revisar la descripcion: #{e.message}"
   end
 
   private

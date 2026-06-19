@@ -537,6 +537,109 @@
       </div>
     </div>
 
+    <% if @venue.category == 'festival' && @venue.fan_music_fest_source? %>
+      <div class="card mt-4 border-primary">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+          <div>
+            <p class="black-coffee-detail-section-label mb-1">Fuente externa</p>
+            <h4 class="mb-0">Datos de FanMusicFest</h4>
+          </div>
+          <%= button_to 'Actualizar desde FanMusicFest',
+                        refresh_festival_details_black_coffee_venue_path(@venue),
+                        method: :post,
+                        class: 'btn btn-sm btn-outline-info mt-2 mt-md-0',
+                        data: {
+                          confirm: 'Se volvera a consultar la ficha original. Se conservaran los datos editados manualmente. Continuar?'
+                        } %>
+        </div>
+        <div class="card-body">
+          <% if @venue.safe_fan_music_fest_source_url.present? %>
+            <%= link_to 'Ver en FanMusicFest',
+                        @venue.safe_fan_music_fest_source_url,
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                        class: 'btn btn-primary text-white mb-3' %>
+          <% else %>
+            <div class="alert alert-warning">Sin URL de origen valida.</div>
+          <% end %>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <p class="black-coffee-detail-section-label mb-1">Fechas</p>
+              <strong>
+                <%= @venue.festival_start_date&.strftime('%d/%m/%Y') || 'Sin fecha' %>
+                <% if @venue.festival_end_date.present? && @venue.festival_end_date != @venue.festival_start_date %>
+                  - <%= @venue.festival_end_date.strftime('%d/%m/%Y') %>
+                <% end %>
+              </strong>
+            </div>
+            <div class="col-md-6 mb-3">
+              <p class="black-coffee-detail-section-label mb-1">Recinto</p>
+              <strong><%= @venue.festival_venue_name.presence || 'Sin recinto' %></strong>
+            </div>
+            <div class="col-md-6 mb-3">
+              <p class="black-coffee-detail-section-label mb-1">Coordenadas</p>
+              <% if @venue.latitude.present? && @venue.longitude.present? %>
+                <strong><%= number_with_precision(@venue.latitude, precision: 6) %>, <%= number_with_precision(@venue.longitude, precision: 6) %></strong>
+                <div class="small text-muted">
+                  <%= @venue.coordinates_source.presence || 'Fuente no registrada' %> ·
+                  confianza <%= @venue.coordinates_confidence.presence || 'sin registrar' %>
+                </div>
+                <%= link_to 'Abrir mapa',
+                            "https://www.google.com/maps/search/?api=1&query=#{@venue.latitude},#{@venue.longitude}",
+                            target: '_blank',
+                            rel: 'noopener noreferrer',
+                            class: 'btn btn-sm btn-outline-secondary mt-2' %>
+              <% else %>
+                <span class="badge badge-warning p-2">Sin coordenadas</span>
+              <% end %>
+            </div>
+            <div class="col-md-6 mb-3">
+              <p class="black-coffee-detail-section-label mb-1">Enlaces externos</p>
+              <% if @venue.safe_ticket_url.present? %>
+                <%= link_to 'Entradas', @venue.safe_ticket_url, target: '_blank', rel: 'noopener noreferrer', class: 'btn btn-sm btn-outline-success mr-2 mb-2' %>
+              <% end %>
+              <% if @venue.safe_official_url.present? %>
+                <%= link_to 'Web oficial', @venue.safe_official_url, target: '_blank', rel: 'noopener noreferrer', class: 'btn btn-sm btn-outline-dark mb-2' %>
+              <% end %>
+              <% if @venue.safe_ticket_url.blank? && @venue.safe_official_url.blank? %>
+                <span class="text-muted">Sin enlaces adicionales.</span>
+              <% end %>
+            </div>
+          </div>
+
+          <hr>
+          <div class="d-flex flex-wrap justify-content-between align-items-start mb-2">
+            <div>
+              <p class="black-coffee-detail-section-label mb-1">Descripcion extraida</p>
+              <% description_badge = @venue.source_description_status == 'approved' ? 'success' : (@venue.source_description_status == 'rejected' ? 'danger' : 'warning') %>
+              <span class="badge badge-<%= description_badge %>"><%= @venue.source_description_status.presence || 'not_found' %></span>
+            </div>
+            <% if @venue.source_description.present? %>
+              <div class="d-flex flex-wrap mt-2 mt-md-0">
+                <%= button_to 'Aprobar descripcion',
+                              review_festival_description_black_coffee_venue_path(@venue),
+                              method: :patch,
+                              params: { source_description_status: 'approved' },
+                              class: 'btn btn-sm btn-success text-white mr-2 mb-2' %>
+                <%= button_to 'No publicar',
+                              review_festival_description_black_coffee_venue_path(@venue),
+                              method: :patch,
+                              params: { source_description_status: 'rejected' },
+                              class: 'btn btn-sm btn-outline-danger mb-2' %>
+              </div>
+            <% end %>
+          </div>
+          <% if @venue.source_description.present? %>
+            <p class="mb-1"><%= @venue.source_description %></p>
+            <p class="small text-muted mb-0">Idioma de origen: <%= @venue.source_description_language.presence || 'sin registrar' %>. Solo llega a la app cuando esta aprobada.</p>
+          <% else %>
+            <p class="text-muted mb-0">FanMusicFest no proporciono una descripcion util.</p>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
     <% review_source = black_coffee_review_source_for(@venue) %>
     <div class="black-coffee-review-panel black-coffee-review-sidebar mt-4">
       <div class="black-coffee-review-panel-header">

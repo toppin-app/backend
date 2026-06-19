@@ -51,15 +51,19 @@ class BlackCoffeeFestivalImportsController < ApplicationController
 
   def run_attributes
     mode = params[:mode].to_s == 'import' ? 'import' : 'dry_run'
+    operation = params[:operation].to_s == 'refresh_details' ? 'refresh_details' : 'import'
+    max_details_default = operation == 'refresh_details' ? 100 : 0
     {
       mode: mode,
+      operation: operation,
       status: 'pending',
       max_pages: clamped_integer(params[:max_pages], default: 1, min: 1, max: MAX_PAGES),
-      max_details: clamped_integer(params[:max_details], default: 0, min: 0, max: MAX_DETAILS),
+      max_details: clamped_integer(params[:max_details], default: max_details_default, min: 0, max: MAX_DETAILS),
       request_delay_seconds: clamped_decimal(params[:request_delay_seconds], default: MIN_REQUEST_DELAY_SECONDS, min: MIN_REQUEST_DELAY_SECONDS, max: MAX_REQUEST_DELAY_SECONDS),
       strict_country_code: 'ES',
       import_details: ActiveModel::Type::Boolean.new.cast(params[:import_details]),
-      auto_publish: mode == 'import' && ActiveModel::Type::Boolean.new.cast(params[:auto_publish])
+      auto_publish: operation == 'import' && mode == 'import' && ActiveModel::Type::Boolean.new.cast(params[:auto_publish]),
+      preserve_manual_edits: true
     }
   end
 

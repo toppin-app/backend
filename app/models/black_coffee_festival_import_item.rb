@@ -1,8 +1,11 @@
+require 'uri'
+
 class BlackCoffeeFestivalImportItem < ApplicationRecord
   STATUSES = %w[
     pending
     dry_run
     created
+    updated
     duplicate
     skipped_outside_country
     skipped_duplicate
@@ -22,12 +25,34 @@ class BlackCoffeeFestivalImportItem < ApplicationRecord
   scope :recent_first, -> { order(id: :desc) }
   scope :ordered, -> { order(:id) }
 
+  def safe_source_url
+    uri = URI.parse(source_url.to_s)
+    host = uri.host.to_s.downcase
+    return nil unless uri.scheme == 'https' && %w[fanmusicfest.com www.fanmusicfest.com].include?(host)
+
+    uri.to_s
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  def coordinates_present?
+    latitude.present? && longitude.present?
+  end
+
+  def map_url
+    return nil unless coordinates_present?
+
+    "https://www.google.com/maps/search/?api=1&query=#{latitude},#{longitude}"
+  end
+
   def status_label
     case status
     when 'dry_run'
       'Simulado'
     when 'created'
       'Creado'
+    when 'updated'
+      'Actualizado'
     when 'duplicate', 'skipped_duplicate'
       'Duplicado'
     when 'skipped_outside_country'
@@ -45,7 +70,7 @@ class BlackCoffeeFestivalImportItem < ApplicationRecord
 
   def status_badge_class
     case status
-    when 'created'
+    when 'created', 'updated'
       'success'
     when 'dry_run'
       'info'

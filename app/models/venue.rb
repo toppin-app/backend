@@ -1,4 +1,5 @@
 require 'cgi'
+require 'uri'
 
 class Venue < ApplicationRecord
   CATEGORY_NIGHTLIFE = 'nightlife'.freeze
@@ -32,6 +33,8 @@ class Venue < ApplicationRecord
   REVIEW_STATUS_PENDING = 'pending'.freeze
   REVIEW_STATUS_APPROVED = 'approved'.freeze
   REVIEW_STATUS_REJECTED = 'rejected'.freeze
+  SOURCE_DESCRIPTION_STATUSES = %w[not_found extracted needs_review approved rejected].freeze
+  COORDINATES_CONFIDENCES = %w[high medium low none].freeze
   REVIEW_STATUS_LABELS = {
     REVIEW_STATUS_PENDING => 'Pendiente',
     REVIEW_STATUS_APPROVED => 'Aprobado',
@@ -94,7 +97,9 @@ class Venue < ApplicationRecord
   validates :review_status, inclusion: { in: REVIEW_STATUSES }, if: -> { has_attribute?(:review_status) }
   validates :review_rejection_reason, inclusion: { in: REJECTION_REASON_CODES }, allow_blank: true, if: -> { has_attribute?(:review_rejection_reason) }
   validates :google_place_id, uniqueness: true, allow_blank: true, if: -> { has_attribute?(:google_place_id) }
-  validates :latitude, :longitude, numericality: true
+  validates :latitude, :longitude, numericality: true, allow_nil: true
+  validates :source_description_status, inclusion: { in: SOURCE_DESCRIPTION_STATUSES }, allow_blank: true, if: -> { has_attribute?(:source_description_status) }
+  validates :coordinates_confidence, inclusion: { in: COORDINATES_CONFIDENCES }, allow_blank: true, if: -> { has_attribute?(:coordinates_confidence) }
 
   scope :google_connected, lambda {
     if column_names.include?('google_place_id')
@@ -277,6 +282,35 @@ class Venue < ApplicationRecord
     "https://www.google.com/maps/search/?api=1&query=#{encoded_query}&query_place_id=#{encoded_place_id}"
   end
 
+  def fan_music_fest_source?
+    has_attribute?(:external_source) && external_source == FanMusicFest::Normalizer::SOURCE
+  end
+
+  def safe_fan_music_fest_source_url
+    return nil unless fan_music_fest_source?
+
+    safe_external_http_url(external_source_url, allowed_hosts: %w[fanmusicfest.com www.fanmusicfest.com])
+  end
+
+  def safe_official_url
+    safe_external_http_url(has_attribute?(:official_url) ? official_url : nil)
+  end
+
+  def safe_ticket_url
+    safe_external_http_url(has_attribute?(:ticket_url) ? ticket_url : nil)
+  end
+
+  def festival_public_description
+    return description.presence unless category == 'festival' && fan_music_fest_source?
+    return nil unless has_attribute?(:source_description_status) && source_description_status == 'approved'
+
+    source_description.presence || description.presence
+  end
+
+  def festival_metadata_hash
+    has_attribute?(:festival_metadata) && festival_metadata.is_a?(Hash) ? festival_metadata : {}
+  end
+
   def description_present?
     description.to_s.strip.present?
   end
@@ -361,13 +395,13 @@ class Venue < ApplicationRecord
   end
 
   def as_black_coffee_json(favorite_venue_ids: [], favorite_counts_by_venue_id: nil, base_url: nil)
-    {
+    payload = {
       id: id,
       name: name,
       images: image_urls(base_url: base_url),
       category: category,
       subcategory: subcategory_name,
-      description: description.presence,
+      description: category == 'festival' ? festival_public_description : description.presence,
       location: {
         address: address,
         city: city,
@@ -387,12 +421,49 @@ class Venue < ApplicationRecord
       visible: visible_to_app?,
       googlePlaceId: google_connected? ? google_place_id : nil
     }
+    payload[:festivalDetails] = festival_details_json if category == 'festival'
+    payload
+  end
+
+  def festival_details_json
+    metadata = festival_metadata_hash
+    {
+      startDate: has_attribute?(:festival_start_date) ? festival_start_date&.iso8601 : nil,
+      endDate: has_attribute?(:festival_end_date) ? festival_end_date&.iso8601 : nil,
+      venueName: has_attribute?(:festival_venue_name) ? festival_venue_name.presence : nil,
+      province: has_attribute?(:state) ? state.presence : nil,
+      coordinatesSource: has_attribute?(:coordinates_source) ? coordinates_source.presence : nil,
+      coordinatesConfidence: has_attribute?(:coordinates_confidence) ? coordinates_confidence.presence : nil,
+      officialUrl: safe_official_url,
+      ticketUrl: safe_ticket_url,
+      ticketPriceText: (metadata['ticket_price_text'] || metadata[:ticket_price_text]).presence,
+      lineup: Array(metadata['performers'] || metadata[:performers]).map(&:to_s).reject(&:blank?).uniq,
+      genres: festival_genres,
+      eventStatus: (metadata['event_status'] || metadata[:event_status]).presence,
+      isFree: metadata.key?('free') ? metadata['free'] : metadata[:free],
+      sourceDescriptionStatus: has_attribute?(:source_description_status) ? source_description_status.presence : nil
+    }
   end
 
   def favorite_count_from(favorite_counts_by_venue_id)
     return favorites_count if favorite_counts_by_venue_id.nil?
 
     favorite_counts_by_venue_id[id].to_i
+  end
+
+  def safe_external_http_url(value, allowed_hosts: nil)
+    uri = URI.parse(value.to_s)
+    return nil unless %w[http https].include?(uri.scheme) && uri.host.present?
+    return nil if allowed_hosts && !allowed_hosts.include?(uri.host.downcase)
+
+    uri.to_s
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  def festival_genres
+    generic_tags = %w[festival music_festival fanmusicfest establishment point_of_interest]
+    Array(tags).map(&:to_s).map(&:strip).reject(&:blank?).uniq - generic_tags
   end
 
   def sync_images!(entries:, uploaded_files_by_key: {})

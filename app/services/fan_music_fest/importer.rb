@@ -32,11 +32,7 @@ module FanMusicFest
         error_message: nil
       )
 
-      each_listing_page do |page_index|
-        break if cancelled?
-
-        process_listing_page(page_index)
-      end
+      run.refresh_details? ? process_existing_festivals : process_calendar
 
       finish_run!
     rescue StandardError => e
@@ -51,6 +47,66 @@ module FanMusicFest
     end
 
     private
+
+    def process_calendar
+      each_listing_page do |page_index|
+        break if cancelled?
+
+        process_listing_page(page_index)
+      end
+    end
+
+    def process_existing_festivals
+      refresh_scope.limit(run.max_details.to_i).find_each do |venue|
+        break if cancelled?
+
+        refresh_existing_venue(venue)
+        refresh_counts!
+      end
+    end
+
+    def refresh_scope
+      Venue.where(
+        category: 'festival',
+        external_source: FanMusicFest::Normalizer::SOURCE
+      ).where.not(external_source_url: [nil, '']).order(:id)
+    end
+
+    def refresh_existing_venue(venue)
+      result = DetailRefresher.new(
+        client: client,
+        parser: parser,
+        normalizer: normalizer
+      ).call(
+        venue: venue,
+        dry_run: run.dry_run?,
+        preserve_manual_edits: run.preserve_manual_edits?
+      )
+
+      normalized = result.normalized.merge(refresh_changes: result.changes)
+      create_item!(
+        normalized[:raw_payload] || {},
+        normalized,
+        status: run.dry_run? ? 'dry_run' : 'updated',
+        venue: venue,
+        warning_message: result.warnings.to_sentence.presence
+      )
+    rescue StandardError => e
+      create_item!(
+        {},
+        {
+          source_url: venue.safe_fan_music_fest_source_url,
+          name: venue.name,
+          city: venue.city,
+          state: venue.state,
+          country: venue.country,
+          country_code: venue.country_code
+        },
+        status: 'failed',
+        venue: venue,
+        error_message: "#{e.class} - #{e.message}"
+      )
+    end
 
     def each_listing_page
       [run.max_pages.to_i, MAX_PAGES].min.times do |page_index|
@@ -160,7 +216,7 @@ module FanMusicFest
       attrs = {
         name: normalized[:name],
         category: 'festival',
-        description: normalized[:description],
+        description: nil,
         address: normalized[:address],
         city: normalized[:city],
         latitude: normalized[:latitude],
@@ -182,6 +238,15 @@ module FanMusicFest
       attrs[:festival_start_date] = normalized[:start_date] if Venue.column_names.include?('festival_start_date')
       attrs[:festival_end_date] = normalized[:end_date] if Venue.column_names.include?('festival_end_date')
       attrs[:festival_metadata] = festival_metadata(normalized) if Venue.column_names.include?('festival_metadata')
+      attrs[:coordinates_source] = normalized[:coordinates_source] if Venue.column_names.include?('coordinates_source')
+      attrs[:coordinates_confidence] = normalized[:coordinates_confidence] if Venue.column_names.include?('coordinates_confidence')
+      attrs[:source_description] = normalized[:source_description] if Venue.column_names.include?('source_description')
+      attrs[:source_description_language] = normalized[:source_description_language] if Venue.column_names.include?('source_description_language')
+      attrs[:source_description_status] = normalized[:source_description_status] if Venue.column_names.include?('source_description_status')
+      attrs[:official_url] = normalized[:official_url] if Venue.column_names.include?('official_url')
+      attrs[:ticket_url] = normalized[:ticket_url] if Venue.column_names.include?('ticket_url')
+      attrs[:festival_venue_name] = normalized[:venue_name] if Venue.column_names.include?('festival_venue_name')
+      attrs[:festival_raw_location_text] = normalized[:raw_location_text] if Venue.column_names.include?('festival_raw_location_text')
       attrs
     end
 
@@ -192,11 +257,14 @@ module FanMusicFest
         free: normalized[:free],
         organizer: normalized[:organizer],
         offers: normalized[:offers],
+        performers: normalized[:performers],
+        ticket_price_text: normalized[:ticket_price_text],
+        map_source_url: normalized[:map_source_url],
         source: FanMusicFest::Normalizer::SOURCE
       }
     end
 
-    def create_item!(raw_event, normalized, status:, venue: nil, error_message: nil)
+    def create_item!(raw_event, normalized, status:, venue: nil, error_message: nil, warning_message: nil)
       run.items.create!(
         venue: venue,
         status: status,
@@ -212,6 +280,17 @@ module FanMusicFest
         start_date: normalized[:start_date],
         end_date: normalized[:end_date],
         image_url: normalized[:image_url],
+        latitude: normalized[:latitude],
+        longitude: normalized[:longitude],
+        coordinates_source: normalized[:coordinates_source],
+        coordinates_confidence: normalized[:coordinates_confidence],
+        source_description: normalized[:source_description],
+        source_description_language: normalized[:source_description_language],
+        source_description_status: normalized[:source_description_status],
+        official_url: normalized[:official_url],
+        ticket_url: normalized[:ticket_url],
+        festival_venue_name: normalized[:venue_name],
+        warning_message: warning_message.presence || normalized[:coordinates_warning],
         error_message: error_message,
         raw_payload: raw_event,
         normalized_payload: normalized.except(:raw_payload)
@@ -238,6 +317,7 @@ module FanMusicFest
       request_summary = {
         source: FanMusicFest::Normalizer::SOURCE,
         source_url: run.source_url,
+        operation: run.operation,
         requests: {
           robots: client.robots_requests_count,
           listing: client.listing_requests_count,
@@ -259,8 +339,8 @@ module FanMusicFest
         invalid_skipped_count: counts['skipped_invalid'].to_i,
         items_created_count: counts.values.sum,
         venues_created_count: counts['created'].to_i,
-        venues_updated_count: 0,
-        needs_review_count: run.dry_run? ? counts['dry_run'].to_i : counts['created'].to_i,
+        venues_updated_count: counts['updated'].to_i,
+        needs_review_count: run.dry_run? ? counts['dry_run'].to_i : counts['created'].to_i + counts['updated'].to_i,
         failed_count: counts['failed'].to_i,
         summary_payload: request_summary,
         updated_at: Time.current

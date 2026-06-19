@@ -10,6 +10,8 @@ class FanMusicFestNormalizerTest < ActiveSupport::TestCase
       'endDate' => '2026-07-12',
       'image' => { 'url' => 'https://fanmusicfest.com/sites/default/files/test.png' },
       'organizer' => { 'name' => 'Test Fest' },
+      'description' => 'Una descripcion extensa del festival preparada para revision editorial antes de publicarse.',
+      'performer' => [{ 'name' => 'Artista Uno' }, { 'name' => 'Artista Dos' }],
       'location' => {
         'name' => 'Recinto Test',
         'address' => {
@@ -34,6 +36,11 @@ class FanMusicFestNormalizerTest < ActiveSupport::TestCase
     assert normalized[:valid]
     refute normalized[:outside_country]
     assert_equal 'https://fanmusicfest.com/sites/default/files/test.png', normalized[:image_url]
+    assert_equal 'needs_review', normalized[:source_description_status]
+    assert_equal 'es', normalized[:source_description_language]
+    assert_equal %w[Artista\ Uno Artista\ Dos], normalized[:performers]
+    assert_equal 'schema_org', normalized[:coordinates_source]
+    assert_equal 'high', normalized[:coordinates_confidence]
   end
 
   test 'marks non Spanish festivals as outside country' do
@@ -42,5 +49,16 @@ class FanMusicFestNormalizerTest < ActiveSupport::TestCase
     assert_equal 'PT', normalized[:country_code]
     assert normalized[:outside_country]
     refute normalized[:valid]
+  end
+
+  test 'keeps Spanish festivals valid when coordinates are unavailable' do
+    payload = raw_event
+    payload['location'].delete('geo')
+
+    normalized = FanMusicFest::Normalizer.new.normalize(payload)
+
+    assert normalized[:valid]
+    assert_nil normalized[:latitude]
+    assert_nil normalized[:longitude]
   end
 end
