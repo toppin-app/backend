@@ -2,7 +2,7 @@
   <div>
     <div class="text-muted font-weight-bold">Black Coffee / Importaciones</div>
     <h1 class="mb-1">Importador FanMusicFest</h1>
-    <p class="text-muted mb-0">Trae festivales de Espana desde FanMusicFest con dry-run, filtro estricto y sin descargar imagenes.</p>
+    <p class="text-muted mb-0">Trae festivales futuros de Espana desde FanMusicFest con dry-run, filtro estricto e imagenes guardadas como binario.</p>
   </div>
   <div class="mt-3 mt-md-0">
     <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-secondary mr-2' %>
@@ -12,7 +12,41 @@
 
 <div class="alert alert-info">
   <strong>Herramienta controlada.</strong>
-  Respeta robots.txt de FanMusicFest y fuerza un delay minimo de 10 segundos entre peticiones. Por defecto ejecuta dry-run y no crea locales.
+  Respeta robots.txt de FanMusicFest y fuerza un delay minimo de 10 segundos entre peticiones. El formulario manual ejecuta dry-run por defecto y no crea locales.
+</div>
+
+<div class="card border-0 shadow-sm mb-4 border-left-success">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-start">
+      <div class="mr-3">
+        <h4 class="mb-1">Importacion completa de Espana</h4>
+        <p class="text-muted mb-0">
+          Recorre todas las paginas del calendario (hasta <%= BlackCoffeeFestivalImportsController::MAX_PAGES %>),
+          se queda solo con festivales de Espana cuya fecha es futura, consulta cada ficha de detalle
+          y descarga las imagenes como binario. Los locales quedan pendientes de revision y ocultos.
+        </p>
+        <p class="text-muted small mb-0 mt-2">
+          Se ejecuta en segundo plano respetando el delay entre peticiones, asi que puede tardar
+          desde varios minutos hasta cerca de una hora. Puedes cerrar la pagina; se puede cancelar
+          en cualquier momento y volver a lanzarla sin duplicar los festivales ya creados.
+        </p>
+      </div>
+    </div>
+    <%= form_with url: black_coffee_festival_imports_path, method: :post, local: true, class: 'mt-3' do %>
+      <%= hidden_field_tag :preset, 'import_all_spain' %>
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-3 mb-2 mb-md-0">
+          <%= label_tag :request_delay_seconds_all, 'Delay seg.' %>
+          <%= number_field_tag :request_delay_seconds, 10, min: 10, max: 120, step: 1, id: 'request_delay_seconds_all', class: 'form-control' %>
+        </div>
+        <div class="form-group col-md-9 mb-0">
+          <%= submit_tag 'Traer todos los festivales futuros de Espana',
+                         class: 'btn btn-success text-white',
+                         data: { confirm: 'Se recorreran todas las paginas y se crearan los festivales futuros de Espana, descargando sus imagenes. El proceso corre en segundo plano y puede tardar hasta cerca de una hora. Continuar?' } %>
+        </div>
+      </div>
+    <% end %>
+  </div>
 </div>
 
 <div class="row">
@@ -73,6 +107,22 @@
 
           <div class="form-row">
             <div class="form-group col-md-3">
+              <%= hidden_field_tag :only_future, '0' %>
+              <div class="custom-control custom-switch mt-4">
+                <%= check_box_tag :only_future, '1', true, class: 'custom-control-input', id: 'fanmusicfest_only_future' %>
+                <%= label_tag :fanmusicfest_only_future, 'Solo futuros', class: 'custom-control-label' %>
+              </div>
+              <small class="text-muted">Descarta festivales cuya fecha ya paso.</small>
+            </div>
+            <div class="form-group col-md-3">
+              <%= hidden_field_tag :download_images, '0' %>
+              <div class="custom-control custom-switch mt-4">
+                <%= check_box_tag :download_images, '1', true, class: 'custom-control-input', id: 'fanmusicfest_download_images' %>
+                <%= label_tag :fanmusicfest_download_images, 'Descargar imagenes', class: 'custom-control-label' %>
+              </div>
+              <small class="text-muted">Guarda la imagen como binario, no solo la URL.</small>
+            </div>
+            <div class="form-group col-md-3">
               <div class="custom-control custom-switch mt-4">
                 <%= check_box_tag :auto_publish, '1', false, class: 'custom-control-input', id: 'fanmusicfest_auto_publish' %>
                 <%= label_tag :fanmusicfest_auto_publish, 'Autopublicar', class: 'custom-control-label' %>
@@ -95,7 +145,8 @@
       <div class="card-body">
         <ul class="mb-0">
           <li>Solo se aceptan festivales con pais normalizado como ES.</li>
-          <li>No se descargan imagenes en esta fase; solo se guarda la URL candidata.</li>
+          <li>Con "Solo futuros" se descartan los festivales cuya fecha ya paso.</li>
+          <li>Las imagenes se descargan y se guardan como binario; si falla la descarga se conserva la URL.</li>
           <li>Los locales importados quedan con categoria festival.</li>
           <li>Sin autopublicar: review pendiente y visible=false.</li>
           <li>Se salta cualquier duplicado por fuente/fingerprint antes de crear venue.</li>
@@ -140,7 +191,7 @@
               <td><%= run.candidates_found_count %></td>
               <td class="text-success"><%= run.venues_created_count %></td>
               <td class="text-info"><%= run.venues_updated_count %></td>
-              <td><%= run.outside_country_skipped_count.to_i + run.duplicate_skipped_count.to_i + run.invalid_skipped_count.to_i %></td>
+              <td><%= run.outside_country_skipped_count.to_i + run.duplicate_skipped_count.to_i + run.invalid_skipped_count.to_i + run.past_skipped_count.to_i %></td>
               <td><%= run.robots_requests_count.to_i + run.listing_requests_count.to_i + run.detail_requests_count.to_i %></td>
               <td><%= l(run.created_at, format: :short) %></td>
               <td class="text-right"><%= link_to 'Ver', black_coffee_festival_import_path(run), class: 'btn btn-sm btn-outline-primary' %></td>

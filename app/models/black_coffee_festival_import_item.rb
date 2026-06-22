@@ -10,6 +10,7 @@ class BlackCoffeeFestivalImportItem < ApplicationRecord
     skipped_outside_country
     skipped_duplicate
     skipped_invalid
+    skipped_past
     failed
     cancelled
   ].freeze
@@ -59,6 +60,8 @@ class BlackCoffeeFestivalImportItem < ApplicationRecord
       'Fuera de Espana'
     when 'skipped_invalid'
       'Invalido'
+    when 'skipped_past'
+      'Pasado'
     when 'failed'
       'Fallido'
     when 'cancelled'
@@ -78,6 +81,8 @@ class BlackCoffeeFestivalImportItem < ApplicationRecord
       'secondary'
     when 'skipped_outside_country', 'skipped_invalid'
       'warning'
+    when 'skipped_past'
+      'secondary'
     when 'failed'
       'danger'
     else

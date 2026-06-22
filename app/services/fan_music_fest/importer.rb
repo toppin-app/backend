@@ -5,11 +5,13 @@ module FanMusicFest
 
     attr_reader :run, :client, :parser, :normalizer
 
-    def initialize(run:, client: nil, parser: Parser.new, normalizer: Normalizer.new)
+    def initialize(run:, client: nil, parser: Parser.new, normalizer: Normalizer.new, image_downloader: nil)
       @run = run
       @client = client || Client.new(request_delay_seconds: run.request_delay_seconds)
       @parser = parser
       @normalizer = normalizer
+      @image_downloader = image_downloader
+      @images_downloaded_count = 0
     end
 
     def self.enqueue!(created_by:, attributes:)
@@ -136,6 +138,7 @@ module FanMusicFest
       normalized = normalizer.normalize(raw_event)
       create_skipped_item!(raw_event, normalized, 'skipped_outside_country', 'El festival no pertenece a Espana.') && return if outside_country?(normalized)
       create_skipped_item!(raw_event, normalized, 'skipped_invalid', 'Faltan datos minimos para crear el local.') && return unless normalized[:valid]
+      create_skipped_item!(raw_event, normalized, 'skipped_past', 'El festival ya finalizo.') && return if past_event?(normalized)
 
       duplicate = duplicate_venue_for(normalized)
       create_duplicate_item!(raw_event, normalized, duplicate) && return if duplicate.present?
@@ -143,6 +146,7 @@ module FanMusicFest
       normalized = enrich_with_detail_if_needed(raw_event, normalized)
       create_skipped_item!(raw_event, normalized, 'skipped_outside_country', 'El detalle confirma que el festival no pertenece a Espana.') && return if outside_country?(normalized)
       create_skipped_item!(raw_event, normalized, 'skipped_invalid', 'El detalle no tiene datos minimos para crear el local.') && return unless normalized[:valid]
+      create_skipped_item!(raw_event, normalized, 'skipped_past', 'El detalle confirma que el festival ya finalizo.') && return if past_event?(normalized)
 
       if run.dry_run?
         create_item!(raw_event, normalized, status: 'dry_run')
@@ -176,6 +180,16 @@ module FanMusicFest
 
     def outside_country?(normalized)
       normalized[:outside_country] || normalized[:country_code] != run.strict_country_code
+    end
+
+    # A festival is "past" only when we can positively confirm its end (or start,
+    # if there is no end) is before today. Entries without any date are kept so a
+    # human can review them. Disabled when the run opts out of only_future.
+    def past_event?(normalized)
+      return false unless run.only_future?
+
+      reference_date = normalized[:end_date] || normalized[:start_date]
+      reference_date.present? && reference_date < Date.current
     end
 
     def duplicate_venue_for(normalized)
@@ -224,17 +238,53 @@ module FanMusicFest
 
     def create_venue_item!(raw_event, normalized)
       venue = nil
+      venue_image = nil
       ActiveRecord::Base.transaction do
         venue = Venue.create!(venue_attributes(normalized))
-        if normalized[:image_url].present?
-          venue.venue_images.create!(
-            url: normalized[:image_url],
-            source: FanMusicFest::Normalizer::SOURCE,
-            position: 0
-          )
-        end
+        venue_image = build_venue_image(venue, normalized)
         create_item!(raw_event, normalized, status: 'created', venue: venue)
       end
+
+      # Download the image binary after the DB transaction commits so a slow image
+      # host never holds the connection open and never rolls back the new venue.
+      internalize_image!(venue_image)
+    end
+
+    def build_venue_image(venue, normalized)
+      image_url = normalized[:image_url].to_s.strip
+      return nil if image_url.blank?
+
+      venue.venue_images.create!(
+        url: image_url,
+        source: FanMusicFest::Normalizer::SOURCE,
+        position: 0
+      )
+    rescue ActiveRecord::RecordInvalid => e
+      # A malformed image URL must not prevent the venue from being created.
+      Rails.logger.warn("FanMusicFest skipping invalid image url for venue #{venue.id}: #{e.message}")
+      nil
+    end
+
+    # Replaces the candidate image URL with a stored binary file using the same
+    # uploader-backed pipeline as the rest of the platform. Best-effort: if the
+    # download fails the VenueImage keeps its original URL as a fallback.
+    def internalize_image!(venue_image)
+      return unless venue_image
+      return unless run.download_images?
+
+      result = BlackCoffeeVenueImageLinkConverter.convert_image!(
+        image: venue_image,
+        downloader: image_downloader
+      )
+      @images_downloaded_count += 1 if result&.status == 'converted'
+      result
+    rescue StandardError => e
+      Rails.logger.warn("FanMusicFest image download failed for venue_image #{venue_image.id}: #{e.class} - #{e.message}")
+      nil
+    end
+
+    def image_downloader
+      @image_downloader ||= BlackCoffeeImageDownloader.new
     end
 
     def venue_attributes(normalized)
@@ -349,7 +399,7 @@ module FanMusicFest
           details: client.detail_requests_count
         },
         photos: {
-          downloaded: 0,
+          downloaded: @images_downloaded_count,
           image_urls_saved: run.items.where.not(image_url: [nil, '']).count
         }
       }
@@ -362,6 +412,8 @@ module FanMusicFest
         outside_country_skipped_count: counts['skipped_outside_country'].to_i,
         duplicate_skipped_count: counts['skipped_duplicate'].to_i + counts['duplicate'].to_i,
         invalid_skipped_count: counts['skipped_invalid'].to_i,
+        past_skipped_count: counts['skipped_past'].to_i,
+        images_downloaded_count: @images_downloaded_count,
         items_created_count: counts.values.sum,
         venues_created_count: counts['created'].to_i,
         venues_updated_count: counts['updated'].to_i,

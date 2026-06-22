@@ -55,6 +55,14 @@
   <div class="col-6 col-lg-2 mb-3">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
+        <p class="text-muted text-uppercase font-weight-bold mb-2">Pasados</p>
+        <h2 class="mb-0 text-muted"><%= @run.past_skipped_count %></h2>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2 mb-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
         <p class="text-muted text-uppercase font-weight-bold mb-2">Requests</p>
         <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i %></h2>
         <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · detalle <%= @run.detail_requests_count %></div>
@@ -71,6 +79,8 @@
         Paginas: <strong><%= @run.max_pages %></strong> ·
         Operacion: <strong><%= @run.operation_label %></strong> ·
         Detalles: <strong><%= @run.refresh_details? || @run.import_details? ? "si (max #{@run.max_details})" : 'no' %></strong> ·
+        Solo futuros: <strong><%= @run.only_future? ? 'si' : 'no' %></strong> ·
+        Imagenes: <strong><%= @run.download_images? ? "binario (#{@run.images_downloaded_count.to_i} descargadas)" : 'solo URL' %></strong> ·
         Delay: <strong><%= @run.request_delay_seconds.to_f.to_i %>s</strong> ·
         Pais: <strong><%= @run.strict_country_code %></strong> ·
         Autopublicar: <strong><%= @run.auto_publish? ? 'si' : 'no' %></strong>

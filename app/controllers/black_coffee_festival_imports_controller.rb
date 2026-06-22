@@ -50,6 +50,8 @@ class BlackCoffeeFestivalImportsController < ApplicationController
   end
 
   def run_attributes
+    return import_all_attributes if params[:preset].to_s == 'import_all_spain'
+
     mode = params[:mode].to_s == 'import' ? 'import' : 'dry_run'
     operation = params[:operation].to_s == 'refresh_details' ? 'refresh_details' : 'import'
     max_details_default = operation == 'refresh_details' ? 100 : 0
@@ -61,10 +63,44 @@ class BlackCoffeeFestivalImportsController < ApplicationController
       max_details: clamped_integer(params[:max_details], default: max_details_default, min: 0, max: MAX_DETAILS),
       request_delay_seconds: clamped_decimal(params[:request_delay_seconds], default: MIN_REQUEST_DELAY_SECONDS, min: MIN_REQUEST_DELAY_SECONDS, max: MAX_REQUEST_DELAY_SECONDS),
       strict_country_code: 'ES',
-      import_details: ActiveModel::Type::Boolean.new.cast(params[:import_details]),
-      auto_publish: operation == 'import' && mode == 'import' && ActiveModel::Type::Boolean.new.cast(params[:auto_publish]),
+      import_details: boolean_param(params[:import_details]),
+      download_images: boolean_param(params[:download_images], default: true),
+      only_future: boolean_param(params[:only_future], default: true),
+      auto_publish: operation == 'import' && mode == 'import' && boolean_param(params[:auto_publish]),
       preserve_manual_edits: true
     }
+  end
+
+  # One-click "bring every Spanish festival at once": walks every calendar page,
+  # keeps only future Spanish festivals, enriches every detail page and downloads
+  # each image as a binary asset. Stays unpublished/hidden pending manual review.
+  #
+  # This runs as a background job and, because every request honours the >=10s
+  # crawl delay, can take from several minutes up to ~1 hour. It is safe to cancel
+  # and re-run: already-imported festivals are detected as duplicates and skipped.
+  def import_all_attributes
+    {
+      mode: 'import',
+      operation: 'import',
+      status: 'pending',
+      max_pages: MAX_PAGES,
+      max_details: MAX_DETAILS,
+      request_delay_seconds: clamped_decimal(params[:request_delay_seconds], default: MIN_REQUEST_DELAY_SECONDS, min: MIN_REQUEST_DELAY_SECONDS, max: MAX_REQUEST_DELAY_SECONDS),
+      strict_country_code: 'ES',
+      import_details: true,
+      download_images: true,
+      only_future: true,
+      auto_publish: false,
+      preserve_manual_edits: true
+    }
+  end
+
+  # ActiveModel's boolean cast returns nil for a missing/blank checkbox, which would
+  # violate the NOT NULL constraint on these columns. Coerce to a real boolean.
+  def boolean_param(value, default: false)
+    return default if value.nil?
+
+    ActiveModel::Type::Boolean.new.cast(value) ? true : false
   end
 
   def clamped_integer(value, default:, min:, max:)
