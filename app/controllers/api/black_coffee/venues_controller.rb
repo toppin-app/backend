@@ -10,7 +10,7 @@ module Api
         relation = visible_venues
         relation = Venue.filter_by_category(relation, category)
         relation = Venue.filter_by_subcategory(relation, params[:subcategory])
-        relation = apply_distance_filter(relation)
+        relation = apply_distance_filter_for_category(relation, category)
         return if performed?
 
         relation = Venue.order_by_favorites(relation.order(featured: :desc)).order(created_at: :desc)
@@ -65,7 +65,7 @@ module Api
 
         relation = visible_venues
         relation = Venue.filter_by_category(relation, category)
-        relation = apply_distance_filter(relation)
+        relation = apply_distance_filter_for_category(relation, category)
         return if performed?
 
         relation = Venue.order_by_favorites(relation).order(created_at: :desc)
@@ -98,7 +98,7 @@ module Api
 
         relation = Venue.filter_by_category(visible_venues, category)
         relation = Venue.filter_by_subcategory(relation, params[:subcategory])
-        relation = apply_distance_filter(relation)
+        relation = apply_distance_filter_for_category(relation, category)
         return if performed?
 
         relation = Venue.order_by_favorites(relation.order(featured: :desc)).order(created_at: :desc)
@@ -203,6 +203,15 @@ module Api
         # TODO: Temporalmente permitimos locales pending en la app mientras se completa la revision inicial.
         # En produccion/futuro, la API deberia devolver solo locales approved.
         Venue.visible_to_app.not_rejected_for_app
+      end
+
+      # Festivals (and other destination categories) are nationwide events, so we
+      # never drop them for being far away or lacking coordinates. Only local
+      # categories are proximity-filtered.
+      def apply_distance_filter_for_category(relation, category)
+        return relation if Venue.non_geographic_category?(category)
+
+        apply_distance_filter(relation)
       end
 
       def apply_distance_filter(relation)

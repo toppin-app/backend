@@ -17,6 +17,10 @@ class Venue < ApplicationRecord
     deportivo
     escape_room
   ].freeze
+  # Destination categories whose venues are events people travel to (not nearby
+  # spots). They must be listed nationwide instead of being proximity-filtered,
+  # and many of them legitimately have no coordinates.
+  NON_GEOGRAPHIC_CATEGORIES = %w[festival].freeze
   CATEGORY_LABELS = {
     'restaurante' => 'Restaurantes',
     'hotel' => 'Hoteles',
@@ -144,6 +148,12 @@ class Venue < ApplicationRecord
     return scope if normalized_category.blank? || normalized_category == 'all'
 
     scope.where(category: normalized_category)
+  end
+
+  # True for destination categories (e.g. festivals) that should be listed
+  # nationwide instead of filtered by distance from the user.
+  def self.non_geographic_category?(category)
+    NON_GEOGRAPHIC_CATEGORIES.include?(normalize_category(category).to_s)
   end
 
   def self.filter_by_subcategory(scope, subcategory)
