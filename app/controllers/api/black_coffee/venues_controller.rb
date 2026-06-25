@@ -9,7 +9,7 @@ module Api
 
         relation = visible_venues
         relation = Venue.filter_by_category(relation, category)
-        relation = Venue.filter_by_subcategory(relation, params[:subcategory])
+        relation = filter_by_subcategory_for_category(relation, category, params[:subcategory])
         relation = apply_distance_filter_for_category(relation, category)
         return if performed?
 
@@ -39,20 +39,26 @@ module Api
       end
 
       def nearby
-        lat = parse_latitude(required: true)
-        lng = parse_longitude(required: true)
-        if lat.nil? || lng.nil?
-          render json: { error: 'lat and lng are required' }, status: :bad_request
-          return
-        end
-
         category = validated_category(params[:category], allow_all: false)
         return if performed?
 
-        relation = visible_venues
-        relation = Venue.filter_by_category(relation, category)
-        relation = Venue.within_distance(relation, lat, lng, parse_max_distance)
-                        .order(Arel.sql('distance_km ASC'))
+        relation = Venue.filter_by_category(visible_venues, category)
+
+        if Venue.non_geographic_category?(category)
+          # Festivals are nationwide events: "nearby" has no meaning, so we return
+          # them ordered by popularity instead of requiring coordinates/proximity.
+          relation = Venue.order_by_favorites(relation).order(created_at: :desc)
+        else
+          lat = parse_latitude(required: true)
+          lng = parse_longitude(required: true)
+          if lat.nil? || lng.nil?
+            render json: { error: 'lat and lng are required' }, status: :bad_request
+            return
+          end
+
+          relation = Venue.within_distance(relation, lat, lng, parse_max_distance)
+                          .order(Arel.sql('distance_km ASC'))
+        end
 
         render json: {
           venues: serialize_venues(fetch_venues(relation, limit: parse_limit(8, max_value: 50)))
@@ -97,7 +103,7 @@ module Api
         return if performed?
 
         relation = Venue.filter_by_category(visible_venues, category)
-        relation = Venue.filter_by_subcategory(relation, params[:subcategory])
+        relation = filter_by_subcategory_for_category(relation, category, params[:subcategory])
         relation = apply_distance_filter_for_category(relation, category)
         return if performed?
 
@@ -212,6 +218,14 @@ module Api
         return relation if Venue.non_geographic_category?(category)
 
         apply_distance_filter(relation)
+      end
+
+      # Non-geographic categories (festivals) are not subcategorised, so a stray
+      # subcategory param would inner-join them down to zero. Ignore it for them.
+      def filter_by_subcategory_for_category(relation, category, subcategory)
+        return relation if Venue.non_geographic_category?(category)
+
+        Venue.filter_by_subcategory(relation, subcategory)
       end
 
       def apply_distance_filter(relation)
