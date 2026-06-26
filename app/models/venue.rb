@@ -451,8 +451,63 @@ class Venue < ApplicationRecord
       genres: festival_genres,
       eventStatus: (metadata['event_status'] || metadata[:event_status]).presence,
       isFree: metadata.key?('free') ? metadata['free'] : metadata[:free],
+      locations: festival_locations_json,
       sourceDescriptionStatus: has_attribute?(:source_description_status) ? source_description_status.presence : nil
     }
+  end
+
+  def festival_locations_json
+    metadata = festival_metadata_hash
+    metadata_locations = Array(metadata['locations'] || metadata[:locations])
+    locations = metadata_locations.filter_map { |entry| festival_location_json_from_metadata(entry) }
+    return locations if locations.present?
+
+    fallback = {
+      name: has_attribute?(:festival_venue_name) ? festival_venue_name.presence : nil,
+      city: city.presence,
+      province: has_attribute?(:state) ? state.presence : nil,
+      country: has_attribute?(:country) ? country.presence : nil,
+      coordinates: festival_location_coordinates_json(latitude, longitude),
+      coordinatesSource: has_attribute?(:coordinates_source) ? coordinates_source.presence : nil,
+      coordinatesConfidence: has_attribute?(:coordinates_confidence) ? coordinates_confidence.presence : nil
+    }.compact
+
+    fallback.present? ? [fallback] : []
+  end
+
+  def festival_location_json_from_metadata(entry)
+    return nil unless entry.is_a?(Hash)
+
+    location = entry.with_indifferent_access
+    coordinates = location[:coordinates].is_a?(Hash) ? location[:coordinates].with_indifferent_access : {}
+    payload = {
+      name: location[:name].presence || location[:venueName].presence || location[:venue_name].presence,
+      city: location[:city].presence,
+      province: location[:province].presence || location[:state].presence,
+      country: location[:country].presence,
+      coordinates: festival_location_coordinates_json(
+        coordinates[:latitude] || location[:latitude],
+        coordinates[:longitude] || location[:longitude]
+      ),
+      coordinatesSource: location[:coordinatesSource].presence || location[:coordinates_source].presence,
+      coordinatesConfidence: location[:coordinatesConfidence].presence || location[:coordinates_confidence].presence
+    }.compact
+
+    payload.present? ? payload : nil
+  end
+
+  def festival_location_coordinates_json(latitude_value, longitude_value)
+    latitude_number = Float(latitude_value)
+    longitude_number = Float(longitude_value)
+    return nil unless latitude_number.finite? && longitude_number.finite?
+    return nil unless latitude_number.between?(-90, 90) && longitude_number.between?(-180, 180)
+
+    {
+      latitude: latitude_number,
+      longitude: longitude_number
+    }
+  rescue ArgumentError, TypeError
+    nil
   end
 
   def favorite_count_from(favorite_counts_by_venue_id)

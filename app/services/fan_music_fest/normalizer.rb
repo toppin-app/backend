@@ -10,20 +10,22 @@ module FanMusicFest
 
     def normalize(raw_payload)
       raw = stringify_hash_or_empty(raw_payload)
-      location = stringify_hash_or_empty(raw['location'])
+      location_nodes = location_nodes(raw['location'])
+      location = location_nodes.first || {}
       address = stringify_hash_or_empty(location['address'])
       geo = stringify_hash_or_empty(location['geo'])
       detail = stringify_hash_or_empty(raw['_fanmusicfest_detail'])
       detail_coordinates = stringify_hash_or_empty(detail['coordinates'])
+      locations = festival_locations(location_nodes, fallback_coordinates: detail_coordinates)
 
       source_url = source_url_for(raw)
       organizer_name = clean_text(dig_hash(raw, 'organizer', 'name'))
       edition_title = clean_title(raw['name'])
       display_name = clean_festival_name(organizer_name.presence || edition_title)
-      venue_name = clean_text(location['name'])
-      city = clean_text(address['addressLocality'])
-      state = clean_text(address['addressRegion'])
-      country = clean_text(address['addressCountry'])
+      venue_name = clean_location_text(location['name'])
+      city = clean_location_text(address['addressLocality'])
+      state = clean_location_text(address['addressRegion'])
+      country = clean_location_text(address['addressCountry'])
       country_code = country_code_for(country)
       latitude = decimal_or_nil(detail_coordinates['latitude'] || geo['latitude'])
       longitude = decimal_or_nil(detail_coordinates['longitude'] || geo['longitude'])
@@ -76,6 +78,7 @@ module FanMusicFest
         event_status: raw['eventStatus'],
         organizer: stringify_hash(raw['organizer']),
         offers: raw['offers'],
+        locations: locations,
         valid: valid?(name: display_name, city: city, country_code: country_code),
         outside_country: country_code.present? && country_code != 'ES',
         raw_payload: raw
@@ -98,6 +101,63 @@ module FanMusicFest
     def stringify_hash_or_empty(value)
       normalized = stringify_hash(value)
       normalized.is_a?(Hash) ? normalized : {}
+    end
+
+    def location_nodes(value)
+      normalized = stringify_hash(value)
+      case normalized
+      when Array
+        normalized.select { |entry| entry.is_a?(Hash) }
+      when Hash
+        [normalized]
+      else
+        []
+      end
+    end
+
+    def clean_location_text(value)
+      case value
+      when Array
+        value.filter_map { |entry| clean_location_text(entry) }.uniq.join(', ').presence
+      else
+        clean_text(value)
+      end
+    end
+
+    def festival_locations(nodes, fallback_coordinates:)
+      nodes.filter_map.with_index do |location, index|
+        address = stringify_hash_or_empty(location['address'])
+        geo = stringify_hash_or_empty(location['geo'])
+        coordinates = location_coordinates(geo)
+        if coordinates.blank? && nodes.one? && fallback_coordinates.present?
+          coordinates = location_coordinates(fallback_coordinates, source_key: 'source', confidence_key: 'confidence')
+        end
+
+        entry = {
+          'name' => clean_location_text(location['name']),
+          'city' => clean_location_text(address['addressLocality']),
+          'province' => clean_location_text(address['addressRegion']),
+          'country' => clean_location_text(address['addressCountry']),
+          'coordinates' => coordinates&.slice('latitude', 'longitude'),
+          'coordinatesSource' => coordinates&.[]('source'),
+          'coordinatesConfidence' => coordinates&.[]('confidence')
+        }.compact
+        entry['position'] = index if entry.present?
+        entry.presence
+      end.uniq { |entry| [entry['name'], entry['city'], entry['province'], entry.dig('coordinates', 'latitude'), entry.dig('coordinates', 'longitude')] }
+    end
+
+    def location_coordinates(payload, source_key: 'source', confidence_key: 'confidence')
+      latitude = decimal_or_nil(payload['latitude'])
+      longitude = decimal_or_nil(payload['longitude'])
+      return nil if latitude.blank? || longitude.blank?
+
+      {
+        'latitude' => latitude,
+        'longitude' => longitude,
+        'source' => clean_text(payload[source_key]).presence || 'schema_org',
+        'confidence' => clean_text(payload[confidence_key]).presence || 'high'
+      }
     end
 
     def dig_hash(hash, *keys)

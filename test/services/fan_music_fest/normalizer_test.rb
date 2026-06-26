@@ -62,6 +62,44 @@ class FanMusicFestNormalizerTest < ActiveSupport::TestCase
     assert_nil normalized[:longitude]
   end
 
+  test 'preserves multiple festival locations when schema org provides an array' do
+    payload = raw_event
+    payload['location'] = [
+      {
+        'name' => 'Puerto de Vega',
+        'address' => {
+          'addressLocality' => 'Navia',
+          'addressRegion' => 'Asturias',
+          'addressCountry' => 'Espana'
+        },
+        'geo' => {
+          'latitude' => '43.56',
+          'longitude' => '-6.64'
+        }
+      },
+      {
+        'name' => 'Navia',
+        'address' => {
+          'addressLocality' => 'Navia',
+          'addressRegion' => 'Asturias',
+          'addressCountry' => 'Espana'
+        },
+        'geo' => {
+          'latitude' => '43.54',
+          'longitude' => '-6.72'
+        }
+      }
+    ]
+
+    normalized = FanMusicFest::Normalizer.new.normalize(payload)
+
+    assert normalized[:valid]
+    assert_equal 2, normalized[:locations].size
+    assert_equal 'Puerto de Vega', normalized[:locations].first['name']
+    assert_equal BigDecimal('43.56'), normalized[:locations].first.dig('coordinates', 'latitude')
+    assert_equal 'schema_org', normalized[:locations].first['coordinatesSource']
+  end
+
   test 'marks incomplete festivals invalid instead of raising when location is missing' do
     normalized = FanMusicFest::Normalizer.new.normalize(
       '@id' => 'https://fanmusicfest.com/content/incomplete-fest-2026#event',

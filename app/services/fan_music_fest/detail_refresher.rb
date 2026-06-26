@@ -133,6 +133,7 @@ module FanMusicFest
         'organizer' => normalized[:organizer],
         'offers' => normalized[:offers],
         'performers' => normalized[:performers],
+        'locations' => normalized[:locations],
         'ticket_price_text' => normalized[:ticket_price_text],
         'map_source_url' => normalized[:map_source_url],
         'source' => Normalizer::SOURCE
