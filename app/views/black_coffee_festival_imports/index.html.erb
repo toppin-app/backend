@@ -23,7 +23,7 @@
         <p class="text-muted mb-0">
           Recorre todas las paginas del calendario (hasta <%= BlackCoffeeFestivalImportsController::MAX_PAGES %>),
           se queda solo con festivales de Espana cuya fecha es futura, consulta cada ficha de detalle
-          y descarga las imagenes como binario. Los locales quedan pendientes de revision y ocultos.
+          y descarga las imagenes como binario. Los locales quedan visibles en la app pero pendientes de revision.
         </p>
         <p class="text-muted small mb-0 mt-2">
           Se ejecuta en segundo plano respetando el delay entre peticiones, asi que puede tardar
@@ -127,7 +127,7 @@
                 <%= check_box_tag :auto_publish, '1', false, class: 'custom-control-input', id: 'fanmusicfest_auto_publish' %>
                 <%= label_tag :fanmusicfest_auto_publish, 'Autopublicar', class: 'custom-control-label' %>
               </div>
-              <small class="text-muted">Por defecto quedan pendientes y ocultos.</small>
+              <small class="text-muted">Por defecto quedan visibles pero pendientes de revision.</small>
             </div>
           </div>
 
@@ -148,7 +148,7 @@
           <li>Con "Solo futuros" se descartan los festivales cuya fecha ya paso.</li>
           <li>Las imagenes se descargan y se guardan como binario; si falla la descarga se conserva la URL.</li>
           <li>Los locales importados quedan con categoria festival.</li>
-          <li>Sin autopublicar: review pendiente y visible=false.</li>
+          <li>Los festivales se crean visibles en la app, pero con review pendiente hasta aprobarlos.</li>
           <li>Se salta cualquier duplicado por fuente/fingerprint antes de crear venue.</li>
           <li>El reprocesado conserva datos manuales y nunca publica la descripcion externa sin aprobarla.</li>
         </ul>

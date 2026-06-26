@@ -194,7 +194,7 @@ class FanMusicFestImporterTest < ActiveSupport::TestCase
     assert_equal 0, Venue.where(category: 'festival').count
   end
 
-  test 'import creates Spanish festivals as pending and hidden venues' do
+  test 'import creates Spanish festivals as pending but visible venues' do
     run = BlackCoffeeFestivalImportRun.create!(
       mode: 'import',
       status: 'pending',
@@ -214,7 +214,7 @@ class FanMusicFestImporterTest < ActiveSupport::TestCase
     venue = Venue.where(category: 'festival').find_by(name: 'Valid Fest')
     assert venue
     assert_equal Venue::REVIEW_STATUS_PENDING, venue.review_status if venue.has_attribute?(:review_status)
-    assert_equal false, venue.visible if venue.has_attribute?(:visible)
+    assert_equal true, venue.visible if venue.has_attribute?(:visible)
     assert_equal 1, venue.venue_images.count
     assert_equal 'https://fanmusicfest.com/sites/default/files/valid.png', venue.venue_images.first.url
     assert_equal 'https://fanmusicfest.com/content/valid-fest-2026', venue.external_source_url

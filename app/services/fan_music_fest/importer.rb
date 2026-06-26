@@ -303,7 +303,10 @@ module FanMusicFest
       attrs[:country] = normalized[:country].presence || 'Espana' if Venue.column_names.include?('country')
       attrs[:country_code] = 'ES' if Venue.column_names.include?('country_code')
       attrs[:review_status] = run.auto_publish? ? Venue::REVIEW_STATUS_APPROVED : Venue::REVIEW_STATUS_PENDING if Venue.column_names.include?('review_status')
-      attrs[:visible] = run.auto_publish? if Venue.column_names.include?('visible')
+      # Festivals are created visible so they show up in the app immediately; they
+      # stay pending review (unless auto_publish approves them), so no follow-up
+      # migration is ever needed to reveal them.
+      attrs[:visible] = true if Venue.column_names.include?('visible')
       attrs[:payment_current] = true if Venue.column_names.include?('payment_current')
       attrs[:internal_test] = false if Venue.column_names.include?('internal_test')
       attrs[:external_source] = FanMusicFest::Normalizer::SOURCE if Venue.column_names.include?('external_source')

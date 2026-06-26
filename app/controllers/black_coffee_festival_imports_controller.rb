@@ -73,7 +73,7 @@ class BlackCoffeeFestivalImportsController < ApplicationController
 
   # One-click "bring every Spanish festival at once": walks every calendar page,
   # keeps only future Spanish festivals, enriches every detail page and downloads
-  # each image as a binary asset. Stays unpublished/hidden pending manual review.
+  # each image as a binary asset. Festivals are created visible but pending review.
   #
   # This runs as a background job and, because every request honours the >=10s
   # crawl delay, can take from several minutes up to ~1 hour. It is safe to cancel
