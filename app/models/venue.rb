@@ -20,7 +20,7 @@ class Venue < ApplicationRecord
   # Destination categories whose venues are events people travel to (not nearby
   # spots). They must be listed nationwide instead of being proximity-filtered,
   # and many of them legitimately have no coordinates.
-  NON_GEOGRAPHIC_CATEGORIES = %w[festival].freeze
+  NON_GEOGRAPHIC_CATEGORIES = %w[festival concierto].freeze
   CATEGORY_LABELS = {
     'restaurante' => 'Restaurantes',
     'hotel' => 'Hoteles',
@@ -95,6 +95,10 @@ class Venue < ApplicationRecord
            class_name: 'BlackCoffeeFestivalImportItem',
            dependent: :nullify,
            inverse_of: :venue
+  has_many :concert_import_items,
+           class_name: 'BlackCoffeeConcertImportItem',
+           dependent: :nullify,
+           inverse_of: :venue
 
   validates :name, :category, :address, :city, presence: true
   validates :category, inclusion: { in: CATEGORIES }
@@ -150,7 +154,7 @@ class Venue < ApplicationRecord
     scope.where(category: normalized_category)
   end
 
-  # True for destination categories (e.g. festivals) that should be listed
+  # True for destination categories (e.g. festivals and concerts) that should be listed
   # nationwide instead of filtered by distance from the user.
   def self.non_geographic_category?(category)
     NON_GEOGRAPHIC_CATEGORIES.include?(normalize_category(category).to_s)
@@ -432,6 +436,7 @@ class Venue < ApplicationRecord
       googlePlaceId: google_connected? ? google_place_id : nil
     }
     payload[:festivalDetails] = festival_details_json if category == 'festival'
+    payload[:eventDetails] = festival_details_json if self.class.non_geographic_category?(category)
     payload
   end
 

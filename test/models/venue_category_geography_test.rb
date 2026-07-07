@@ -1,10 +1,12 @@
 require 'test_helper'
 
 class VenueCategoryGeographyTest < ActiveSupport::TestCase
-  test 'festivals are treated as non-geographic so they are not proximity filtered' do
+  test 'destination event categories are treated as non-geographic so they are not proximity filtered' do
     assert Venue.non_geographic_category?('festival')
     assert Venue.non_geographic_category?('FESTIVAL')
     assert Venue.non_geographic_category?(' festival ')
+    assert Venue.non_geographic_category?('concierto')
+    assert Venue.non_geographic_category?(' CONCIERTO ')
   end
 
   test 'local categories remain geographic' do

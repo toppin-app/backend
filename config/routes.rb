@@ -62,6 +62,11 @@ Rails.application.routes.draw do
         post :cancel
       end
     end
+    resources :concert_imports, controller: 'black_coffee_concert_imports', only: [:index, :create, :show] do
+      member do
+        post :cancel
+      end
+    end
     resources :fake_favorite_batches, controller: 'black_coffee_fake_favorite_batches', only: [:index, :create, :show] do
       member do
         get :status
