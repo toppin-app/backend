@@ -1,4 +1,6 @@
+require 'ipaddr'
 require 'net/http'
+require 'resolv'
 require 'uri'
 
 class BlackCoffeeImageDownloader
@@ -7,6 +9,28 @@ class BlackCoffeeImageDownloader
   DEFAULT_READ_TIMEOUT = 8
   DEFAULT_MAX_REDIRECTS = 4
   DEFAULT_USER_AGENT = 'Toppin Black Coffee Image Downloader/1.0'.freeze
+  BLOCKED_NETWORKS = %w[
+    0.0.0.0/8
+    10.0.0.0/8
+    100.64.0.0/10
+    127.0.0.0/8
+    169.254.0.0/16
+    172.16.0.0/12
+    192.0.0.0/24
+    192.0.2.0/24
+    192.168.0.0/16
+    198.18.0.0/15
+    198.51.100.0/24
+    203.0.113.0/24
+    224.0.0.0/4
+    240.0.0.0/4
+    ::/128
+    ::1/128
+    2001:db8::/32
+    fc00::/7
+    fe80::/10
+    ff00::/8
+  ].map { |range| IPAddr.new(range) }.freeze
 
   DownloadResult = Struct.new(
     :ok?,
@@ -25,13 +49,17 @@ class BlackCoffeeImageDownloader
     open_timeout: DEFAULT_OPEN_TIMEOUT,
     read_timeout: DEFAULT_READ_TIMEOUT,
     max_redirects: DEFAULT_MAX_REDIRECTS,
-    user_agent: DEFAULT_USER_AGENT
+    user_agent: DEFAULT_USER_AGENT,
+    address_resolver: ->(host) { Resolv.getaddresses(host) },
+    http_factory: nil
   )
     @max_download_bytes = max_download_bytes.to_i
     @open_timeout = open_timeout
     @read_timeout = read_timeout
     @max_redirects = max_redirects
     @user_agent = user_agent
+    @address_resolver = address_resolver
+    @http_factory = http_factory || method(:build_http)
   end
 
   def download(url)
@@ -42,7 +70,7 @@ class BlackCoffeeImageDownloader
     end
 
     uri = URI.parse(raw_url)
-    return failure('invalid_url', 'La URL no usa http o https.') unless uri.is_a?(URI::HTTP)
+    return failure('invalid_url', 'La URL no usa http o https o no incluye host.') unless uri.is_a?(URI::HTTP) && uri.host.present?
 
     request_with_redirects(uri)
   rescue URI::InvalidURIError => e
@@ -57,20 +85,17 @@ class BlackCoffeeImageDownloader
 
   private
 
-  attr_reader :max_download_bytes, :open_timeout, :read_timeout, :max_redirects, :user_agent
+  attr_reader :max_download_bytes, :open_timeout, :read_timeout, :max_redirects, :user_agent, :address_resolver, :http_factory
 
   def request_with_redirects(uri, redirects = 0)
+    public_address = public_address_for(uri)
+    return public_address if public_address.is_a?(DownloadResult)
+
     request = Net::HTTP::Get.new(uri)
     request['User-Agent'] = user_agent
 
     result = nil
-    Net::HTTP.start(
-      uri.host,
-      uri.port,
-      use_ssl: uri.scheme == 'https',
-      open_timeout: open_timeout,
-      read_timeout: read_timeout
-    ) do |http|
+    http_factory.call(uri, public_address).start do |http|
       http.request(request) do |response|
         code = response.code.to_i
 
@@ -118,6 +143,42 @@ class BlackCoffeeImageDownloader
 
   def redirect?(code)
     code.between?(300, 399)
+  end
+
+  def public_address_for(uri)
+    return failure('invalid_url', 'La URL incluye credenciales y no es valida para descargar imagenes.') if uri.userinfo.present?
+
+    host = uri.host.to_s.downcase
+    return failure('blocked_destination', 'La URL apunta a un host local o interno.') if local_hostname?(host)
+
+    addresses = Array(address_resolver.call(host)).filter_map do |address|
+      IPAddr.new(address)
+    rescue IPAddr::InvalidAddressError
+      nil
+    end
+    return failure('network_error', 'No se pudo resolver el host de la imagen.') if addresses.empty?
+    return failure('blocked_destination', 'La URL de imagen resuelve a una red privada o reservada.') if addresses.any? { |address| blocked_address?(address) }
+
+    addresses.first.to_s
+  rescue Resolv::ResolvError, SocketError, SystemCallError => e
+    failure('network_error', e.message)
+  end
+
+  def build_http(uri, public_address)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.ipaddr = public_address
+    http.use_ssl = uri.scheme == 'https'
+    http.open_timeout = open_timeout
+    http.read_timeout = read_timeout
+    http
+  end
+
+  def local_hostname?(host)
+    host == 'localhost' || host.end_with?('.localhost', '.local', '.internal')
+  end
+
+  def blocked_address?(address)
+    BLOCKED_NETWORKS.any? { |network| network.include?(address) }
   end
 
   def extension_for(content_type, path)

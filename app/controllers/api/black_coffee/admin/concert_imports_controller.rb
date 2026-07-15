@@ -78,7 +78,7 @@ module Api
             max_events: clamped_integer(params[:max_events], default: SongkickConcerts::Importer::MAX_EVENTS, min: 1, max: SongkickConcerts::Importer::MAX_EVENTS),
             request_delay_seconds: clamped_decimal(params[:request_delay_seconds], default: SongkickConcerts::Client::DEFAULT_CRAWL_DELAY_SECONDS, min: SongkickConcerts::Client::DEFAULT_CRAWL_DELAY_SECONDS, max: 120),
             strict_country_code: 'ES',
-            download_images: ActiveModel::Type::Boolean.new.cast(params.fetch(:download_images, true)),
+            download_images: true,
             only_future: true,
             auto_publish: false,
             preserve_manual_edits: true,

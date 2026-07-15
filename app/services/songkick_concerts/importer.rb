@@ -19,15 +19,34 @@ module SongkickConcerts
     DEFAULT_SOURCE_PATHS_TEXT = DEFAULT_SOURCE_PATHS.join("\n").freeze
     DEFAULT_SOURCE_URL = SongkickConcerts::Client::BASE_URL.freeze
 
-    attr_reader :run, :client, :parser, :normalizer
+    attr_reader :run, :client, :parser, :normalizer, :cover_resolver, :cover_attacher
 
-    def initialize(run:, client: nil, parser: Parser.new, normalizer: Normalizer.new, image_downloader: nil)
+    def initialize(
+      run:,
+      client: nil,
+      parser: Parser.new,
+      normalizer: Normalizer.new,
+      image_downloader: nil,
+      cover_resolver: nil,
+      cover_attacher: BlackCoffeeConcertCoverAttachment
+    )
       @run = run
       @client = client || Client.new(request_delay_seconds: run.request_delay_seconds)
       @parser = parser
       @normalizer = normalizer
       @image_downloader = image_downloader
+      @cover_resolver = cover_resolver || BlackCoffeeConcertCoverResolver.new(
+        source_client: @client,
+        source_parser: parser,
+        source_normalizer: normalizer,
+        downloader: image_downloader || BlackCoffeeImageDownloader.new,
+        external_search_enabled: true
+      )
+      @cover_attacher = cover_attacher
       @images_downloaded_count = 0
+      @source_cover_recovered_count = 0
+      @search_cover_recovered_count = 0
+      @no_cover_skipped_count = 0
       @non_concert_skipped_count = initial_non_concert_skipped_count
       @items_since_counts_refresh = 0
       @last_counts_refresh_at = monotonic_now
@@ -265,15 +284,46 @@ module SongkickConcerts
     end
 
     def create_venue_item!(raw_event, normalized, source_path:)
-      venue = nil
-      venue_image = nil
-      ActiveRecord::Base.transaction do
-        venue = Venue.create!(venue_attributes(normalized))
-        venue_image = build_venue_image(venue, normalized)
-        create_item!(raw_event, normalized, status: 'created', source_path: source_path, venue: venue)
+      cover_result = cover_resolver.resolve_for_import(normalized)
+      unless cover_result.recovered?
+        @no_cover_skipped_count += 1
+        create_item!(
+          raw_event,
+          normalized,
+          status: 'skipped_no_cover',
+          source_path: source_path,
+          error_message: cover_result.error_message.presence || 'No se encontro una portada verificable para este concierto.',
+          cover_result: cover_result
+        )
+        return
       end
 
-      internalize_image!(venue_image)
+      venue = nil
+      ActiveRecord::Base.transaction do
+        venue = Venue.create!(venue_attributes(normalized))
+        cover_attacher.attach!(
+          venue: venue,
+          download: cover_result.download,
+          resolution_source: cover_result.resolution_source,
+          source_url: cover_result.image_url,
+          provenance: {
+            source_page_url: cover_result.page_url,
+            original_image_url: cover_result.image_url,
+            resolution_source: cover_result.resolution_source,
+            confidence: cover_result.confidence,
+            evidence: cover_result.evidence
+          }.compact
+        )
+        create_item!(
+          raw_event,
+          normalized,
+          status: 'created',
+          source_path: source_path,
+          venue: venue,
+          cover_result: cover_result
+        )
+      end
+      register_recovered_cover!(cover_result)
     rescue ActiveRecord::RecordNotUnique
       duplicate = duplicate_venue_for(normalized)
       if duplicate.present?
@@ -283,37 +333,13 @@ module SongkickConcerts
       end
     end
 
-    def build_venue_image(venue, normalized)
-      image_url = normalized[:image_url].to_s.strip
-      return nil if image_url.blank?
-
-      venue.venue_images.create!(
-        url: image_url,
-        source: SongkickConcerts::Normalizer::SOURCE,
-        position: 0
-      )
-    rescue ActiveRecord::RecordInvalid => e
-      Rails.logger.warn("Songkick skipping invalid image url for venue #{venue.id}: #{e.message}")
-      nil
-    end
-
-    def internalize_image!(venue_image)
-      return unless venue_image
-      return unless run.download_images?
-
-      result = BlackCoffeeVenueImageLinkConverter.convert_image!(
-        image: venue_image,
-        downloader: image_downloader
-      )
-      @images_downloaded_count += 1 if result&.status == 'converted'
-      result
-    rescue StandardError => e
-      Rails.logger.warn("Songkick image download failed for venue_image #{venue_image.id}: #{e.class} - #{e.message}")
-      nil
-    end
-
-    def image_downloader
-      @image_downloader ||= BlackCoffeeImageDownloader.new
+    def register_recovered_cover!(cover_result)
+      @images_downloaded_count += 1
+      if cover_result.resolution_source == 'brave_search'
+        @search_cover_recovered_count += 1
+      else
+        @source_cover_recovered_count += 1
+      end
     end
 
     def venue_attributes(normalized)
@@ -376,8 +402,8 @@ module SongkickConcerts
       }
     end
 
-    def create_item!(raw_event, normalized, status:, source_path:, venue: nil, error_message: nil, warning_message: nil)
-      run.items.create!(
+    def create_item!(raw_event, normalized, status:, source_path:, venue: nil, error_message: nil, warning_message: nil, cover_result: nil)
+      attributes = {
         venue: venue,
         status: status,
         source: SongkickConcerts::Normalizer::SOURCE,
@@ -396,7 +422,7 @@ module SongkickConcerts
         end_at: normalized[:end_at],
         start_date: normalized[:start_date],
         end_date: normalized[:end_date],
-        image_url: normalized[:image_url],
+        image_url: cover_result&.image_url.presence || normalized[:image_url],
         latitude: normalized[:latitude],
         longitude: normalized[:longitude],
         coordinates_source: normalized[:coordinates_source],
@@ -410,16 +436,25 @@ module SongkickConcerts
         error_message: error_message,
         raw_payload: raw_event,
         normalized_payload: normalized.except(:raw_payload)
-      )
+      }
+      if BlackCoffeeConcertImportItem.column_names.include?('image_resolution_source')
+        attributes[:image_resolution_source] = cover_result&.resolution_source
+        attributes[:image_resolution_confidence] = cover_result&.confidence
+        attributes[:image_resolution_evidence] = cover_result&.evidence
+      end
+      run.items.create!(attributes)
     end
 
     def update_request_counts!
-      run.update_columns(
+      updates = {
         robots_requests_count: client.robots_requests_count,
         listing_requests_count: client.listing_requests_count,
-        detail_requests_count: 0,
+        detail_requests_count: cover_resolver.source_requests_count,
         updated_at: Time.current
-      )
+      }
+      updates[:image_search_requests_count] = cover_resolver.search_requests_count if run.has_attribute?(:image_search_requests_count)
+      updates[:image_download_requests_count] = cover_resolver.image_download_requests_count if run.has_attribute?(:image_download_requests_count)
+      run.update_columns(updates)
     end
 
     def refresh_counts_if_due!
@@ -459,18 +494,22 @@ module SongkickConcerts
         requests: {
           robots: client.robots_requests_count,
           listing: client.listing_requests_count,
-          details: 0
+          details: cover_resolver.source_requests_count,
+          image_search: cover_resolver.search_requests_count,
+          image_downloads: cover_resolver.image_download_requests_count
         },
         photos: {
           downloaded: @images_downloaded_count,
-          image_urls_saved: run.items.where.not(image_url: [nil, '']).count
+          recovered_from_source: @source_cover_recovered_count,
+          recovered_from_search: @search_cover_recovered_count,
+          concerts_skipped_without_cover: counts['skipped_no_cover'].to_i
         }
       }
 
-      run.update_columns(
+      updates = {
         robots_requests_count: client.robots_requests_count,
         listing_requests_count: client.listing_requests_count,
-        detail_requests_count: 0,
+        detail_requests_count: cover_resolver.source_requests_count,
         candidates_found_count: concert_items.count,
         outside_country_skipped_count: counts['skipped_outside_country'].to_i,
         festival_skipped_count: counts['skipped_festival'].to_i,
@@ -485,7 +524,15 @@ module SongkickConcerts
         failed_count: counts['failed'].to_i,
         summary_payload: request_summary,
         updated_at: Time.current
-      )
+      }
+      if run.has_attribute?(:source_cover_recovered_count)
+        updates[:source_cover_recovered_count] = @source_cover_recovered_count
+        updates[:search_cover_recovered_count] = @search_cover_recovered_count
+        updates[:no_cover_skipped_count] = counts['skipped_no_cover'].to_i
+        updates[:image_search_requests_count] = cover_resolver.search_requests_count
+        updates[:image_download_requests_count] = cover_resolver.image_download_requests_count
+      end
+      run.update_columns(updates)
       @items_since_counts_refresh = 0
       @last_counts_refresh_at = monotonic_now
     end

@@ -20,7 +20,7 @@ class BlackCoffeeConcertImportsController < ApplicationController
       attributes: run_attributes
     )
     redirect_to black_coffee_concert_import_path(run),
-                notice: 'Importación Songkick creada. Se ejecuta en servidor respetando robots.txt y sin consultar fichas de detalle.'
+                notice: 'Importación Songkick creada. Antes de crear cada concierto exige una portada binaria verificable y descarta los que no la tengan.'
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_concert_imports_path, alert: "No se pudo crear la importación: #{e.message}"
   end
@@ -63,7 +63,7 @@ class BlackCoffeeConcertImportsController < ApplicationController
       max_events: clamped_integer(params[:max_events], default: 500, min: 1, max: MAX_EVENTS),
       request_delay_seconds: clamped_decimal(params[:request_delay_seconds], default: MIN_REQUEST_DELAY_SECONDS, min: MIN_REQUEST_DELAY_SECONDS, max: MAX_REQUEST_DELAY_SECONDS),
       strict_country_code: 'ES',
-      download_images: boolean_param(params[:download_images], default: true),
+      download_images: true,
       only_future: boolean_param(params[:only_future], default: true),
       auto_publish: false,
       preserve_manual_edits: true,

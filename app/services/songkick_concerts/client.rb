@@ -4,7 +4,22 @@ require 'uri'
 
 module SongkickConcerts
   class Client
-    class RequestError < StandardError; end
+    class RequestError < StandardError
+      attr_reader :http_status
+
+      def initialize(message, http_status: nil)
+        super(message)
+        @http_status = http_status&.to_i
+      end
+
+      def not_found?
+        [404, 410].include?(http_status)
+      end
+
+      def retryable?
+        http_status.nil? || [408, 425, 429].include?(http_status) || http_status >= 500
+      end
+    end
     class RobotsBlockedError < RequestError; end
 
     BASE_URL = 'https://www.songkick.com'.freeze
@@ -12,7 +27,7 @@ module SongkickConcerts
     DEFAULT_CRAWL_DELAY_SECONDS = 10.0
     DEFAULT_TIMEOUT_SECONDS = 15
 
-    attr_reader :robots_requests_count, :listing_requests_count
+    attr_reader :robots_requests_count, :listing_requests_count, :detail_requests_count
 
     def initialize(user_agent: DEFAULT_USER_AGENT, request_delay_seconds: DEFAULT_CRAWL_DELAY_SECONDS, timeout: DEFAULT_TIMEOUT_SECONDS)
       @user_agent = user_agent
@@ -24,6 +39,7 @@ module SongkickConcerts
       @robots_crawl_delay_seconds = DEFAULT_CRAWL_DELAY_SECONDS
       @robots_requests_count = 0
       @listing_requests_count = 0
+      @detail_requests_count = 0
     end
 
     def fetch_metro_page(source_path, page:)
@@ -33,6 +49,12 @@ module SongkickConcerts
       uri.query = query_params.present? ? query_params.to_query : nil
 
       @listing_requests_count += 1
+      get("#{uri.path}#{uri.query.present? ? "?#{uri.query}" : ''}")
+    end
+
+    def fetch_event_page(source_url)
+      uri = absolute_uri(source_url)
+      @detail_requests_count += 1
       get("#{uri.path}#{uri.query.present? ? "?#{uri.query}" : ''}")
     end
 
@@ -51,7 +73,10 @@ module SongkickConcerts
 
       return response_body(response) if response.is_a?(Net::HTTPSuccess)
 
-      raise RequestError, "Songkick respondio HTTP #{response.code} para #{path}"
+      raise RequestError.new(
+        "Songkick respondio HTTP #{response.code} para #{path}",
+        http_status: response.code
+      )
     end
 
     def load_robots_rules!

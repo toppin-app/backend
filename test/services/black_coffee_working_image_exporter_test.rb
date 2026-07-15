@@ -91,18 +91,16 @@ class BlackCoffeeWorkingImageExporterTest < ActiveSupport::TestCase
       block.call(response)
       response
     end
-    net_http_start = lambda do |_host, _port, use_ssl:, open_timeout:, read_timeout:, &block|
-      block.call(fake_http)
-    end
+    fake_http.define_singleton_method(:start) { |&block| block.call(fake_http) }
+    result = BlackCoffeeImageDownloader.new(
+      address_resolver: ->(_host) { ['93.184.216.34'] },
+      http_factory: ->(_uri, _address) { fake_http }
+    ).download('https://cdn.toppin.test/image.jpg')
 
-    Net::HTTP.stub(:start, net_http_start) do
-      result = BlackCoffeeImageDownloader.new.download('https://cdn.toppin.test/image.jpg')
-
-      assert result.ok?
-      assert_equal 'hello-image', result.body
-      assert_equal 'image/jpeg', result.content_type
-      assert_equal 200, result.http_status
-    end
+    assert result.ok?
+    assert_equal 'hello-image', result.body
+    assert_equal 'image/jpeg', result.content_type
+    assert_equal 200, result.http_status
   end
 
   test 'requested limit is clamped to the maximum allowed batch size' do

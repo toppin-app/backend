@@ -106,6 +106,10 @@ class Venue < ApplicationRecord
            class_name: 'BlackCoffeeConcertImportItem',
            dependent: :nullify,
            inverse_of: :venue
+  has_many :concert_cover_repair_items,
+           class_name: 'BlackCoffeeConcertCoverRepairItem',
+           dependent: :nullify,
+           inverse_of: :venue
 
   validates :name, :category, :address, :city, presence: true
   validates :category, inclusion: { in: CATEGORIES }

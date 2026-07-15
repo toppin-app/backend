@@ -55,6 +55,23 @@ class SongkickConcertsParserTest < ActiveSupport::TestCase
     assert_not parser.next_page?('<html><body>No pagination</body></html>')
   end
 
+  test 'extracts unique Open Graph and Twitter image candidates from an event page' do
+    html = <<~HTML
+      <html><head>
+        <meta property="og:image" content="https://images.example.test/event-cover.jpg">
+        <meta property="og:image:secure_url" content="https://images.example.test/event-cover.jpg">
+        <meta name="twitter:image" content="https://images.example.test/artist-cover.jpg">
+      </head></html>
+    HTML
+
+    urls = SongkickConcerts::Parser.new.page_image_urls(html)
+
+    assert_equal [
+      'https://images.example.test/event-cover.jpg',
+      'https://images.example.test/artist-cover.jpg'
+    ], urls
+  end
+
   test 'passes festival nodes to the importer so they can be counted and discarded' do
     html = <<~HTML
       <script type="application/ld+json">

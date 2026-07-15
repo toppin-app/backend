@@ -1,0 +1,53 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+  <div>
+    <div class="text-muted font-weight-bold">Black Coffee / Conciertos</div>
+    <h1 class="mb-1">Recuperacion de portadas #<%= @batch.id %></h1>
+    <p class="text-muted mb-0">Progreso del proceso de recuperacion y descarte seguro.</p>
+  </div>
+  <div class="mt-3 mt-md-0">
+    <%= link_to 'Volver a procesos', black_coffee_concert_cover_repairs_path, class: 'btn btn-outline-secondary mr-2' %>
+    <%= link_to 'Ver conciertos', black_coffee_venues_path(category: 'concierto'), class: 'btn btn-outline-primary' %>
+  </div>
+</div>
+
+<div id="concert-cover-repair-live" aria-live="polite">
+  <%= render 'live_status' %>
+</div>
+
+<script>
+  (() => {
+    const container = document.getElementById('concert-cover-repair-live');
+    if (!container) return;
+    const statusUrl = <%= raw status_black_coffee_concert_cover_repair_path(@batch, page: params[:page]).to_json %>;
+    let requestInFlight = false;
+    let timer;
+
+    const schedule = (delay = 3000) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(refresh, delay);
+    };
+    const refresh = async () => {
+      const snapshot = container.querySelector('[data-cover-repair-snapshot]');
+      if (!snapshot || snapshot.dataset.finished === 'true') return;
+      if (document.hidden || requestInFlight) return schedule(5000);
+      requestInFlight = true;
+      try {
+        const response = await window.fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const template = document.createElement('template');
+        template.innerHTML = (await response.text()).trim();
+        const next = template.content.querySelector('[data-cover-repair-snapshot]');
+        if (!next) throw new Error('Respuesta de progreso invalida');
+        container.replaceChildren(next);
+        if (next.dataset.finished !== 'true') schedule();
+      } catch (error) {
+        console.warn('No se pudo actualizar la recuperacion de portadas:', error);
+        schedule(6000);
+      } finally {
+        requestInFlight = false;
+      }
+    };
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(250); });
+    schedule();
+  })();
+</script>

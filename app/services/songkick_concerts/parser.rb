@@ -14,6 +14,17 @@ module SongkickConcerts
       document.at_css('.pagination a.next_page[href], .pagination a[rel="next"][href]').present?
     end
 
+    def page_image_urls(html)
+      document = Nokogiri::HTML(html.to_s)
+      selectors = [
+        'meta[property="og:image"][content]',
+        'meta[property="og:image:secure_url"][content]',
+        'meta[name="twitter:image"][content]',
+        'meta[name="twitter:image:src"][content]'
+      ]
+      selectors.filter_map { |selector| document.at_css(selector)&.[]('content').to_s.strip.presence }.uniq
+    end
+
     private
 
     def music_event_nodes(html)

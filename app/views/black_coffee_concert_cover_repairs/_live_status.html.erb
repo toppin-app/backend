@@ -1,0 +1,70 @@
+<div data-cover-repair-snapshot data-finished="<%= @batch.finished? %>">
+  <% if @batch.error_message.present? %>
+    <div class="alert alert-danger"><strong>Error del proceso:</strong> <%= @batch.error_message %></div>
+  <% end %>
+
+  <div class="row mb-4">
+    <% stats = [
+      ['Estado', @batch.status_label, nil],
+      ['Procesados', "#{number_with_delimiter(@batch.processed_venues)}/#{number_with_delimiter(@batch.total_venues)}", nil],
+      ['Recuperados de origen', number_with_delimiter(@batch.source_recovered_count), 'text-success'],
+      ['Recuperados por busqueda', number_with_delimiter(@batch.search_recovered_count), 'text-primary'],
+      ['Rechazados', number_with_delimiter(@batch.rejected_count), 'text-danger'],
+      ['Fallidos', number_with_delimiter(@batch.failed_count), 'text-danger']
+    ] %>
+    <% stats.each_with_index do |(label, value, css), index| %>
+      <div class="col-6 col-lg-2 mb-3"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+        <div class="text-muted text-uppercase font-weight-bold small mb-2"><%= label %></div>
+        <% if index.zero? %>
+          <span class="badge badge-<%= @batch.status_badge_class %> p-2"><%= value %></span>
+        <% else %>
+          <h3 class="mb-0 <%= css %>"><%= value %></h3>
+        <% end %>
+      </div></div></div>
+    <% end %>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="mb-1">Progreso del servidor</h4>
+          <p class="text-muted mb-0">Filtro: <strong><%= @batch.review_status_filter_label %></strong> · Busqueda web: <strong><%= @batch.external_search_enabled? ? 'activa' : 'desactivada' %></strong> · Requests: origen <strong><%= @batch.source_requests_count %></strong>, busqueda <strong><%= @batch.search_requests_count %></strong>, imagenes <strong><%= @batch.image_requests_count %></strong>.</p>
+        </div>
+        <% unless @batch.finished? %>
+          <%= button_to 'Cancelar proceso',
+                        cancel_black_coffee_concert_cover_repair_path(@batch),
+                        method: :post,
+                        class: 'btn btn-outline-danger mt-3 mt-md-0',
+                        data: { confirm: 'Se detendra el proceso. Los cambios ya aplicados se conservaran. Continuar?' } %>
+        <% end %>
+      </div>
+      <div class="progress" style="height: 18px;"><div class="progress-bar bg-info" style="width: <%= @batch.progress_percentage %>%"><%= @batch.progress_percentage %>%</div></div>
+      <p class="small text-muted mt-2 mb-0">El proceso continua aunque cierres esta pagina. Los errores internos quedan como fallidos y no rechazan automaticamente el concierto.</p>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white"><h4 class="mb-0">Conciertos del proceso</h4></div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Estado</th><th>Concierto</th><th>Origen portada</th><th>Confianza</th><th>Detalle</th><th>Procesado</th><th></th></tr></thead>
+        <tbody>
+          <% @items.each do |item| %>
+            <tr>
+              <td><span class="badge badge-<%= item.status_badge_class %>"><%= item.status_label %></span></td>
+              <td><strong><%= item.venue_name %></strong><br><small class="text-muted"><%= item.venue_id %></small></td>
+              <td><%= item.resolution_source.presence || '-' %></td>
+              <td><%= item.confidence.present? ? "#{item.confidence.to_f.round}%" : '-' %></td>
+              <td class="small"><%= item.error_message.presence || 'Portada binaria guardada correctamente.' %></td>
+              <td><%= item.processed_at ? l(item.processed_at, format: :short) : '-' %></td>
+              <td class="text-right"><%= link_to('Ver concierto', black_coffee_venue_path(item.venue), class: 'btn btn-sm btn-outline-primary') if item.venue %></td>
+            </tr>
+          <% end %>
+          <% if @items.empty? %><tr><td colspan="7" class="text-center text-muted py-4">Todavia no hay resultados.</td></tr><% end %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer bg-white"><%= will_paginate @items if @items.respond_to?(:total_pages) %></div>
+  </div>
+</div>

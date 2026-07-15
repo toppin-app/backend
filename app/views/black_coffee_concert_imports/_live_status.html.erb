@@ -10,6 +10,12 @@
       <%= link_to 'Abrir conciertos', black_coffee_venues_path(category: 'concierto'), class: 'btn btn-sm btn-outline-success mt-2 mt-md-0' %>
     </div>
   <% end %>
+  <% if @run.no_cover_skipped_count.to_i.positive? %>
+    <div class="alert alert-warning">
+      <strong><%= @run.no_cover_skipped_count %> conciertos no se crearon por no tener portada verificable.</strong>
+      No se guardó ningún concierto incompleto; puedes revisar el motivo exacto en la tabla.
+    </div>
+  <% end %>
 
   <div class="row mb-4">
     <div class="col-6 col-lg-2 mb-3">
@@ -50,6 +56,7 @@
         <div class="card-body">
           <p class="text-muted text-uppercase font-weight-bold mb-2">Fallidos</p>
           <h2 class="mb-0 text-danger"><%= @run.failed_count %></h2>
+          <div class="small text-muted mt-1">Sin portada: <%= @run.no_cover_skipped_count.to_i %></div>
         </div>
       </div>
     </div>
@@ -57,8 +64,8 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <p class="text-muted text-uppercase font-weight-bold mb-2">Requests</p>
-          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i %></h2>
-          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · detalle <%= @run.detail_requests_count %></div>
+          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i + @run.image_search_requests_count.to_i + @run.image_download_requests_count.to_i %></h2>
+          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · origen <%= @run.detail_requests_count %> · búsqueda <%= @run.image_search_requests_count.to_i %> · imágenes <%= @run.image_download_requests_count.to_i %></div>
         </div>
       </div>
     </div>
@@ -73,7 +80,8 @@
           Páginas por área: <strong><%= @run.max_pages_per_source %></strong> ·
           Máx. conciertos: <strong><%= @run.max_events %></strong> ·
           Solo futuros: <strong><%= @run.only_future? ? 'sí' : 'no' %></strong> ·
-          Imágenes: <strong><%= @run.download_images? ? "binario (#{@run.images_downloaded_count.to_i} descargadas)" : 'solo URL' %></strong> ·
+          Portadas binarias: <strong><%= @run.images_downloaded_count.to_i %></strong>
+          (<%= @run.source_cover_recovered_count.to_i %> desde origen, <%= @run.search_cover_recovered_count.to_i %> por búsqueda) ·
           Delay: <strong><%= @run.request_delay_seconds.to_f.to_i %>s</strong> ·
           País: <strong><%= @run.strict_country_code %></strong> ·
           Origen: <strong><%= @run.origin_label %></strong> ·
@@ -120,6 +128,7 @@
             <th>Fecha</th>
             <th>Coordenadas</th>
             <th>Descripción fuente</th>
+            <th>Portada</th>
             <th>Local</th>
             <th>Mensaje</th>
           </tr>
@@ -168,6 +177,18 @@
                     <span class="text-muted">No encontrada</span>
                   <% end %>
                 </td>
+                <td class="small">
+                  <% if item.image_resolution_source.present? %>
+                    <strong><%= item.image_resolution_source == 'brave_search' ? 'Búsqueda web' : 'Songkick' %></strong>
+                    <% if item.image_resolution_confidence.present? %>
+                      <div class="text-muted">Confianza: <%= item.image_resolution_confidence.to_f.round %>%</div>
+                    <% end %>
+                  <% elsif item.status == 'skipped_no_cover' %>
+                    <span class="badge badge-warning">No encontrada</span>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
                 <td>
                   <% if item.venue.present? %>
                     <%= link_to item.venue_id, black_coffee_venue_path(item.venue), class: 'btn btn-sm btn-outline-primary' %>
@@ -187,7 +208,7 @@
             <% end %>
           <% else %>
             <tr>
-              <td colspan="9" class="text-center text-muted py-4">
+              <td colspan="10" class="text-center text-muted py-4">
                 <%= @run.finished? ? 'No se encontraron conciertos para mostrar.' : 'Buscando conciertos… Esta tabla se actualizará automáticamente.' %>
               </td>
             </tr>

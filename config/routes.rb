@@ -70,6 +70,12 @@ Rails.application.routes.draw do
         post :cancel
       end
     end
+    resources :concert_cover_repairs, controller: 'black_coffee_concert_cover_repairs', only: [:index, :create, :show] do
+      member do
+        get :status
+        post :cancel
+      end
+    end
     resources :fake_favorite_batches, controller: 'black_coffee_fake_favorite_batches', only: [:index, :create, :show] do
       member do
         get :status

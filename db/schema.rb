@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_07_10_110000) do
+ActiveRecord::Schema.define(version: 2026_07_15_120000) do
 
   create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "android_last_version"
@@ -136,6 +136,57 @@ ActiveRecord::Schema.define(version: 2026_07_10_110000) do
     t.index ["status"], name: "idx_bc_bulk_imports_status"
   end
 
+  create_table "black_coffee_concert_cover_repair_batches", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+    t.string "status", default: "pending", null: false
+    t.string "review_status_filter", default: "approved", null: false
+    t.boolean "external_search_enabled", default: false, null: false
+    t.integer "total_venues", default: 0, null: false
+    t.integer "processed_venues", default: 0, null: false
+    t.integer "source_recovered_count", default: 0, null: false
+    t.integer "search_recovered_count", default: 0, null: false
+    t.integer "rejected_count", default: 0, null: false
+    t.integer "failed_count", default: 0, null: false
+    t.integer "skipped_count", default: 0, null: false
+    t.integer "source_requests_count", default: 0, null: false
+    t.integer "search_requests_count", default: 0, null: false
+    t.integer "image_requests_count", default: 0, null: false
+    t.bigint "created_by_id"
+    t.string "worker_token"
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "last_worker_heartbeat_at"
+    t.text "error_message"
+    t.json "report_payload"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["created_at"], name: "idx_bc_concert_cover_batches_created"
+    t.index ["created_by_id"], name: "idx_bc_concert_cover_batches_user"
+    t.index ["status"], name: "idx_bc_concert_cover_batches_status"
+  end
+
+  create_table "black_coffee_concert_cover_repair_items", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+    t.bigint "black_coffee_concert_cover_repair_batch_id", null: false
+    t.string "venue_id"
+    t.string "venue_name"
+    t.string "status", default: "pending", null: false
+    t.string "original_review_status"
+    t.string "resolution_source"
+    t.text "source_page_url"
+    t.text "selected_image_url"
+    t.text "result_page_url"
+    t.decimal "confidence", precision: 5, scale: 2
+    t.json "evidence"
+    t.string "error_type"
+    t.text "error_message"
+    t.datetime "processed_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["black_coffee_concert_cover_repair_batch_id", "venue_id"], name: "idx_bc_concert_cover_items_batch_venue", unique: true
+    t.index ["black_coffee_concert_cover_repair_batch_id"], name: "idx_bc_concert_cover_items_batch"
+    t.index ["status"], name: "idx_bc_concert_cover_items_status"
+    t.index ["venue_id"], name: "idx_bc_concert_cover_items_venue"
+  end
+
   create_table "black_coffee_concert_import_items", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "black_coffee_concert_import_run_id", null: false
     t.string "venue_id"
@@ -172,6 +223,9 @@ ActiveRecord::Schema.define(version: 2026_07_10_110000) do
     t.datetime "start_at"
     t.datetime "end_at"
     t.string "event_dedupe_key"
+    t.string "image_resolution_source"
+    t.decimal "image_resolution_confidence", precision: 5, scale: 2
+    t.json "image_resolution_evidence"
     t.index ["black_coffee_concert_import_run_id"], name: "idx_bc_concert_items_run"
     t.index ["country_code"], name: "idx_bc_concert_items_country"
     t.index ["event_dedupe_key"], name: "idx_bc_concert_items_event_dedupe"
@@ -220,6 +274,11 @@ ActiveRecord::Schema.define(version: 2026_07_10_110000) do
     t.string "import_origin", default: "dashboard", null: false
     t.integer "non_concert_skipped_count", default: 0, null: false
     t.integer "occurred_marked_count", default: 0, null: false
+    t.integer "source_cover_recovered_count", default: 0, null: false
+    t.integer "search_cover_recovered_count", default: 0, null: false
+    t.integer "no_cover_skipped_count", default: 0, null: false
+    t.integer "image_search_requests_count", default: 0, null: false
+    t.integer "image_download_requests_count", default: 0, null: false
     t.index ["created_at"], name: "idx_bc_concert_runs_created_at"
     t.index ["created_by_id"], name: "idx_bc_concert_runs_created_by"
     t.index ["source"], name: "idx_bc_concert_runs_source"
@@ -1183,6 +1242,9 @@ ActiveRecord::Schema.define(version: 2026_07_10_110000) do
   add_foreign_key "black_coffee_bulk_import_steps", "black_coffee_bulk_imports"
   add_foreign_key "black_coffee_bulk_import_steps", "black_coffee_import_runs"
   add_foreign_key "black_coffee_bulk_imports", "black_coffee_import_regions"
+  add_foreign_key "black_coffee_concert_cover_repair_batches", "users", column: "created_by_id", name: "fk_bc_concert_cover_batches_user", on_delete: :nullify
+  add_foreign_key "black_coffee_concert_cover_repair_items", "black_coffee_concert_cover_repair_batches"
+  add_foreign_key "black_coffee_concert_cover_repair_items", "venues", name: "fk_bc_concert_cover_items_venue", on_delete: :nullify
   add_foreign_key "black_coffee_concert_import_items", "black_coffee_concert_import_runs"
   add_foreign_key "black_coffee_concert_import_items", "venues", name: "fk_bc_concert_items_venue", on_delete: :nullify
   add_foreign_key "black_coffee_concert_import_runs", "users", column: "created_by_id", name: "fk_bc_concert_runs_created_by", on_delete: :nullify

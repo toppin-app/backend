@@ -11,6 +11,7 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
     skipped_duplicate
     skipped_invalid
     skipped_past
+    skipped_no_cover
     failed
     cancelled
   ].freeze
@@ -64,6 +65,8 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
       'Invalido'
     when 'skipped_past'
       'Pasado'
+    when 'skipped_no_cover'
+      'Sin portada'
     when 'failed'
       'Fallido'
     when 'cancelled'
@@ -81,7 +84,7 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
       'info'
     when 'skipped_duplicate', 'skipped_non_concert', 'skipped_festival', 'skipped_past'
       'secondary'
-    when 'skipped_outside_country', 'skipped_invalid'
+    when 'skipped_outside_country', 'skipped_invalid', 'skipped_no_cover'
       'warning'
     when 'failed'
       'danger'
