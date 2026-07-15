@@ -6,7 +6,7 @@ class BlackCoffeeFestivalImportsController < ApplicationController
 
   before_action :check_admin
   before_action :hide_content_header
-  before_action :set_run, only: [:show, :cancel]
+  before_action :set_run, only: [:show, :status, :cancel]
 
   def index
     @title = 'Importador FanMusicFest'
@@ -27,8 +27,13 @@ class BlackCoffeeFestivalImportsController < ApplicationController
 
   def show
     @title = "Importacion FanMusicFest ##{@run.id}"
-    @status_counts = @run.items.group(:status).count
-    @items = @run.items.ordered.paginate(page: params[:page], per_page: 50)
+    prepare_run_state
+  end
+
+  def status
+    prepare_run_state
+    response.headers['Cache-Control'] = 'no-store'
+    render partial: 'live_status', layout: false
   end
 
   def cancel
@@ -47,6 +52,12 @@ class BlackCoffeeFestivalImportsController < ApplicationController
 
   def set_run
     @run = BlackCoffeeFestivalImportRun.find(params[:id])
+  end
+
+  def prepare_run_state
+    @run.reload
+    @status_counts = @run.items.group(:status).count
+    @items = @run.items.includes(:venue).ordered.paginate(page: params[:page], per_page: 50)
   end
 
   def run_attributes

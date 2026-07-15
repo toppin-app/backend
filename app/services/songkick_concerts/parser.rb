@@ -20,7 +20,7 @@ module SongkickConcerts
       document = Nokogiri::HTML(html.to_s)
       document.css('script[type="application/ld+json"]').flat_map do |script|
         parse_json_ld(script.text)
-      end.select { |node| music_event_node?(node) }
+      end.select { |node| supported_event_node?(node) }
     end
 
     def parse_json_ld(raw_json)
@@ -42,8 +42,9 @@ module SongkickConcerts
       end
     end
 
-    def music_event_node?(node)
-      Array(node['@type']).map(&:to_s).include?('MusicEvent')
+    def supported_event_node?(node)
+      types = Array(node['@type']).map(&:to_s)
+      types.include?('MusicEvent') || types.include?('MusicFestival')
     end
 
     def normalize_source_url(node, base_url)

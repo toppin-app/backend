@@ -49,7 +49,7 @@ module SongkickConcerts
       response = http_get(absolute_uri(path))
       @last_request_at = monotonic_time
 
-      return response.body if response.is_a?(Net::HTTPSuccess)
+      return response_body(response) if response.is_a?(Net::HTTPSuccess)
 
       raise RequestError, "Songkick respondio HTTP #{response.code} para #{path}"
     end
@@ -60,7 +60,7 @@ module SongkickConcerts
       response = http_get(URI.join(BASE_URL, '/robots.txt'))
       @robots_requests_count += 1
       @last_request_at = monotonic_time
-      parse_robots(response.body.to_s) if response.is_a?(Net::HTTPSuccess)
+      parse_robots(response_body(response)) if response.is_a?(Net::HTTPSuccess)
       @robots_loaded = true
     end
 
@@ -113,6 +113,20 @@ module SongkickConcerts
       end
     rescue Net::OpenTimeout, Net::ReadTimeout, SocketError, SystemCallError => e
       raise RequestError, "No se pudo pedir #{uri}: #{e.class} - #{e.message}"
+    end
+
+    def response_body(response)
+      body = response.body.to_s
+      charset = response_charset(response)
+      body.force_encoding(charset)
+      body.encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+    rescue Encoding::ConverterNotFoundError, Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+      response.body.to_s.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+    end
+
+    def response_charset(response)
+      content_type = response['content-type'].to_s
+      content_type[/charset=([^;\s]+)/i, 1].presence || 'UTF-8'
     end
 
     def absolute_uri(path_or_url)

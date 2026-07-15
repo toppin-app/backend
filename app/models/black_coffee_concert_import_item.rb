@@ -6,6 +6,7 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
     dry_run
     created
     skipped_outside_country
+    skipped_non_concert
     skipped_festival
     skipped_duplicate
     skipped_invalid
@@ -53,8 +54,10 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
       'Creado'
     when 'skipped_outside_country'
       'Fuera de Espana'
+    when 'skipped_non_concert'
+      'No concierto'
     when 'skipped_festival'
-      'Festival'
+      'No concierto'
     when 'skipped_duplicate'
       'Duplicado'
     when 'skipped_invalid'
@@ -76,7 +79,7 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
       'success'
     when 'dry_run'
       'info'
-    when 'skipped_duplicate', 'skipped_festival', 'skipped_past'
+    when 'skipped_duplicate', 'skipped_non_concert', 'skipped_festival', 'skipped_past'
       'secondary'
     when 'skipped_outside_country', 'skipped_invalid'
       'warning'

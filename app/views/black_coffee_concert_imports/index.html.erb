@@ -1,158 +1,101 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
   <div>
     <div class="text-muted font-weight-bold">Black Coffee / Importaciones</div>
-    <h1 class="mb-1">Importador Songkick</h1>
-    <p class="text-muted mb-0">Trae conciertos futuros de Espana desde paginas publicas de Songkick, sin consultar fichas de detalle.</p>
+    <h1 class="mb-1">Importador de conciertos</h1>
+    <p class="text-muted mb-0">Trae exclusivamente conciertos futuros de España desde los listados públicos de Songkick.</p>
   </div>
   <div class="mt-3 mt-md-0">
-    <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-secondary mr-2' %>
-    <%= link_to 'Importador FanMusicFest', black_coffee_festival_imports_path, class: 'btn btn-outline-primary' %>
+    <%= link_to 'Volver a locales', black_coffee_venues_path, class: 'btn btn-outline-secondary' %>
   </div>
 </div>
 
 <div class="alert alert-info">
-  <strong>Herramienta controlada.</strong>
-  Usa JSON-LD de los listados publicos de Songkick, respeta robots.txt, fuerza un delay minimo de 10 segundos y no abre paginas de detalle. El formulario manual ejecuta dry-run por defecto.
-</div>
-
-<div class="card border-0 shadow-sm mb-4 border-left-success">
-  <div class="card-body">
-    <div class="d-flex flex-wrap justify-content-between align-items-start">
-      <div class="mr-3">
-        <h4 class="mb-1">Importacion principal de conciertos en Espana</h4>
-        <p class="text-muted mb-0">
-          Recorre las areas principales configuradas de Songkick, se queda solo con conciertos futuros en Espana,
-          evita eventos tipo festival y crea venues con categoria <strong>concierto</strong> visibles pero pendientes de revision.
-        </p>
-        <p class="text-muted small mb-0 mt-2">
-          No se consultan fichas individuales ni endpoints privados. Si ya existe un concierto por fuente, fingerprint o fecha/nombre/ciudad, se salta.
-        </p>
-      </div>
-    </div>
-    <%= form_with url: black_coffee_concert_imports_path, method: :post, local: true, class: 'mt-3' do %>
-      <%= hidden_field_tag :preset, 'import_all_spain' %>
-      <div class="form-row align-items-end">
-        <div class="form-group col-md-3 mb-2 mb-md-0">
-          <%= label_tag :songkick_pages_all, 'Paginas por area' %>
-          <%= number_field_tag :max_pages_per_source, 10, min: 1, max: BlackCoffeeConcertImportsController::MAX_PAGES_PER_SOURCE, id: 'songkick_pages_all', class: 'form-control' %>
-          <small class="text-muted">Cada pagina es una request de listado.</small>
-        </div>
-        <div class="form-group col-md-3 mb-2 mb-md-0">
-          <%= label_tag :songkick_max_events_all, 'Max. eventos' %>
-          <%= number_field_tag :max_events, BlackCoffeeConcertImportsController::MAX_EVENTS, min: 1, max: BlackCoffeeConcertImportsController::MAX_EVENTS, id: 'songkick_max_events_all', class: 'form-control' %>
-        </div>
-        <div class="form-group col-md-3 mb-2 mb-md-0">
-          <%= label_tag :songkick_delay_all, 'Delay seg.' %>
-          <%= number_field_tag :request_delay_seconds, 10, min: 10, max: 120, step: 1, id: 'songkick_delay_all', class: 'form-control' %>
-        </div>
-        <div class="form-group col-md-3 mb-0">
-          <%= submit_tag 'Traer conciertos futuros de Espana',
-                         class: 'btn btn-success text-white',
-                         data: { confirm: 'Se recorreran las areas principales de Songkick y se crearan conciertos futuros en Espana. El proceso corre en segundo plano y puede tardar. Continuar?' } %>
-        </div>
-      </div>
-    <% end %>
-  </div>
+  <strong>Proceso controlado.</strong>
+  Usa JSON-LD de los listados públicos, respeta robots.txt, aplica un delay mínimo de 10 segundos y no abre páginas de detalle. Los festivales y demás eventos no individuales se descartan antes de entrar en el historial visible.
 </div>
 
 <div class="row">
-  <div class="col-lg-7 mb-4">
-    <div class="card border-0 shadow-sm">
+  <div class="col-lg-8 mb-4">
+    <div class="card border-0 shadow-sm border-left-success h-100">
       <div class="card-header bg-white">
-        <h4 class="mb-0">Crear nueva importacion</h4>
+        <h4 class="mb-1">Nueva importación de conciertos en España</h4>
+        <p class="text-muted mb-0">Un único flujo para simular o crear conciertos. La opción seleccionada por defecto crea locales aprobados y visibles.</p>
       </div>
       <div class="card-body">
         <%= form_with url: black_coffee_concert_imports_path, method: :post, local: true do %>
           <div class="form-row">
-            <div class="form-group col-md-6">
-              <%= label_tag :mode, 'Modo' %>
+            <div class="form-group col-md-4">
+              <%= label_tag :mode, 'Acción' %>
               <%= select_tag :mode,
                              options_for_select([
-                               ['Dry run: solo simular y registrar candidatos', 'dry_run'],
-                               ['Aplicar cambios: crear conciertos', 'import']
-                             ], 'dry_run'),
+                               ['Crear conciertos en Black Coffee', 'import'],
+                               ['Solo simular (no crea locales)', 'dry_run']
+                             ], 'import'),
                              class: 'form-control' %>
-              <small class="text-muted">Usa dry-run para medir antes de crear venues.</small>
+              <small class="text-muted">La simulación solo registra candidatos para medir el alcance.</small>
             </div>
             <div class="form-group col-md-3">
-              <%= label_tag :max_pages_per_source, 'Paginas por area' %>
-              <%= number_field_tag :max_pages_per_source, 1, min: 1, max: BlackCoffeeConcertImportsController::MAX_PAGES_PER_SOURCE, class: 'form-control' %>
-              <small class="text-muted">Maximo <%= BlackCoffeeConcertImportsController::MAX_PAGES_PER_SOURCE %>.</small>
+              <%= label_tag :max_pages_per_source, 'Páginas por área' %>
+              <%= number_field_tag :max_pages_per_source, 10, min: 1, max: BlackCoffeeConcertImportsController::MAX_PAGES_PER_SOURCE, class: 'form-control' %>
+              <small class="text-muted">Cada página es una request de listado.</small>
             </div>
             <div class="form-group col-md-3">
-              <%= label_tag :max_events, 'Max. eventos' %>
-              <%= number_field_tag :max_events, 500, min: 1, max: BlackCoffeeConcertImportsController::MAX_EVENTS, class: 'form-control' %>
+              <%= label_tag :max_events, 'Máx. conciertos' %>
+              <%= number_field_tag :max_events, BlackCoffeeConcertImportsController::MAX_EVENTS, min: 1, max: BlackCoffeeConcertImportsController::MAX_EVENTS, class: 'form-control' %>
             </div>
-          </div>
-
-          <div class="form-group">
-            <%= label_tag :source_paths, 'Areas o URLs Songkick' %>
-            <%= text_area_tag :source_paths, @default_source_paths, rows: 8, class: 'form-control', spellcheck: false %>
-            <small class="text-muted">Una ruta o URL por linea. Ejemplo: /metro-areas/28755-spain-madrid.</small>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-3">
+            <div class="form-group col-md-2">
               <%= label_tag :request_delay_seconds, 'Delay seg.' %>
               <%= number_field_tag :request_delay_seconds, 10, min: 10, max: 120, step: 1, class: 'form-control' %>
-              <small class="text-muted">Minimo 10 para ir con calma.</small>
-            </div>
-            <div class="form-group col-md-3">
-              <%= hidden_field_tag :only_future, '0' %>
-              <div class="custom-control custom-switch mt-4">
-                <%= check_box_tag :only_future, '1', true, class: 'custom-control-input', id: 'songkick_only_future' %>
-                <%= label_tag :songkick_only_future, 'Solo futuros', class: 'custom-control-label' %>
-              </div>
-              <small class="text-muted">Descarta conciertos ya pasados.</small>
-            </div>
-            <div class="form-group col-md-3">
-              <%= hidden_field_tag :download_images, '0' %>
-              <div class="custom-control custom-switch mt-4">
-                <%= check_box_tag :download_images, '1', true, class: 'custom-control-input', id: 'songkick_download_images' %>
-                <%= label_tag :songkick_download_images, 'Descargar imagenes', class: 'custom-control-label' %>
-              </div>
-              <small class="text-muted">Guarda la imagen como binario si responde bien.</small>
-            </div>
-            <div class="form-group col-md-3">
-              <div class="custom-control custom-switch mt-4">
-                <%= check_box_tag :auto_publish, '1', false, class: 'custom-control-input', id: 'songkick_auto_publish' %>
-                <%= label_tag :songkick_auto_publish, 'Autopublicar', class: 'custom-control-label' %>
-              </div>
-              <small class="text-muted">Por defecto quedan pendientes de revision.</small>
             </div>
           </div>
 
-          <div class="form-row">
+          <div class="form-row align-items-center">
             <div class="form-group col-md-4">
-              <%= hidden_field_tag :include_festivals, '0' %>
+              <%= hidden_field_tag :only_future, '0' %>
               <div class="custom-control custom-switch">
-                <%= check_box_tag :include_festivals, '1', false, class: 'custom-control-input', id: 'songkick_include_festivals' %>
-                <%= label_tag :songkick_include_festivals, 'Incluir eventos tipo festival', class: 'custom-control-label' %>
+                <%= check_box_tag :only_future, '1', true, class: 'custom-control-input', id: 'songkick_only_future' %>
+                <%= label_tag :songkick_only_future, 'Solo conciertos futuros', class: 'custom-control-label' %>
               </div>
-              <small class="text-muted">Normalmente apagado: festivales van por FanMusicFest.</small>
+            </div>
+            <div class="form-group col-md-4">
+              <%= hidden_field_tag :download_images, '0' %>
+              <div class="custom-control custom-switch">
+                <%= check_box_tag :download_images, '1', true, class: 'custom-control-input', id: 'songkick_download_images' %>
+                <%= label_tag :songkick_download_images, 'Descargar imágenes válidas', class: 'custom-control-label' %>
+              </div>
             </div>
           </div>
 
-          <%= submit_tag 'Crear importacion en servidor', class: 'btn btn-primary text-white' %>
+          <details class="mb-3">
+            <summary class="font-weight-bold text-primary" style="cursor: pointer;">Configuración avanzada de áreas</summary>
+            <div class="form-group mt-3 mb-0">
+              <%= label_tag :source_paths, 'Áreas o URLs de Songkick' %>
+              <%= text_area_tag :source_paths, @default_source_paths, rows: 8, class: 'form-control', spellcheck: false %>
+              <small class="text-muted">Una ruta o URL por línea. Si no necesitas limitar ciudades, conserva la selección predeterminada.</small>
+            </div>
+          </details>
+
+          <%= submit_tag 'Iniciar importación de conciertos',
+                         class: 'btn btn-success text-white btn-lg',
+                         data: { confirm: 'El proceso se ejecutará en segundo plano y podrás seguir el avance en tiempo real. ¿Continuar?' } %>
         <% end %>
       </div>
     </div>
   </div>
 
-  <div class="col-lg-5 mb-4">
+  <div class="col-lg-4 mb-4">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-white">
-        <h4 class="mb-0">Resumen de seguridad</h4>
+        <h4 class="mb-0">Qué ocurrirá</h4>
       </div>
       <div class="card-body">
-        <ul class="mb-0">
-          <li>Solo se aceptan conciertos con pais normalizado como ES.</li>
-          <li>No se hacen llamadas a paginas de detalle: solo listados Songkick con JSON-LD.</li>
-          <li>Los festivales se saltan para evitar duplicar el flujo FanMusicFest.</li>
-          <li>Los conciertos se crean con categoria concierto y quedan pendientes de revision.</li>
-          <li>Se deduplica por fuente, fingerprint y fallback nombre/ciudad/fecha.</li>
-          <li>Las imagenes se intentan guardar como binario; si falla, se conserva la URL registrada.</li>
-          <li>La categoria concierto se muestra en app sin filtro de cercania, igual que festivales.</li>
+        <ul class="mb-0 pl-4">
+          <li>Solo se aceptan conciertos con país normalizado como ES.</li>
+          <li>Los festivales y otros tipos de evento se descartan y no aparecen como conciertos.</li>
+          <li>Se deduplica por fuente, identificador, fingerprint y datos normalizados del evento.</li>
+          <li>Las importaciones del dashboard crean conciertos aprobados y visibles.</li>
+          <li>La ejecución continúa en el servidor y su pantalla se actualiza automáticamente.</li>
+          <li>Los conciertos se muestran en la app sin filtro de cercanía y ordenados por fecha.</li>
         </ul>
       </div>
     </div>
@@ -169,10 +112,10 @@
         <tr>
           <th>#</th>
           <th>Estado</th>
-          <th>Modo</th>
-          <th>Areas</th>
-          <th>Paginas/area</th>
-          <th>Candidatos</th>
+          <th>Acción</th>
+          <th>Áreas</th>
+          <th>Páginas/área</th>
+          <th>Conciertos analizados</th>
           <th>Creados</th>
           <th>Saltados</th>
           <th>Requests</th>
@@ -191,15 +134,15 @@
               <td><%= run.max_pages_per_source %></td>
               <td><%= run.candidates_found_count %></td>
               <td class="text-success"><%= run.venues_created_count %></td>
-              <td><%= run.outside_country_skipped_count.to_i + run.festival_skipped_count.to_i + run.duplicate_skipped_count.to_i + run.invalid_skipped_count.to_i + run.past_skipped_count.to_i %></td>
+              <td><%= run.outside_country_skipped_count.to_i + run.duplicate_skipped_count.to_i + run.invalid_skipped_count.to_i + run.past_skipped_count.to_i %></td>
               <td><%= run.robots_requests_count.to_i + run.listing_requests_count.to_i + run.detail_requests_count.to_i %></td>
               <td><%= l(run.created_at, format: :short) %></td>
-              <td class="text-right"><%= link_to 'Ver', black_coffee_concert_import_path(run), class: 'btn btn-sm btn-outline-primary' %></td>
+              <td class="text-right"><%= link_to 'Ver progreso', black_coffee_concert_import_path(run), class: 'btn btn-sm btn-outline-primary' %></td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="11" class="text-center text-muted py-4">Todavia no hay importaciones Songkick.</td>
+            <td colspan="11" class="text-center text-muted py-4">Todavía no hay importaciones de conciertos.</td>
           </tr>
         <% end %>
       </tbody>

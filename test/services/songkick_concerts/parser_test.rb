@@ -55,6 +55,23 @@ class SongkickConcertsParserTest < ActiveSupport::TestCase
     assert_not parser.next_page?('<html><body>No pagination</body></html>')
   end
 
+  test 'passes festival nodes to the importer so they can be counted and discarded' do
+    html = <<~HTML
+      <script type="application/ld+json">
+        {
+          "@type": "MusicFestival",
+          "name": "Festival que no debe importarse",
+          "url": "/festivals/999-festival"
+        }
+      </script>
+    HTML
+
+    events = SongkickConcerts::Parser.new.parse_listing(html)
+
+    assert_equal 1, events.size
+    assert_equal 'MusicFestival', events.first['@type']
+  end
+
   test 'ignores malformed JSON-LD without raising' do
     html = '<script type="application/ld+json">{not-json</script>'
 

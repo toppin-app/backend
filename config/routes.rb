@@ -32,6 +32,7 @@ Rails.application.routes.draw do
     resources :venues, controller: 'black_coffee_venues' do
       member do
         patch :review
+        patch :event_status
         patch :review_festival_description
         post :convert_linked_images
         post :refresh_festival_details
@@ -59,11 +60,13 @@ Rails.application.routes.draw do
     end
     resources :festival_imports, controller: 'black_coffee_festival_imports', only: [:index, :create, :show] do
       member do
+        get :status
         post :cancel
       end
     end
     resources :concert_imports, controller: 'black_coffee_concert_imports', only: [:index, :create, :show] do
       member do
+        get :status
         post :cancel
       end
     end
@@ -122,6 +125,8 @@ Rails.application.routes.draw do
     scope module: 'black_coffee', path: 'blackcoffee' do
       namespace :admin do
         match 'featured/recalculate', to: 'featured_recalculations#create', via: [:get, :post]
+        match 'concerts/import', to: 'concert_imports#create', via: [:get, :post]
+        match 'concerts/mark_occurred', to: 'concert_imports#mark_occurred', via: [:get, :post]
       end
 
       resources :venues, only: [:index, :show] do

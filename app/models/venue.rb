@@ -37,6 +37,13 @@ class Venue < ApplicationRecord
   REVIEW_STATUS_PENDING = 'pending'.freeze
   REVIEW_STATUS_APPROVED = 'approved'.freeze
   REVIEW_STATUS_REJECTED = 'rejected'.freeze
+  EVENT_STATUSES = %w[upcoming occurred].freeze
+  EVENT_STATUS_UPCOMING = 'upcoming'.freeze
+  EVENT_STATUS_OCCURRED = 'occurred'.freeze
+  EVENT_IMPORT_ORIGINS = %w[dashboard cron manual].freeze
+  EVENT_IMPORT_ORIGIN_DASHBOARD = 'dashboard'.freeze
+  EVENT_IMPORT_ORIGIN_CRON = 'cron'.freeze
+  EVENT_IMPORT_ORIGIN_MANUAL = 'manual'.freeze
   SOURCE_DESCRIPTION_STATUSES = %w[not_found extracted needs_review approved rejected].freeze
   COORDINATES_CONFIDENCES = %w[high medium low none].freeze
   REVIEW_STATUS_LABELS = {
@@ -103,6 +110,8 @@ class Venue < ApplicationRecord
   validates :name, :category, :address, :city, presence: true
   validates :category, inclusion: { in: CATEGORIES }
   validates :review_status, inclusion: { in: REVIEW_STATUSES }, if: -> { has_attribute?(:review_status) }
+  validates :event_status, inclusion: { in: EVENT_STATUSES }, if: -> { has_attribute?(:event_status) }
+  validates :event_import_origin, inclusion: { in: EVENT_IMPORT_ORIGINS }, allow_blank: true, if: -> { has_attribute?(:event_import_origin) }
   validates :review_rejection_reason, inclusion: { in: REJECTION_REASON_CODES }, allow_blank: true, if: -> { has_attribute?(:review_rejection_reason) }
   validates :google_place_id, uniqueness: true, allow_blank: true, if: -> { has_attribute?(:google_place_id) }
   validates :latitude, :longitude, numericality: true, allow_nil: true
@@ -128,6 +137,21 @@ class Venue < ApplicationRecord
   }
   scope :not_rejected_for_app, lambda {
     column_names.include?('review_status') ? where.not(review_status: REVIEW_STATUS_REJECTED) : all
+  }
+  scope :not_occurred_events_for_app, lambda {
+    column_names.include?('event_status') ? where.not(event_status: EVENT_STATUS_OCCURRED) : all
+  }
+  scope :concerts_for_app, lambda {
+    scope = where(category: 'concierto')
+    scope = scope.where(review_status: REVIEW_STATUS_APPROVED) if column_names.include?('review_status')
+    scope = scope.where(event_status: EVENT_STATUS_UPCOMING) if column_names.include?('event_status')
+    scope = scope.where(visible: true) if column_names.include?('visible')
+    if column_names.include?('event_start_at') && column_names.include?('festival_start_date')
+      scope = scope.where('COALESCE(event_end_at, event_start_at, festival_end_date, festival_start_date) >= ?', Time.zone.today)
+    elsif column_names.include?('event_start_at')
+      scope = scope.where('COALESCE(event_end_at, event_start_at) >= ?', Time.zone.today.beginning_of_day)
+    end
+    scope
   }
 
   def self.normalize_text(value)
@@ -274,6 +298,18 @@ class Venue < ApplicationRecord
     has_attribute?(:visible) ? visible? : true
   end
 
+  def event_status_for_dashboard
+    has_attribute?(:event_status) ? event_status.presence || EVENT_STATUS_UPCOMING : EVENT_STATUS_UPCOMING
+  end
+
+  def event_import_origin_for_dashboard
+    has_attribute?(:event_import_origin) ? event_import_origin.presence : nil
+  end
+
+  def event_occurred?
+    event_status_for_dashboard == EVENT_STATUS_OCCURRED
+  end
+
   def payment_current_for_dashboard?
     has_attribute?(:payment_current) ? payment_current? : true
   end
@@ -304,6 +340,16 @@ class Venue < ApplicationRecord
     return nil unless fan_music_fest_source?
 
     safe_external_http_url(external_source_url, allowed_hosts: %w[fanmusicfest.com www.fanmusicfest.com])
+  end
+
+  def songkick_source?
+    has_attribute?(:external_source) && external_source == SongkickConcerts::Normalizer::SOURCE
+  end
+
+  def safe_songkick_source_url
+    return nil unless songkick_source?
+
+    safe_external_http_url(external_source_url, allowed_hosts: %w[songkick.com www.songkick.com])
   end
 
   def safe_official_url
@@ -436,8 +482,17 @@ class Venue < ApplicationRecord
       googlePlaceId: google_connected? ? google_place_id : nil
     }
     payload[:festivalDetails] = festival_details_json if category == 'festival'
-    payload[:eventDetails] = festival_details_json if self.class.non_geographic_category?(category)
+    payload[:eventDetails] = event_details_json if self.class.non_geographic_category?(category)
     payload
+  end
+
+  def event_details_json
+    details = festival_details_json
+    details[:startAt] = has_attribute?(:event_start_at) ? event_start_at&.iso8601 : nil
+    details[:endAt] = has_attribute?(:event_end_at) ? event_end_at&.iso8601 : nil
+    details[:temporalStatus] = event_status_for_dashboard if has_attribute?(:event_status)
+    details[:importOrigin] = event_import_origin_for_dashboard if has_attribute?(:event_import_origin)
+    details
   end
 
   def festival_details_json

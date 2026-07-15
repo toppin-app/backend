@@ -4,7 +4,7 @@ class BlackCoffeeVenuesController < ApplicationController
 
   before_action :check_admin
   before_action :hide_content_header, only: [:show, :new, :edit, :create, :update]
-  before_action :set_venue, only: [:show, :edit, :update, :destroy, :review, :review_festival_description, :convert_linked_images, :refresh_festival_details]
+  before_action :set_venue, only: [:show, :edit, :update, :destroy, :review, :event_status, :review_festival_description, :convert_linked_images, :refresh_festival_details]
 
   def index
     @title = 'Black Coffee'
@@ -14,6 +14,8 @@ class BlackCoffeeVenuesController < ApplicationController
     @google_primary_type_filter = BlackCoffeeTaxonomy.normalize_google_tag(params[:google_primary_type])
     @review_status_filter = review_status_filter
     @review_status_options = review_status_options
+    @event_status_filter = event_status_filter
+    @event_import_origin_filter = event_import_origin_filter
     @category_counts = Venue.group(:category).count
     @stats = {
       venues: Venue.count,
@@ -22,13 +24,16 @@ class BlackCoffeeVenuesController < ApplicationController
       favorites: UserFavorite.count,
       review_pending: Venue.where(review_status: Venue::REVIEW_STATUS_PENDING).count,
       review_approved: Venue.where(review_status: Venue::REVIEW_STATUS_APPROVED).count,
-      review_rejected: Venue.where(review_status: Venue::REVIEW_STATUS_REJECTED).count
+      review_rejected: Venue.where(review_status: Venue::REVIEW_STATUS_REJECTED).count,
+      concerts_occurred: Venue.column_names.include?('event_status') ? Venue.where(category: 'concierto', event_status: Venue::EVENT_STATUS_OCCURRED).count : 0
     }
 
     scope = Venue.includes(:venue_subcategory, :venue_images)
     selected_category = Venue.normalize_category(params[:category])
     scope = scope.where(category: selected_category) if selected_category.present? && Venue::CATEGORIES.include?(selected_category)
     scope = scope.where(review_status: @review_status_filter) if @review_status_filter.present?
+    scope = scope.where(event_status: @event_status_filter) if @event_status_filter.present? && Venue.column_names.include?('event_status')
+    scope = scope.where(event_import_origin: @event_import_origin_filter) if @event_import_origin_filter.present? && Venue.column_names.include?('event_import_origin')
 
     normalized_subcategory = Venue.normalize_text(params[:subcategory])
     if normalized_subcategory.present?
@@ -109,6 +114,32 @@ class BlackCoffeeVenuesController < ApplicationController
     redirect_to black_coffee_venue_path(@venue), notice: review_success_message(status)
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_venue_path(@venue), alert: "No se pudo actualizar la revision: #{e.message}"
+  end
+
+  def event_status
+    unless @venue.category == 'concierto' && Venue.column_names.include?('event_status')
+      redirect_to black_coffee_venue_path(@venue), alert: 'Esta accion solo aplica a conciertos.'
+      return
+    end
+
+    status = params[:event_status].to_s.strip
+    unless Venue::EVENT_STATUSES.include?(status)
+      redirect_to black_coffee_venue_path(@venue), alert: 'Estado temporal no valido.'
+      return
+    end
+
+    attributes = { event_status: status }
+    if status == Venue::EVENT_STATUS_OCCURRED
+      attributes[:visible] = false if Venue.column_names.include?('visible')
+      attributes[:featured] = false if Venue.column_names.include?('featured')
+    elsif @venue.review_status == Venue::REVIEW_STATUS_APPROVED
+      attributes[:visible] = true if Venue.column_names.include?('visible')
+    end
+
+    @venue.update!(attributes)
+    redirect_to black_coffee_venue_path(@venue), notice: event_status_success_message(status)
+  rescue ActiveRecord::ActiveRecordError => e
+    redirect_to black_coffee_venue_path(@venue), alert: "No se pudo actualizar el estado temporal: #{e.message}"
   end
 
   def convert_linked_images
@@ -209,6 +240,15 @@ class BlackCoffeeVenuesController < ApplicationController
     end
   end
 
+  def event_status_success_message(status)
+    case status
+    when Venue::EVENT_STATUS_OCCURRED
+      'Concierto marcado como ocurrido y ocultado de la app.'
+    else
+      'Concierto restaurado como proximo.'
+    end
+  end
+
   def sync_open_review_batch_items!(attributes)
     BlackCoffeeReviewBatchItem
       .joins(:review_batch)
@@ -253,6 +293,20 @@ class BlackCoffeeVenuesController < ApplicationController
     Venue::REVIEW_STATUSES.map do |status|
       [Venue.review_status_label_for(status).pluralize, status]
     end
+  end
+
+  def event_status_filter
+    status = params[:event_status].to_s.strip
+    return status if Venue::EVENT_STATUSES.include?(status)
+
+    nil
+  end
+
+  def event_import_origin_filter
+    origin = params[:event_import_origin].to_s.strip
+    return origin if Venue::EVENT_IMPORT_ORIGINS.include?(origin)
+
+    nil
   end
 
   def persist_venue

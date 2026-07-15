@@ -39,9 +39,11 @@ class SongkickConcertsNormalizerTest < ActiveSupport::TestCase
     assert_equal 'Artist Uno + Artist Dos', normalized[:name]
     assert_equal 'ES', normalized[:country_code]
     assert_equal Date.new(2026, 11, 20), normalized[:start_date]
+    assert_equal Time.zone.parse('2026-11-20T21:00:00'), normalized[:start_at]
+    assert_equal Time.zone.parse('2026-11-20T23:30:00'), normalized[:end_at]
     assert normalized[:valid]
     refute normalized[:outside_country]
-    refute normalized[:festival_like]
+    refute normalized[:non_concert_like]
     assert_equal 'Sala Test', normalized[:venue_name]
     assert_equal 'Madrid', normalized[:city]
     assert_equal BigDecimal('40.416775'), normalized[:latitude]
@@ -49,6 +51,7 @@ class SongkickConcertsNormalizerTest < ActiveSupport::TestCase
     assert_equal 'https://tickets.example/songkick-test', normalized[:ticket_url]
     assert_equal %w[indie rock pop], normalized[:genres]
     assert_equal 'needs_review', normalized[:source_description_status]
+    assert normalized[:event_dedupe_key].present?
   end
 
   test 'supports a single performer hash without treating hash pairs as artists' do
@@ -70,12 +73,12 @@ class SongkickConcertsNormalizerTest < ActiveSupport::TestCase
     refute normalized[:valid]
   end
 
-  test 'detects festival-like Songkick events so the concert importer can skip them' do
+  test 'detects non-concert Songkick events so the concert importer can skip them' do
     normalized = SongkickConcerts::Normalizer.new.normalize(
       raw_event(url: 'https://www.songkick.com/festivals/999-test-festival')
     )
 
-    assert normalized[:festival_like]
+    assert normalized[:non_concert_like]
   end
 
   test 'handles incomplete payloads without raising' do

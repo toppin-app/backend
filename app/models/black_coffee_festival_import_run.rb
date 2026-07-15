@@ -89,7 +89,7 @@ class BlackCoffeeFestivalImportRun < ApplicationRecord
   end
 
   def mode_label
-    dry_run? ? 'Dry run' : 'Importacion'
+    dry_run? ? 'Dry run' : 'Importación'
   end
 
   def operation_label

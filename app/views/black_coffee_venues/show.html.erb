@@ -74,6 +74,56 @@
     padding: 18px;
   }
 
+  .black-coffee-event-panel {
+    background: #0f172a;
+    border: 0;
+    border-radius: 18px;
+    color: #e2e8f0;
+    overflow: hidden;
+  }
+
+  .black-coffee-event-panel .card-header,
+  .black-coffee-event-panel .card-body {
+    background: transparent;
+  }
+
+  .black-coffee-event-panel .black-coffee-detail-section-label {
+    color: #93a4bb;
+  }
+
+  .black-coffee-event-panel strong,
+  .black-coffee-event-panel .black-coffee-event-value {
+    color: #ffffff;
+  }
+
+  .black-coffee-event-panel .black-coffee-review-meta-item {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .black-coffee-event-panel .black-coffee-review-meta-value {
+    color: #ffffff;
+  }
+
+  .black-coffee-event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .black-coffee-event-actions form {
+    margin: 0;
+  }
+
+  .black-coffee-event-actions .btn {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+    line-height: 1.15;
+    min-height: 36px;
+  }
+
   .black-coffee-review-panel-header {
     align-items: flex-start;
     display: flex;
@@ -276,6 +326,12 @@
 
     .black-coffee-image-card-header form,
     .black-coffee-image-card-header .btn {
+      width: 100%;
+    }
+
+    .black-coffee-event-actions,
+    .black-coffee-event-actions form,
+    .black-coffee-event-actions .btn {
       width: 100%;
     }
   }
@@ -536,6 +592,103 @@
         <% end %>
       </div>
     </div>
+
+    <% if @venue.category == 'concierto' %>
+      <% event_start_at = @venue.has_attribute?(:event_start_at) ? @venue.event_start_at : nil %>
+      <% event_end_at = @venue.has_attribute?(:event_end_at) ? @venue.event_end_at : nil %>
+      <% event_origin = @venue.event_import_origin_for_dashboard %>
+      <% event_status = @venue.event_status_for_dashboard %>
+      <div class="card mt-4 black-coffee-event-panel">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-start">
+          <div>
+            <p class="black-coffee-detail-section-label mb-1">Concierto</p>
+            <h4 class="mb-0">Ficha operativa del evento</h4>
+          </div>
+          <div class="d-flex flex-wrap align-items-center mt-2 mt-md-0">
+            <span class="badge badge-<%= event_status == Venue::EVENT_STATUS_OCCURRED ? 'secondary' : 'success' %> p-2 mr-2 mb-2">
+              <%= event_status == Venue::EVENT_STATUS_OCCURRED ? 'Ocurrido' : 'Proximo' %>
+            </span>
+            <span class="badge badge-info p-2 mb-2">
+              <%= event_origin == Venue::EVENT_IMPORT_ORIGIN_CRON ? 'Cron' : event_origin.to_s.humanize %>
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="black-coffee-review-meta-grid">
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Fecha y hora</div>
+              <div class="black-coffee-review-meta-value">
+                <% if event_start_at.present? %>
+                  <%= event_start_at.strftime('%d/%m/%Y %H:%M') %>
+                <% elsif @venue.festival_start_date.present? %>
+                  <%= @venue.festival_start_date.strftime('%d/%m/%Y') %>
+                <% else %>
+                  Sin fecha
+                <% end %>
+                <% if event_end_at.present? && event_end_at != event_start_at %>
+                  <div class="text-muted small">Fin: <%= event_end_at.strftime('%d/%m/%Y %H:%M') %></div>
+                <% end %>
+              </div>
+            </div>
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Sala / recinto</div>
+              <div class="black-coffee-review-meta-value"><%= @venue.festival_venue_name.presence || 'Sin sala guardada' %></div>
+            </div>
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Origen de importacion</div>
+              <div class="black-coffee-review-meta-value"><%= event_origin.to_s.humanize %></div>
+            </div>
+            <div class="black-coffee-review-meta-item">
+              <div class="black-coffee-detail-section-label">Clave dedupe</div>
+              <div class="black-coffee-review-meta-value small"><%= @venue.has_attribute?(:event_dedupe_key) ? @venue.event_dedupe_key.presence || 'Sin clave' : 'Sin columna' %></div>
+            </div>
+          </div>
+
+          <div class="black-coffee-event-actions">
+            <% if @venue.safe_songkick_source_url.present? %>
+              <%= link_to 'Ver en Songkick',
+                          @venue.safe_songkick_source_url,
+                          target: '_blank',
+                          rel: 'noopener noreferrer',
+                          class: 'btn btn-outline-light' %>
+            <% end %>
+            <% if @venue.safe_ticket_url.present? %>
+              <%= link_to 'Entradas',
+                          @venue.safe_ticket_url,
+                          target: '_blank',
+                          rel: 'noopener noreferrer',
+                          class: 'btn btn-outline-success' %>
+            <% end %>
+            <% if @venue.safe_official_url.present? %>
+              <%= link_to 'Web oficial',
+                          @venue.safe_official_url,
+                          target: '_blank',
+                          rel: 'noopener noreferrer',
+                          class: 'btn btn-outline-light' %>
+            <% end %>
+            <% if event_status == Venue::EVENT_STATUS_OCCURRED %>
+              <%= button_to 'Restaurar como proximo',
+                            event_status_black_coffee_venue_path(@venue),
+                            method: :patch,
+                            params: { event_status: Venue::EVENT_STATUS_UPCOMING },
+                            class: 'btn btn-warning',
+                            data: { confirm: "¿Restaurar #{@venue.name} como concierto proximo?" } %>
+            <% else %>
+              <%= button_to 'Marcar como ocurrido',
+                            event_status_black_coffee_venue_path(@venue),
+                            method: :patch,
+                            params: { event_status: Venue::EVENT_STATUS_OCCURRED },
+                            class: 'btn btn-outline-warning',
+                            data: { confirm: "¿Marcar #{@venue.name} como ocurrido y ocultarlo de la app?" } %>
+            <% end %>
+          </div>
+
+          <p class="small text-muted mt-3 mb-0">
+            La app solo muestra conciertos aprobados, visibles, futuros y con estado proximo. Los conciertos creados por cron nacen pendientes y ocultos.
+          </p>
+        </div>
+      </div>
+    <% end %>
 
     <% if @venue.category == 'festival' && @venue.fan_music_fest_source? %>
       <div class="card mt-4 border-primary">

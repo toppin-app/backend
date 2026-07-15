@@ -424,6 +424,27 @@
           <small class="text-muted">Estado de revision</small>
         </div>
         <div class="col-md-2 mb-3">
+          <%= select_tag :event_status,
+                         options_for_select([
+                           ['Todos los eventos', ''],
+                           ['Proximos', Venue::EVENT_STATUS_UPCOMING],
+                           ['Ocurridos', Venue::EVENT_STATUS_OCCURRED]
+                         ], @event_status_filter),
+                         class: 'form-control' %>
+          <small class="text-muted">Estado temporal</small>
+        </div>
+        <div class="col-md-2 mb-3">
+          <%= select_tag :event_import_origin,
+                         options_for_select([
+                           ['Todos los origenes', ''],
+                           ['Dashboard', Venue::EVENT_IMPORT_ORIGIN_DASHBOARD],
+                           ['Cron', Venue::EVENT_IMPORT_ORIGIN_CRON],
+                           ['Manual', Venue::EVENT_IMPORT_ORIGIN_MANUAL]
+                         ], @event_import_origin_filter),
+                         class: 'form-control' %>
+          <small class="text-muted">Origen evento</small>
+        </div>
+        <div class="col-md-2 mb-3">
           <%= text_field_tag :google_primary_type, @google_primary_type_filter, class: 'form-control', placeholder: 'Primary type' %>
           <small class="text-muted">Ej: supermarket</small>
         </div>
@@ -455,6 +476,8 @@
           <th>Google</th>
           <th>Favoritos</th>
           <th>Revision</th>
+          <th>Evento</th>
+          <th>Origen</th>
           <th>Destacado</th>
           <th>Visible</th>
           <th>Pago</th>
@@ -514,6 +537,26 @@
                   <div class="text-muted small mt-1"><%= venue.review_rejection_reason_label %></div>
                 <% end %>
               </td>
+              <td data-label="Evento">
+                <% if venue.category == 'concierto' %>
+                  <% event_badge = venue.event_occurred? ? 'secondary' : 'info' %>
+                  <span class="badge badge-<%= event_badge %>"><%= venue.event_occurred? ? 'Ocurrido' : 'Proximo' %></span>
+                  <% if venue.has_attribute?(:event_start_at) && venue.event_start_at.present? %>
+                    <div class="text-muted small mt-1"><%= venue.event_start_at.strftime('%d/%m/%Y %H:%M') %></div>
+                  <% elsif venue.has_attribute?(:festival_start_date) && venue.festival_start_date.present? %>
+                    <div class="text-muted small mt-1"><%= venue.festival_start_date.strftime('%d/%m/%Y') %></div>
+                  <% end %>
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+              <td data-label="Origen">
+                <% if venue.category == 'concierto' && venue.event_import_origin_for_dashboard.present? %>
+                  <span class="badge badge-light border"><%= venue.event_import_origin_for_dashboard %></span>
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
               <td data-label="Destacado">
                 <% if venue.featured? %>
                   <span class="badge badge-success">Si</span>
@@ -570,6 +613,18 @@
                   <% elsif venue.fan_music_fest_source? %>
                     <span class="small text-muted black-coffee-action-label">Sin URL de origen</span>
                   <% end %>
+                  <% if venue.safe_songkick_source_url.present? %>
+                    <%= link_to venue.safe_songkick_source_url,
+                                class: 'btn btn-sm btn-outline-primary',
+                                target: '_blank',
+                                rel: 'noopener noreferrer',
+                                title: 'Ver en Songkick' do %>
+                      <i class="fas fa-external-link-alt"></i>
+                      <span class="black-coffee-action-label">Songkick</span>
+                    <% end %>
+                  <% elsif venue.songkick_source? %>
+                    <span class="small text-muted black-coffee-action-label">Sin URL Songkick</span>
+                  <% end %>
                   <%= link_to edit_black_coffee_venue_path(venue), class: 'btn btn-sm btn-primary text-white' do %>
                     <i class="fas fa-edit"></i>
                   <% end %>
@@ -591,7 +646,7 @@
           <% end %>
         <% else %>
           <tr>
-            <td colspan="15" class="text-center text-muted py-5">
+            <td colspan="17" class="text-center text-muted py-5">
               No hay locales que coincidan con los filtros actuales.
             </td>
           </tr>

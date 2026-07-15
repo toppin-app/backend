@@ -12,6 +12,8 @@ module FanMusicFest
       @normalizer = normalizer
       @image_downloader = image_downloader
       @images_downloaded_count = 0
+      @items_since_counts_refresh = 0
+      @last_counts_refresh_at = monotonic_now
     end
 
     def self.enqueue!(created_by:, attributes:)
@@ -130,6 +132,7 @@ module FanMusicFest
         break if cancelled?
 
         process_raw_event(raw_event)
+        refresh_counts_if_due!
       end
       refresh_counts!
     end
@@ -390,6 +393,18 @@ module FanMusicFest
       )
     end
 
+    def refresh_counts_if_due!
+      @items_since_counts_refresh += 1
+      elapsed = monotonic_now - @last_counts_refresh_at
+      return if @items_since_counts_refresh < 5 && elapsed < 2.5
+
+      refresh_counts!
+    end
+
+    def monotonic_now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
     def refresh_counts!
       run.reload
       counts = run.items.group(:status).count
@@ -426,6 +441,8 @@ module FanMusicFest
         summary_payload: request_summary,
         updated_at: Time.current
       )
+      @items_since_counts_refresh = 0
+      @last_counts_refresh_at = monotonic_now
     end
   end
 end

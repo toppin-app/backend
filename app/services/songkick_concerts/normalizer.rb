@@ -34,16 +34,26 @@ module SongkickConcerts
       country_code = country_code_for(country)
       latitude = decimal_or_nil(geo['latitude'])
       longitude = decimal_or_nil(geo['longitude'])
+      start_at = parse_time(raw['startDate'])
+      end_at = parse_time(raw['endDate'])
       start_date = parse_date(raw['startDate'])
       end_date = parse_date(raw['endDate'])
       image_url = image_url_for(raw['image'])
       event_id = source_event_id_for(raw, source_url)
       source_description = source_description_for(raw)
+      event_dedupe_key = event_dedupe_key_for(
+        name: display_name,
+        city: city,
+        venue_name: venue_name,
+        start_at: start_at,
+        start_date: start_date
+      )
 
       {
         source: SOURCE,
         source_url: source_url,
         source_event_id: event_id,
+        event_dedupe_key: event_dedupe_key,
         fingerprint: fingerprint_for(
           source_url: source_url,
           source_event_id: event_id,
@@ -64,6 +74,8 @@ module SongkickConcerts
         longitude: longitude,
         coordinates_source: latitude && longitude ? 'schema_org' : nil,
         coordinates_confidence: latitude && longitude ? 'high' : nil,
+        start_at: start_at,
+        end_at: end_at,
         start_date: start_date,
         end_date: end_date,
         image_url: image_url,
@@ -77,7 +89,7 @@ module SongkickConcerts
         event_status: raw['eventStatus'],
         offers: raw['offers'],
         locations: [location_summary(location, address, latitude, longitude)].compact,
-        festival_like: festival_like?(source_url, raw_title),
+        non_concert_like: non_concert_like?(source_url, raw_title),
         valid: valid?(name: display_name, city: city, country_code: country_code),
         outside_country: country.present? && country_code != 'ES',
         raw_payload: raw
@@ -152,7 +164,9 @@ module SongkickConcerts
     end
 
     def source_event_id_for(raw, source_url)
-      raw['@id'].presence || event_id_from_url(source_url) || source_url
+      event_id_from_url(source_url).presence ||
+        raw['@id'].to_s.sub(/#event\z/, '').presence ||
+        source_url
     end
 
     def event_id_from_url(source_url)
@@ -186,6 +200,14 @@ module SongkickConcerts
 
       Date.iso8601(value.to_s)
     rescue ArgumentError
+      nil
+    end
+
+    def parse_time(value)
+      return nil if value.blank?
+
+      Time.zone.parse(value.to_s)
+    rescue ArgumentError, TypeError
       nil
     end
 
@@ -265,7 +287,7 @@ module SongkickConcerts
       summary.presence
     end
 
-    def festival_like?(source_url, raw_title)
+    def non_concert_like?(source_url, raw_title)
       path = URI.parse(source_url.to_s).path
       path.include?('/festivals/') || raw_title.to_s.match?(/\bfestival\b/i)
     rescue URI::InvalidURIError
@@ -284,6 +306,29 @@ module SongkickConcerts
                   [name, city, venue_name, start_date].map { |value| value.to_s.downcase.squish }.join('|')
                 end
       Digest::SHA256.hexdigest(payload)
+    end
+
+    def event_dedupe_key_for(name:, city:, venue_name:, start_at:, start_date:)
+      normalized_parts = [
+        canonical_text(name),
+        canonical_text(venue_name),
+        canonical_text(city),
+        event_time_key(start_at, start_date)
+      ].reject(&:blank?)
+      return nil if normalized_parts.size < 3
+
+      Digest::SHA256.hexdigest(normalized_parts.join('|'))
+    end
+
+    def event_time_key(start_at, start_date)
+      return start_at.utc.strftime('%Y-%m-%dT%H:%M') if start_at.present?
+      return start_date.iso8601 if start_date.present?
+
+      nil
+    end
+
+    def canonical_text(value)
+      I18n.transliterate(value.to_s).downcase.squish.presence
     end
   end
 end

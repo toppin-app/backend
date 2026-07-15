@@ -28,16 +28,20 @@ module SongkickConcerts
       @normalizer = normalizer
       @image_downloader = image_downloader
       @images_downloaded_count = 0
+      @non_concert_skipped_count = initial_non_concert_skipped_count
+      @items_since_counts_refresh = 0
+      @last_counts_refresh_at = monotonic_now
     end
 
-    def self.enqueue!(created_by:, attributes:)
+    def self.enqueue!(created_by: nil, attributes:)
       run = BlackCoffeeConcertImportRun.create!(
         {
           source: BlackCoffeeConcertImportRun::SOURCE_SONGKICK,
           status: 'pending',
           source_url: DEFAULT_SOURCE_URL,
           source_paths: DEFAULT_SOURCE_PATHS_TEXT,
-          created_by: created_by
+          created_by: created_by,
+          import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD
         }.merge(attributes)
       )
       BlackCoffeeConcertImportJob.perform_later(run.id)
@@ -96,6 +100,7 @@ module SongkickConcerts
           break if cancelled? || max_events_reached?
 
           process_raw_event(raw_event, source_path: source_path)
+          refresh_counts_if_due!
         end
         refresh_counts!
         break unless parser.next_page?(html)
@@ -105,7 +110,7 @@ module SongkickConcerts
     def process_raw_event(raw_event, source_path:)
       normalized = normalizer.normalize(raw_event)
       create_skipped_item!(raw_event, normalized, 'skipped_outside_country', 'El concierto no pertenece a Espana.', source_path: source_path) && return if outside_country?(normalized)
-      create_skipped_item!(raw_event, normalized, 'skipped_festival', 'La fuente lo marca como festival; lo gestiona FanMusicFest.', source_path: source_path) && return if skip_festival?(normalized)
+      register_non_concert_skip! && return if non_concert?(normalized)
       create_skipped_item!(raw_event, normalized, 'skipped_invalid', 'Faltan datos minimos para crear el concierto.', source_path: source_path) && return unless normalized[:valid]
       create_skipped_item!(raw_event, normalized, 'skipped_past', 'El concierto ya finalizo.', source_path: source_path) && return if past_event?(normalized)
 
@@ -131,14 +136,28 @@ module SongkickConcerts
       normalized[:outside_country] || (normalized[:country_code].present? && normalized[:country_code] != run.strict_country_code)
     end
 
-    def skip_festival?(normalized)
-      normalized[:festival_like] && !run.include_festivals?
+    def non_concert?(normalized)
+      normalized[:non_concert_like]
+    end
+
+    def register_non_concert_skip!
+      @non_concert_skipped_count += 1
+      true
+    end
+
+    def initial_non_concert_skipped_count
+      return 0 unless run.has_attribute?(:non_concert_skipped_count)
+
+      [
+        run.non_concert_skipped_count.to_i,
+        run.items.where(status: 'skipped_non_concert').count
+      ].max
     end
 
     def past_event?(normalized)
       return false unless run.only_future?
 
-      reference_date = normalized[:end_date] || normalized[:start_date]
+      reference_date = normalized[:end_at]&.to_date || normalized[:start_at]&.to_date || normalized[:end_date] || normalized[:start_date]
       reference_date.present? && reference_date < Date.current
     end
 
@@ -147,14 +166,17 @@ module SongkickConcerts
     end
 
     def duplicate_venue_for(normalized)
-      source_scope = Venue.column_names.include?('external_source') ? Venue.where(external_source: SongkickConcerts::Normalizer::SOURCE) : Venue.none
+      concert_scope = Venue.where(category: 'concierto')
+      source_scope = Venue.column_names.include?('external_source') ? concert_scope.where(external_source: SongkickConcerts::Normalizer::SOURCE) : Venue.none
       return source_scope.find_by(external_source_id: normalized[:source_event_id]) if normalized[:source_event_id].present? && Venue.column_names.include?('external_source_id')
       return source_scope.find_by(source_fingerprint: normalized[:fingerprint]) if normalized[:fingerprint].present? && Venue.column_names.include?('source_fingerprint')
+      return concert_scope.find_by(event_dedupe_key: normalized[:event_dedupe_key]) if normalized[:event_dedupe_key].present? && Venue.column_names.include?('event_dedupe_key')
 
-      Venue.where(category: 'concierto')
-           .where('LOWER(name) = ? AND LOWER(city) = ?', normalized[:name].to_s.downcase, normalized[:city].to_s.downcase)
-           .where(festival_start_date: normalized[:start_date])
-           .first
+      fallback = concert_scope
+                 .where('LOWER(name) = ? AND LOWER(city) = ?', normalized[:name].to_s.downcase, normalized[:city].to_s.downcase)
+                 .where(festival_start_date: normalized[:start_date])
+      fallback = fallback.where('LOWER(festival_venue_name) = ?', normalized[:venue_name].to_s.downcase) if normalized[:venue_name].present? && Venue.column_names.include?('festival_venue_name')
+      fallback.first
     end
 
     def create_duplicate_item!(raw_event, normalized, duplicate, source_path:)
@@ -193,8 +215,11 @@ module SongkickConcerts
         state: nil,
         country: nil,
         country_code: nil,
+        start_at: nil,
+        end_at: nil,
         start_date: nil,
         end_date: nil,
+        event_dedupe_key: nil,
         image_url: nil,
         latitude: nil,
         longitude: nil,
@@ -232,6 +257,8 @@ module SongkickConcerts
         city: address['addressLocality'],
         state: address['addressRegion'],
         country: address['addressCountry'],
+        start_at: raw['startDate'],
+        end_at: raw['endDate'],
         start_date: raw['startDate'],
         end_date: raw['endDate']
       }
@@ -247,6 +274,13 @@ module SongkickConcerts
       end
 
       internalize_image!(venue_image)
+    rescue ActiveRecord::RecordNotUnique
+      duplicate = duplicate_venue_for(normalized)
+      if duplicate.present?
+        create_duplicate_item!(raw_event, normalized, duplicate, source_path: source_path)
+      else
+        create_item!(raw_event, normalized, status: 'failed', source_path: source_path, error_message: 'Duplicado protegido por indice, pero no se pudo localizar el venue existente.')
+      end
     end
 
     def build_venue_image(venue, normalized)
@@ -286,7 +320,7 @@ module SongkickConcerts
       attrs = {
         name: normalized[:name],
         category: 'concierto',
-        description: nil,
+        description: normalized[:source_description].presence || 'Descripcion pendiente de revisar.',
         address: normalized[:address],
         city: normalized[:city],
         latitude: normalized[:latitude],
@@ -297,14 +331,19 @@ module SongkickConcerts
       attrs[:state] = normalized[:state] if Venue.column_names.include?('state')
       attrs[:country] = normalized[:country].presence || 'Espana' if Venue.column_names.include?('country')
       attrs[:country_code] = 'ES' if Venue.column_names.include?('country_code')
-      attrs[:review_status] = run.auto_publish? ? Venue::REVIEW_STATUS_APPROVED : Venue::REVIEW_STATUS_PENDING if Venue.column_names.include?('review_status')
-      attrs[:visible] = true if Venue.column_names.include?('visible')
+      attrs[:review_status] = run.publish_immediately? ? Venue::REVIEW_STATUS_APPROVED : Venue::REVIEW_STATUS_PENDING if Venue.column_names.include?('review_status')
+      attrs[:visible] = run.publish_immediately? if Venue.column_names.include?('visible')
       attrs[:payment_current] = true if Venue.column_names.include?('payment_current')
       attrs[:internal_test] = false if Venue.column_names.include?('internal_test')
       attrs[:external_source] = SongkickConcerts::Normalizer::SOURCE if Venue.column_names.include?('external_source')
       attrs[:external_source_url] = normalized[:source_url] if Venue.column_names.include?('external_source_url')
       attrs[:external_source_id] = normalized[:source_event_id] if Venue.column_names.include?('external_source_id')
       attrs[:source_fingerprint] = normalized[:fingerprint] if Venue.column_names.include?('source_fingerprint')
+      attrs[:event_start_at] = normalized[:start_at] if Venue.column_names.include?('event_start_at')
+      attrs[:event_end_at] = normalized[:end_at] if Venue.column_names.include?('event_end_at')
+      attrs[:event_status] = Venue::EVENT_STATUS_UPCOMING if Venue.column_names.include?('event_status')
+      attrs[:event_import_origin] = run.cron_import? ? Venue::EVENT_IMPORT_ORIGIN_CRON : Venue::EVENT_IMPORT_ORIGIN_DASHBOARD if Venue.column_names.include?('event_import_origin')
+      attrs[:event_dedupe_key] = normalized[:event_dedupe_key] if Venue.column_names.include?('event_dedupe_key')
       attrs[:festival_start_date] = normalized[:start_date] if Venue.column_names.include?('festival_start_date')
       attrs[:festival_end_date] = normalized[:end_date] if Venue.column_names.include?('festival_end_date')
       attrs[:festival_metadata] = concert_metadata(normalized) if Venue.column_names.include?('festival_metadata')
@@ -346,12 +385,15 @@ module SongkickConcerts
         source_url: normalized[:source_url],
         source_event_id: normalized[:source_event_id],
         fingerprint: normalized[:fingerprint],
+        event_dedupe_key: normalized[:event_dedupe_key],
         name: normalized[:name],
         venue_name: normalized[:venue_name],
         city: normalized[:city],
         state: normalized[:state],
         country: normalized[:country],
         country_code: normalized[:country_code],
+        start_at: normalized[:start_at],
+        end_at: normalized[:end_at],
         start_date: normalized[:start_date],
         end_date: normalized[:end_date],
         image_url: normalized[:image_url],
@@ -380,6 +422,18 @@ module SongkickConcerts
       )
     end
 
+    def refresh_counts_if_due!
+      @items_since_counts_refresh += 1
+      elapsed = monotonic_now - @last_counts_refresh_at
+      return if @items_since_counts_refresh < 5 && elapsed < 2.5
+
+      refresh_counts!
+    end
+
+    def monotonic_now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
     def cancelled?
       run.reload.cancelled?
     end
@@ -397,6 +451,7 @@ module SongkickConcerts
     def refresh_counts!
       run.reload
       counts = run.items.group(:status).count
+      concert_items = run.items.where.not(status: %w[skipped_non_concert skipped_festival])
       request_summary = {
         source: SongkickConcerts::Normalizer::SOURCE,
         source_url: run.source_url,
@@ -416,20 +471,23 @@ module SongkickConcerts
         robots_requests_count: client.robots_requests_count,
         listing_requests_count: client.listing_requests_count,
         detail_requests_count: 0,
-        candidates_found_count: run.items.count,
+        candidates_found_count: concert_items.count,
         outside_country_skipped_count: counts['skipped_outside_country'].to_i,
         festival_skipped_count: counts['skipped_festival'].to_i,
+        non_concert_skipped_count: @non_concert_skipped_count,
         duplicate_skipped_count: counts['skipped_duplicate'].to_i,
         invalid_skipped_count: counts['skipped_invalid'].to_i,
         past_skipped_count: counts['skipped_past'].to_i,
         images_downloaded_count: @images_downloaded_count,
-        items_created_count: counts.values.sum,
+        items_created_count: concert_items.count,
         venues_created_count: counts['created'].to_i,
         needs_review_count: run.dry_run? ? counts['dry_run'].to_i : counts['created'].to_i,
         failed_count: counts['failed'].to_i,
         summary_payload: request_summary,
         updated_at: Time.current
       )
+      @items_since_counts_refresh = 0
+      @last_counts_refresh_at = monotonic_now
     end
   end
 end

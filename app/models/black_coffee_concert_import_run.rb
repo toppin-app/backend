@@ -2,6 +2,9 @@ class BlackCoffeeConcertImportRun < ApplicationRecord
   STATUSES = %w[pending running completed failed cancelled].freeze
   MODES = %w[dry_run import].freeze
   SOURCE_SONGKICK = 'songkick'.freeze
+  IMPORT_ORIGINS = %w[dashboard cron].freeze
+  IMPORT_ORIGIN_DASHBOARD = 'dashboard'.freeze
+  IMPORT_ORIGIN_CRON = 'cron'.freeze
 
   belongs_to :created_by, class_name: 'User', optional: true
   has_many :items,
@@ -14,6 +17,7 @@ class BlackCoffeeConcertImportRun < ApplicationRecord
   validates :source, inclusion: { in: [SOURCE_SONGKICK] }
   validates :status, inclusion: { in: STATUSES }
   validates :mode, inclusion: { in: MODES }
+  validates :import_origin, inclusion: { in: IMPORT_ORIGINS }, if: -> { has_attribute?(:import_origin) }
   validates :max_pages_per_source, numericality: { greater_than: 0, less_than_or_equal_to: 25, only_integer: true }
   validates :max_events, numericality: { greater_than: 0, less_than_or_equal_to: 10_000, only_integer: true }
   validates :request_delay_seconds, numericality: { greater_than_or_equal_to: 10, less_than_or_equal_to: 120 }
@@ -26,6 +30,18 @@ class BlackCoffeeConcertImportRun < ApplicationRecord
 
   def import?
     mode == 'import'
+  end
+
+  def dashboard_import?
+    !has_attribute?(:import_origin) || import_origin.to_s == IMPORT_ORIGIN_DASHBOARD
+  end
+
+  def cron_import?
+    has_attribute?(:import_origin) && import_origin.to_s == IMPORT_ORIGIN_CRON
+  end
+
+  def publish_immediately?
+    import? && dashboard_import?
   end
 
   def running?
@@ -87,7 +103,19 @@ class BlackCoffeeConcertImportRun < ApplicationRecord
   end
 
   def mode_label
-    dry_run? ? 'Dry run' : 'Importacion'
+    dry_run? ? 'Dry run' : 'Importación'
+  end
+
+  def origin_label
+    cron_import? ? 'Cron' : 'Dashboard'
+  end
+
+  def non_concert_skipped_total
+    if has_attribute?(:non_concert_skipped_count)
+      non_concert_skipped_count.to_i + festival_skipped_count.to_i
+    else
+      festival_skipped_count.to_i
+    end
   end
 
   def progress_label
