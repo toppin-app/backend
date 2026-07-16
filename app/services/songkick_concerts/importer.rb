@@ -39,13 +39,11 @@ module SongkickConcerts
         source_client: @client,
         source_parser: parser,
         source_normalizer: normalizer,
-        downloader: image_downloader || BlackCoffeeImageDownloader.new,
-        external_search_enabled: true
+        downloader: image_downloader || BlackCoffeeImageDownloader.new
       )
       @cover_attacher = cover_attacher
       @images_downloaded_count = 0
       @source_cover_recovered_count = 0
-      @search_cover_recovered_count = 0
       @no_cover_skipped_count = 0
       @non_concert_skipped_count = initial_non_concert_skipped_count
       @items_since_counts_refresh = 0
@@ -335,11 +333,7 @@ module SongkickConcerts
 
     def register_recovered_cover!(cover_result)
       @images_downloaded_count += 1
-      if cover_result.resolution_source == 'brave_search'
-        @search_cover_recovered_count += 1
-      else
-        @source_cover_recovered_count += 1
-      end
+      @source_cover_recovered_count += 1
     end
 
     def venue_attributes(normalized)
@@ -452,7 +446,6 @@ module SongkickConcerts
         detail_requests_count: cover_resolver.source_requests_count,
         updated_at: Time.current
       }
-      updates[:image_search_requests_count] = cover_resolver.search_requests_count if run.has_attribute?(:image_search_requests_count)
       updates[:image_download_requests_count] = cover_resolver.image_download_requests_count if run.has_attribute?(:image_download_requests_count)
       run.update_columns(updates)
     end
@@ -495,13 +488,11 @@ module SongkickConcerts
           robots: client.robots_requests_count,
           listing: client.listing_requests_count,
           details: cover_resolver.source_requests_count,
-          image_search: cover_resolver.search_requests_count,
           image_downloads: cover_resolver.image_download_requests_count
         },
         photos: {
           downloaded: @images_downloaded_count,
           recovered_from_source: @source_cover_recovered_count,
-          recovered_from_search: @search_cover_recovered_count,
           concerts_skipped_without_cover: counts['skipped_no_cover'].to_i
         }
       }
@@ -527,9 +518,9 @@ module SongkickConcerts
       }
       if run.has_attribute?(:source_cover_recovered_count)
         updates[:source_cover_recovered_count] = @source_cover_recovered_count
-        updates[:search_cover_recovered_count] = @search_cover_recovered_count
+        updates[:search_cover_recovered_count] = 0
         updates[:no_cover_skipped_count] = counts['skipped_no_cover'].to_i
-        updates[:image_search_requests_count] = cover_resolver.search_requests_count
+        updates[:image_search_requests_count] = 0
         updates[:image_download_requests_count] = cover_resolver.image_download_requests_count
       end
       run.update_columns(updates)

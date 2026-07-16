@@ -6,11 +6,10 @@ class BlackCoffeeConcertCoverRepairRunner
   INSERT_BATCH_SIZE = 500
   REJECTION_REASON = 'bad_photos'.freeze
 
-  def self.create_batch!(created_by:, review_status_filter: 'approved', external_search_enabled: false)
+  def self.create_batch!(created_by:, review_status_filter: 'approved')
     new(
       created_by: created_by,
-      review_status_filter: review_status_filter,
-      external_search_enabled: external_search_enabled
+      review_status_filter: review_status_filter
     ).create_batch!
   end
 
@@ -18,11 +17,50 @@ class BlackCoffeeConcertCoverRepairRunner
     new(batch: batch, limit: limit, resolver: resolver, attacher: attacher).advance!
   end
 
+  def self.review_statuses_for(review_status_filter)
+    case review_status_filter.to_s
+    when 'approved'
+      [Venue::REVIEW_STATUS_APPROVED]
+    when 'pending'
+      [Venue::REVIEW_STATUS_PENDING]
+    when 'active'
+      [Venue::REVIEW_STATUS_APPROVED, Venue::REVIEW_STATUS_PENDING]
+    else
+      []
+    end
+  end
+
+  def self.concert_scope(review_status_filter:)
+    scope = Venue.where(category: 'concierto')
+                 .where(review_status: review_statuses_for(review_status_filter))
+    scope = scope.where(event_status: Venue::EVENT_STATUS_UPCOMING) if Venue.column_names.include?('event_status')
+    scope
+  end
+
+  def self.candidate_scope(review_status_filter:)
+    concert_scope(review_status_filter: review_status_filter)
+      .where.not(id: VenueImage.uploaded_sources.select(:venue_id))
+      .order(:id)
+  end
+
+  def self.cover_inventory(review_status_filter:)
+    scope = concert_scope(review_status_filter: review_status_filter)
+    uploaded_venue_ids = VenueImage.uploaded_sources.select(:venue_id)
+    external_venue_ids = VenueImage.external_sources.select(:venue_id)
+
+    {
+      total: scope.count,
+      binary: scope.where(id: uploaded_venue_ids).count,
+      external: scope.where.not(id: uploaded_venue_ids).where(id: external_venue_ids).count,
+      without_url: scope.where.not(id: uploaded_venue_ids).where.not(id: external_venue_ids).count,
+      pending_internalization: scope.where.not(id: uploaded_venue_ids).count
+    }
+  end
+
   def initialize(
     batch: nil,
     created_by: nil,
     review_status_filter: 'approved',
-    external_search_enabled: false,
     limit: DEFAULT_LIMIT,
     resolver: nil,
     attacher: BlackCoffeeConcertCoverAttachment
@@ -30,7 +68,6 @@ class BlackCoffeeConcertCoverRepairRunner
     @batch = batch
     @created_by = created_by
     @review_status_filter = review_status_filter.to_s
-    @external_search_enabled = ActiveModel::Type::Boolean.new.cast(external_search_enabled)
     @limit = [[limit.to_i, 1].max, MAX_LIMIT].min
     @resolver = resolver
     @attacher = attacher
@@ -45,7 +82,7 @@ class BlackCoffeeConcertCoverRepairRunner
       batch = BlackCoffeeConcertCoverRepairBatch.create!(
         status: 'pending',
         review_status_filter: review_status_filter,
-        external_search_enabled: external_search_enabled,
+        external_search_enabled: false,
         total_venues: scope.count,
         created_by: created_by,
         report_payload: {}
@@ -81,7 +118,6 @@ class BlackCoffeeConcertCoverRepairRunner
     started_at = monotonic_time
     processed = 0
     source_before = cover_resolver.source_total_requests_count
-    search_before = cover_resolver.search_requests_count
     image_before = cover_resolver.image_download_requests_count
 
     items.each do |item|
@@ -92,11 +128,11 @@ class BlackCoffeeConcertCoverRepairRunner
       processed += 1
     end
 
-    persist_request_deltas!(source_before: source_before, search_before: search_before, image_before: image_before)
+    persist_request_deltas!(source_before: source_before, image_before: image_before)
     refresh_counts!(batch)
   rescue StandardError => e
-    if defined?(source_before) && defined?(search_before) && defined?(image_before)
-      persist_request_deltas!(source_before: source_before, search_before: search_before, image_before: image_before)
+    if defined?(source_before) && defined?(image_before)
+      persist_request_deltas!(source_before: source_before, image_before: image_before)
     end
     batch&.update_columns(
       status: 'failed',
@@ -109,27 +145,14 @@ class BlackCoffeeConcertCoverRepairRunner
 
   private
 
-  attr_reader :batch, :created_by, :review_status_filter, :external_search_enabled, :limit, :attacher
+  attr_reader :batch, :created_by, :review_status_filter, :limit, :attacher
 
   def candidate_scope
-    scope = Venue.where(category: 'concierto')
-    scope = scope.where(review_status: review_statuses_for_filter)
-    scope = scope.where.not(id: VenueImage.where.not(image: [nil, '']).select(:venue_id))
-    scope = scope.where(event_status: Venue::EVENT_STATUS_UPCOMING) if Venue.column_names.include?('event_status')
-    scope.order(:id)
+    self.class.candidate_scope(review_status_filter: review_status_filter)
   end
 
   def review_statuses_for_filter
-    case review_status_filter
-    when 'approved'
-      [Venue::REVIEW_STATUS_APPROVED]
-    when 'pending'
-      [Venue::REVIEW_STATUS_PENDING]
-    when 'active'
-      [Venue::REVIEW_STATUS_APPROVED, Venue::REVIEW_STATUS_PENDING]
-    else
-      []
-    end
+    self.class.review_statuses_for(review_status_filter)
   end
 
   def validate_review_status_filter!
@@ -141,7 +164,7 @@ class BlackCoffeeConcertCoverRepairRunner
   def process_item_safely!(item)
     venue = item.venue
     return skip_item!(item, 'missing_venue', 'El concierto ya no existe.') unless venue
-    return skip_item!(item, 'cover_already_present', 'El concierto ya tiene una portada interna.') if uploaded_cover?(venue)
+    return skip_item!(item, 'cover_already_present', 'El concierto ya tiene una portada binaria interna.') if uploaded_cover?(venue)
     return skip_item!(item, 'review_status_changed', 'El estado de revision cambio desde que se creo el lote.') unless review_statuses_for_filter.include?(venue.review_status)
 
     result = cover_resolver.resolve_for_venue(venue)
@@ -170,9 +193,8 @@ class BlackCoffeeConcertCoverRepairRunner
       source_url: result.image_url,
       provenance: cover_provenance(result)
     )
-    status = result.resolution_source == 'brave_search' ? 'recovered_search' : 'recovered_source'
     item.update_columns(
-      status: status,
+      status: 'recovered_source',
       resolution_source: result.resolution_source,
       selected_image_url: result.image_url,
       result_page_url: result.page_url,
@@ -229,7 +251,7 @@ class BlackCoffeeConcertCoverRepairRunner
 
   def rejection_note(result)
     details = result.error_message.to_s.squish.first(700)
-    "Descartado automaticamente por la herramienta de portadas: no se pudo recuperar una imagen binaria verificable desde la fuente original ni mediante la busqueda estricta. #{details}".squish
+    "Descartado automaticamente por la herramienta de portadas: no se pudo recuperar una imagen binaria verificable desde los metadatos guardados ni desde la ficha exacta de Songkick. #{details}".squish
   end
 
   def uploaded_cover?(venue)
@@ -247,9 +269,7 @@ class BlackCoffeeConcertCoverRepairRunner
   end
 
   def cover_resolver
-    @resolver ||= BlackCoffeeConcertCoverResolver.new(
-      external_search_enabled: batch.external_search_enabled
-    )
+    @resolver ||= BlackCoffeeConcertCoverResolver.new
   end
 
   def time_budget_exhausted?(started_at, processed)
@@ -263,17 +283,15 @@ class BlackCoffeeConcertCoverRepairRunner
     batch.reload.cancelled?
   end
 
-  def persist_request_deltas!(source_before:, search_before:, image_before:)
+  def persist_request_deltas!(source_before:, image_before:)
     source_delta = [cover_resolver.source_total_requests_count - source_before.to_i, 0].max
-    search_delta = [cover_resolver.search_requests_count - search_before.to_i, 0].max
     image_delta = [cover_resolver.image_download_requests_count - image_before.to_i, 0].max
-    return if source_delta.zero? && search_delta.zero? && image_delta.zero?
+    return if source_delta.zero? && image_delta.zero?
 
     batch.with_lock do
       batch.reload
       batch.update_columns(
         source_requests_count: batch.source_requests_count.to_i + source_delta,
-        search_requests_count: batch.search_requests_count.to_i + search_delta,
         image_requests_count: batch.image_requests_count.to_i + image_delta,
         updated_at: Time.current
       )
@@ -300,7 +318,6 @@ class BlackCoffeeConcertCoverRepairRunner
       total_venues: repair_batch.items.count,
       processed_venues: processed,
       source_recovered_count: counts['recovered_source'].to_i,
-      search_recovered_count: counts['recovered_search'].to_i,
       rejected_count: counts['rejected'].to_i,
       failed_count: counts['failed'].to_i,
       skipped_count: counts['skipped'].to_i,

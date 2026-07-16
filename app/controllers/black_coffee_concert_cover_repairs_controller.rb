@@ -5,28 +5,24 @@ class BlackCoffeeConcertCoverRepairsController < ApplicationController
 
   def index
     @title = 'Portadas de conciertos'
-    @search_configured = BlackCoffeeConcertCoverSearch::BraveClient.configured?
     @recent_batches = BlackCoffeeConcertCoverRepairBatch.includes(:created_by).recent_first.limit(30)
-    @missing_cover_counts = missing_cover_counts
+    @cover_inventory = {
+      approved: BlackCoffeeConcertCoverRepairRunner.cover_inventory(review_status_filter: 'approved'),
+      pending: BlackCoffeeConcertCoverRepairRunner.cover_inventory(review_status_filter: 'pending')
+    }
   end
 
   def create
-    external_search_enabled = ActiveModel::Type::Boolean.new.cast(params[:external_search_enabled])
-    if external_search_enabled && !BlackCoffeeConcertCoverSearch::BraveClient.configured?
-      raise ArgumentError, 'Falta configurar BRAVE_SEARCH_API_KEY para usar la busqueda web estricta.'
-    end
-
     batch = BlackCoffeeConcertCoverRepairRunner.create_batch!(
       created_by: current_user,
-      review_status_filter: params[:review_status_filter].presence || 'approved',
-      external_search_enabled: external_search_enabled
+      review_status_filter: params[:review_status_filter].presence || 'approved'
     )
     token = SecureRandom.hex(16)
     batch.update!(worker_token: token)
     BlackCoffeeConcertCoverRepairJob.perform_later(batch.id, process_limit, token)
 
     redirect_to black_coffee_concert_cover_repair_path(batch),
-                notice: "Proceso creado para #{batch.total_venues} conciertos sin portada interna. Continuara en el servidor aunque cierres la pantalla."
+                notice: "Proceso creado para #{batch.total_venues} conciertos sin portada binaria interna. Las URLs existentes se descargaran y reemplazaran. Continuara en el servidor aunque cierres la pantalla."
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_concert_cover_repairs_path, alert: "No se pudo crear el proceso: #{e.message}"
   end
@@ -72,13 +68,4 @@ class BlackCoffeeConcertCoverRepairsController < ApplicationController
     @items = @batch.items.includes(:venue).recent_first.paginate(page: params[:page], per_page: 50)
   end
 
-  def missing_cover_counts
-    base = Venue.where(category: 'concierto')
-                .where.not(id: VenueImage.where.not(image: [nil, '']).select(:venue_id))
-    base = base.where(event_status: Venue::EVENT_STATUS_UPCOMING) if Venue.column_names.include?('event_status')
-    {
-      approved: base.where(review_status: Venue::REVIEW_STATUS_APPROVED).count,
-      pending: base.where(review_status: Venue::REVIEW_STATUS_PENDING).count
-    }
-  end
 end

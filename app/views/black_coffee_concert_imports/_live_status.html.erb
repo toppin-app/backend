@@ -64,8 +64,8 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <p class="text-muted text-uppercase font-weight-bold mb-2">Requests</p>
-          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i + @run.image_search_requests_count.to_i + @run.image_download_requests_count.to_i %></h2>
-          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · origen <%= @run.detail_requests_count %> · búsqueda <%= @run.image_search_requests_count.to_i %> · imágenes <%= @run.image_download_requests_count.to_i %></div>
+          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i + @run.image_download_requests_count.to_i %></h2>
+          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · origen <%= @run.detail_requests_count %> · imágenes <%= @run.image_download_requests_count.to_i %></div>
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@
           Máx. conciertos: <strong><%= @run.max_events %></strong> ·
           Solo futuros: <strong><%= @run.only_future? ? 'sí' : 'no' %></strong> ·
           Portadas binarias: <strong><%= @run.images_downloaded_count.to_i %></strong>
-          (<%= @run.source_cover_recovered_count.to_i %> desde origen, <%= @run.search_cover_recovered_count.to_i %> por búsqueda) ·
+          (<%= @run.source_cover_recovered_count.to_i %> desde Songkick) ·
           Delay: <strong><%= @run.request_delay_seconds.to_f.to_i %>s</strong> ·
           País: <strong><%= @run.strict_country_code %></strong> ·
           Origen: <strong><%= @run.origin_label %></strong> ·
@@ -179,7 +179,7 @@
                 </td>
                 <td class="small">
                   <% if item.image_resolution_source.present? %>
-                    <strong><%= item.image_resolution_source == 'brave_search' ? 'Búsqueda web' : 'Songkick' %></strong>
+                    <strong><%= item.image_resolution_source.in?(%w[source_metadata source_page]) ? 'Songkick' : item.image_resolution_source.to_s.humanize %></strong>
                     <% if item.image_resolution_confidence.present? %>
                       <div class="text-muted">Confianza: <%= item.image_resolution_confidence.to_f.round %>%</div>
                     <% end %>

@@ -29,26 +29,18 @@ class BlackCoffeeConcertCoverResolver
   end
 
   MAX_SOURCE_IMAGE_CANDIDATES = 3
-  MAX_SEARCH_IMAGE_CANDIDATES = 3
-
-  attr_reader :source_client, :search_client
+  attr_reader :source_client
 
   def initialize(
     source_client: nil,
     source_parser: SongkickConcerts::Parser.new,
     source_normalizer: SongkickConcerts::Normalizer.new,
-    search_client: nil,
-    matcher: BlackCoffeeConcertCoverSearch::Matcher.new,
-    downloader: BlackCoffeeImageDownloader.new,
-    external_search_enabled: true
+    downloader: BlackCoffeeImageDownloader.new
   )
     @source_client = source_client || SongkickConcerts::Client.new
     @source_parser = source_parser
     @source_normalizer = source_normalizer
-    @search_client = search_client || BlackCoffeeConcertCoverSearch::BraveClient.new
-    @matcher = matcher
     @downloader = downloader
-    @external_search_enabled = external_search_enabled
     @image_download_requests_count = 0
   end
 
@@ -71,15 +63,11 @@ class BlackCoffeeConcertCoverResolver
     source_requests_count + (source_client.respond_to?(:robots_requests_count) ? source_client.robots_requests_count.to_i : 0)
   end
 
-  def search_requests_count
-    search_client.respond_to?(:requests_count) ? search_client.requests_count.to_i : 0
-  end
-
   attr_reader :image_download_requests_count
 
   private
 
-  attr_reader :source_parser, :source_normalizer, :matcher, :downloader, :external_search_enabled
+  attr_reader :source_parser, :source_normalizer, :downloader
 
   def resolve(event:, preferred_urls:)
     attempts = []
@@ -97,10 +85,6 @@ class BlackCoffeeConcertCoverResolver
     return page_result if page_result&.recovered?
     attempts << page_result if page_result
 
-    search_result = resolve_from_search(event)
-    return search_result if search_result&.recovered?
-    attempts << search_result if search_result
-
     unresolved_attempt = attempts.find { |attempt| attempt.retryable? || attempt.unavailable? }
     status = unresolved_attempt ? unresolved_attempt.status : 'missing'
     Result.new(
@@ -109,8 +93,6 @@ class BlackCoffeeConcertCoverResolver
       error_message: attempts.filter_map(&:error_message).uniq.join(' | ').presence || 'No se encontro una portada verificable para este concierto.',
       evidence: {
         source_page_attempted: event[:source_url].present?,
-        external_search_enabled: external_search_enabled,
-        external_search_configured: search_client.configured?,
         attempts: attempts.map { |attempt| attempt_evidence(attempt) }
       }
     )
@@ -140,39 +122,6 @@ class BlackCoffeeConcertCoverResolver
     return retryable_result('source_request_error', e.message) if e.retryable?
 
     unavailable_result('source_request_blocked', e.message)
-  end
-
-  def resolve_from_search(event)
-    return unavailable_result('search_disabled', 'La busqueda externa esta desactivada para este proceso.') unless external_search_enabled
-    return unavailable_result('search_not_configured', 'Falta BRAVE_SEARCH_API_KEY; no se ejecuto el fallback web.') unless search_client.configured?
-
-    results = search_client.search(search_query(event))
-    matches = Array(results).filter_map { |result| matcher.match(result, event) }
-                            .sort_by { |match| -match.confidence.to_f }
-                            .first(MAX_SEARCH_IMAGE_CANDIDATES)
-    attempts = []
-    matches.each do |match|
-      result = download_first(
-        urls: [match.result.image_url],
-        resolution_source: 'brave_search',
-        page_url: match.result.page_url,
-        confidence: match.confidence,
-        evidence: match.evidence.merge(
-          title: match.result.title,
-          publisher: match.result.publisher
-        )
-      )
-      return result if result&.recovered?
-
-      attempts << result if result
-    end
-
-    retryable_attempt = attempts.find(&:retryable?)
-    return retryable_attempt if retryable_attempt
-
-    missing_result('no_confident_search_match', 'La busqueda web no encontro una imagen que coincidiera de forma estricta por nombre, fecha y ubicacion.')
-  rescue BlackCoffeeConcertCoverSearch::BraveClient::RequestError => e
-    retryable_result('search_request_error', e.message)
   end
 
   def download_first(urls:, resolution_source:, page_url:, confidence:, evidence:)
@@ -257,12 +206,6 @@ class BlackCoffeeConcertCoverResolver
     existing_urls = venue.venue_images.to_a.map(&:url)
     imported_urls = venue.concert_import_items.where.not(image_url: [nil, '']).recent_first.limit(3).pluck(:image_url)
     (existing_urls + imported_urls).compact.uniq
-  end
-
-  def search_query(event)
-    date = event[:date]&.to_date
-    exact_name = event[:name].present? ? %Q("#{event[:name]}") : nil
-    [exact_name, date&.iso8601, event[:venue_name], event[:city], 'concierto'].compact.reject(&:blank?).join(' ')
   end
 
   def canonical_text(value)

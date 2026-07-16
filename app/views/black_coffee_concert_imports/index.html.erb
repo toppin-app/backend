@@ -12,7 +12,7 @@
 
 <div class="alert alert-info">
   <strong>Proceso controlado.</strong>
-  Usa JSON-LD de los listados públicos, respeta robots.txt y aplica un delay mínimo de 10 segundos. Cada concierto debe obtener una portada binaria válida: primero desde Songkick y, si está configurado, mediante una búsqueda web estricta. Los conciertos sin portada se descartan antes de crearse.
+  Usa JSON-LD de los listados públicos, respeta robots.txt y aplica un delay mínimo de 10 segundos. Cada concierto debe obtener una portada binaria válida desde los metadatos o la ficha exacta de Songkick. Los conciertos sin portada se descartan antes de crearse y no se consulta ningún buscador de pago.
 </div>
 
 <div class="row">
@@ -92,7 +92,7 @@
           <li>Solo se aceptan conciertos con país normalizado como ES.</li>
           <li>Los festivales y otros tipos de evento se descartan y no aparecen como conciertos.</li>
           <li>Se deduplica por fuente, identificador, fingerprint y datos normalizados del evento.</li>
-          <li>Se reintenta la portada en la fuente original y se usa búsqueda web estricta si está configurada.</li>
+          <li>Se reintenta la portada únicamente desde los metadatos y la ficha exacta de Songkick.</li>
           <li>Los conciertos sin una portada verificable no se crean.</li>
           <li>Las importaciones del dashboard crean conciertos aprobados y visibles.</li>
           <li>La ejecución continúa en el servidor y su pantalla se actualiza automáticamente.</li>
@@ -136,7 +136,7 @@
               <td><%= run.candidates_found_count %></td>
               <td class="text-success"><%= run.venues_created_count %></td>
               <td><%= run.outside_country_skipped_count.to_i + run.duplicate_skipped_count.to_i + run.invalid_skipped_count.to_i + run.past_skipped_count.to_i + run.no_cover_skipped_count.to_i %></td>
-              <td><%= run.robots_requests_count.to_i + run.listing_requests_count.to_i + run.detail_requests_count.to_i + run.image_search_requests_count.to_i + run.image_download_requests_count.to_i %></td>
+              <td><%= run.robots_requests_count.to_i + run.listing_requests_count.to_i + run.detail_requests_count.to_i + run.image_download_requests_count.to_i %></td>
               <td><%= l(run.created_at, format: :short) %></td>
               <td class="text-right"><%= link_to 'Ver progreso', black_coffee_concert_import_path(run), class: 'btn btn-sm btn-outline-primary' %></td>
             </tr>

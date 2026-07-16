@@ -16,10 +16,6 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
       0
     end
 
-    def search_requests_count
-      0
-    end
-
     def image_download_requests_count
       0
     end
@@ -50,8 +46,8 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
     batch = create_batch!
     missing = BlackCoffeeConcertCoverResolver::Result.new(
       status: 'missing',
-      error_type: 'no_confident_search_match',
-      error_message: 'No exact image match.'
+      error_type: 'source_without_working_image',
+      error_message: 'Songkick has no working image.'
     )
 
     advance!(batch, missing)
@@ -70,8 +66,8 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
     batch = create_batch!
     retryable = BlackCoffeeConcertCoverResolver::Result.new(
       status: 'retryable_error',
-      error_type: 'search_request_error',
-      error_message: 'Temporary Brave outage.'
+      error_type: 'source_request_error',
+      error_message: 'Temporary Songkick outage.'
     )
 
     advance!(batch, retryable)
@@ -81,7 +77,7 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
     assert_equal Venue::REVIEW_STATUS_APPROVED, venue.review_status
     assert venue.visible
     assert_equal 'failed', item.status
-    assert_match(/Temporary Brave outage/, item.error_message)
+    assert_match(/Temporary Songkick outage/, item.error_message)
   end
 
   test 'records a recovered binary cover without changing review status' do
@@ -91,9 +87,9 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
     recovered = BlackCoffeeConcertCoverResolver::Result.new(
       status: 'recovered',
       download: successful_download,
-      resolution_source: 'brave_search',
+      resolution_source: 'source_page',
       image_url: 'https://images.example.test/concert.jpg',
-      page_url: 'https://tickets.example.test/concert',
+      page_url: 'https://www.songkick.com/concerts/123-test-concert',
       confidence: 100,
       evidence: { date_match: true }
     )
@@ -106,9 +102,39 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
     )
 
     assert_equal Venue::REVIEW_STATUS_APPROVED, venue.reload.review_status
-    assert_equal 'recovered_search', batch.items.first.reload.status
+    assert_equal 'recovered_source', batch.items.first.reload.status
     assert_equal 1, attacher.calls.size
     assert_equal venue, attacher.calls.first[:venue]
+  end
+
+  test 'includes concerts with external covers so their URLs are internalized' do
+    venue = create_concert!
+    venue.venue_images.create!(
+      position: 0,
+      url: 'https://images.example.test/existing-cover.jpg'
+    )
+
+    inventory = BlackCoffeeConcertCoverRepairRunner.cover_inventory(review_status_filter: 'approved')
+    batch = create_batch!
+
+    assert_equal 1, inventory[:total]
+    assert_equal 0, inventory[:binary]
+    assert_equal 1, inventory[:external]
+    assert_equal 0, inventory[:without_url]
+    assert_equal 1, inventory[:pending_internalization]
+    assert_equal 1, batch.total_venues
+  end
+
+  test 'includes concerts without any image source so Songkick can be retried' do
+    create_concert!
+
+    inventory = BlackCoffeeConcertCoverRepairRunner.cover_inventory(review_status_filter: 'approved')
+    batch = create_batch!
+
+    assert_equal 0, inventory[:external]
+    assert_equal 1, inventory[:without_url]
+    assert_equal 1, inventory[:pending_internalization]
+    assert_equal 1, batch.total_venues
   end
 
   private
@@ -142,8 +168,7 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
   def create_batch!
     BlackCoffeeConcertCoverRepairRunner.create_batch!(
       created_by: nil,
-      review_status_filter: 'approved',
-      external_search_enabled: true
+      review_status_filter: 'approved'
     )
   end
 

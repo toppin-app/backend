@@ -6,6 +6,9 @@ class VenueImage < ApplicationRecord
   belongs_to :venue
   mount_uploader :image, BlackCoffeeImageUploader
 
+  scope :uploaded_sources, -> { where.not(image: [nil, '']) }
+  scope :external_sources, -> { where.not(url: [nil, '']) }
+
   validates :position, numericality: { greater_than_or_equal_to: 0, only_integer: true }
   validate :source_must_be_present
   validate :single_source_must_be_used

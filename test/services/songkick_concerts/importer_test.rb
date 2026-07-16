@@ -23,10 +23,6 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
       0
     end
 
-    def search_requests_count
-      0
-    end
-
     def image_download_requests_count
       result.recovered? ? 1 : 0
     end
@@ -124,7 +120,7 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
     run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
     missing = BlackCoffeeConcertCoverResolver::Result.new(
       status: 'missing',
-      error_type: 'no_confident_search_match',
+      error_type: 'source_without_working_image',
       error_message: 'No verified cover found.'
     )
 
@@ -140,15 +136,15 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
     run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
     retryable = BlackCoffeeConcertCoverResolver::Result.new(
       status: 'retryable_error',
-      error_type: 'search_request_error',
-      error_message: 'Temporary search outage.'
+      error_type: 'source_request_error',
+      error_message: 'Temporary Songkick outage.'
     )
 
     import!(run, events_html([event_payload]), cover_result: retryable)
 
     assert_nil Venue.find_by(category: 'concierto', external_source_id: '123')
     assert_equal 'skipped_no_cover', run.items.last.status
-    assert_match(/Temporary search outage/, run.items.last.error_message)
+    assert_match(/Temporary Songkick outage/, run.items.last.error_message)
   end
 
   private

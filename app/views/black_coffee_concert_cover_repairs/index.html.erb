@@ -18,22 +18,40 @@
 
 <div class="alert alert-warning">
   <strong>Proceso modificador y no destructivo.</strong>
-  Primero reintenta la URL y la ficha exacta de Songkick. Opcionalmente consulta Brave Image Search una sola vez por concierto y solo acepta coincidencias estrictas por nombre, fecha y ubicacion. Solo se marca como <strong>rechazado por fotos</strong> cuando todas las vias habilitadas terminan sin una imagen valida; una caida de red o servicio queda como fallo reintentable y no cambia el concierto.
+  Una URL externa no se considera el resultado final: primero se descarga y se reemplaza por un binario interno. Si la URL falla, se reintenta desde la ficha exacta de Songkick. No usa buscadores ni servicios de pago. Solo se marca como <strong>rechazado por fotos</strong> cuando Songkick confirma que no existe una imagen valida; una caida de red, un limite temporal o un bloqueo del proveedor queda como fallo reintentable y no cambia el concierto.
 </div>
 
 <div class="row mb-4">
   <div class="col-md-6 mb-3">
     <div class="card concert-cover-tool-card h-100"><div class="card-body">
-      <div class="concert-cover-label">Aprobados sin portada interna</div>
-      <div class="concert-cover-stat"><%= number_with_delimiter(@missing_cover_counts[:approved]) %></div>
+      <% inventory = @cover_inventory[:approved] %>
+      <div class="concert-cover-label">Aprobados pendientes de internalizar</div>
+      <div class="concert-cover-stat"><%= number_with_delimiter(inventory[:pending_internalization]) %></div>
+      <div class="small text-muted mt-2">
+        De <strong><%= number_with_delimiter(inventory[:total]) %></strong> conciertos proximos:
+        <strong><%= number_with_delimiter(inventory[:binary]) %></strong> ya tienen binario,
+        <strong><%= number_with_delimiter(inventory[:external]) %></strong> tienen URL para descargar y
+        <strong><%= number_with_delimiter(inventory[:without_url]) %></strong> no conservan URL.
+      </div>
     </div></div>
   </div>
   <div class="col-md-6 mb-3">
     <div class="card concert-cover-tool-card h-100"><div class="card-body">
-      <div class="concert-cover-label">Pendientes sin portada interna</div>
-      <div class="concert-cover-stat"><%= number_with_delimiter(@missing_cover_counts[:pending]) %></div>
+      <% inventory = @cover_inventory[:pending] %>
+      <div class="concert-cover-label">Pendientes de revision por internalizar</div>
+      <div class="concert-cover-stat"><%= number_with_delimiter(inventory[:pending_internalization]) %></div>
+      <div class="small text-muted mt-2">
+        De <strong><%= number_with_delimiter(inventory[:total]) %></strong> conciertos proximos:
+        <strong><%= number_with_delimiter(inventory[:binary]) %></strong> ya tienen binario,
+        <strong><%= number_with_delimiter(inventory[:external]) %></strong> tienen URL para descargar y
+        <strong><%= number_with_delimiter(inventory[:without_url]) %></strong> no conservan URL.
+      </div>
     </div></div>
   </div>
+</div>
+
+<div class="alert alert-info">
+  El total grande significa <strong>sin copia binaria interna</strong>, no necesariamente sin imagen visible hoy. La suma queda auditada: con binario + con URL externa + sin URL = total de conciertos proximos del estado seleccionado.
 </div>
 
 <div class="card concert-cover-tool-card mb-4">
@@ -41,7 +59,7 @@
   <div class="card-body">
     <%= form_with url: black_coffee_concert_cover_repairs_path, method: :post, local: true do %>
       <div class="form-row align-items-end">
-        <div class="form-group col-md-4">
+        <div class="form-group col-md-5">
           <%= label_tag :review_status_filter, 'Conciertos a revisar' %>
           <%= select_tag :review_status_filter,
                          options_for_select([
@@ -51,7 +69,7 @@
                          ], 'approved'),
                          class: 'form-control' %>
         </div>
-        <div class="form-group col-md-3">
+        <div class="form-group col-md-4">
           <%= label_tag :limit, 'Tamano de cada bloque' %>
           <%= number_field_tag :limit,
                                BlackCoffeeConcertCoverRepairRunner::DEFAULT_LIMIT,
@@ -61,19 +79,6 @@
           <small class="text-muted">Maximo <%= BlackCoffeeConcertCoverRepairRunner::MAX_LIMIT %>; cada ficha de origen respeta el delay de Songkick.</small>
         </div>
         <div class="form-group col-md-3">
-          <%= hidden_field_tag :external_search_enabled, '0' %>
-          <div class="custom-control custom-switch mb-2">
-            <%= check_box_tag :external_search_enabled,
-                              '1',
-                              @search_configured,
-                              class: 'custom-control-input',
-                              id: 'concert_cover_external_search',
-                              disabled: !@search_configured %>
-            <%= label_tag :concert_cover_external_search, 'Fallback de busqueda web', class: 'custom-control-label' %>
-          </div>
-          <small class="text-muted"><%= @search_configured ? 'Brave Image Search configurado.' : 'No disponible: falta BRAVE_SEARCH_API_KEY.' %></small>
-        </div>
-        <div class="form-group col-md-2">
           <%= submit_tag 'Iniciar proceso',
                          class: 'btn btn-danger btn-block text-white',
                          data: { confirm: 'Los conciertos sin ninguna portada verificable quedaran rechazados y ocultos. El proceso continuara en el servidor. Continuar?' } %>
@@ -87,7 +92,7 @@
   <div class="card-header bg-white"><h4 class="mb-0">Procesos recientes</h4></div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#</th><th>Estado</th><th>Filtro</th><th>Progreso</th><th>Origen</th><th>Busqueda</th><th>Rechazados</th><th>Requests</th><th>Fecha</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Estado</th><th>Filtro</th><th>Progreso</th><th>Recuperadas</th><th>Rechazados</th><th>Requests</th><th>Fecha</th><th></th></tr></thead>
       <tbody>
         <% @recent_batches.each do |batch| %>
           <tr>
@@ -96,15 +101,14 @@
             <td><%= batch.review_status_filter_label %></td>
             <td><strong><%= batch.progress_percentage %>%</strong><br><small class="text-muted"><%= batch.processed_venues %>/<%= batch.total_venues %></small></td>
             <td class="text-success"><%= batch.source_recovered_count %></td>
-            <td class="text-primary"><%= batch.search_recovered_count %></td>
             <td class="text-danger"><%= batch.rejected_count %></td>
-            <td><%= batch.source_requests_count.to_i + batch.search_requests_count.to_i + batch.image_requests_count.to_i %></td>
+            <td><%= batch.source_requests_count.to_i + batch.image_requests_count.to_i %></td>
             <td><%= l(batch.created_at, format: :short) %></td>
             <td class="text-right"><%= link_to 'Ver progreso', black_coffee_concert_cover_repair_path(batch), class: 'btn btn-sm btn-outline-primary' %></td>
           </tr>
         <% end %>
         <% if @recent_batches.empty? %>
-          <tr><td colspan="10" class="text-center text-muted py-4">Todavia no hay procesos de recuperacion de portadas.</td></tr>
+          <tr><td colspan="9" class="text-center text-muted py-4">Todavia no hay procesos de recuperacion de portadas.</td></tr>
         <% end %>
       </tbody>
     </table>

@@ -32,6 +32,8 @@ class BlackCoffeeConcertLifecycleTest < ActiveSupport::TestCase
       category: 'restaurante',
       address: 'Calle Test 4',
       city: 'Madrid',
+      latitude: 40.416775,
+      longitude: -3.703790,
       visible: true,
       featured: true
     )
@@ -63,6 +65,8 @@ class BlackCoffeeConcertLifecycleTest < ActiveSupport::TestCase
         category: 'concierto',
         address: 'Calle Test',
         city: 'Madrid',
+        latitude: 40.416775,
+        longitude: -3.703790,
         review_status: Venue::REVIEW_STATUS_APPROVED,
         visible: true,
         featured: true,

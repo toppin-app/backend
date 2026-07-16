@@ -23,31 +23,35 @@ Para cada concierto se prueban, en este orden:
 1. La URL de imagen que ya vino en los metadatos de la importacion.
 2. La ficha exacta del evento en Songkick, respetando `robots.txt`, el delay y los
    limites configurados para el crawler.
-3. Brave Image Search, solo si el proceso tiene habilitada la busqueda web y el
-   servidor tiene `BRAVE_SEARCH_API_KEY`.
 
-Una coincidencia web solo se acepta si:
+No se consulta Brave, Google Images ni ningun buscador o API de pago. Tampoco se
+hace scraping fragil de resultados de buscadores. La herramienta depende solo de
+la fuente original que ya usa el importador.
 
-- al menos el 75% de las palabras significativas del nombre aparecen en el
-  resultado;
-- aparece la fecha exacta del concierto;
-- aparece la sala o la ciudad, cuando se dispone de esos datos;
-- las dimensiones declaradas no son inferiores a 240 px por lado.
+## Criterio de portada internalizada
 
-Se consultan como maximo diez resultados y solo se intenta descargar las tres
-mejores coincidencias. La busqueda se ejecuta una sola vez por concierto.
+El objetivo final siempre es un archivo binario interno:
+
+- una imagen binaria interna queda fuera del proceso;
+- una URL externa entra en el proceso para descargarse y ser reemplazada;
+- un concierto sin binario ni URL entra para reintentar la ficha exacta de
+  Songkick.
+
+El dashboard desglosa estas tres cantidades para explicar el total. Que una URL
+se vea actualmente en la app no significa que ya este internalizada.
 
 ## Resultado y seguridad
 
 - Una imagen aceptada se descarga, valida y guarda como binario interno mediante
-  `VenueImage`. No se deja la URL externa como portada operativa.
+  `VenueImage`. La URL solo se usa como origen de la descarga y, al persistir el
+  archivo correctamente, el atributo `url` se limpia en la misma transaccion.
 - Se valida HTTP 200, `Content-Type` de imagen, contenido no vacio, limite de 25 MB
   y un maximo de cuatro redirecciones.
 - Cada redireccion se vuelve a validar y se bloquean hosts locales, direcciones
   privadas y redes reservadas para evitar SSRF.
 - Se guarda procedencia, URL original, pagina de resultado, confianza y evidencia
   de coincidencia en `venue_images.author_attributions`.
-- Una respuesta 429, 5xx, timeout, error DNS o caida de Songkick/Brave es
+- Una respuesta 429, 5xx, timeout, error DNS o caida de Songkick es
   reintentable: el concierto existente no cambia de estado.
 - Solo cuando todas las vias habilitadas concluyen que no existe una imagen
   verificable, un concierto existente pasa a `rejected` con motivo `bad_photos`,
@@ -55,34 +59,18 @@ mejores coincidencias. La busqueda se ejecuta una sola vez por concierto.
 - Durante una importacion, el concierto se omite antes de crear el `Venue` si no
   se recupera una portada valida.
 
-## Configuracion
-
-La busqueda web requiere esta variable solo en el servidor:
-
-```text
-BRAVE_SEARCH_API_KEY=...
-```
-
-Sin esa variable se puede ejecutar la recuperacion desde Songkick, pero el
-dashboard no permite activar el fallback web. En una importacion, la ausencia de
-la clave nunca hace que se cree un concierto sin portada.
-
 ## Metricas
 
 Las importaciones y los lotes registran por separado:
 
 - peticiones de ficha a la fuente;
-- busquedas de imagen;
 - descargas de imagen;
 - portadas recuperadas desde la fuente;
-- portadas recuperadas desde busqueda;
 - conciertos omitidos o rechazados por falta de portada;
 - errores temporales pendientes de reintento.
 
 ## Consideraciones de uso
 
-Que una imagen aparezca en un buscador no concede automaticamente derechos para
-reutilizarla. La procedencia queda guardada para auditoria, pero el responsable
-del producto debe verificar que su uso y almacenamiento sean compatibles con la
-licencia del sitio de origen y con los terminos de Songkick y Brave. No se debe
-activar la busqueda web masiva sin esa validacion.
+La procedencia queda guardada para auditoria. El responsable del producto debe
+verificar que el uso y almacenamiento de las imagenes sean compatibles con los
+terminos de Songkick y con los derechos aplicables a la imagen original.
