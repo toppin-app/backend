@@ -24,7 +24,9 @@ module SongkickConcerts
       address = stringify_hash_or_empty(location['address'])
       geo = stringify_hash_or_empty(location['geo'])
       source_url = source_url_for(raw)
-      performers = performer_names(raw['performer'])
+      image_base_url = source_url.presence || SongkickConcerts::Client::BASE_URL
+      performer_details = performer_details_for(raw['performer'], base_url: image_base_url)
+      performers = performer_details.filter_map { |performer| performer[:name] }.uniq
       raw_title = clean_text(raw['name'])
       display_name = display_name_for(raw_title, performers)
       venue_name = clean_location_text(location['name'])
@@ -38,7 +40,9 @@ module SongkickConcerts
       end_at = parse_time(raw['endDate'])
       start_date = parse_date(raw['startDate'])
       end_date = parse_date(raw['endDate'])
-      image_url = image_url_for(raw['image'])
+      image_urls = image_urls_for(raw, performer_details: performer_details, base_url: image_base_url)
+      image_url = image_urls.first
+      primary_performer = performer_details.first || {}
       event_id = source_event_id_for(raw, source_url)
       source_description = source_description_for(raw)
       event_dedupe_key = event_dedupe_key_for(
@@ -79,12 +83,18 @@ module SongkickConcerts
         start_date: start_date,
         end_date: end_date,
         image_url: image_url,
+        image_urls: image_urls,
+        image_candidates: image_urls,
         source_description: source_description,
         source_description_language: 'en',
         source_description_status: source_description.present? ? 'needs_review' : 'not_found',
         ticket_url: offer_url(raw['offers']),
         official_url: source_url,
         performers: performers,
+        performer_details: performer_details,
+        artist_name: primary_performer[:name],
+        source_artist_id: primary_performer[:source_artist_id],
+        source_artist_ids: performer_details.filter_map { |performer| performer[:source_artist_id] }.uniq,
         genres: genres_for(raw['performer']),
         event_status: raw['eventStatus'],
         offers: raw['offers'],
@@ -217,21 +227,71 @@ module SongkickConcerts
       [street, location_name, city, state, country].compact.reject(&:blank?).join(', ').presence || city || location_name || 'Direccion pendiente de revisar'
     end
 
-    def image_url_for(image)
-      case image
-      when Hash
-        clean_text(image['url'])
-      when Array
-        image.map { |entry| image_url_for(entry) }.find(&:present?)
-      else
-        clean_text(image)
-      end
+    def image_urls_for(raw, performer_details:, base_url:)
+      performer_images = performer_details.flat_map { |performer| performer[:image_urls] }
+      ImageUrlNormalizer.extract(
+        [raw['image_candidates'], raw['image'], performer_images],
+        base_url: base_url
+      )
+    end
+
+    def image_url_for(image, base_url: SongkickConcerts::Client::BASE_URL)
+      ImageUrlNormalizer.extract(image, base_url: base_url).first
     end
 
     def performer_names(value)
+      performer_details_for(value, base_url: SongkickConcerts::Client::BASE_URL)
+        .filter_map { |performer| performer[:name] }
+        .uniq
+    end
+
+    def performer_details_for(value, base_url:)
       array_wrap(value).filter_map do |entry|
-        entry.is_a?(Hash) ? clean_text(entry['name'] || entry[:name]) : clean_text(entry)
-      end.uniq
+        unless entry.is_a?(Hash)
+          name = clean_text(entry)
+          next if name.blank?
+
+          next({ name: name, genres: [], same_as: [], image_urls: [] })
+        end
+
+        performer = stringify_hash_or_empty(entry)
+        name = clean_text(performer['name'])
+        genres = array_wrap(performer['genre']).filter_map { |genre| clean_text(genre) }.uniq
+        same_as = array_wrap(performer['sameAs']).filter_map do |url|
+          ImageUrlNormalizer.normalize(url, base_url: base_url)
+        end.uniq
+        performer_url = ImageUrlNormalizer.normalize(performer['url'], base_url: base_url)
+        related_urls = (same_as + [performer_url]).compact.uniq
+        source_url = related_urls.find { |url| songkick_artist_url?(url) }
+        source_artist_id = source_artist_id_from(source_url)
+        official_url = related_urls.find { |url| !songkick_artist_url?(url) }
+        image_urls = ImageUrlNormalizer.extract(performer['image'], base_url: base_url)
+        next if name.blank? && related_urls.empty?
+
+        {
+          name: name,
+          genres: genres,
+          same_as: same_as,
+          url: performer_url,
+          source_url: source_url,
+          source_artist_id: source_artist_id,
+          official_url: official_url,
+          image_urls: image_urls
+        }.compact
+      end.uniq { |performer| [performer[:source_artist_id], performer[:source_url], performer[:name]] }
+    end
+
+    def songkick_artist_url?(value)
+      uri = URI.parse(value.to_s)
+      uri.host.to_s.downcase.sub(/\Awww\./, '') == 'songkick.com' && uri.path.to_s.match?(%r{/artists/\d+})
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def source_artist_id_from(value)
+      URI.parse(value.to_s).path.to_s[%r{/artists/(\d+)}, 1]
+    rescue URI::InvalidURIError
+      nil
     end
 
     def genres_for(value)

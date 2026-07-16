@@ -116,7 +116,7 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
     assert_equal 0, Venue.where(category: 'concierto', external_source_id: '999').count
   end
 
-  test 'does not create a concert when no verified cover can be recovered' do
+  test 'creates a hidden pending concert when no verified cover can be recovered' do
     run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
     missing = BlackCoffeeConcertCoverResolver::Result.new(
       status: 'missing',
@@ -126,13 +126,15 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
 
     import!(run, events_html([event_payload]), cover_result: missing)
 
-    assert_nil Venue.find_by(category: 'concierto', external_source_id: '123')
-    assert_equal 'skipped_no_cover', run.items.last.status
+    venue = Venue.find_by!(category: 'concierto', external_source_id: '123')
+    assert_equal Venue::REVIEW_STATUS_PENDING, venue.review_status
+    refute venue.visible
+    assert_equal 'created_pending_cover', run.items.last.status
     assert_equal 1, run.reload.no_cover_skipped_count
-    assert_equal 0, run.venues_created_count
+    assert_equal 1, run.venues_created_count
   end
 
-  test 'does not create a concert when cover resolution is temporarily unavailable' do
+  test 'keeps a concert hidden and pending when cover resolution is temporarily unavailable' do
     run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
     retryable = BlackCoffeeConcertCoverResolver::Result.new(
       status: 'retryable_error',
@@ -142,8 +144,10 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
 
     import!(run, events_html([event_payload]), cover_result: retryable)
 
-    assert_nil Venue.find_by(category: 'concierto', external_source_id: '123')
-    assert_equal 'skipped_no_cover', run.items.last.status
+    venue = Venue.find_by!(category: 'concierto', external_source_id: '123')
+    assert_equal Venue::REVIEW_STATUS_PENDING, venue.review_status
+    refute venue.visible
+    assert_equal 'created_pending_cover', run.items.last.status
     assert_match(/Temporary Songkick outage/, run.items.last.error_message)
   end
 

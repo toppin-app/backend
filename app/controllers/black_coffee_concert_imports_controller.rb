@@ -20,7 +20,7 @@ class BlackCoffeeConcertImportsController < ApplicationController
       attributes: run_attributes
     )
     redirect_to black_coffee_concert_import_path(run),
-                notice: 'Importación Songkick creada. Antes de crear cada concierto exige una portada binaria verificable y descarta los que no la tengan.'
+                notice: 'Importación Songkick creada. Busca primero en la fuente y después en proveedores gratuitos estructurados; cualquier caso sin portada segura quedará oculto y pendiente de revisión.'
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_concert_imports_path, alert: "No se pudo crear la importación: #{e.message}"
   end

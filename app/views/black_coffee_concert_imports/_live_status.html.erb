@@ -6,14 +6,14 @@
     </div>
   <% elsif @run.venues_created_count.to_i.positive? %>
     <div class="alert alert-success d-flex flex-wrap justify-content-between align-items-center">
-      <span><strong><%= @run.venues_created_count %> conciertos creados.</strong> Las importaciones iniciadas desde el dashboard quedan aprobadas y visibles.</span>
+      <span><strong><%= @run.venues_created_count %> conciertos creados.</strong> Los que no obtuvieron una portada segura permanecen ocultos y pendientes.</span>
       <%= link_to 'Abrir conciertos', black_coffee_venues_path(category: 'concierto'), class: 'btn btn-sm btn-outline-success mt-2 mt-md-0' %>
     </div>
   <% end %>
   <% if @run.no_cover_skipped_count.to_i.positive? %>
     <div class="alert alert-warning">
-      <strong><%= @run.no_cover_skipped_count %> conciertos no se crearon por no tener portada verificable.</strong>
-      No se guardó ningún concierto incompleto; puedes revisar el motivo exacto en la tabla.
+      <strong><%= @run.no_cover_skipped_count %> conciertos quedaron pendientes por no tener una portada verificable.</strong>
+      No se publicaron imágenes dudosas; puedes revisar las fuentes y el motivo exacto en la tabla.
     </div>
   <% end %>
 
@@ -56,7 +56,7 @@
         <div class="card-body">
           <p class="text-muted text-uppercase font-weight-bold mb-2">Fallidos</p>
           <h2 class="mb-0 text-danger"><%= @run.failed_count %></h2>
-          <div class="small text-muted mt-1">Sin portada: <%= @run.no_cover_skipped_count.to_i %></div>
+          <div class="small text-muted mt-1">Pendientes sin portada: <%= @run.no_cover_skipped_count.to_i %></div>
         </div>
       </div>
     </div>
@@ -64,8 +64,8 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <p class="text-muted text-uppercase font-weight-bold mb-2">Requests</p>
-          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i + @run.image_download_requests_count.to_i %></h2>
-          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · origen <%= @run.detail_requests_count %> · imágenes <%= @run.image_download_requests_count.to_i %></div>
+          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i + @run.image_search_requests_count.to_i + @run.image_download_requests_count.to_i %></h2>
+          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · origen <%= @run.detail_requests_count %> · proveedores <%= @run.image_search_requests_count.to_i %> · imágenes <%= @run.image_download_requests_count.to_i %></div>
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@
           Máx. conciertos: <strong><%= @run.max_events %></strong> ·
           Solo futuros: <strong><%= @run.only_future? ? 'sí' : 'no' %></strong> ·
           Portadas binarias: <strong><%= @run.images_downloaded_count.to_i %></strong>
-          (<%= @run.source_cover_recovered_count.to_i %> desde Songkick) ·
+          (<%= @run.source_cover_recovered_count.to_i %> desde Songkick · <%= @run.search_cover_recovered_count.to_i %> externas verificadas) ·
           Delay: <strong><%= @run.request_delay_seconds.to_f.to_i %>s</strong> ·
           País: <strong><%= @run.strict_country_code %></strong> ·
           Origen: <strong><%= @run.origin_label %></strong> ·
@@ -148,7 +148,7 @@
                     <div class="small text-muted mt-1">Sin URL de origen</div>
                   <% end %>
                   <% if item.image_url.present? %>
-                    <div class="small text-muted mt-2">Imagen detectada</div>
+                    <div class="small text-muted mt-2"><%= item.status == 'created_pending_cover' ? 'Candidata detectada, pero rechazada' : 'Imagen detectada' %></div>
                   <% end %>
                 </td>
                 <td><%= item.venue_name.presence || '-' %></td>
@@ -183,8 +183,8 @@
                     <% if item.image_resolution_confidence.present? %>
                       <div class="text-muted">Confianza: <%= item.image_resolution_confidence.to_f.round %>%</div>
                     <% end %>
-                  <% elsif item.status == 'skipped_no_cover' %>
-                    <span class="badge badge-warning">No encontrada</span>
+                  <% elsif item.status.in?(%w[skipped_no_cover created_pending_cover]) %>
+                    <span class="badge badge-warning">Pendiente de revisión</span>
                   <% else %>
                     <span class="text-muted">-</span>
                   <% end %>

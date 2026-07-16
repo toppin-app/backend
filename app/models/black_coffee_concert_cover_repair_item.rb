@@ -1,5 +1,5 @@
 class BlackCoffeeConcertCoverRepairItem < ApplicationRecord
-  STATUSES = %w[pending recovered_source recovered_search rejected failed skipped].freeze
+  STATUSES = %w[pending recovered_source recovered_search needs_review rejected failed skipped].freeze
 
   belongs_to :batch,
              class_name: 'BlackCoffeeConcertCoverRepairBatch',
@@ -20,6 +20,7 @@ class BlackCoffeeConcertCoverRepairItem < ApplicationRecord
       'pending' => 'Pendiente',
       'recovered_source' => 'Recuperada desde origen',
       'recovered_search' => 'Recuperada por busqueda',
+      'needs_review' => 'Pendiente de revision',
       'rejected' => 'Concierto rechazado',
       'failed' => 'Error interno',
       'skipped' => 'Saltado'
@@ -31,6 +32,7 @@ class BlackCoffeeConcertCoverRepairItem < ApplicationRecord
       'pending' => 'warning',
       'recovered_source' => 'success',
       'recovered_search' => 'primary',
+      'needs_review' => 'warning',
       'rejected' => 'danger',
       'failed' => 'danger',
       'skipped' => 'secondary'

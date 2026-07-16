@@ -26,8 +26,9 @@ module SongkickConcerts
     DEFAULT_USER_AGENT = 'ToppinBlackCoffeeConcertImporter/1.0 (+https://toppinapp.com)'.freeze
     DEFAULT_CRAWL_DELAY_SECONDS = 10.0
     DEFAULT_TIMEOUT_SECONDS = 15
+    MAX_REDIRECTS = 4
 
-    attr_reader :robots_requests_count, :listing_requests_count, :detail_requests_count
+    attr_reader :robots_requests_count, :listing_requests_count, :detail_requests_count, :last_response_url
 
     def initialize(user_agent: DEFAULT_USER_AGENT, request_delay_seconds: DEFAULT_CRAWL_DELAY_SECONDS, timeout: DEFAULT_TIMEOUT_SECONDS)
       @user_agent = user_agent
@@ -68,8 +69,7 @@ module SongkickConcerts
       load_robots_rules!
       ensure_robots_allowed!(path)
       respect_delay!
-      response = http_get(absolute_uri(path))
-      @last_request_at = monotonic_time
+      response = request_with_redirects(absolute_uri(path))
 
       return response_body(response) if response.is_a?(Net::HTTPSuccess)
 
@@ -77,6 +77,25 @@ module SongkickConcerts
         "Songkick respondio HTTP #{response.code} para #{path}",
         http_status: response.code
       )
+    end
+
+    def request_with_redirects(uri, redirects = 0)
+      response = http_get(uri)
+      @last_request_at = monotonic_time
+      @last_response_url = uri.to_s
+      return response unless response.is_a?(Net::HTTPRedirection)
+
+      raise RequestError.new("Songkick redirigio demasiadas veces desde #{uri}", http_status: response.code) if redirects >= MAX_REDIRECTS
+
+      location = response['location'].to_s
+      raise RequestError.new("Songkick redirigio sin indicar destino desde #{uri}", http_status: response.code) if location.blank?
+
+      target = absolute_uri(URI.join(uri, location).to_s)
+      ensure_robots_allowed!(target.request_uri)
+      respect_delay!
+      request_with_redirects(target, redirects + 1)
+    rescue URI::InvalidURIError => e
+      raise RequestError, "Redireccion Songkick invalida: #{e.message}"
     end
 
     def load_robots_rules!
@@ -157,7 +176,7 @@ module SongkickConcerts
     def absolute_uri(path_or_url)
       uri = URI.parse(path_or_url.to_s)
       uri = URI.join(BASE_URL, path_or_url.to_s) unless uri.host
-      raise RequestError, 'La URL no pertenece a Songkick.' unless songkick_host?(uri.host)
+      raise RequestError, 'La URL no pertenece a Songkick o no usa HTTPS.' unless uri.scheme == 'https' && songkick_host?(uri.host)
 
       uri
     rescue URI::InvalidURIError => e

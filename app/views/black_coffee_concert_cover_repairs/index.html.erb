@@ -8,7 +8,7 @@
   <div>
     <div class="text-muted font-weight-bold">Black Coffee / Conciertos</div>
     <h1 class="mb-1">Recuperar portadas de conciertos</h1>
-    <p class="text-muted mb-0">Recupera portadas como binarios internos y separa los conciertos que no tengan una imagen verificable.</p>
+    <p class="text-muted mb-0">Recupera portadas como binarios internos y deja pendientes los conciertos que no tengan una imagen verificable.</p>
   </div>
   <div class="mt-3 mt-md-0">
     <%= link_to 'Importador de conciertos', black_coffee_concert_imports_path, class: 'btn btn-outline-primary mr-2' %>
@@ -18,7 +18,7 @@
 
 <div class="alert alert-warning">
   <strong>Proceso modificador y no destructivo.</strong>
-  Una URL externa no se considera el resultado final: primero se descarga y se reemplaza por un binario interno. Si la URL falla, se reintenta desde la ficha exacta de Songkick. No usa buscadores ni servicios de pago. Solo se marca como <strong>rechazado por fotos</strong> cuando Songkick confirma que no existe una imagen valida; una caida de red, un limite temporal o un bloqueo del proveedor queda como fallo reintentable y no cambia el concierto.
+  Una URL externa no se considera el resultado final: primero se descarga, se inspeccionan sus bytes y se reemplaza por un binario interno. Si Songkick no tiene imagen, se cruzan proveedores gratuitos estructurados. Una coincidencia ausente o ambigua pasa a <strong>pendiente de revisión y oculto</strong>; una caída de red o límite temporal queda como fallo reintentable y no cambia el concierto.
 </div>
 
 <div class="row mb-4">
@@ -81,7 +81,7 @@
         <div class="form-group col-md-3">
           <%= submit_tag 'Iniciar proceso',
                          class: 'btn btn-danger btn-block text-white',
-                         data: { confirm: 'Los conciertos sin ninguna portada verificable quedaran rechazados y ocultos. El proceso continuara en el servidor. Continuar?' } %>
+                         data: { confirm: 'Los conciertos sin ninguna portada verificable quedarán ocultos y pendientes de revisión. El proceso continuará en el servidor. ¿Continuar?' } %>
         </div>
       </div>
     <% end %>
@@ -92,7 +92,7 @@
   <div class="card-header bg-white"><h4 class="mb-0">Procesos recientes</h4></div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-        <thead><tr><th>#</th><th>Estado</th><th>Filtro</th><th>Progreso</th><th>Recuperadas</th><th>Rechazados</th><th>Requests</th><th>Fecha</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Estado</th><th>Filtro</th><th>Progreso</th><th>Recuperadas</th><th>Pendientes</th><th>Requests</th><th>Fecha</th><th></th></tr></thead>
       <tbody>
         <% @recent_batches.each do |batch| %>
           <tr>
@@ -100,9 +100,9 @@
             <td><span class="badge badge-<%= batch.status_badge_class %>"><%= batch.status_label %></span></td>
             <td><%= batch.review_status_filter_label %></td>
             <td><strong><%= batch.progress_percentage %>%</strong><br><small class="text-muted"><%= batch.processed_venues %>/<%= batch.total_venues %></small></td>
-            <td class="text-success"><%= batch.source_recovered_count %></td>
-            <td class="text-danger"><%= batch.rejected_count %></td>
-            <td><%= batch.source_requests_count.to_i + batch.image_requests_count.to_i %></td>
+            <td class="text-success"><%= batch.source_recovered_count.to_i + batch.search_recovered_count.to_i %></td>
+            <td class="text-warning"><%= batch.respond_to?(:pending_review_count) ? batch.pending_review_count.to_i : 0 %></td>
+            <td><%= batch.source_requests_count.to_i + batch.search_requests_count.to_i + batch.image_requests_count.to_i %></td>
             <td><%= l(batch.created_at, format: :short) %></td>
             <td class="text-right"><%= link_to 'Ver progreso', black_coffee_concert_cover_repair_path(batch), class: 'btn btn-sm btn-outline-primary' %></td>
           </tr>

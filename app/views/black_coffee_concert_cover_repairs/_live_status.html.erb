@@ -8,7 +8,8 @@
       ['Estado', @batch.status_label, nil],
       ['Procesados', "#{number_with_delimiter(@batch.processed_venues)}/#{number_with_delimiter(@batch.total_venues)}", nil],
       ['Recuperados de origen', number_with_delimiter(@batch.source_recovered_count), 'text-success'],
-      ['Rechazados', number_with_delimiter(@batch.rejected_count), 'text-danger'],
+      ['Recuperados externos', number_with_delimiter(@batch.search_recovered_count), 'text-primary'],
+      ['Pendientes revisión', number_with_delimiter(@batch.respond_to?(:pending_review_count) ? @batch.pending_review_count : 0), 'text-warning'],
       ['Fallidos', number_with_delimiter(@batch.failed_count), 'text-danger'],
       ['Saltados', number_with_delimiter(@batch.skipped_count), 'text-muted']
     ] %>
@@ -29,7 +30,7 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
         <div>
           <h4 class="mb-1">Progreso del servidor</h4>
-          <p class="text-muted mb-0">Filtro: <strong><%= @batch.review_status_filter_label %></strong> · Fuente: <strong>Songkick, sin servicios de pago</strong> · Requests: origen <strong><%= @batch.source_requests_count %></strong>, imagenes <strong><%= @batch.image_requests_count %></strong>.</p>
+          <p class="text-muted mb-0">Filtro: <strong><%= @batch.review_status_filter_label %></strong> · Fuentes: <strong>Songkick + proveedores estructurados gratuitos</strong> · Requests: origen <strong><%= @batch.source_requests_count %></strong>, proveedores <strong><%= @batch.search_requests_count %></strong>, imágenes <strong><%= @batch.image_requests_count %></strong>.</p>
         </div>
         <% unless @batch.finished? %>
           <%= button_to 'Cancelar proceso',

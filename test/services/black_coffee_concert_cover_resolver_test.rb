@@ -1,6 +1,40 @@
 require 'test_helper'
 
 class BlackCoffeeConcertCoverResolverTest < ActiveSupport::TestCase
+  ExternalSearchResult = Struct.new(
+    :status,
+    :candidate,
+    :candidates,
+    :confidence,
+    :identifiers,
+    :provider_attempts,
+    :evidence,
+    :error_type,
+    :error_message,
+    keyword_init: true
+  )
+
+  class FakeExternalSearch
+    attr_reader :requests_count
+
+    def initialize(result = nil)
+      @result = result || ExternalSearchResult.new(
+        status: 'not_found',
+        identifiers: {},
+        provider_attempts: [],
+        evidence: {},
+        error_type: 'no_external_candidate',
+        error_message: 'No external candidate.'
+      )
+      @requests_count = 0
+    end
+
+    def search(_event)
+      @requests_count += 1
+      @result
+    end
+  end
+
   class FakeSourceClient
     attr_reader :robots_requests_count, :detail_requests_count
 
@@ -76,6 +110,26 @@ class BlackCoffeeConcertCoverResolverTest < ActiveSupport::TestCase
     assert_equal image_url, result.image_url
   end
 
+  test 'uses images from an exact detail page even when JSON-LD is absent' do
+    image_url = 'https://images.example.test/detail-only.jpg'
+    html = <<~HTML
+      <html><head>
+        <link rel="canonical" href="https://www.songkick.com/concerts/123-josue-rarujo">
+        <meta property="og:image" content="#{image_url}">
+      </head><body><h1>Josue Rarujo</h1></body></html>
+    HTML
+    resolver = resolver_with(
+      source_client: FakeSourceClient.new(html: html),
+      downloader: FakeDownloader.new(image_url => successful_download(image_url))
+    )
+
+    result = resolver.resolve_for_import(event)
+
+    assert result.recovered?
+    assert_equal 'source_page', result.resolution_source
+    assert_equal 'exact_source_url_without_event_json_ld', result.evidence[:match]
+  end
+
   test 'keeps a transient Songkick outage retryable' do
     source = FakeSourceClient.new(
       error: SongkickConcerts::Client::RequestError.new('temporary Songkick outage')
@@ -124,10 +178,11 @@ class BlackCoffeeConcertCoverResolverTest < ActiveSupport::TestCase
 
   private
 
-  def resolver_with(source_client: FakeSourceClient.new, downloader: FakeDownloader.new)
+  def resolver_with(source_client: FakeSourceClient.new, downloader: FakeDownloader.new, external_search: FakeExternalSearch.new)
     BlackCoffeeConcertCoverResolver.new(
       source_client: source_client,
-      downloader: downloader
+      downloader: downloader,
+      external_search: external_search
     )
   end
 

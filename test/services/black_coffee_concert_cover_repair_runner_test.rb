@@ -41,7 +41,7 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
     Venue.where(category: 'concierto').find_each(&:destroy!)
   end
 
-  test 'rejects and hides a concert only after cover absence is confirmed' do
+  test 'moves a concert to hidden pending review when cover absence is confirmed' do
     venue = create_concert!
     batch = create_batch!
     missing = BlackCoffeeConcertCoverResolver::Result.new(
@@ -54,11 +54,12 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
 
     venue.reload
     item = batch.items.first.reload
-    assert_equal Venue::REVIEW_STATUS_REJECTED, venue.review_status
-    assert_equal 'bad_photos', venue.review_rejection_reason
+    assert_equal Venue::REVIEW_STATUS_PENDING, venue.review_status
+    assert_nil venue.review_rejection_reason
     refute venue.visible
-    assert_equal 'rejected', item.status
-    assert_equal 1, batch.reload.rejected_count
+    assert_equal 'needs_review', item.status
+    assert_equal 0, batch.reload.rejected_count
+    assert_equal 1, batch.pending_review_count if batch.has_attribute?(:pending_review_count)
   end
 
   test 'does not reject a concert when a provider has a transient error' do
@@ -135,6 +136,22 @@ class BlackCoffeeConcertCoverRepairRunnerTest < ActiveSupport::TestCase
     assert_equal 1, inventory[:without_url]
     assert_equal 1, inventory[:pending_internalization]
     assert_equal 1, batch.total_venues
+  end
+
+  test 'never replaces an existing uploaded cover with a newly searched image' do
+    venue = create_concert!
+    image = venue.venue_images.create!(
+      position: 0,
+      url: 'https://images.example.test/original-manual-cover.jpg'
+    )
+    image.update_columns(image: 'manual-cover.jpg', url: nil)
+
+    inventory = BlackCoffeeConcertCoverRepairRunner.cover_inventory(review_status_filter: 'approved')
+    batch = create_batch!
+
+    assert_equal 1, inventory[:binary]
+    assert_equal 0, inventory[:pending_internalization]
+    assert_equal 0, batch.total_venues
   end
 
   private

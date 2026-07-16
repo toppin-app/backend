@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_07_15_120000) do
+ActiveRecord::Schema.define(version: 2026_07_16_110000) do
 
   create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "android_last_version"
@@ -136,6 +136,41 @@ ActiveRecord::Schema.define(version: 2026_07_15_120000) do
     t.index ["status"], name: "idx_bc_bulk_imports_status"
   end
 
+  create_table "black_coffee_concert_artist_image_caches", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
+    t.string "identity_key", null: false
+    t.string "artist_name", null: false
+    t.string "canonical_name", null: false
+    t.string "source_artist_id"
+    t.string "musicbrainz_id"
+    t.string "wikidata_id"
+    t.string "status", default: "pending", null: false
+    t.string "provider"
+    t.text "image_url"
+    t.text "source_page_url"
+    t.decimal "confidence", precision: 5, scale: 2
+    t.integer "image_width"
+    t.integer "image_height"
+    t.integer "image_bytes"
+    t.string "image_content_type"
+    t.string "image_sha256", limit: 64
+    t.bigint "venue_image_id"
+    t.json "providers_checked"
+    t.json "evidence"
+    t.text "failure_reason"
+    t.datetime "searched_at"
+    t.datetime "retry_after"
+    t.datetime "expires_at"
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["identity_key"], name: "idx_bc_concert_artist_images_identity", unique: true
+    t.index ["musicbrainz_id"], name: "idx_bc_concert_artist_images_mbid"
+    t.index ["source_artist_id"], name: "idx_bc_concert_artist_images_source_id"
+    t.index ["status", "retry_after"], name: "idx_bc_concert_artist_images_retry"
+    t.index ["venue_image_id"], name: "idx_bc_concert_artist_images_venue_image"
+    t.index ["wikidata_id"], name: "idx_bc_concert_artist_images_wikidata"
+  end
+
   create_table "black_coffee_concert_cover_repair_batches", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci", force: :cascade do |t|
     t.string "status", default: "pending", null: false
     t.string "review_status_filter", default: "approved", null: false
@@ -157,6 +192,7 @@ ActiveRecord::Schema.define(version: 2026_07_15_120000) do
     t.datetime "last_worker_heartbeat_at"
     t.text "error_message"
     t.json "report_payload"
+    t.integer "pending_review_count", default: 0, null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["created_at"], name: "idx_bc_concert_cover_batches_created"
@@ -1243,6 +1279,7 @@ ActiveRecord::Schema.define(version: 2026_07_15_120000) do
   add_foreign_key "black_coffee_bulk_import_steps", "black_coffee_import_runs"
   add_foreign_key "black_coffee_bulk_imports", "black_coffee_import_regions"
   add_foreign_key "black_coffee_concert_cover_repair_batches", "users", column: "created_by_id", name: "fk_bc_concert_cover_batches_user", on_delete: :nullify
+  add_foreign_key "black_coffee_concert_artist_image_caches", "venue_images", column: "venue_image_id", name: "fk_bc_concert_artist_images_venue_image", on_delete: :nullify
   add_foreign_key "black_coffee_concert_cover_repair_items", "black_coffee_concert_cover_repair_batches"
   add_foreign_key "black_coffee_concert_cover_repair_items", "venues", name: "fk_bc_concert_cover_items_venue", on_delete: :nullify
   add_foreign_key "black_coffee_concert_import_items", "black_coffee_concert_import_runs"

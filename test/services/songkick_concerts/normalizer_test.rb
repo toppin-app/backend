@@ -65,6 +65,53 @@ class SongkickConcertsNormalizerTest < ActiveSupport::TestCase
     assert_equal ['jazz'], normalized[:genres]
   end
 
+  test 'preserves performer identity details and the stable Songkick artist id' do
+    payload = raw_event
+    payload['performer'] = {
+      '@type' => 'MusicGroup',
+      'name' => 'Alok',
+      'genre' => %w[electronic pop],
+      'sameAs' => [
+        '/artists/4646863-alok?utm_source=microformat',
+        'https://www.alokmusic.com/'
+      ],
+      'image' => { 'contentUrl' => '//images.sk-static.com/artists/4646863/large_avatar' }
+    }
+
+    normalized = SongkickConcerts::Normalizer.new.normalize(payload)
+    performer = normalized[:performer_details].first
+
+    assert_equal ['Alok'], normalized[:performers]
+    assert_equal 'Alok', normalized[:artist_name]
+    assert_equal '4646863', normalized[:source_artist_id]
+    assert_equal ['4646863'], normalized[:source_artist_ids]
+    assert_equal 'Alok', performer[:name]
+    assert_equal %w[electronic pop], performer[:genres]
+    assert_equal '4646863', performer[:source_artist_id]
+    assert_equal 'https://www.songkick.com/artists/4646863-alok?utm_source=microformat', performer[:source_url]
+    assert_equal 'https://www.alokmusic.com/', performer[:official_url]
+    assert_includes performer[:same_as], 'https://www.alokmusic.com/'
+    assert_equal ['https://images.sk-static.com/artists/4646863/large_avatar'], performer[:image_urls]
+  end
+
+  test 'normalizes image candidates and skips a placeholder before ranking quality' do
+    payload = raw_event
+    payload['image'] = [
+      '//assets.sk-static.com/images/default_images/large_avatar/default-artist.png',
+      '/images/artists/123/medium_avatar',
+      '//images.sk-static.com/images/media/profile_images/artists/123/huge_avatar'
+    ]
+
+    normalized = SongkickConcerts::Normalizer.new.normalize(payload)
+
+    assert_equal 'https://images.sk-static.com/images/media/profile_images/artists/123/huge_avatar', normalized[:image_url]
+    assert_equal [
+      'https://images.sk-static.com/images/media/profile_images/artists/123/huge_avatar',
+      'https://www.songkick.com/images/artists/123/medium_avatar'
+    ], normalized[:image_urls]
+    assert_equal normalized[:image_urls], normalized[:image_candidates]
+  end
+
   test 'marks non Spanish concerts as outside country' do
     normalized = SongkickConcerts::Normalizer.new.normalize(raw_event(country: 'Portugal'))
 

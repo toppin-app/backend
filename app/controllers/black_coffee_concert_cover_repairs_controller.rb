@@ -46,7 +46,7 @@ class BlackCoffeeConcertCoverRepairsController < ApplicationController
 
     @batch.update!(status: 'cancelled', completed_at: Time.current, worker_token: nil)
     redirect_to black_coffee_concert_cover_repair_path(@batch),
-                notice: 'Proceso cancelado. Las portadas ya recuperadas y los rechazos ya aplicados se conservan.'
+                notice: 'Proceso cancelado. Las portadas ya recuperadas y los cambios a pendiente de revisión se conservan.'
   rescue ActiveRecord::ActiveRecordError => e
     redirect_to black_coffee_concert_cover_repair_path(@batch), alert: "No se pudo cancelar el proceso: #{e.message}"
   end
