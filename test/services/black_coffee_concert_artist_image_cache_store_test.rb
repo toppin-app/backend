@@ -71,6 +71,7 @@ class BlackCoffeeConcertArtistImageCacheStoreTest < ActiveSupport::TestCase
     )
     store = BlackCoffeeConcertArtistImageCacheStore.new(
       scope: FakeScope.new(record),
+      inspector: BlackCoffeeImageInspector.new(validate_visual_content: false),
       available: true
     )
 

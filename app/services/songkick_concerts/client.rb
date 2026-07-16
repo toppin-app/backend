@@ -27,6 +27,7 @@ module SongkickConcerts
     DEFAULT_CRAWL_DELAY_SECONDS = 10.0
     DEFAULT_TIMEOUT_SECONDS = 15
     MAX_REDIRECTS = 4
+    MAX_EVENT_PAGE_CACHE_ENTRIES = 100
 
     attr_reader :robots_requests_count, :listing_requests_count, :detail_requests_count, :last_response_url
 
@@ -41,6 +42,7 @@ module SongkickConcerts
       @robots_requests_count = 0
       @listing_requests_count = 0
       @detail_requests_count = 0
+      @event_page_cache = {}
     end
 
     def fetch_metro_page(source_path, page:)
@@ -55,8 +57,18 @@ module SongkickConcerts
 
     def fetch_event_page(source_url)
       uri = absolute_uri(source_url)
+      cache_key = uri.to_s
+      cached = @event_page_cache[cache_key]
+      if cached
+        @last_response_url = cached.fetch(:final_url)
+        return cached.fetch(:body)
+      end
+
       @detail_requests_count += 1
-      get("#{uri.path}#{uri.query.present? ? "?#{uri.query}" : ''}")
+      body = get("#{uri.path}#{uri.query.present? ? "?#{uri.query}" : ''}")
+      @event_page_cache.shift while @event_page_cache.size >= MAX_EVENT_PAGE_CACHE_ENTRIES
+      @event_page_cache[cache_key] = { body: body, final_url: @last_response_url.presence || uri.to_s }
+      body
     end
 
     def request_delay_seconds

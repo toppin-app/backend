@@ -49,6 +49,15 @@ class GooglePlacesBlackCoffeeClient
     nextPageToken
   ].join(',').freeze
   PLACE_DETAILS_PHOTO_FIELD_MASK = 'id,photos'.freeze
+  ADDRESS_GEOCODING_FIELD_MASK = %w[
+    places.id
+    places.displayName
+    places.formattedAddress
+    places.location
+    places.types
+    places.primaryType
+    places.addressComponents
+  ].join(',').freeze
   PLACE_DETAILS_SYNC_FIELD_MASK = %w[
     id
     name
@@ -215,6 +224,30 @@ class GooglePlacesBlackCoffeeClient
   def initialize(api_key: self.class.api_key)
     @api_key = api_key
     @photo_uri_cache = {}
+  end
+
+  # A deliberately small Google Places Text Search used by source importers
+  # that already have a complete postal address but no coordinates. It does
+  # not run the Black Coffee category/photo import pipeline and therefore
+  # cannot turn a concert into a Google venue candidate by accident.
+  def geocode_address(query:, limit: 5, country_code: 'ES')
+    raise MissingApiKeyError, 'Falta GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY en el entorno del servidor.' if @api_key.blank?
+
+    normalized_query = query.to_s.squish
+    raise RequestError, 'La direccion para geocodificar esta vacia.' if normalized_query.blank?
+
+    payload = post_json(
+      BASE_URL,
+      {
+        textQuery: normalized_query,
+        pageSize: [[limit.to_i, 1].max, 5].min,
+        languageCode: 'es',
+        regionCode: country_code.to_s.upcase.presence || 'ES'
+      },
+      field_mask: ADDRESS_GEOCODING_FIELD_MASK
+    )
+
+    Array(payload['places'])
   end
 
   def search(

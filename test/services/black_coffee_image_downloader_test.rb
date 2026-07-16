@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'base64'
 
 class BlackCoffeeImageDownloaderTest < ActiveSupport::TestCase
   FakeStreamingResponse = Struct.new(:code, :headers, :chunks) do
@@ -111,6 +112,23 @@ class BlackCoffeeImageDownloaderTest < ActiveSupport::TestCase
     assert_equal 'application/octet-stream', result.declared_content_type
   end
 
+  test 'concert visual inspection rejects the exact transparent Songkick PNG' do
+    body = Base64.strict_decode64(
+      'iVBORw0KGgoAAAANSUhEUgAAASwAAAEsAQAAAABRBrPYAAAAAnRSTlMAAQGU/a4AAABASURBVHgB7cpBAQBABACwu/5pJSACvLf3fr6B0DRN0zRN0zRN0zRN0zTt0DRN0zRN0zRN0zRN0zRN0zRN0zStAMAZRou3pllOAAAAAElFTkSuQmCC'
+    )
+    response = response_with(code: 200, content_type: 'binary/octet-stream', chunks: [body])
+    inspector = BlackCoffeeImageInspector.new(validate_visual_content: true)
+
+    result = public_downloader([response], inspector: inspector).download(
+      'https://images.sk-static.com/images/media/profile_images/artists/10251894/huge_avatar'
+    )
+
+    assert_not result.ok?
+    assert_equal 'image_transparent', result.error_type
+    assert_equal 300, result.width
+    assert_equal 300, result.height
+  end
+
   test 'follows a relative redirect and inspects the final response' do
     body = jpeg_bytes(width: 900, height: 600)
     redirect = FakeStreamingResponse.new(
@@ -203,6 +221,13 @@ class BlackCoffeeImageDownloaderTest < ActiveSupport::TestCase
 
   def public_downloader(responses, requests: [], requested_uris: [], addresses: [], **options)
     queue = responses.dup
+    options[:inspector] ||= BlackCoffeeImageInspector.new(
+      min_width: options.fetch(:min_width, BlackCoffeeImageDownloader::DEFAULT_MIN_WIDTH),
+      min_height: options.fetch(:min_height, BlackCoffeeImageDownloader::DEFAULT_MIN_HEIGHT),
+      min_pixels: options.fetch(:min_pixels, BlackCoffeeImageDownloader::DEFAULT_MIN_PIXELS),
+      max_pixels: options.fetch(:max_pixels, BlackCoffeeImageDownloader::DEFAULT_MAX_PIXELS),
+      validate_visual_content: false
+    )
     BlackCoffeeImageDownloader.new(
       **options,
       address_resolver: ->(_host) { ['93.184.216.34'] },

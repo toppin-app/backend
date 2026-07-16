@@ -2,6 +2,33 @@ require 'test_helper'
 require 'ostruct'
 
 class GooglePlacesBlackCoffeeClientTest < ActiveSupport::TestCase
+  test 'geocodes a known source address with the existing Places key and a minimal field mask' do
+    client = GooglePlacesBlackCoffeeClient.new(api_key: 'test-key')
+    captured = nil
+    response = {
+      'places' => [
+        {
+          'id' => 'sala-mamba',
+          'location' => { 'latitude' => 37.992148, 'longitude' => -1.116420 }
+        }
+      ]
+    }
+
+    client.stub(:post_json, lambda { |url, body, field_mask:|
+      captured = { url: url, body: body, field_mask: field_mask }
+      response
+    }) do
+      places = client.geocode_address(query: 'Sala Mamba, Carril molino de Nelva 10, 30007 Murcia, Spain')
+      assert_equal response['places'], places
+    end
+
+    assert_equal GooglePlacesBlackCoffeeClient::BASE_URL, captured[:url]
+    assert_equal 'ES', captured.dig(:body, :regionCode)
+    assert_equal 5, captured.dig(:body, :pageSize)
+    assert_equal GooglePlacesBlackCoffeeClient::ADDRESS_GEOCODING_FIELD_MASK, captured[:field_mask]
+    refute_includes captured[:field_mask], 'photos'
+  end
+
   def valencian_region
     OpenStruct.new(slug: 'comunidad_valenciana', name: 'Comunidad Valenciana')
   end

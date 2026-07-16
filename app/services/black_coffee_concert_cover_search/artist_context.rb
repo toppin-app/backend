@@ -13,9 +13,9 @@ module BlackCoffeeConcertCoverSearch
     :raw,
     keyword_init: true
   ) do
-    SONGKICK_ARTIST_PATH = %r{/artists/([1-9]\d*)}.freeze
-    MUSICBRAINZ_ID = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i.freeze
-    WIKIDATA_ID = /\AQ[1-9]\d*\z/i.freeze
+    const_set(:SONGKICK_ARTIST_PATH, %r{/artists/([1-9]\d*)}.freeze)
+    const_set(:MUSICBRAINZ_ID, /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i.freeze)
+    const_set(:WIKIDATA_ID, /\AQ[1-9]\d*\z/i.freeze)
 
     def self.build(event)
       payload = deep_stringify(event.respond_to?(:to_h) ? event.to_h : {})

@@ -18,40 +18,40 @@
 
 <div class="alert alert-warning">
   <strong>Proceso modificador y no destructivo.</strong>
-  Una URL externa no se considera el resultado final: primero se descarga, se inspeccionan sus bytes y se reemplaza por un binario interno. Si Songkick no tiene imagen, se cruzan proveedores gratuitos estructurados. Una coincidencia ausente o ambigua pasa a <strong>pendiente de revisión y oculto</strong>; una caída de red o límite temporal queda como fallo reintentable y no cambia el concierto.
+  Una URL externa o un nombre guardado en base de datos no prueban que exista una portada util: se comprueba el objeto almacenado, se decodifican sus pixeles y se rechazan transparencias o imagenes vacias. Si Songkick no tiene imagen, se cruzan proveedores gratuitos estructurados. Cualquier concierto sin binario utilizable —tambien ante un fallo temporal— pasa a <strong>pendiente de revisión y oculto</strong>, conservando el error para reintento.
 </div>
 
 <div class="row mb-4">
   <div class="col-md-6 mb-3">
     <div class="card concert-cover-tool-card h-100"><div class="card-body">
       <% inventory = @cover_inventory[:approved] %>
-      <div class="concert-cover-label">Aprobados pendientes de internalizar</div>
-      <div class="concert-cover-stat"><%= number_with_delimiter(inventory[:pending_internalization]) %></div>
+      <div class="concert-cover-label">Aprobados a auditar</div>
+      <div class="concert-cover-stat"><%= number_with_delimiter(inventory[:audit_total]) %></div>
       <div class="small text-muted mt-2">
-        De <strong><%= number_with_delimiter(inventory[:total]) %></strong> conciertos proximos:
-        <strong><%= number_with_delimiter(inventory[:binary]) %></strong> ya tienen binario,
-        <strong><%= number_with_delimiter(inventory[:external]) %></strong> tienen URL para descargar y
-        <strong><%= number_with_delimiter(inventory[:without_url]) %></strong> no conservan URL.
+        Referencias registradas, aun sin verificar fisicamente:
+        <strong><%= number_with_delimiter(inventory[:database_binary_reference]) %></strong> nombres de binario,
+        <strong><%= number_with_delimiter(inventory[:database_external_reference]) %></strong> URLs externas y
+        <strong><%= number_with_delimiter(inventory[:database_without_image_reference]) %></strong> sin referencia.
       </div>
     </div></div>
   </div>
   <div class="col-md-6 mb-3">
     <div class="card concert-cover-tool-card h-100"><div class="card-body">
       <% inventory = @cover_inventory[:pending] %>
-      <div class="concert-cover-label">Pendientes de revision por internalizar</div>
-      <div class="concert-cover-stat"><%= number_with_delimiter(inventory[:pending_internalization]) %></div>
+      <div class="concert-cover-label">Pendientes a auditar</div>
+      <div class="concert-cover-stat"><%= number_with_delimiter(inventory[:audit_total]) %></div>
       <div class="small text-muted mt-2">
-        De <strong><%= number_with_delimiter(inventory[:total]) %></strong> conciertos proximos:
-        <strong><%= number_with_delimiter(inventory[:binary]) %></strong> ya tienen binario,
-        <strong><%= number_with_delimiter(inventory[:external]) %></strong> tienen URL para descargar y
-        <strong><%= number_with_delimiter(inventory[:without_url]) %></strong> no conservan URL.
+        Referencias registradas, aun sin verificar fisicamente:
+        <strong><%= number_with_delimiter(inventory[:database_binary_reference]) %></strong> nombres de binario,
+        <strong><%= number_with_delimiter(inventory[:database_external_reference]) %></strong> URLs externas y
+        <strong><%= number_with_delimiter(inventory[:database_without_image_reference]) %></strong> sin referencia.
       </div>
     </div></div>
   </div>
 </div>
 
 <div class="alert alert-info">
-  El total grande significa <strong>sin copia binaria interna</strong>, no necesariamente sin imagen visible hoy. La suma queda auditada: con binario + con URL externa + sin URL = total de conciertos proximos del estado seleccionado.
+  El total grande es el universo que se auditara. La clasificacion inferior describe solo columnas de base de datos; el proceso decide si la imagen existe y es visible leyendo el almacenamiento y analizando pixeles.
 </div>
 
 <div class="card concert-cover-tool-card mb-4">

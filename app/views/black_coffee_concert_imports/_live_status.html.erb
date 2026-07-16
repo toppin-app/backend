@@ -1,4 +1,7 @@
 <div data-concert-import-snapshot data-finished="<%= @run.finished? %>">
+  <% concert_summary = @run.summary_payload.to_h.with_indifferent_access %>
+  <% geocoding_requests = concert_summary.dig(:requests, :geocoding).to_i %>
+  <% pending_coordinates = concert_summary.dig(:coordinates, :pending).to_i %>
   <% if @run.dry_run? %>
     <div class="alert alert-warning">
       <strong>Esta ejecución es una simulación.</strong>
@@ -14,6 +17,12 @@
     <div class="alert alert-warning">
       <strong><%= @run.no_cover_skipped_count %> conciertos quedaron pendientes por no tener una portada verificable.</strong>
       No se publicaron imágenes dudosas; puedes revisar las fuentes y el motivo exacto en la tabla.
+    </div>
+  <% end %>
+  <% if pending_coordinates.positive? %>
+    <div class="alert alert-warning">
+      <strong><%= pending_coordinates %> conciertos quedaron pendientes de coordenadas.</strong>
+      La direccion de Songkick se conserva, pero no se crea ni publica el local hasta validar una coincidencia geografica unica.
     </div>
   <% end %>
 
@@ -64,8 +73,8 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <p class="text-muted text-uppercase font-weight-bold mb-2">Requests</p>
-          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i + @run.image_search_requests_count.to_i + @run.image_download_requests_count.to_i %></h2>
-          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · origen <%= @run.detail_requests_count %> · proveedores <%= @run.image_search_requests_count.to_i %> · imágenes <%= @run.image_download_requests_count.to_i %></div>
+          <h2 class="mb-0"><%= @run.robots_requests_count.to_i + @run.listing_requests_count.to_i + @run.detail_requests_count.to_i + @run.image_search_requests_count.to_i + @run.image_download_requests_count.to_i + geocoding_requests %></h2>
+          <div class="small text-muted">robots <%= @run.robots_requests_count %> · listado <%= @run.listing_requests_count %> · origen <%= @run.detail_requests_count %> · geocoding <%= geocoding_requests %> · proveedores <%= @run.image_search_requests_count.to_i %> · imágenes <%= @run.image_download_requests_count.to_i %></div>
         </div>
       </div>
     </div>
@@ -148,7 +157,19 @@
                     <div class="small text-muted mt-1">Sin URL de origen</div>
                   <% end %>
                   <% if item.image_url.present? %>
-                    <div class="small text-muted mt-2"><%= item.status == 'created_pending_cover' ? 'Candidata detectada, pero rechazada' : 'Imagen detectada' %></div>
+                    <div class="small text-muted mt-2">
+                      <%= if item.status == 'created_pending_cover'
+                            'Candidata detectada, pero rechazada'
+                          elsif item.status == 'pending_coordinates'
+                            'Candidata de origen; aun no internalizada'
+                          elsif item.status == 'dry_run'
+                            'Candidata detectada (simulacion; no internalizada)'
+                          elsif item.status == 'created'
+                            'Portada internalizada y verificada'
+                          else
+                            'Candidata detectada; no internalizada'
+                          end %>
+                    </div>
                   <% end %>
                 </td>
                 <td><%= item.venue_name.presence || '-' %></td>
@@ -183,6 +204,8 @@
                     <% if item.image_resolution_confidence.present? %>
                       <div class="text-muted">Confianza: <%= item.image_resolution_confidence.to_f.round %>%</div>
                     <% end %>
+                  <% elsif item.status == 'pending_coordinates' %>
+                    <span class="badge badge-warning">No procesada: faltan coordenadas</span>
                   <% elsif item.status.in?(%w[skipped_no_cover created_pending_cover]) %>
                     <span class="badge badge-warning">Pendiente de revisión</span>
                   <% else %>

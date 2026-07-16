@@ -1,11 +1,13 @@
 require 'test_helper'
+require 'base64'
 
 class BlackCoffeeImageInspectorTest < ActiveSupport::TestCase
   setup do
     @inspector = BlackCoffeeImageInspector.new(
       min_width: 0,
       min_height: 0,
-      min_pixels: 0
+      min_pixels: 0,
+      validate_visual_content: false
     )
   end
 
@@ -54,13 +56,53 @@ class BlackCoffeeImageInspectorTest < ActiveSupport::TestCase
       min_width: 0,
       min_height: 0,
       min_pixels: 0,
-      max_pixels: 1_000_000
+      max_pixels: 1_000_000,
+      validate_visual_content: false
     )
 
     result = inspector.call(jpeg_bytes(width: 2_000, height: 2_000))
 
     assert_not result.ok?
     assert_equal 'image_dimensions_too_large', result.error_type
+  end
+
+  test 'rejects the exact Songkick JPFernandez transparent PNG by decoded visual content' do
+    body = Base64.strict_decode64(
+      'iVBORw0KGgoAAAANSUhEUgAAASwAAAEsAQAAAABRBrPYAAAAAnRSTlMAAQGU/a4AAABASURBVHgB7cpBAQBABACwu/5pJSACvLf3fr6B0DRN0zRN0zRN0zRN0zTt0DRN0zRN0zRN0zRN0zRN0zRN0zStAMAZRou3pllOAAAAAElFTkSuQmCC'
+    )
+    inspector = BlackCoffeeImageInspector.new(validate_visual_content: true)
+
+    result = inspector.call(body, declared_content_type: 'binary/octet-stream')
+
+    assert_not result.ok?
+    assert_equal 'image_transparent', result.error_type
+    assert_equal 300, result.width
+    assert_equal 300, result.height
+    assert_equal 0.0, result.opaque_fraction
+    assert_equal Digest::SHA256.hexdigest(body), result.sha256
+  end
+
+  test 'rejects a decoded opaque monochrome image' do
+    metrics = BlackCoffeeImageInspector::VisualMetrics.new(
+      ok?: true,
+      width: 640,
+      height: 480,
+      opaque_fraction: 1.0,
+      visual_variation: 0.0,
+      color_count: 1
+    )
+    inspector = BlackCoffeeImageInspector.new(
+      min_width: 0,
+      min_height: 0,
+      min_pixels: 0,
+      validate_visual_content: true,
+      visual_analyzer: ->(_body, width:, height:) { metrics }
+    )
+
+    result = inspector.call(png_bytes(width: 640, height: 480))
+
+    assert_not result.ok?
+    assert_equal 'image_blank', result.error_type
   end
 
   private

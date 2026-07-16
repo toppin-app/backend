@@ -4,7 +4,7 @@ class BlackCoffeeConcertArtistImageCache < ApplicationRecord
   belongs_to :venue_image, optional: true
 
   validates :identity_key, :artist_name, :canonical_name, presence: true
-  validates :identity_key, uniqueness: true
+  validates :identity_key, uniqueness: { case_sensitive: true }
   validates :status, inclusion: { in: STATUSES }
 
   scope :resolved, -> { where(status: 'resolved') }

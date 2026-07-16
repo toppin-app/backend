@@ -30,6 +30,8 @@ module SongkickConcerts
       raw_title = clean_text(raw['name'])
       display_name = display_name_for(raw_title, performers)
       venue_name = clean_location_text(location['name'])
+      street_address = clean_location_text(address['streetAddress'])
+      postal_code = clean_location_text(address['postalCode'])
       city = clean_location_text(address['addressLocality'])
       state = clean_location_text(address['addressRegion'])
       country = clean_location_text(address['addressCountry'])
@@ -68,8 +70,17 @@ module SongkickConcerts
         ),
         name: display_name,
         edition_title: raw_title,
-        address: address_for(location: location, address: address, city: city, state: state, country: country),
+        address: address_for(
+          location: location,
+          street_address: street_address,
+          postal_code: postal_code,
+          city: city,
+          state: state,
+          country: country
+        ),
         venue_name: venue_name,
+        street_address: street_address,
+        postal_code: postal_code,
         city: city,
         state: state,
         country: country,
@@ -221,10 +232,9 @@ module SongkickConcerts
       nil
     end
 
-    def address_for(location:, address:, city:, state:, country:)
-      street = clean_text(address['streetAddress'])
+    def address_for(location:, street_address:, postal_code:, city:, state:, country:)
       location_name = clean_text(location['name'])
-      [street, location_name, city, state, country].compact.reject(&:blank?).join(', ').presence || city || location_name || 'Direccion pendiente de revisar'
+      [street_address, location_name, postal_code, city, state, country].compact.reject(&:blank?).join(', ').presence || city || location_name || 'Direccion pendiente de revisar'
     end
 
     def image_urls_for(raw, performer_details:, base_url:)
@@ -332,6 +342,8 @@ module SongkickConcerts
     def location_summary(location, address, latitude, longitude)
       summary = {
         'name' => clean_location_text(location['name']),
+        'streetAddress' => clean_location_text(address['streetAddress']),
+        'postalCode' => clean_location_text(address['postalCode']),
         'city' => clean_location_text(address['addressLocality']),
         'province' => clean_location_text(address['addressRegion']),
         'country' => clean_location_text(address['addressCountry'])

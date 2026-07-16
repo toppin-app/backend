@@ -6,6 +6,7 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
     dry_run
     created
     created_pending_cover
+    pending_coordinates
     skipped_outside_country
     skipped_non_concert
     skipped_festival
@@ -56,6 +57,8 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
       'Creado'
     when 'created_pending_cover'
       'Creado pendiente de portada'
+    when 'pending_coordinates'
+      'Pendiente de coordenadas'
     when 'skipped_outside_country'
       'Fuera de Espana'
     when 'skipped_non_concert'
@@ -84,6 +87,8 @@ class BlackCoffeeConcertImportItem < ApplicationRecord
     when 'created'
       'success'
     when 'created_pending_cover'
+      'warning'
+    when 'pending_coordinates'
       'warning'
     when 'dry_run'
       'info'

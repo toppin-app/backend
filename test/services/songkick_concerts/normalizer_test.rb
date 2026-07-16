@@ -20,6 +20,7 @@ class SongkickConcertsNormalizerTest < ActiveSupport::TestCase
         'name' => 'Sala Test',
         'address' => {
           'streetAddress' => 'Calle Test 1',
+          'postalCode' => '28001',
           'addressLocality' => 'Madrid',
           'addressRegion' => 'Comunidad de Madrid',
           'addressCountry' => country
@@ -45,6 +46,10 @@ class SongkickConcertsNormalizerTest < ActiveSupport::TestCase
     refute normalized[:outside_country]
     refute normalized[:non_concert_like]
     assert_equal 'Sala Test', normalized[:venue_name]
+    assert_equal 'Calle Test 1', normalized[:street_address]
+    assert_equal '28001', normalized[:postal_code]
+    assert_equal 'Calle Test 1, Sala Test, 28001, Madrid, Comunidad de Madrid, Spain', normalized[:address]
+    assert_equal '28001', normalized[:locations].first['postalCode']
     assert_equal 'Madrid', normalized[:city]
     assert_equal BigDecimal('40.416775'), normalized[:latitude]
     assert_equal 'schema_org', normalized[:coordinates_source]

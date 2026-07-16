@@ -133,6 +133,7 @@ module BlackCoffeeConcertCoverSearch
 
       score += min_side >= 600 ? 10 : 7
       required_stable_id_present = artist.stable_identifiers.any?
+      event_corroborated = (signals & %w[country_match genre_match official_url_match]).any?
       all_required_ids_matched =
         (!artist.songkick_id.present? || songkick_exact) &&
         (!artist.musicbrainz_id.present? || musicbrainz_exact) &&
@@ -140,7 +141,7 @@ module BlackCoffeeConcertCoverSearch
       safe = if required_stable_id_present
                all_required_ids_matched && definitive
              else
-               signals.uniq.size >= MIN_STRUCTURED_SIGNALS && score >= ACCEPTANCE_SCORE
+               event_corroborated && signals.uniq.size >= MIN_STRUCTURED_SIGNALS && score >= ACCEPTANCE_SCORE
              end
 
       {

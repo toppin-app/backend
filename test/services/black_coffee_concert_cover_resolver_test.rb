@@ -176,6 +176,27 @@ class BlackCoffeeConcertCoverResolverTest < ActiveSupport::TestCase
     assert_equal 0, resolver.image_download_requests_count
   end
 
+  test 'caches a conclusive external miss and does not search providers again' do
+    external_search = FakeExternalSearch.new
+    resolver = resolver_with(external_search: external_search)
+    payload = event(
+      name: 'Negative Cache Fixture Artist',
+      artist_name: 'Negative Cache Fixture Artist',
+      source_artist_id: '99001234',
+      source_url: nil
+    )
+
+    first = resolver.resolve_for_import(payload)
+    second = resolver.resolve_for_import(payload)
+
+    assert first.missing?
+    assert second.missing?
+    assert_equal 1, external_search.requests_count
+    cache = BlackCoffeeConcertArtistImageCache.find_by!(identity_key: 'songkick:99001234')
+    assert_equal 'not_found', cache.status
+    assert second.cache?
+  end
+
   private
 
   def resolver_with(source_client: FakeSourceClient.new, downloader: FakeDownloader.new, external_search: FakeExternalSearch.new)

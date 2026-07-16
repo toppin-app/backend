@@ -58,6 +58,22 @@ class SongkickConcertsClientTest < ActiveSupport::TestCase
     assert_match(/no pertenece a Songkick/i, error.message)
   end
 
+  test 'reuses an event detail fetched by coordinate and cover resolution' do
+    event_url = 'https://www.songkick.com/concerts/123-current-slug'
+    responses = {
+      'https://www.songkick.com/robots.txt' => http_ok("User-agent: *\nAllow: /\n"),
+      event_url => http_ok('<html>shared detail</html>')
+    }
+    client = StubClient.new(responses)
+
+    first = client.fetch_event_page(event_url)
+    second = client.fetch_event_page(event_url)
+
+    assert_equal first, second
+    assert_equal 1, client.detail_requests_count
+    assert_equal ['https://www.songkick.com/robots.txt', event_url], client.requested_urls
+  end
+
   private
 
   def http_ok(body)

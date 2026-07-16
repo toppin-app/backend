@@ -41,7 +41,7 @@
         <% end %>
       </div>
       <div class="progress" style="height: 18px;"><div class="progress-bar bg-info" style="width: <%= @batch.progress_percentage %>%"><%= @batch.progress_percentage %>%</div></div>
-      <p class="small text-muted mt-2 mb-0">El proceso continua aunque cierres esta pagina. Los errores internos quedan como fallidos y no rechazan automaticamente el concierto.</p>
+      <p class="small text-muted mt-2 mb-0">El proceso continua aunque cierres esta pagina. Si no queda un binario visualmente util, el concierto se oculta y vuelve a pendiente; el detalle del error se conserva para reintento.</p>
     </div>
   </div>
 

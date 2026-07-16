@@ -133,7 +133,7 @@ class BlackCoffeeConcertArtistImageCacheStore
   end
 
   def inspector
-    @inspector ||= BlackCoffeeImageInspector.new
+    @inspector ||= BlackCoffeeImageInspector.new(validate_visual_content: true)
   end
 
   def download_from(venue_image, record)

@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'minitest/mock'
 
 class SongkickConcertsImporterTest < ActiveSupport::TestCase
   FakeClient = Struct.new(:html, :robots_requests_count, :listing_requests_count, :detail_requests_count) do
@@ -28,15 +29,30 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
     end
   end
 
+  class FakeCoordinateResolver
+    attr_reader :result, :requests_count
+
+    def initialize(result)
+      @result = result
+      @requests_count = 1
+    end
+
+    def resolve(_normalized)
+      result
+    end
+  end
+
   class FakeCoverAttacher
     attr_reader :calls
 
-    def initialize
+    def initialize(result: Object.new)
       @calls = []
+      @result = result
     end
 
     def attach!(**attributes)
       calls << attributes
+      @result
     end
   end
 
@@ -151,6 +167,113 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
     assert_match(/Temporary Songkick outage/, run.items.last.error_message)
   end
 
+  test 'does not approve a concert when the recovered cover was not persisted' do
+    run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
+
+    import!(
+      run,
+      events_html([event_payload]),
+      attachment_persisted: false
+    )
+
+    venue = Venue.find_by!(category: 'concierto', external_source_id: '123')
+    assert_equal Venue::REVIEW_STATUS_PENDING, venue.review_status
+    refute venue.visible
+    assert_empty venue.venue_images
+    assert_equal 'created_pending_cover', run.items.last.status
+    assert_match(/persistir la portada/, run.items.last.error_message)
+    assert_equal 0, run.reload.images_downloaded_count
+  end
+
+  test 'creates the concert with coordinates recovered from its source address' do
+    run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
+    payload = event_payload(id: 789, name: 'Abhir at Sala Mamba')
+    payload['location']['geo'] = nil
+    coordinate_result = SongkickConcerts::CoordinateResolver::Result.new(
+      status: 'resolved',
+      latitude: BigDecimal('37.992148'),
+      longitude: BigDecimal('-1.116420'),
+      source: 'google_places_address',
+      confidence: 'high',
+      address: 'Carril molino de Nelva 10, Sala Mamba, 30007, Murcia, Spain',
+      street_address: 'Carril molino de Nelva 10',
+      postal_code: '30007',
+      city: 'Murcia',
+      country: 'Spain',
+      venue_name: 'Sala Mamba',
+      source_venue_id: '4456061',
+      evidence: { google_place_id: 'sala-mamba' }
+    )
+    missing_cover = BlackCoffeeConcertCoverResolver::Result.new(status: 'missing', error_message: 'No cover')
+
+    import!(run, events_html([payload]), cover_result: missing_cover, coordinate_result: coordinate_result)
+
+    venue = Venue.find_by!(category: 'concierto', external_source_id: '789')
+    assert_equal BigDecimal('37.992148'), venue.latitude
+    assert_equal BigDecimal('-1.116420'), venue.longitude
+    assert_equal 'google_places_address', venue.coordinates_source
+    assert_equal '30007', venue.postal_code
+    assert_equal '4456061', venue.festival_metadata['source_venue_id']
+    assert_equal '30007', venue.festival_metadata.dig('locations', 0, 'postalCode')
+    assert_equal 'google_places_address', venue.festival_metadata.dig('locations', 0, 'coordinatesSource')
+    assert_equal 'created_pending_cover', run.items.last.status
+  end
+
+  test 'lets the exact detail recover a city missing from the listing' do
+    run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
+    payload = event_payload(id: 791, name: 'Detail Address Artist at Sala Mamba')
+    payload['location']['address']['addressLocality'] = nil
+    payload['location']['geo'] = nil
+    coordinate_result = SongkickConcerts::CoordinateResolver::Result.new(
+      status: 'resolved',
+      latitude: BigDecimal('37.992148'),
+      longitude: BigDecimal('-1.116420'),
+      source: 'google_places_address',
+      confidence: 'high',
+      address: 'Carril molino de Nelva 10, Sala Mamba, 30007, Murcia, Spain',
+      street_address: 'Carril molino de Nelva 10',
+      postal_code: '30007',
+      city: 'Murcia',
+      country: 'Spain',
+      venue_name: 'Sala Mamba'
+    )
+    missing_cover = BlackCoffeeConcertCoverResolver::Result.new(status: 'missing', error_message: 'No cover')
+
+    import!(run, events_html([payload]), cover_result: missing_cover, coordinate_result: coordinate_result)
+
+    venue = Venue.find_by!(category: 'concierto', external_source_id: '791')
+    assert_equal 'Murcia', venue.city
+    assert_equal BigDecimal('37.992148'), venue.latitude
+    assert_equal 'created_pending_cover', run.items.last.status
+  end
+
+  test 'does not attempt a Venue insert when address geocoding is ambiguous' do
+    run = create_run!(import_origin: BlackCoffeeConcertImportRun::IMPORT_ORIGIN_DASHBOARD)
+    payload = event_payload(id: 790, name: 'Ambiguous Artist at Ambiguous Hall')
+    payload['location']['geo'] = nil
+    coordinate_result = SongkickConcerts::CoordinateResolver::Result.new(
+      status: 'ambiguous',
+      address: 'Calle Confusa 1, Murcia, Spain',
+      city: 'Murcia',
+      country: 'Spain',
+      venue_name: 'Ambiguous Hall',
+      error_type: 'ambiguous_geocoding',
+      error_message: 'Dos resultados lejanos tienen la misma puntuacion.'
+    )
+
+    import!(run, events_html([payload]), coordinate_result: coordinate_result)
+
+    assert_nil Venue.find_by(category: 'concierto', external_source_id: '790')
+    item = run.items.last
+    assert_equal 'pending_coordinates', item.status
+    assert_equal 'Pendiente de coordenadas', item.status_label
+    assert_equal 'warning', item.status_badge_class
+    assert_nil item.latitude
+    assert_match(/Coordenadas ambiguas/, item.error_message)
+    refute_match(/doesn't have a default value/, item.error_message)
+    assert_equal 1, run.reload.summary_payload.to_h.dig('coordinates', 'pending')
+  end
+
   private
 
   def required_columns_present?
@@ -186,14 +309,32 @@ class SongkickConcertsImporterTest < ActiveSupport::TestCase
     FakeClient.new(html, 0, 0, 0)
   end
 
-  def import!(run, html, cover_result: recovered_cover_result)
-    attacher = FakeCoverAttacher.new
-    SongkickConcerts::Importer.new(
+  def import!(run, html, cover_result: recovered_cover_result, attachment_persisted: true, coordinate_result: nil)
+    attacher = FakeCoverAttacher.new(result: attachment_persisted ? Object.new : nil)
+    coordinate_result ||= SongkickConcerts::CoordinateResolver::Result.new(
+      status: 'resolved',
+      latitude: BigDecimal('40.416775'),
+      longitude: BigDecimal('-3.703790'),
+      source: 'schema_org',
+      confidence: 'high',
+      address: 'Calle Test 1, Sala Test, Madrid, Comunidad de Madrid, Spain',
+      city: 'Madrid',
+      state: 'Comunidad de Madrid',
+      country: 'Spain',
+      venue_name: 'Sala Test'
+    )
+    importer = SongkickConcerts::Importer.new(
       run: run,
       client: client_for(html),
+      coordinate_resolver: FakeCoordinateResolver.new(coordinate_result),
       cover_resolver: FakeCoverResolver.new(cover_result),
       cover_attacher: attacher
-    ).perform!
+    )
+    if cover_result.recovered? && attachment_persisted
+      BlackCoffeeConcertCoverAttachment.stub(:verify_persisted!, attacher) { importer.perform! }
+    else
+      importer.perform!
+    end
     attacher
   end
 

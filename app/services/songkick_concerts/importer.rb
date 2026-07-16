@@ -19,13 +19,14 @@ module SongkickConcerts
     DEFAULT_SOURCE_PATHS_TEXT = DEFAULT_SOURCE_PATHS.join("\n").freeze
     DEFAULT_SOURCE_URL = SongkickConcerts::Client::BASE_URL.freeze
 
-    attr_reader :run, :client, :parser, :normalizer, :cover_resolver, :cover_attacher
+    attr_reader :run, :client, :parser, :normalizer, :coordinate_resolver, :cover_resolver, :cover_attacher
 
     def initialize(
       run:,
       client: nil,
       parser: Parser.new,
       normalizer: Normalizer.new,
+      coordinate_resolver: nil,
       image_downloader: nil,
       cover_resolver: nil,
       cover_attacher: BlackCoffeeConcertCoverAttachment
@@ -34,12 +35,18 @@ module SongkickConcerts
       @client = client || Client.new(request_delay_seconds: run.request_delay_seconds)
       @parser = parser
       @normalizer = normalizer
+      @coordinate_resolver = coordinate_resolver || CoordinateResolver.new(source_client: @client)
       @image_downloader = image_downloader
       @cover_resolver = cover_resolver || BlackCoffeeConcertCoverResolver.new(
         source_client: @client,
         source_parser: parser,
         source_normalizer: normalizer,
-        downloader: image_downloader || BlackCoffeeImageDownloader.new(min_width: 240, min_height: 240, min_pixels: 57_600)
+        downloader: image_downloader || BlackCoffeeImageDownloader.new(
+          min_width: 240,
+          min_height: 240,
+          min_pixels: 57_600,
+          validate_visual_content: true
+        )
       )
       @cover_attacher = cover_attacher
       @images_downloaded_count = 0
@@ -129,11 +136,27 @@ module SongkickConcerts
       normalized = normalizer.normalize(raw_event)
       create_skipped_item!(raw_event, normalized, 'skipped_outside_country', 'El concierto no pertenece a Espana.', source_path: source_path) && return if outside_country?(normalized)
       register_non_concert_skip! && return if non_concert?(normalized)
-      create_skipped_item!(raw_event, normalized, 'skipped_invalid', 'Faltan datos minimos para crear el concierto.', source_path: source_path) && return unless normalized[:valid]
+      unless normalized[:valid] || location_recoverable_from_detail?(normalized)
+        create_skipped_item!(raw_event, normalized, 'skipped_invalid', 'Faltan datos minimos para crear el concierto.', source_path: source_path)
+        return
+      end
       create_skipped_item!(raw_event, normalized, 'skipped_past', 'El concierto ya finalizo.', source_path: source_path) && return if past_event?(normalized)
 
       duplicate = duplicate_venue_for(normalized)
       create_duplicate_item!(raw_event, normalized, duplicate, source_path: source_path) && return if duplicate.present?
+
+      normalized, coordinate_result = resolve_coordinates(normalized)
+      unless coordinate_result.resolved?
+        create_item!(
+          raw_event,
+          normalized,
+          status: 'pending_coordinates',
+          source_path: source_path,
+          error_message: coordinate_error_message(coordinate_result),
+          warning_message: 'La direccion de Songkick se conservo, pero el concierto no se creo ni se publico sin coordenadas verificadas.'
+        )
+        return
+      end
 
       if run.dry_run?
         create_item!(raw_event, normalized, status: 'dry_run', source_path: source_path)
@@ -158,6 +181,13 @@ module SongkickConcerts
       normalized[:non_concert_like]
     end
 
+    def location_recoverable_from_detail?(normalized)
+      normalized[:name].present? &&
+        normalized[:country_code] == run.strict_country_code &&
+        normalized[:source_url].to_s.match?(%r{\Ahttps://(?:www\.)?songkick\.com/concerts/\d+}) &&
+        (normalized[:latitude].blank? || normalized[:longitude].blank?)
+    end
+
     def register_non_concert_skip!
       @non_concert_skipped_count += 1
       true
@@ -177,6 +207,39 @@ module SongkickConcerts
 
       reference_date = normalized[:end_at]&.to_date || normalized[:start_at]&.to_date || normalized[:end_date] || normalized[:start_date]
       reference_date.present? && reference_date < Date.current
+    end
+
+    def resolve_coordinates(normalized)
+      result = coordinate_resolver.resolve(normalized)
+      enriched = normalized.merge(result.normalized_attributes)
+      enriched[:coordinate_resolution_status] = result.status
+      enriched[:coordinate_resolution_error_type] = result.error_type
+      enriched[:coordinate_resolution_error_message] = result.error_message
+      enriched[:locations] = resolved_location_metadata(enriched, result) if result.resolved?
+      [enriched, result]
+    end
+
+    def resolved_location_metadata(normalized, result)
+      location = Array(normalized[:locations]).first.to_h.deep_stringify_keys
+      location.merge(
+        'name' => normalized[:venue_name],
+        'streetAddress' => result.street_address,
+        'postalCode' => normalized[:postal_code],
+        'city' => normalized[:city],
+        'province' => normalized[:state],
+        'country' => normalized[:country],
+        'coordinates' => {
+          'latitude' => normalized[:latitude],
+          'longitude' => normalized[:longitude]
+        },
+        'coordinatesSource' => normalized[:coordinates_source],
+        'coordinatesConfidence' => normalized[:coordinates_confidence]
+      ).compact.then { |entry| [entry] }
+    end
+
+    def coordinate_error_message(result)
+      prefix = result.ambiguous? ? 'Coordenadas ambiguas' : 'Coordenadas no resueltas'
+      "#{prefix} (#{result.error_type.presence || result.status}): #{result.error_message.presence || 'La direccion no produjo una coincidencia segura.'}"
     end
 
     def max_events_reached?
@@ -296,7 +359,7 @@ module SongkickConcerts
       venue = nil
       ActiveRecord::Base.transaction do
         venue = Venue.create!(venue_attributes(normalized))
-        venue_image = cover_attacher.attach!(
+        venue_image = attach_verified_cover!(
           venue: venue,
           download: cover_result.download,
           resolution_source: cover_result.resolution_source,
@@ -320,6 +383,14 @@ module SongkickConcerts
         )
       end
       register_recovered_cover!(cover_result)
+    rescue BlackCoffeeConcertCoverAttachment::PersistenceError => e
+      create_pending_cover_venue_item!(
+        raw_event,
+        normalized,
+        source_path: source_path,
+        cover_result: cover_result,
+        error_message: "No se pudo persistir la portada recuperada: #{e.message}"
+      )
     rescue ActiveRecord::RecordNotUnique
       duplicate = duplicate_venue_for(normalized)
       if duplicate.present?
@@ -329,7 +400,7 @@ module SongkickConcerts
       end
     end
 
-    def create_pending_cover_venue_item!(raw_event, normalized, source_path:, cover_result:)
+    def create_pending_cover_venue_item!(raw_event, normalized, source_path:, cover_result:, error_message: nil)
       @no_cover_skipped_count += 1
       venue = nil
       ActiveRecord::Base.transaction do
@@ -340,7 +411,7 @@ module SongkickConcerts
           status: 'created_pending_cover',
           source_path: source_path,
           venue: venue,
-          error_message: cover_result.error_message.presence || 'No se encontro una portada segura; el concierto queda oculto y pendiente de revision.',
+          error_message: error_message.presence || cover_result.error_message.presence || 'No se encontro una portada segura; el concierto queda oculto y pendiente de revision.',
           warning_message: 'No se publico ninguna imagen porque la identidad o la disponibilidad de los candidatos no fue concluyente.',
           cover_result: cover_result
         )
@@ -353,6 +424,19 @@ module SongkickConcerts
       else
         create_item!(raw_event, normalized, status: 'failed', source_path: source_path, error_message: 'Duplicado protegido por indice, pero no se pudo localizar el venue existente.')
       end
+    end
+
+    def attach_verified_cover!(**attributes)
+      venue = attributes.fetch(:venue)
+      venue_image = cover_attacher.attach!(**attributes)
+      BlackCoffeeConcertCoverAttachment.verify_persisted!(venue: venue, venue_image: venue_image)
+    rescue ActiveRecord::RecordNotUnique
+      raise
+    rescue BlackCoffeeConcertCoverAttachment::PersistenceError
+      raise
+    rescue StandardError => e
+      raise BlackCoffeeConcertCoverAttachment::PersistenceError,
+            "#{e.class} - #{e.message}"
     end
 
     def register_recovered_cover!(cover_result)
@@ -377,6 +461,7 @@ module SongkickConcerts
         tags: concert_tags(normalized)
       }
       attrs[:state] = normalized[:state] if Venue.column_names.include?('state')
+      attrs[:postal_code] = normalized[:postal_code] if Venue.column_names.include?('postal_code')
       attrs[:country] = normalized[:country].presence || 'Espana' if Venue.column_names.include?('country')
       attrs[:country_code] = 'ES' if Venue.column_names.include?('country_code')
       attrs[:review_status] = (!force_pending_cover && run.publish_immediately?) ? Venue::REVIEW_STATUS_APPROVED : Venue::REVIEW_STATUS_PENDING if Venue.column_names.include?('review_status')
@@ -423,6 +508,8 @@ module SongkickConcerts
         offers: normalized[:offers],
         locations: normalized[:locations],
         venue_name: normalized[:venue_name],
+        source_venue_id: normalized[:source_venue_id],
+        coordinates_evidence: normalized[:coordinates_evidence],
         source: SongkickConcerts::Normalizer::SOURCE
       }
     end
@@ -521,7 +608,13 @@ module SongkickConcerts
           listing: client.listing_requests_count,
           details: cover_resolver.source_requests_count,
           image_search: cover_resolver.respond_to?(:search_requests_count) ? cover_resolver.search_requests_count : 0,
-          image_downloads: cover_resolver.image_download_requests_count
+          image_downloads: cover_resolver.image_download_requests_count,
+          geocoding: coordinate_resolver.respond_to?(:requests_count) ? coordinate_resolver.requests_count : 0
+        },
+        coordinates: {
+          resolved: run.items.where(status: %w[dry_run created created_pending_cover]).where.not(latitude: nil).where.not(longitude: nil).count,
+          pending: counts['pending_coordinates'].to_i,
+          geocoding_requests: coordinate_resolver.respond_to?(:requests_count) ? coordinate_resolver.requests_count : 0
         },
         photos: {
           downloaded: @images_downloaded_count,
@@ -545,7 +638,7 @@ module SongkickConcerts
         images_downloaded_count: @images_downloaded_count,
         items_created_count: concert_items.count,
         venues_created_count: counts['created'].to_i + counts['created_pending_cover'].to_i,
-        needs_review_count: run.dry_run? ? counts['dry_run'].to_i : counts['created'].to_i + counts['created_pending_cover'].to_i,
+        needs_review_count: run.dry_run? ? counts['dry_run'].to_i + counts['pending_coordinates'].to_i : counts['created'].to_i + counts['created_pending_cover'].to_i + counts['pending_coordinates'].to_i,
         failed_count: counts['failed'].to_i,
         summary_payload: request_summary,
         updated_at: Time.current

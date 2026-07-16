@@ -12,7 +12,7 @@
 
 <div class="alert alert-info">
   <strong>Proceso controlado.</strong>
-  Usa JSON-LD de los listados públicos, respeta robots.txt y aplica un delay mínimo de 10 segundos. Busca la mejor portada en el listado y en la ficha exacta; si allí no existe, cruza MusicBrainz, Wikidata y Wikimedia Commons, sin APIs de pago. Los casos sin una coincidencia segura se guardan ocultos y pendientes de revisión.
+  Usa JSON-LD de los listados públicos, respeta robots.txt y aplica un delay mínimo de 10 segundos. Busca la mejor portada en el listado y en la ficha exacta; si allí no existe, cruza MusicBrainz, Wikidata y Wikimedia Commons, sin APIs de pago. Para coordenadas prioriza la ficha y locales ya conocidos; solo una direccion nueva usa la configuracion existente de Google Places. Los casos sin una coincidencia segura no se publican.
 </div>
 
 <div class="row">
@@ -92,6 +92,8 @@
           <li>Solo se aceptan conciertos con país normalizado como ES.</li>
           <li>Los festivales y otros tipos de evento se descartan y no aparecen como conciertos.</li>
           <li>Se deduplica por fuente, identificador, fingerprint y datos normalizados del evento.</li>
+          <li>Si faltan coordenadas, se extrae la direccion de la ficha exacta, se reutiliza una sala local solo con identidad fuerte y, como ultimo respaldo, se valida con Google Places.</li>
+          <li>Una direccion ambigua nunca provoca un alta con coordenadas inventadas ni se mezcla con recintos de festivales.</li>
           <li>Se prueban metadatos, JSON-LD, Open Graph, lazy loading y <code>srcset</code> de la ficha exacta.</li>
           <li>Como respaldo se consultan MusicBrainz, Wikidata y Wikimedia Commons, sin servicios de pago.</li>
           <li>Una identidad ambigua nunca asigna una foto automáticamente; el concierto queda oculto y pendiente.</li>

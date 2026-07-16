@@ -64,7 +64,12 @@ class BlackCoffeeConcertCoverResolver
     @source_client = source_client || SongkickConcerts::Client.new
     @source_parser = source_parser
     @source_normalizer = source_normalizer
-    @downloader = downloader || BlackCoffeeImageDownloader.new(min_width: 240, min_height: 240)
+    @downloader = downloader || BlackCoffeeImageDownloader.new(
+      min_width: 240,
+      min_height: 240,
+      min_pixels: 57_600,
+      validate_visual_content: true
+    )
     @external_search = external_search || BlackCoffeeConcertCoverSearch::Coordinator.new(logger: logger)
     @cache_store = cache_store || BlackCoffeeConcertArtistImageCacheStore.new(logger: logger)
     @external_search_enabled = external_search_enabled
@@ -459,10 +464,11 @@ class BlackCoffeeConcertCoverResolver
   def finalize_unresolved(event, attempts)
     unresolved = attempts.find(&:ambiguous?) || attempts.find(&:retryable?) || attempts.find(&:unavailable?)
     status = unresolved&.status || 'missing'
+    diagnostic = unresolved || attempts.first || attempts.last
     result = Result.new(
       status: status,
-      source_kind: unresolved&.source_kind,
-      error_type: unresolved&.error_type || attempts.last&.error_type || 'no_cover_found',
+      source_kind: unresolved&.source_kind || attempts.reverse.find(&:cache?)&.source_kind || diagnostic&.source_kind,
+      error_type: diagnostic&.error_type || 'no_cover_found',
       error_message: attempts.filter_map(&:error_message).uniq.join(' | ').presence || 'No se encontro una portada verificable para este concierto.',
       evidence: {
         source_page_attempted: event[:source_url].present?,

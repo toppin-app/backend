@@ -22,7 +22,7 @@ class BlackCoffeeConcertCoverRepairsController < ApplicationController
     BlackCoffeeConcertCoverRepairJob.perform_later(batch.id, process_limit, token)
 
     redirect_to black_coffee_concert_cover_repair_path(batch),
-                notice: "Proceso creado para #{batch.total_venues} conciertos sin portada binaria interna. Las URLs existentes se descargaran y reemplazaran. Continuara en el servidor aunque cierres la pantalla."
+                notice: "Auditoria creada para #{batch.total_venues} conciertos. Cada binario se comprobara en el almacenamiento y por contenido visual; las URLs o binarios no utilizables se repararan sin sobrescribir una portada valida. Continuara en el servidor aunque cierres la pantalla."
   rescue ActiveRecord::ActiveRecordError, ArgumentError => e
     redirect_to black_coffee_concert_cover_repairs_path, alert: "No se pudo crear el proceso: #{e.message}"
   end

@@ -1,10 +1,17 @@
 require 'digest'
+require 'mini_magick'
+require 'zlib'
 
 class BlackCoffeeImageInspector
   DEFAULT_MIN_WIDTH = 240
   DEFAULT_MIN_HEIGHT = 240
   DEFAULT_MIN_PIXELS = DEFAULT_MIN_WIDTH * DEFAULT_MIN_HEIGHT
   DEFAULT_MAX_PIXELS = 60_000_000
+  DEFAULT_MIN_OPAQUE_FRACTION = 0.08
+  DEFAULT_MIN_VISUAL_VARIATION = 0.008
+  VISUAL_SAMPLE_EDGE = 64
+  VISUAL_INSPECTION_TIMEOUT_SECONDS = 6
+  MAX_INLINE_PNG_DECODE_BYTES = 2.megabytes
 
   JPEG_SIGNATURE = "\xFF\xD8\xFF".b.freeze
   PNG_SIGNATURE = "\x89PNG\r\n\x1A\n".b.freeze
@@ -32,6 +39,21 @@ class BlackCoffeeImageInspector
     :height,
     :pixels,
     :sha256,
+    :opaque_fraction,
+    :visual_variation,
+    :color_count,
+    :error_type,
+    :error_message,
+    keyword_init: true
+  )
+
+  VisualMetrics = Struct.new(
+    :ok?,
+    :width,
+    :height,
+    :opaque_fraction,
+    :visual_variation,
+    :color_count,
     :error_type,
     :error_message,
     keyword_init: true
@@ -41,12 +63,20 @@ class BlackCoffeeImageInspector
     min_width: DEFAULT_MIN_WIDTH,
     min_height: DEFAULT_MIN_HEIGHT,
     min_pixels: DEFAULT_MIN_PIXELS,
-    max_pixels: DEFAULT_MAX_PIXELS
+    max_pixels: DEFAULT_MAX_PIXELS,
+    min_opaque_fraction: DEFAULT_MIN_OPAQUE_FRACTION,
+    min_visual_variation: DEFAULT_MIN_VISUAL_VARIATION,
+    validate_visual_content: false,
+    visual_analyzer: nil
   )
     @min_width = [min_width.to_s.to_i, 0].max
     @min_height = [min_height.to_s.to_i, 0].max
     @min_pixels = [min_pixels.to_s.to_i, 0].max
     @max_pixels = [max_pixels.to_s.to_i, 1].max
+    @min_opaque_fraction = [[min_opaque_fraction.to_f, 0.0].max, 1.0].min
+    @min_visual_variation = [[min_visual_variation.to_f, 0.0].max, 1.0].min
+    @validate_visual_content = validate_visual_content
+    @visual_analyzer = visual_analyzer
   end
 
   def call(body, declared_content_type: nil)
@@ -95,6 +125,46 @@ class BlackCoffeeImageInspector
       )
     end
 
+    visual = inspect_visual_content(data, width: width, height: height) if validate_visual_content
+    if visual && !visual.ok?
+      return failure(
+        visual.error_type,
+        visual.error_message,
+        format_info: format_info,
+        pixels: pixels,
+        sha256: sha256,
+        opaque_fraction: visual.opaque_fraction,
+        visual_variation: visual.visual_variation,
+        color_count: visual.color_count
+      )
+    end
+
+    if visual && visual.opaque_fraction.to_f < min_opaque_fraction
+      return failure(
+        'image_transparent',
+        "La imagen solo tiene #{(visual.opaque_fraction.to_f * 100).round(1)}% de cobertura opaca; se requiere al menos #{(min_opaque_fraction * 100).round(1)}%.",
+        format_info: format_info,
+        pixels: pixels,
+        sha256: sha256,
+        opaque_fraction: visual.opaque_fraction,
+        visual_variation: visual.visual_variation,
+        color_count: visual.color_count
+      )
+    end
+
+    if visual && (visual.color_count.to_i <= 1 || visual.visual_variation.to_f < min_visual_variation)
+      return failure(
+        'image_blank',
+        'La imagen es monocroma o no contiene suficiente variacion visual para servir como portada.',
+        format_info: format_info,
+        pixels: pixels,
+        sha256: sha256,
+        opaque_fraction: visual.opaque_fraction,
+        visual_variation: visual.visual_variation,
+        color_count: visual.color_count
+      )
+    end
+
     Result.new(
       ok?: true,
       format: format_info.format,
@@ -103,13 +173,18 @@ class BlackCoffeeImageInspector
       width: width,
       height: height,
       pixels: pixels,
-      sha256: sha256
+      sha256: sha256,
+      opaque_fraction: visual&.opaque_fraction,
+      visual_variation: visual&.visual_variation,
+      color_count: visual&.color_count
     )
   end
 
   private
 
-  attr_reader :min_width, :min_height, :min_pixels, :max_pixels
+  attr_reader :min_width, :min_height, :min_pixels, :max_pixels,
+              :min_opaque_fraction, :min_visual_variation, :validate_visual_content,
+              :visual_analyzer
 
   def binary_string(value)
     value.to_s.dup.force_encoding(Encoding::BINARY)
@@ -117,6 +192,223 @@ class BlackCoffeeImageInspector
 
   def detect_format(data)
     jpeg_info(data) || png_info(data) || gif_info(data) || webp_info(data)
+  end
+
+  def inspect_visual_content(data, width:, height:)
+    transparent_png = transparent_grayscale_png_metrics(data, width: width, height: height)
+    return transparent_png if transparent_png
+
+    analyzer = visual_analyzer || method(:mini_magick_visual_metrics)
+    analyzer.call(data, width: width, height: height)
+  rescue Timeout::Error => e
+    VisualMetrics.new(
+      ok?: false,
+      error_type: 'image_visual_inspection_timeout',
+      error_message: e.message
+    )
+  rescue MiniMagick::Invalid => e
+    VisualMetrics.new(ok?: false, error_type: 'invalid_image', error_message: e.message)
+  rescue MiniMagick::Error, SystemCallError => e
+    VisualMetrics.new(
+      ok?: false,
+      error_type: 'image_visual_inspection_failed',
+      error_message: e.message
+    )
+  end
+
+  # Songkick sometimes returns a standards-compliant 1-bit PNG whose tRNS
+  # value makes every decoded pixel transparent. Decode that PNG content (not
+  # its compressed byte size) before invoking ImageMagick so this known empty
+  # placeholder is rejected even when the ImageMagick executable is absent.
+  def transparent_grayscale_png_metrics(data, width:, height:)
+    return unless data.start_with?(PNG_SIGNATURE)
+
+    chunks = png_chunks(data)
+    ihdr = chunks.find { |chunk| chunk[:type] == 'IHDR' }&.fetch(:data, nil)
+    transparency = chunks.find { |chunk| chunk[:type] == 'tRNS' }&.fetch(:data, nil)
+    return unless ihdr&.bytesize == 13 && transparency&.bytesize == 2
+
+    decoded_width, decoded_height, bit_depth, color_type, compression, filter_method, interlace = ihdr.unpack('N2C5')
+    return unless decoded_width == width && decoded_height == height
+    return unless color_type == 0 && [1, 2, 4, 8, 16].include?(bit_depth)
+    return unless compression.zero? && filter_method.zero? && interlace.zero?
+
+    idat = chunks.select { |chunk| chunk[:type] == 'IDAT' }.map { |chunk| chunk[:data] }.join
+    return if idat.empty?
+
+    row_bytes = ((width * bit_depth) + 7) / 8
+    expected_raw_bytes = height * (row_bytes + 1)
+    return if expected_raw_bytes > MAX_INLINE_PNG_DECODE_BYTES
+
+    rows = unfiltered_png_rows(
+      bounded_zlib_inflate(idat, max_bytes: expected_raw_bytes),
+      width: width,
+      height: height,
+      bit_depth: bit_depth
+    )
+    transparent_sample = transparency.unpack1('n')
+    samples = rows.flat_map { |row| grayscale_png_samples(row, width: width, bit_depth: bit_depth) }
+    return unless samples.size == width * height
+    return unless samples.all? { |sample| sample == transparent_sample }
+
+    VisualMetrics.new(
+      ok?: true,
+      width: width,
+      height: height,
+      opaque_fraction: 0.0,
+      visual_variation: 0.0,
+      color_count: 1
+    )
+  rescue Zlib::Error, ArgumentError
+    nil
+  end
+
+  def bounded_zlib_inflate(compressed, max_bytes:)
+    output = String.new(encoding: Encoding::BINARY)
+    inflater = Zlib::Inflate.new
+    inflater.inflate(compressed) do |chunk|
+      raise ArgumentError, 'PNG expandido por encima del limite.' if output.bytesize + chunk.bytesize > max_bytes
+
+      output << chunk
+    end
+    output
+  ensure
+    inflater&.close
+  end
+
+  def png_chunks(data)
+    chunks = []
+    offset = PNG_SIGNATURE.bytesize
+    while offset + 12 <= data.bytesize
+      length = uint32_be(data, offset)
+      break unless length
+
+      chunk_end = offset + 12 + length
+      break if chunk_end > data.bytesize
+
+      chunks << {
+        type: data.byteslice(offset + 4, 4).to_s,
+        data: data.byteslice(offset + 8, length)
+      }
+      offset = chunk_end
+    end
+    chunks
+  end
+
+  def unfiltered_png_rows(raw, width:, height:, bit_depth:)
+    row_bytes = ((width * bit_depth) + 7) / 8
+    bytes_per_pixel = [((bit_depth + 7) / 8), 1].max
+    expected_size = height * (row_bytes + 1)
+    raise ArgumentError, 'PNG truncado.' unless raw.bytesize == expected_size
+
+    previous = Array.new(row_bytes, 0)
+    offset = 0
+    Array.new(height) do
+      filter_type = raw.getbyte(offset)
+      offset += 1
+      row = raw.byteslice(offset, row_bytes).bytes
+      offset += row_bytes
+      apply_png_filter!(row, previous, filter_type, bytes_per_pixel)
+      previous = row
+      row
+    end
+  end
+
+  def apply_png_filter!(row, previous, filter_type, bytes_per_pixel)
+    row.each_index do |index|
+      left = index >= bytes_per_pixel ? row[index - bytes_per_pixel] : 0
+      above = previous[index].to_i
+      upper_left = index >= bytes_per_pixel ? previous[index - bytes_per_pixel].to_i : 0
+      predictor =
+        case filter_type
+        when 0 then 0
+        when 1 then left
+        when 2 then above
+        when 3 then ((left + above) / 2).floor
+        when 4 then paeth_predictor(left, above, upper_left)
+        else raise ArgumentError, 'Filtro PNG no soportado.'
+        end
+      row[index] = (row[index] + predictor) & 0xFF
+    end
+  end
+
+  def paeth_predictor(left, above, upper_left)
+    estimate = left + above - upper_left
+    distances = [(estimate - left).abs, (estimate - above).abs, (estimate - upper_left).abs]
+    [left, above, upper_left][distances.index(distances.min)]
+  end
+
+  def grayscale_png_samples(row, width:, bit_depth:)
+    return row.each_slice(2).first(width).map { |bytes| bytes.pack('C*').unpack1('n') } if bit_depth == 16
+    return row.first(width) if bit_depth == 8
+
+    mask = (1 << bit_depth) - 1
+    samples_per_byte = 8 / bit_depth
+    row.flat_map do |byte|
+      samples_per_byte.times.map do |sample_index|
+        shift = 8 - (bit_depth * (sample_index + 1))
+        (byte >> shift) & mask
+      end
+    end.first(width)
+  end
+
+  def mini_magick_visual_metrics(data, width:, height:)
+    configured_timeout = MiniMagick.timeout
+    if configured_timeout.nil? || configured_timeout.to_f > VISUAL_INSPECTION_TIMEOUT_SECONDS
+      MiniMagick.timeout = VISUAL_INSPECTION_TIMEOUT_SECONDS
+    end
+    image = MiniMagick::Image.read(data)
+    decoded_width = image.width.to_i
+    decoded_height = image.height.to_i
+    unless decoded_width == width && decoded_height == height
+      return VisualMetrics.new(
+        ok?: false,
+        width: decoded_width,
+        height: decoded_height,
+        error_type: 'invalid_image',
+        error_message: "Las dimensiones decodificadas #{decoded_width}x#{decoded_height} no coinciden con la cabecera #{width}x#{height}."
+      )
+    end
+
+    sample_width, sample_height = visual_sample_dimensions(width, height)
+    image.resize("#{sample_width}x#{sample_height}!")
+    pixels = image.get_pixels('RGBA').flatten(1)
+    return VisualMetrics.new(ok?: false, error_type: 'invalid_image', error_message: 'No se pudieron decodificar pixeles visibles.') if pixels.empty?
+
+    opaque_fraction = pixels.sum { |pixel| pixel.fetch(3, 255).to_f / 255.0 } / pixels.size
+    composited = pixels.map { |pixel| composite_on_white(pixel) }
+    variation = rgb_variation(composited)
+    color_count = composited.uniq.size
+
+    VisualMetrics.new(
+      ok?: true,
+      width: decoded_width,
+      height: decoded_height,
+      opaque_fraction: opaque_fraction,
+      visual_variation: variation,
+      color_count: color_count
+    )
+  ensure
+    image&.destroy!
+  end
+
+  def visual_sample_dimensions(width, height)
+    scale = [VISUAL_SAMPLE_EDGE.to_f / width, VISUAL_SAMPLE_EDGE.to_f / height, 1.0].min
+    [[(width * scale).round, 1].max, [(height * scale).round, 1].max]
+  end
+
+  def composite_on_white(pixel)
+    alpha = pixel.fetch(3, 255).to_f / 255.0
+    pixel.first(3).map { |channel| ((channel.to_f * alpha) + (255.0 * (1.0 - alpha))).round }
+  end
+
+  def rgb_variation(pixels)
+    channel_variances = 3.times.map do |channel_index|
+      values = pixels.map { |pixel| pixel.fetch(channel_index).to_f }
+      mean = values.sum / values.size
+      values.sum { |value| (value - mean)**2 } / values.size
+    end
+    Math.sqrt(channel_variances.sum / channel_variances.size) / 255.0
   end
 
   def jpeg_info(data)
@@ -292,7 +584,16 @@ class BlackCoffeeImageInspector
     bytes.unpack1(directive)
   end
 
-  def failure(error_type, message, format_info: nil, pixels: nil, sha256: nil)
+  def failure(
+    error_type,
+    message,
+    format_info: nil,
+    pixels: nil,
+    sha256: nil,
+    opaque_fraction: nil,
+    visual_variation: nil,
+    color_count: nil
+  )
     Result.new(
       ok?: false,
       format: format_info&.format,
@@ -302,6 +603,9 @@ class BlackCoffeeImageInspector
       height: format_info&.height,
       pixels: pixels,
       sha256: sha256,
+      opaque_fraction: opaque_fraction,
+      visual_variation: visual_variation,
+      color_count: color_count,
       error_type: error_type,
       error_message: message
     )

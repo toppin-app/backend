@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'minitest/mock'
 
 class BlackCoffeeConcertCoverAttachmentTest < ActiveSupport::TestCase
   FakeVenue = Struct.new(:id, :venue_images)
@@ -48,7 +49,7 @@ class BlackCoffeeConcertCoverAttachmentTest < ActiveSupport::TestCase
     end
   end
 
-  test 'downloads into the binary field and removes the external URL' do
+  test 'internalizes an unusable external cover in its original primary slot' do
     external = FakeImage.new(
       id: 12,
       url: 'https://images.example.test/concert.jpg',
@@ -64,16 +65,21 @@ class BlackCoffeeConcertCoverAttachmentTest < ActiveSupport::TestCase
       http_status: 200
     )
 
-    result = BlackCoffeeConcertCoverAttachment.attach!(
-      venue: venue,
-      download: download,
-      resolution_source: 'source_metadata',
-      source_url: external.url,
-      provenance: { original_image_url: external.url }
-    )
+    verifier = lambda do |venue:, venue_image:|
+      venue_image
+    end
+    result = BlackCoffeeConcertCoverAttachment.stub(:verify_persisted!, verifier) do
+      BlackCoffeeConcertCoverAttachment.attach!(
+        venue: venue,
+        download: download,
+        resolution_source: 'source_metadata',
+        source_url: external.url,
+        provenance: { original_image_url: external.url }
+      )
+    end
 
     assert_equal external, result
-
+    assert_equal 1, venue.venue_images.images.size
     assert external.saved?
     assert_nil external.url
     assert_equal 'concert_cover_source_metadata', external.source
@@ -81,5 +87,16 @@ class BlackCoffeeConcertCoverAttachmentTest < ActiveSupport::TestCase
     assert_equal 'downloaded-image-bytes', external.assigned_image.read
     assert_match(/black_coffee_concert_cover_ven_test_12\.jpg/, external.assigned_image.original_filename)
     assert external.author_attributions['stored_as_binary_at'].present?
+  end
+
+  test 'rejects a missing or non VenueImage attachment as unpersisted' do
+    error = assert_raises(BlackCoffeeConcertCoverAttachment::PersistenceError) do
+      BlackCoffeeConcertCoverAttachment.verify_persisted!(
+        venue: FakeVenue.new('ven_test', FakeAssociation.new([])),
+        venue_image: nil
+      )
+    end
+
+    assert_match(/no quedo persistida/, error.message)
   end
 end

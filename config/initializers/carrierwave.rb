@@ -1,20 +1,7 @@
+# ImageUploader already uses local file storage explicitly. Keep the effective
+# backend unchanged here: BlackCoffeeImageUploader is shared by concerts,
+# festivals and the rest of Black Coffee, so switching it globally would require
+# a separate migration/backfill plan for every existing asset.
 CarrierWave.configure do |config|
-  #if Rails.env.staging? || Rails.env.production?
-    #config.fog_provider = "fog/aws" 
-    config.fog_credentials = {
-      :provider => "AWS",
-      :aws_access_key_id => "AKIARM4ZEEKGHAQFQWWA",
-      :aws_secret_access_key => "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",
-      :region => "eu-west-1" # Ireland
-    }
-    config.fog_directory = "toppin"
-    config.storage = :fog
-
-    
-
-
- # else
-  #  config.storage = :file
-#    config.enable_processing = Rails.env.development?
-#  end
+  config.storage = :file
 end

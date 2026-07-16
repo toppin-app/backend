@@ -36,9 +36,10 @@ class BlackCoffeeConcertCoverRepairRunner
   end
 
   def self.candidate_scope(review_status_filter:)
-    concert_scope(review_status_filter: review_status_filter)
-      .where.not(id: VenueImage.uploaded_sources.select(:venue_id))
-      .order(:id)
+    # A filename in venue_images.image does not prove that the storage object
+    # still exists or that it contains visible pixels. Audit every concert and
+    # let process_item_safely! skip only binaries that pass storage + visual QA.
+    concert_scope(review_status_filter: review_status_filter).order(:id)
   end
 
   def self.cover_inventory(review_status_filter:)
@@ -46,13 +47,19 @@ class BlackCoffeeConcertCoverRepairRunner
     uploaded_venue_ids = VenueImage.uploaded_sources.select(:venue_id)
     external_venue_ids = VenueImage.external_sources.select(:venue_id)
 
-    {
+    inventory = {
       total: scope.count,
       binary: scope.where(id: uploaded_venue_ids).count,
       external: scope.where.not(id: uploaded_venue_ids).where(id: external_venue_ids).count,
       without_url: scope.where.not(id: uploaded_venue_ids).where.not(id: external_venue_ids).count,
       pending_internalization: scope.where.not(id: uploaded_venue_ids).count
     }
+    inventory.merge(
+      audit_total: inventory[:total],
+      database_binary_reference: inventory[:binary],
+      database_external_reference: inventory[:external],
+      database_without_image_reference: inventory[:without_url]
+    )
   end
 
   def initialize(
@@ -163,25 +170,30 @@ class BlackCoffeeConcertCoverRepairRunner
   def process_item_safely!(item)
     venue = item.venue
     return skip_item!(item, 'missing_venue', 'El concierto ya no existe.') unless venue
-    return skip_item!(item, 'cover_already_present', 'El concierto ya tiene una portada binaria interna.') if uploaded_cover?(venue)
+    if (existing_cover = usable_uploaded_cover(venue))
+      promote_primary_cover!(venue, existing_cover)
+      return skip_item!(item, 'cover_already_present', 'El concierto ya tiene una portada binaria interna utilizable.')
+    end
     return skip_item!(item, 'review_status_changed', 'El estado de revision cambio desde que se creo el lote.') unless review_statuses_for_filter.include?(venue.review_status)
 
     result = cover_resolver.resolve_for_venue(venue)
     if result.recovered?
       attach_recovered_cover!(item, venue, result)
-    elsif result.missing? || (result.respond_to?(:ambiguous?) && result.ambiguous?)
-      mark_pending_without_cover!(item, venue, result)
     else
-      fail_unresolved_item!(item, result)
+      mark_pending_without_cover!(item, venue, result)
     end
   rescue StandardError => e
-    item.update_columns(
-      status: 'failed',
-      error_type: 'unexpected_item_error',
-      error_message: "#{e.class} - #{e.message}",
-      processed_at: Time.current,
-      updated_at: Time.current
-    )
+    if venue && uploaded_cover?(venue)
+      item.update_columns(
+        status: 'failed',
+        error_type: 'unexpected_item_error',
+        error_message: "#{e.class} - #{e.message}",
+        processed_at: Time.current,
+        updated_at: Time.current
+      )
+    else
+      mark_pending_after_error!(item, venue, e)
+    end
   end
 
   def attach_recovered_cover!(item, venue, result)
@@ -192,6 +204,7 @@ class BlackCoffeeConcertCoverRepairRunner
       source_url: result.image_url,
       provenance: cover_provenance(result)
     )
+    venue_image = BlackCoffeeConcertCoverAttachment.verify_persisted!(venue: venue, venue_image: venue_image)
     cover_resolver.record_attachment(result: result, venue_image: venue_image) if cover_resolver.respond_to?(:record_attachment)
     recovered_status = result.respond_to?(:external?) && result.external? ? 'recovered_search' : 'recovered_source'
     item.update_columns(
@@ -229,12 +242,39 @@ class BlackCoffeeConcertCoverRepairRunner
     end
   end
 
-  def fail_unresolved_item!(item, result)
+  def mark_pending_after_error!(item, venue, error)
+    unless venue
+      return item.update_columns(
+        status: 'failed',
+        error_type: 'missing_venue',
+        error_message: "#{error.class} - #{error.message}",
+        processed_at: Time.current,
+        updated_at: Time.current
+      )
+    end
+
+    Venue.transaction do
+      venue.update!(
+        review_status: Venue::REVIEW_STATUS_PENDING,
+        review_rejection_reason: nil,
+        review_rejection_note: "Pendiente de revision de portada: fallo al guardar o verificar el binario interno. #{error.class} - #{error.message}".squish.first(900),
+        reviewed_at: nil,
+        reviewed_by_id: nil,
+        visible: false,
+        featured: false
+      )
+      item.update!(
+        status: 'needs_review',
+        error_type: 'cover_attachment_failed',
+        error_message: "#{error.class} - #{error.message}",
+        processed_at: Time.current
+      )
+    end
+  rescue StandardError => persistence_error
     item.update_columns(
       status: 'failed',
-      error_type: result.error_type.presence || 'cover_resolution_unavailable',
-      error_message: result.error_message.presence || 'No se pudieron completar todas las vias de recuperacion; el concierto no fue rechazado.',
-      evidence: result.evidence,
+      error_type: 'unexpected_item_error',
+      error_message: "#{persistence_error.class} - #{persistence_error.message}",
       processed_at: Time.current,
       updated_at: Time.current
     )
@@ -256,7 +296,35 @@ class BlackCoffeeConcertCoverRepairRunner
   end
 
   def uploaded_cover?(venue)
-    venue.venue_images.any?(&:uploaded_image?)
+    usable_uploaded_cover(venue).present?
+  end
+
+  def usable_uploaded_cover(venue)
+    venue.venue_images.to_a.sort_by { |venue_image| [venue_image.position.to_i, venue_image.id.to_i] }.find do |venue_image|
+      BlackCoffeeConcertCoverAttachment.usable_persisted_binary(venue: venue, venue_image: venue_image).present?
+    end
+  end
+
+  def promote_primary_cover!(venue, cover)
+    ordered = venue.venue_images.to_a.sort_by { |venue_image| [venue_image.position.to_i, venue_image.id.to_i] }
+    promoted = [cover] + ordered.reject { |venue_image| venue_image.id == cover.id }
+    return if promoted.each_with_index.all? { |venue_image, index| venue_image.position.to_i == index }
+
+    VenueImage.transaction do
+      locked_ordered = VenueImage.where(venue_id: venue.id).lock.order(:position, :id).to_a
+      locked_cover = locked_ordered.find { |venue_image| venue_image.id == cover.id }
+      return unless locked_cover
+
+      locked_promoted = [locked_cover] + locked_ordered.reject { |venue_image| venue_image.id == locked_cover.id }
+      temporary_start = locked_ordered.map { |venue_image| venue_image.position.to_i }.max.to_i + locked_ordered.size + 1
+      locked_promoted.each_with_index do |venue_image, index|
+        venue_image.update_columns(position: temporary_start + index, updated_at: Time.current)
+      end
+      locked_promoted.each_with_index do |venue_image, index|
+        venue_image.update_columns(position: index, updated_at: Time.current)
+      end
+    end
+    venue.venue_images.reset
   end
 
   def skip_item!(item, error_type, message)

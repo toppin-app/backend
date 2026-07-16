@@ -68,6 +68,7 @@ class BlackCoffeeImageDownloader
     min_height: DEFAULT_MIN_HEIGHT,
     min_pixels: DEFAULT_MIN_PIXELS,
     max_pixels: DEFAULT_MAX_PIXELS,
+    validate_visual_content: false,
     inspector: nil,
     address_resolver: ->(host) { Resolv.getaddresses(host) },
     http_factory: nil
@@ -81,7 +82,8 @@ class BlackCoffeeImageDownloader
       min_width: min_width,
       min_height: min_height,
       min_pixels: min_pixels,
-      max_pixels: max_pixels
+      max_pixels: max_pixels,
+      validate_visual_content: validate_visual_content
     )
     @address_resolver = address_resolver
     @http_factory = http_factory || method(:build_http)

@@ -128,6 +128,33 @@ class BlackCoffeeConcertCoverSearchCoordinatorTest < ActiveSupport::TestCase
     assert_equal ['musical_entity_type'], ranked[:signals]
   end
 
+  test 'does not publish a crosslinked homonym without corroboration from the event' do
+    musicbrainz = musicbrainz_identity(name: 'Common Artist', mbid: ALOK_MBID, qid: 'Q4242')
+    wikidata = wikidata_identity(
+      name: 'Common Artist',
+      mbid: ALOK_MBID,
+      qid: 'Q4242',
+      genres: ['electronic']
+    )
+    providers = [
+      FakeProvider.new('musicbrainz', provider_ok(identities: [musicbrainz], requests_count: 1)),
+      FakeProvider.new(
+        'wikimedia_commons',
+        provider_ok(candidates: [commons_candidate(identity: wikidata)], requests_count: 1)
+      )
+    ]
+
+    result = BlackCoffeeConcertCoverSearch::Coordinator.new(providers: providers).search(
+      artist_name: 'Common Artist'
+    )
+
+    assert_equal 'ambiguous', result.status
+    assert_nil result.candidate
+    signals = result.evidence.dig(:matcher, :ranked_candidates).first[:signals]
+    assert_includes signals, 'musicbrainz_wikidata_crosslink'
+    assert_includes signals, 'musicbrainz_qid_crosslink'
+  end
+
   test 'returns retryable_error when an upstream provider is rate limited' do
     rate_limited = BlackCoffeeConcertCoverSearch::ProviderResult.failure(
       status: 'retryable_error',
