@@ -1099,24 +1099,29 @@ end
   end
 
   def resolve_location
-  lat = params[:lat]
-  lng = params[:lng]
-  if lat.blank? || lng.blank?
-    render json: { error: "lat y lng son requeridos" }, status: 400 and return
-  end
+    lat = params[:lat]
+    lng = params[:lng]
+    if lat.blank? || lng.blank?
+      render json: { error: "lat y lng son requeridos" }, status: 400 and return
+    end
 
-  url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{lat}&lon=#{lng}"
-  response = HTTParty.get(url, headers: { "User-Agent" => "YourAppName" })
+    url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=#{lat}&lon=#{lng}"
+    response = HTTParty.get(url, headers: { "User-Agent" => "YourAppName" })
 
-  if response.success? && response['address']
-    address = response['address']
-    city = address['city'] || address['town'] || address['village'] || address['hamlet']
-    country = address['country']
-    render json: { city: city, country: country }
-  else
-    render json: { error: "No se pudo resolver la ubicación" }, status: 422
+    if response.success? && response['address']
+      address = response['address']
+      city = address['city'] || address['town'] || address['village'] || address['hamlet']
+      payload = { city: city, country: address['country'] }
+
+      country_code = address['country_code'].to_s.strip.upcase
+      payload[:countryCode] = country_code if country_code.match?(/\A[A-Z]{2}\z/)
+      payload[:state] = address['state'] if address['state'].present?
+
+      render json: payload
+    else
+      render json: { error: "No se pudo resolver la ubicación" }, status: 422
+    end
   end
-end
 
   # GET /user_interactions - Devuelve interacciones del usuario categorizadas con paginación y filtros
   # Filtros disponibles por query params:
@@ -2885,18 +2890,16 @@ end
   end
 
 
-  # Desbloquea un vip toppin (si eres premium, max 6 por semana)
+  # Desbloquea un vip toppin para clientes antiguos.
+  # Premium y Supreme tienen acceso ilimitado.
   def unlock_vip_toppin
+    unlock = VipToppinAccessPolicy.new(current_user).unlock(params[:target_id])
 
-    if current_user.is_premium and current_user.user_vip_unlocks.count < 6
-
-        current_user.user_vip_unlocks.create(target_id: params[:target_id])
-        render json: "OK".to_json
-
+    if unlock&.persisted?
+      render json: "OK".to_json
     else
       render json: { status: 405, message: "Not allowed"}, status: 405
     end
-
   end
 
 
