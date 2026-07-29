@@ -252,8 +252,21 @@ module Api
       def apply_event_filters_for_category(relation, category)
         return relation unless Venue.normalize_category(category) == 'concierto'
 
+        relation = filter_concerts_by_country(relation)
         relation = filter_concerts_by_city(relation)
         filter_concerts_by_date_range(relation)
+      end
+
+      def filter_concerts_by_country(relation)
+        country_code = normalized_country_code_param
+        return relation if country_code.blank? || !Venue.column_names.include?('country_code')
+
+        relation.where('UPPER(venues.country_code) = ?', country_code)
+      end
+
+      def normalized_country_code_param
+        country_code = first_present_param(:country_code, :countryCode).to_s.strip.upcase
+        country_code if country_code.match?(/\A[A-Z]{2}\z/)
       end
 
       def filter_concerts_by_city(relation)
