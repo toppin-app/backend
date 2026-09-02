@@ -1,6 +1,7 @@
 class UsersController < ApplicationController
+  before_action :check_admin, only: [:index, :new, :edit, :create, :destroy, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes, :add_black_coffee_favorite, :remove_black_coffee_favorite, :sync_stripe_purchases]
   before_action :set_user, only: [:show, :edit, :destroy, :block]
-  before_action :check_admin, only: [:index, :new, :edit, :create_match, :create_like, :unmatch, :clear_all_matches, :reject_incoming_like, :match_all_likes, :reject_all_likes, :add_black_coffee_favorite, :remove_black_coffee_favorite, :sync_stripe_purchases]
+  before_action :set_user_for_update, only: [:update]
   skip_before_action :verify_authenticity_token, :only => [:show, :edit, :update, :destroy, :block]
   skip_before_action :authenticate_user!, :only => [:reset_password_sent, :password_changed, :cron_recalculate_popularity, :cron_check_outdated_boosts, :cron_regenerate_superlike, :cron_regenerate_likes, :social_login_check, :cron_randomize_bundled_users_geolocation, :cron_check_online_users, :cron_regenerate_monthly_boost, :cron_regenerate_weekly_super_sweet, :cleanup_is_connected]
 
@@ -358,16 +359,6 @@ def update
     params.delete(:password_confirmation)
   end
 
-  # Obtener el usuario a actualizar
-  @user = if params[:id]
-            User.find(params[:id])
-          elsif params[:user] && params[:user][:id].present?
-            User.find(params[:user][:id])
-          else
-            # Si no hay ID, usar current_user (para formularios del admin)
-            current_user
-          end
-
   # 1️⃣ Validar desnudez antes de actualizar
   if params[:user] && params[:user][:images].present? && params[:user][:images].is_a?(Array)
     params[:user][:images].each do |image|
@@ -427,9 +418,9 @@ def update
     begin
       # Decidir si actualizar con o sin contraseña basado en la variable guardada
       update_success = if changing_password
-                         @user.update(user_params)
+                         @user.update(update_user_params)
                        else
-                         @user.update_without_password(user_params)
+                         @user.update_without_password(update_user_params)
                        end
     rescue ActiveRecord::RecordNotUnique => e
       # Capturar error de email duplicado
@@ -2984,6 +2975,20 @@ end
       @user = User.find(params[:id])
     end
 
+    def set_user_for_update
+      target_user_id = params[:id].presence || params.dig(:user, :id).presence
+
+      if target_user_id.present? && !current_user.admin? && target_user_id.to_s != current_user.id.to_s
+        respond_to do |format|
+          format.json { render json: { error: 'No tienes permisos para modificar esta cuenta.' }, status: :forbidden }
+          format.any { redirect_to root_path, alert: 'No tienes permisos para modificar esta cuenta.' }
+        end
+        return
+      end
+
+      @user = target_user_id.present? ? User.find(target_user_id) : current_user
+    end
+
     def prepare_black_coffee_favorites_state
       favorites_scope = @user.user_favorites
                              .includes(venue: [:venue_subcategory, :venue_images])
@@ -3029,13 +3034,24 @@ end
     # Only allow a list of trusted parameters
     def user_params
       params.require(:user).permit(
-        :id, :email, :name, :password, :password_confirmation, :user_name, :blocked, :block_reason_key,
+        :email, :name, :password, :password_confirmation, :user_name, :blocked, :block_reason_key,
         :current_subscription_id, :show_publi, :current_subscription_name, :verified,
         :verification_file, :push_token, :device_id, :device_platform, :description,
         :gender, :high_visibility, :hidden_by_user, :is_connected, :last_connection,
         :last_match, :is_new, :activity_level, :birthday, :born_in, :living_in,
         :locality, :country, :lat, :lng, :location_city, :location_country, 
         :occupation, :studies, :popularity, :favorite_languages, :language, :admin, :fake_user
+      )
+    end
+
+    def update_user_params
+      return user_params if current_user.admin?
+
+      params.require(:user).permit(
+        :email, :name, :password, :password_confirmation, :user_name, :description,
+        :gender, :birthday, :born_in, :living_in, :locality, :country, :lat, :lng,
+        :location_city, :location_country, :occupation, :studies, :favorite_languages,
+        :language
       )
     end
     def redis
