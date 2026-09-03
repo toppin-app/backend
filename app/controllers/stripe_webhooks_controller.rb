@@ -34,34 +34,29 @@ class StripeWebhooksController < ApplicationController
     case event['type']
     when 'payment_intent.succeeded'
       payment_intent = event['data']['object']
-      product_key = payment_intent.metadata['product_key'] rescue nil
-      if product_key.nil? || product_key.to_s.empty?
-        Rails.logger.error("Stripe Webhook: Missing product_key in payment_intent metadata for id #{payment_intent['id']}")
-        return render json: { error: "Missing product key" }, status: :bad_request
-      end
-      config = PRODUCT_CONFIG[product_key]
-      unless config
-        Rails.logger.error("Stripe Webhook: Invalid product_key '#{product_key}' for payment_intent id #{payment_intent['id']}")
-        return render json: { error: "Invalid product key" }, status: :bad_request
-      end
-      email = Stripe::Customer.retrieve(payment_intent['customer']).email
-      user = User.find_by(email: email)
-      purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
-      if user && config
-        if config[:field] && config[:increment_value]
-          user.increment!(config[:field], config[:increment_value])
-        elsif config[:subscription_name] && config[:months]
-          previous_subscription = user.current_subscription_name
-          user.update!(\
-            current_subscription_name: config[:subscription_name],\
-            current_subscription_expires: (Time.current + config[:months].months)
-          )
-          
-          # Notificar al frontend sobre el cambio de suscripción
-          notify_subscription_change(user, previous_subscription, config[:subscription_name])
+      invoice_id = payment_intent['invoice']
+
+      if invoice_id.present?
+        finalize_paid_subscription(Stripe::Invoice.retrieve(invoice_id))
+      else
+        product_key = payment_intent.metadata['product_key'] rescue nil
+        if product_key.nil? || product_key.to_s.empty?
+          Rails.logger.error("Stripe Webhook: Missing product_key in payment_intent metadata for id #{payment_intent['id']}")
+          return render json: { error: "Missing product key" }, status: :bad_request
         end
+        config = PRODUCT_CONFIG[product_key]
+        unless config
+          Rails.logger.error("Stripe Webhook: Invalid product_key '#{product_key}' for payment_intent id #{payment_intent['id']}")
+          return render json: { error: "Invalid product key" }, status: :bad_request
+        end
+        email = Stripe::Customer.retrieve(payment_intent['customer']).email
+        user = User.find_by(email: email)
+        purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
+        if user && config
+          user.increment!(config[:field], config[:increment_value]) if config[:field] && config[:increment_value]
+        end
+        purchase&.update(status: "succeeded")
       end
-      purchase&.update(status: "succeeded")
     when 'payment_intent.canceled'
       payment_intent = event['data']['object']
       purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
@@ -70,62 +65,21 @@ class StripeWebhooksController < ApplicationController
       payment_intent = event['data']['object']
       purchase = PurchasesStripe.find_by(payment_id: payment_intent['id'])
       purchase&.update(status: "failed")
+    when 'invoice.paid'
+      finalize_paid_subscription(event['data']['object'])
     when 'customer.subscription.created', 'customer.subscription.updated'
       subscription = event['data']['object']
       
-      # 🚨 NUEVO: Solo procesar si la suscripción está activa o en trialing
+      # Una suscripción incompleta no debe sustituir a la vigente.
       unless ['active', 'trialing'].include?(subscription['status'])
         Rails.logger.info("Stripe Webhook: Skipping subscription #{subscription['id']} with status #{subscription['status']}")
         head :ok and return
       end
-      
-      email = Stripe::Customer.retrieve(subscription['customer']).email
-      user = User.find_by(email: email)
-      price_data = subscription['items']['data'][0]['price'] rescue nil
-      lookup_key = price_data&.[]('lookup_key')
-      config = PRODUCT_CONFIG[lookup_key]
-      subscription_name = config&.[](:subscription_name)
-      
-      # fallback: if lookup_key starts with 'toppin_premium' or 'toppin_supreme'
-      if subscription_name.nil? && lookup_key
-        if lookup_key.include?('premium')
-          subscription_name = 'premium'
-        elsif lookup_key.include?('supreme')
-          subscription_name = 'supreme'
-        end
-      end
 
-      # Extrae el periodo de expiración de la suscripción
-      expires_at = subscription['current_period_end']
-      
-      if user && subscription_name
-        previous_subscription = user.current_subscription_name
-        
-        if expires_at.present? && expires_at.is_a?(Numeric)
-          user.update(
-            current_subscription_name: subscription_name,
-            current_subscription_expires: Time.at(expires_at)
-          )
-        else
-          months = config&.[](:months) || 1
-          user.update(
-            current_subscription_name: subscription_name,
-            current_subscription_expires: Time.current + months.months
-          )
-        end
-        
-        # Notificar al frontend sobre el cambio de suscripción
-        notify_subscription_change(user, previous_subscription, subscription_name)
-        
-        # 👇 Añade likes si es premium/supreme y no tiene
-        if user.likes_left == 0
-          user.update(likes_left: 1)
-        end
-        
-        purchase = PurchasesStripe.find_by(payment_id: subscription['latest_invoice'])
-        purchase&.update(status: "succeeded")
-        
-        Rails.logger.info("Stripe Webhook: User #{user.id} subscription updated to #{subscription_name} (status: #{subscription['status']})")
+      if StripeSubscriptionReplacement.replaced_subscription_ids(subscription).any?
+        Rails.logger.info("Stripe Webhook: Waiting for paid invoice before replacing subscriptions with #{subscription['id']}")
+      else
+        activate_subscription(subscription)
       end
     when 'customer.subscription.deleted'
       subscription = event['data']['object']
@@ -133,8 +87,20 @@ class StripeWebhooksController < ApplicationController
       user = User.find_by(email: email)
       
       if user
+        if StripeSubscriptionReplacement.other_live_subscription?(
+          subscription['customer'],
+          subscription['id']
+        )
+          Rails.logger.info("Stripe Webhook: Ignoring deletion of replaced subscription #{subscription['id']} for user #{user.id}")
+          head :ok and return
+        end
+
         previous_subscription = user.current_subscription_name
-        user.update(current_subscription_name: nil, current_subscription_expires: nil)
+        user.update!(
+          current_subscription_id: nil,
+          current_subscription_name: nil,
+          current_subscription_expires: nil
+        )
         
         # Notificar al frontend sobre la cancelación de suscripción
         notify_subscription_change(user, previous_subscription, nil)
@@ -144,6 +110,63 @@ class StripeWebhooksController < ApplicationController
   end
   
   private
+
+  def finalize_paid_subscription(invoice)
+    subscription_id = invoice_subscription_id(invoice)
+    return false unless subscription_id.present?
+
+    subscription = Stripe::Subscription.retrieve(subscription_id)
+    return false unless activate_subscription(subscription, paid_invoice_id: invoice['id'])
+
+    StripeSubscriptionReplacement.cancel_replaced!(subscription)
+    true
+  end
+
+  def activate_subscription(subscription, paid_invoice_id: nil)
+    email = Stripe::Customer.retrieve(subscription['customer']).email
+    user = User.find_by(email: email)
+    items = subscription['items']
+    item_data = items && items['data']
+    price_data = item_data&.first&.[]('price')
+    lookup_key = price_data&.[]('lookup_key')
+    config = PRODUCT_CONFIG[lookup_key]
+    subscription_name = config&.[](:subscription_name)
+
+    if subscription_name.nil? && lookup_key
+      subscription_name = 'premium' if lookup_key.include?('premium')
+      subscription_name = 'supreme' if lookup_key.include?('supreme')
+    end
+
+    return false unless user && subscription_name
+
+    previous_subscription = user.current_subscription_name
+    expires_at = subscription['current_period_end']
+    expires_at = Time.at(expires_at) if expires_at.present? && expires_at.is_a?(Numeric)
+    expires_at ||= Time.current + (config&.[](:months) || 1).months
+
+    user.update!(
+      current_subscription_name: subscription_name,
+      current_subscription_expires: expires_at
+    )
+
+    notify_subscription_change(user, previous_subscription, subscription_name)
+    user.update!(likes_left: 1) if user.likes_left == 0
+
+    if paid_invoice_id.present?
+      purchase = PurchasesStripe.find_by(payment_id: paid_invoice_id)
+      purchase&.update!(status: "succeeded")
+    end
+
+    Rails.logger.info("Stripe Webhook: User #{user.id} subscription updated to #{subscription_name} (status: #{subscription['status']}, payment_confirmed: #{paid_invoice_id.present?})")
+    true
+  end
+
+  def invoice_subscription_id(invoice)
+    parent = invoice['parent']
+    subscription_details = parent && parent['subscription_details']
+
+    invoice['subscription'] || (subscription_details && subscription_details['subscription'])
+  end
   
   # Método para notificar al frontend sobre cambios en la suscripción
   def notify_subscription_change(user, previous_subscription, new_subscription)
