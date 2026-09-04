@@ -1057,7 +1057,6 @@ end
 
   # Método para actualizar la geolocalización de un usuario.
   def update_location
-     # logger.info "USER::"+current_user.inspect
       location_city = nil
       location_country = nil
 
@@ -1403,7 +1402,6 @@ end
   # Método para usar un boost
   def use_boost
 
-      logger.info current_user.inspect
       if current_user.high_visibility
         render json: { status: 406, error: "Ya tienes un power sweet activo"}, status: 406
         return
@@ -1867,7 +1865,7 @@ end
       @publis = []
     end
 
-    Rails.logger.info @publis.inspect
+    Rails.logger.info "Publicidades activas cargadas: #{@publis.size}"
 
       # IDs de usuarios ocultos
     hidden_user_ids = User.where(hidden_by_user: true).pluck(:id)
@@ -1970,7 +1968,7 @@ end
     # MUY IMPORTANTE: Asegúrate de que el propio usuario (current_user) no se incluya en los resultados.
     users_to_exclude << current_user_id
 
-    logger.info "USUARIOS A EXCLUIR: " + users_to_exclude.inspect
+    logger.info "Usuarios excluidos del descubrimiento: #{users_to_exclude.size}"
 
     # Aplicamos el filtro para excluir a todos estos usuarios de la lista.
     users = users.where.not(id: users_to_exclude)
@@ -1988,7 +1986,7 @@ end
     
     users_to_exclude = users_to_exclude.uniq
 
-    logger.info "USUARIOS A EXCLUIR: " + users_to_exclude.inspect
+    logger.info "Usuarios excluidos tras bloqueos y bajas: #{users_to_exclude.size}"
 
     # Aplicamos el filtro para excluir a todos estos usuarios de la lista.
     users = users.where.not(id: users_to_exclude)
@@ -2004,8 +2002,7 @@ end
     user_ids = users.pluck(:id)
 
 
-    logger.info "IDS 1"
-    logger.info user_ids.inspect
+    logger.info "Candidatos iniciales: #{user_ids.size}"
 
     user_with_interests = []
 
@@ -2058,8 +2055,7 @@ end
 end
 
 
-    logger.info "IDS 2"
-    logger.info user_ids.inspect
+    logger.info "Candidatos tras preferencias: #{user_ids.size}"
 
 
     users = User.where(id: user_ids)
@@ -2106,7 +2102,7 @@ end
     user_ids = users_with_boost + users_without_boost
 
 
-    logger.info "USER IDS 4::"+user_ids.inspect
+    logger.info "Candidatos ordenados por visibilidad: #{user_ids.size}"
 
 
     # Lo que hacemos ahora es recorrer los likes que tiene un usuario e intercalarlos en las primeras 30 posiciones del array final.
@@ -2128,8 +2124,7 @@ end
 
     user_ids = user_ids.take(35)
 
-    logger.info "IDS 3 "+current_user.id.to_s
-    logger.info user_ids.inspect
+    logger.info "Candidatos finales: #{user_ids.size}"
 
     # Match Request ya lanzados. Descartamos users que ya hemos dado like o dislike
     discarded_users = UserMatchRequest.where(user_id: current_user.id).pluck(:target_user)
@@ -2202,7 +2197,7 @@ render json: {
 
     end
 
-    logger.info pond.inspect
+    logger.info "Candidatos ponderados: #{pond.size}"
 
     number = @users.count
 
@@ -2229,7 +2224,7 @@ def available_publis
   
   # 1. Ver la lista de publicidades disponibles
   all_active = Publi.active_now
-  Rails.logger.info "Todas las publis activas: #{all_active.map(&:id).inspect}"
+  Rails.logger.info "Publicidades activas disponibles: #{all_active.size}"
 
   if all_active.empty?
     render json: { status: 404, message: "No hay publicidades disponibles" }, status: 404
@@ -2239,7 +2234,7 @@ def available_publis
   # 2. Comprobar registros pendientes (sin vista) del usuario
   pending_records = current_user.user_publis.where(viewed: false)
   pending_publi_ids = pending_records.pluck(:publi_id)
-  Rails.logger.info "Registros pendientes: #{pending_publi_ids.inspect}"
+  Rails.logger.info "Registros de publicidad pendientes: #{pending_publi_ids.size}"
 
   # 3. Crear registros para publicidades que no los tengan + actualizar fechas de los existentes
   all_active.each do |publi|
@@ -2271,7 +2266,7 @@ def available_publis
   # Agregar la última vista al final (si existe)
   ordered_publis = last_viewed_publi ? shuffled_publis + [last_viewed_publi] : shuffled_publis
   
-  Rails.logger.info "Orden final de publis: #{ordered_publis.map(&:id).inspect}"
+  Rails.logger.info "Publicidades ordenadas: #{ordered_publis.size}"
 
   # 5. Enviar las publicidades al front
   publi_url = "https://web-backend-ruby.uao3jo.easypanel.host"
@@ -2284,8 +2279,7 @@ end
  
 # PUT /users/mark_publi_viewed  
 def mark_publi_viewed
-  Rails.logger.info "Current user: #{current_user.inspect}"
-  Rails.logger.info "Publi ID recibido: #{params[:publi_id]}"
+  Rails.logger.info "Solicitud para marcar publicidad como vista"
 
   unless current_user
     render json: { status: 401, message: "Usuario no autenticado" }, status: 401
@@ -2308,12 +2302,12 @@ def mark_publi_viewed
   # Marcar como vista el registro específico y actualizar fecha
   user_publi_record.update(viewed: true, updated_at: Time.current)
   
-  Rails.logger.info "Registro marcado como visto: #{user_publi_record.inspect}"
+  Rails.logger.info "Registro de visualización actualizado"
   
   if user_publi_record.viewed?
     # Contar cuántas veces ha visto esta publi específica
     view_count = current_user.user_publis.where(publi_id: params[:publi_id], viewed: true).count
-    Rails.logger.info "Usuario #{current_user.id} ha visto la publi #{params[:publi_id]} un total de #{view_count} veces"
+    Rails.logger.info "Publicidad marcada como vista; total=#{view_count}"
     
     render json: { 
       status: 200, 
@@ -2322,14 +2316,13 @@ def mark_publi_viewed
       view_count: view_count 
     }
   else
-    Rails.logger.error "Error marcando registro como visto: #{user_publi_record.errors.inspect}"
+    Rails.logger.error "Error marcando registro como visto"
     render json: { status: 500, message: "Error al marcar el registro como visto" }, status: 500
   end
 end
 
 def mark_publi_opened
-  Rails.logger.info "Current user: #{current_user.inspect}"
-  Rails.logger.info "Publi ID recibido para apertura: #{params[:publi_id]}"
+  Rails.logger.info "Solicitud para marcar publicidad como abierta"
 
   unless current_user
     render json: { status: 401, message: "Usuario no autenticado" }, status: 401
@@ -2351,7 +2344,7 @@ def mark_publi_opened
   
   unless user_publi_record
     # No hay registro pendiente de apertura para esta publi
-    Rails.logger.info "No se encontró registro pendiente de apertura para publi #{params[:publi_id]}"
+    Rails.logger.info "No se encontró registro pendiente de apertura"
     render json: { 
       status: 404, 
       message: "No se encontró registro pendiente para abrir esta publicidad" 
@@ -2363,11 +2356,11 @@ def mark_publi_opened
   user_publi_record.opened_at = Time.current
   
   if user_publi_record.save
-    Rails.logger.info "Registro marcado como abierto: #{user_publi_record.inspect}"
+    Rails.logger.info "Registro marcado como abierto"
     
     # Contar cuántas veces ha abierto esta publi en total
     open_count = current_user.user_publis.where(publi_id: params[:publi_id]).where.not(opened_at: nil).count
-    Rails.logger.info "Usuario #{current_user.id} ha abierto la publi #{params[:publi_id]} un total de #{open_count} veces"
+    Rails.logger.info "Publicidad marcada como abierta; total=#{open_count}"
     
     render json: { 
       status: 200, 
@@ -2377,7 +2370,7 @@ def mark_publi_opened
       open_count: open_count
     }
   else
-    Rails.logger.error "Error guardando registro: #{user_publi_record.errors.inspect}"
+    Rails.logger.error "Error guardando registro de apertura"
     render json: { status: 500, message: "Error al marcar la publi como abierta" }, status: 500
   end
 end
@@ -2689,21 +2682,16 @@ def get_vip_toppins
 
   def validate_image
     Rails.logger.info "===> Entrando en validate_image"
-    Rails.logger.info "Params recibidos: #{params.inspect}"
 
     current_user.update!(verification_image: params[:data][:verification_image])
     img_file = current_user.verification_image.file
-    Rails.logger.info "Imagen guardada en el usuario: #{img_file.inspect}"
 
     response = HTTParty.post(
       "https://web-face-detection.uao3jo.easypanel.host/verify",
       body: { file: img_file },
       headers: { "Content-Type" => "multipart/form-data" }
     )
-    Rails.logger.info "Respuesta de la API de verificación: #{response.inspect}"
-
     result = response.parsed_response
-    Rails.logger.info "Resultado parseado: #{result.inspect}"
 
     if result["verified"]
       Rails.logger.info "Imagen verificada correctamente"
@@ -2838,7 +2826,7 @@ end
     
     # Validar que se haya enviado el parámetro language
     if new_language.blank?
-      Rails.logger.warn "change_language: No se recibió el parámetro 'language'. Params: #{params.inspect}"
+      Rails.logger.warn "change_language: No se recibió el parámetro 'language'."
       render json: { 
         status: 400, 
         message: "El parámetro 'language' es requerido" 
@@ -2853,7 +2841,7 @@ end
     allowed_languages = ['ES', 'EN', 'IT', 'FR', 'DE']
     
     unless allowed_languages.include?(new_language)
-      Rails.logger.warn "change_language: Idioma no válido '#{new_language}'. Params: #{params.inspect}"
+      Rails.logger.warn "change_language: Idioma no válido '#{new_language}'."
       render json: { 
         status: 400, 
         message: "Idioma no válido. Idiomas permitidos: #{allowed_languages.join(', ')}", 
@@ -3186,13 +3174,9 @@ end
       # LOG DETALLADO DEL WEBSOCKET
       logger.info "=" * 80
       logger.info "[BoostInteraction WebSocket - ADMIN] Enviando actualización"
-      logger.info "Usuario con boost (receptor): #{target_user.id} (#{target_user.name})"
-      logger.info "Usuario que hizo swipe: #{acting_user.id} (#{acting_user.name})"
       logger.info "Tipo de interacción recibida: #{latest_their_action}"
       logger.info "Mi acción hacia ellos: #{latest_my_action}"
       logger.info "Total de interacciones en boost: #{interactions_data.length}"
-      logger.info "Payload completo del websocket:"
-      logger.info JSON.pretty_generate(websocket_payload.as_json)
       logger.info "=" * 80
       
       # Enviar la lista completa actualizada a través de AliveChannel

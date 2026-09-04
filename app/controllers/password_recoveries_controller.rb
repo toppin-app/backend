@@ -56,7 +56,7 @@ class PasswordRecoveriesController < ApplicationController
       }, status: :ok
 
     rescue StandardError => e
-      Rails.logger.error "Error al enviar código de recuperación: #{e.message}"
+      Rails.logger.error "Error al enviar código de recuperación: #{e.class.name}"
       render json: { 
         status: 500, 
         error: t('password_recoveries.errors.send_error')
@@ -172,7 +172,7 @@ class PasswordRecoveriesController < ApplicationController
       end
 
     rescue StandardError => e
-      Rails.logger.error "Error al resetear contraseña: #{e.message}"
+      Rails.logger.error "Error al resetear contraseña: #{e.class.name}"
       render json: { 
         status: 500, 
         error: t('password_recoveries.errors.reset_error')
@@ -237,11 +237,10 @@ class PasswordRecoveriesController < ApplicationController
 
     response = Mailjet::Send.create(messages: [message])
 
-    Rails.logger.info "✓ Email de recuperación enviado a #{email} - Código: #{code}"
+    Rails.logger.info "✓ Email de recuperación enviado"
   rescue StandardError => e
-    Rails.logger.error "✗ Error enviando email con Mailjet: #{e.message}"
-    # Loguear el código para desarrollo
-    Rails.logger.info "⚠️ Email no enviado (error de Mailjet) - Código de recuperación: #{code}"
+    Rails.logger.error "✗ Error enviando email con Mailjet: #{e.class.name}"
+    Rails.logger.info "⚠️ Email de recuperación no enviado"
     # Re-lanzar para que el controlador maneje el error
     raise e
   end

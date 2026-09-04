@@ -26,8 +26,6 @@ class Users::SessionsController < Devise::SessionsController
       user_params = params.require(:user).permit(:email, :password)
       @user = User.find_by(email: user_params[:email])
 
-      Rails.logger.info "Login params: #{user_params.inspect}"
-
       if @user && @user.valid_password?(user_params[:password])
         # Verificar si el usuario está bloqueado
         if @user.blocked

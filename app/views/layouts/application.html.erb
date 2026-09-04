@@ -441,13 +441,10 @@ $( document ).ready(function() {
     Twilio.Conversations.Client.create("<%= @token %>").then(client => {
         // Use client
         twilioClient = client
-        console.log(twilioClient)
 
          $(".chat").removeClass('disabled')
 
           twilioClient.on('messageAdded', value => {
-              console.log("twilio messageAdded", value)
-
               if (value.conversation.sid != currentSid){
                 $("#"+value.conversation.sid).removeClass('btn-primary')
                 $("#"+value.conversation.sid).addClass('btn-success')
@@ -461,23 +458,15 @@ $( document ).ready(function() {
 
     function startConversation(sid){
 
-        console.log("sid", sid)
-
         if (sid == currentSid) return;
 
         twilioClient.getConversationBySid(sid).then(conv => {
-
-          console.log("conv", conv)
 
           currentSid = conv.sid
 
           $("#conversation").empty()
 
           conv.on('messageAdded', value => {
-
-              console.log("messageAdded", value)
-              console.log(value.conversation.sid)
-              console.log(currentSid)
 
               if (value.conversation.sid != currentSid)
                 return
@@ -496,8 +485,6 @@ $( document ).ready(function() {
 
 
             conv.getMessages().then(messages => {
-
-              console.log(messages)
 
               $.each( messages.items, function( key, value ) {
                   

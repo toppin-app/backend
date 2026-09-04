@@ -91,7 +91,7 @@ class StripeWebhooksController < ApplicationController
           subscription['customer'],
           subscription['id']
         )
-          Rails.logger.info("Stripe Webhook: Ignoring deletion of replaced subscription #{subscription['id']} for user #{user.id}")
+          Rails.logger.info("Stripe Webhook: Ignoring deletion because another live subscription exists")
           head :ok and return
         end
 
@@ -157,7 +157,7 @@ class StripeWebhooksController < ApplicationController
       purchase&.update!(status: "succeeded")
     end
 
-    Rails.logger.info("Stripe Webhook: User #{user.id} subscription updated to #{subscription_name} (status: #{subscription['status']}, payment_confirmed: #{paid_invoice_id.present?})")
+    Rails.logger.info("Stripe Webhook: Subscription updated to #{subscription_name} (status: #{subscription['status']}, payment_confirmed: #{paid_invoice_id.present?})")
     true
   end
 
@@ -183,7 +183,7 @@ class StripeWebhooksController < ApplicationController
       # Enviar mensaje a través del AliveChannel
       AliveChannel.broadcast_to(user, { type: "subscription_change", message: message })
       
-      Rails.logger.info("Subscription change notification sent to user #{user.id}: #{previous_subscription || 'none'} -> #{new_subscription || 'none'}")
+      Rails.logger.info("Subscription change notification sent: #{previous_subscription || 'none'} -> #{new_subscription || 'none'}")
     end
   end
 end

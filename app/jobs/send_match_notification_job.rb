@@ -26,8 +26,8 @@ class SendMatchNotificationJob < ApplicationJob
       )
     end
     
-    Rails.logger.info "✅ Notificación de match enviada a usuario #{match_user.id}"
+    Rails.logger.info "✅ Notificación de match enviada"
   rescue => e
-    Rails.logger.error "❌ Error enviando notificación de match: #{e.message}"
+    Rails.logger.error "❌ Error enviando notificación de match: #{e.class.name}"
   end
 end

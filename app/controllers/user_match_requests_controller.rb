@@ -69,9 +69,7 @@ class UserMatchRequestsController < ApplicationController
           # Buscar si existe un match_request previo EN CUALQUIER DIRECCIÓN
           umr = UserMatchRequest.match_between(current_user.id, params[:target_user])
           
-          logger.info "UMR FOUND:"
-          logger.info umr.inspect
-          logger.info "current_user.id: #{current_user.id}"
+          logger.info "Match request lookup completed"
           # Si existe un registro pero YO soy el target_user (ellos me dieron swipe primero)
           # entonces voy a ACTUALIZAR ese registro con mi respuesta
           if umr && umr.target_user == current_user.id
@@ -347,7 +345,7 @@ class UserMatchRequestsController < ApplicationController
     if conversation_sid
       twilio = TwilioController.new
       message = twilio.send_message_to_conversation(conversation_sid, current_user.id, params[:message])
-      logger.info "MENSAJE"+message.inspect
+      logger.info "Primer mensaje enviado al match" if message
     else
       # KO
     end
@@ -392,7 +390,6 @@ class UserMatchRequestsController < ApplicationController
     @user_match_requests = current_user.matches
     #target_user_ids = @user_match_requests.pluck(:target_user)
     #@target_users = User.where(id: target_user_ids).to_a
-    #logger.info "get user matches"+@user_match_requests.inspect
     render 'index'
   end
   # Devuelve usuarios a los que les gustas, pero tú no les has dado like de momento.
@@ -693,13 +690,9 @@ class UserMatchRequestsController < ApplicationController
       # LOG DETALLADO DEL WEBSOCKET
       Rails.logger.info "=" * 80
       Rails.logger.info "[BoostInteraction WebSocket] ALGUIEN me dio swipe durante MI boost"
-      Rails.logger.info "Usuario con boost (YO): #{target_user.id} (#{target_user.name})"
-      Rails.logger.info "Usuario que me dio swipe: #{current_user.id} (#{current_user.name})"
       Rails.logger.info "Tipo de interacción RECIBIDA: #{latest_their_action}"
       Rails.logger.info "Mi acción PREVIA hacia ellos: #{latest_my_action}"
       Rails.logger.info "Total de interacciones en mi boost: #{interactions_data.length}"
-      Rails.logger.info "Payload completo del websocket:"
-      Rails.logger.info JSON.pretty_generate(websocket_payload.as_json)
       Rails.logger.info "=" * 80
       
       # Enviar la lista completa actualizada a través de AliveChannel AL USUARIO CON BOOST
@@ -858,17 +851,13 @@ class UserMatchRequestsController < ApplicationController
       # LOG DETALLADO
       Rails.logger.info "=" * 80
       Rails.logger.info "[MyBoostAction WebSocket] YO DI SWIPE durante MI boost"
-      Rails.logger.info "YO (con boost): #{me_with_boost.id} (#{me_with_boost.name})"
-      Rails.logger.info "A QUIEN le di swipe: #{person_i_swiped.id} (#{person_i_swiped.name})"
       Rails.logger.info "MI acción: #{umr.is_like ? 'like' : 'dislike'}"
       Rails.logger.info "¿Es respuesta a su swipe?: #{is_response_to_their_swipe}"
       if their_previous_interaction
         their_action_type = their_previous_interaction.is_match ? 'match' : (their_previous_interaction.is_like ? 'like' : 'dislike')
-        Rails.logger.info "SU interacción previa hacia mí: #{their_action_type} (#{their_previous_interaction.created_at})"
+        Rails.logger.info "SU interacción previa hacia mí: #{their_action_type}"
       end
       Rails.logger.info "Total de interacciones en mi boost: #{interactions_data.length}"
-      Rails.logger.info "Payload completo del websocket:"
-      Rails.logger.info JSON.pretty_generate(websocket_payload.as_json)
       Rails.logger.info "=" * 80
       
       # Enviar a MÍ MISMO (quien tiene el boost y acaba de dar swipe)

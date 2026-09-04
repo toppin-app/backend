@@ -122,7 +122,7 @@ class MailjetDeliveryMethod
 
     # Verificar respuesta - Mailjet usa 'persisted' para indicar éxito
     if response.attributes['persisted'] == true
-      Rails.logger.info "✓ Email enviado exitosamente a #{mail.to.join(', ')}"
+      Rails.logger.info "✓ Email enviado exitosamente"
       
       # Obtener el status del primer mensaje si existe
       if response.attributes['Messages'] && response.attributes['Messages'].first
@@ -130,15 +130,13 @@ class MailjetDeliveryMethod
         Rails.logger.info "  Mailjet Response: #{status}"
       end
     else
-      error_msg = "Error enviando email: #{response.attributes}"
-      Rails.logger.error "✗ #{error_msg}"
-      raise "Mailjet error: #{response.attributes}"
+      Rails.logger.error "✗ Mailjet rechazó el envío"
+      raise "Mailjet delivery failed"
     end
 
     response
   rescue StandardError => e
-    Rails.logger.error "✗ Error en MailjetDeliveryMethod: #{e.message}"
-    Rails.logger.error e.backtrace.first(5).join("\n")
+    Rails.logger.error "✗ Error en MailjetDeliveryMethod: #{e.class.name}"
     raise e
   end
 end

@@ -52,9 +52,9 @@ class FirebasePushService
     response = HTTParty.post(FCM_ENDPOINT, headers: headers, body: payload.to_json)
     # Manejo de errores
     if response.code != 200
-      Rails.logger.error "❌ FCM Error: Code=#{response.code}, Body=#{response.body}, Payload=#{payload.to_json}"
+      Rails.logger.error "❌ FCM Error: Code=#{response.code}"
     else
-      Rails.logger.info "✅ FCM Success: Code=#{response.code}, Body=#{response.body}"
+      Rails.logger.info "✅ FCM Success: Code=#{response.code}"
     end
 
     response

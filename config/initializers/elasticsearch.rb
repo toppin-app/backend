@@ -35,6 +35,6 @@ unless Rails.env.test?
       Rails.logger.warn "❌ Elasticsearch connection failed!"
     end
   rescue => e
-    Rails.logger.warn "❌ Elasticsearch connection error: #{e.message}"
+    Rails.logger.warn "❌ Elasticsearch connection error: #{e.class.name}"
   end
 end

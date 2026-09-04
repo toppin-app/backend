@@ -21,7 +21,7 @@ Rails.application.config.after_initialize do
       
       Rails.logger.info "✅ Test log sent to Elasticsearch index: #{index_name}"
     rescue => e
-      Rails.logger.error "❌ Failed to send test log to Elasticsearch: #{e.message}"
+      Rails.logger.error "❌ Failed to send test log to Elasticsearch: #{e.class.name}"
     end
   else
     Rails.logger.error "❌ Elasticsearch client not initialized"

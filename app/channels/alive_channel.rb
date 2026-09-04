@@ -4,7 +4,7 @@ class AliveChannel < ApplicationCable::Channel
     redis.sadd("online_users", current_user.id)
     # Sincronizar estado de conexión con la base de datos
     current_user.update_columns(is_connected: true, last_connection: DateTime.now)
-    Rails.logger.info("[AliveChannel] Usuario conectado: #{current_user.id}")
+    Rails.logger.info("[AliveChannel] Usuario conectado")
     notify_matches_about_status_change
   end
 
@@ -12,7 +12,7 @@ class AliveChannel < ApplicationCable::Channel
     redis.srem("online_users", current_user.id)
     # Sincronizar desconexión con la base de datos
     current_user.update_columns(is_connected: false, last_connection: DateTime.now)
-    Rails.logger.info("[AliveChannel] Usuario desconectado: #{current_user.id}")
+    Rails.logger.info("[AliveChannel] Usuario desconectado")
     notify_matches_about_status_change
   end
 

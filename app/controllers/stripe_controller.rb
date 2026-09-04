@@ -90,7 +90,7 @@ class StripeController < ApplicationController
       started_at: Time.current
     )
 
-    Rails.logger.info {subscription.latest_invoice}
+    Rails.logger.info "Stripe payment session created for a subscription"
 
     render json: {
       customer: customer.id,

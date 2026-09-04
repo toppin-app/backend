@@ -46,7 +46,7 @@ class PhoneVerificationsController < ApplicationController
       verification = PhoneVerification.create_for_phone(phone_number)
 
       # Enviar SMS con Twilio (comentado temporalmente para desarrollo)
-      Rails.logger.info "⚠️ SMS desactivado - Código de verificación: #{verification.verification_code}"
+      Rails.logger.info "⚠️ SMS desactivado - Código de verificación generado"
 
       render json: {
         status: 200,
@@ -57,7 +57,7 @@ class PhoneVerificationsController < ApplicationController
       }, status: :ok
 
     rescue StandardError => e
-      Rails.logger.error "Error al enviar código de verificación: #{e.message}"
+      Rails.logger.error "Error al enviar código de verificación: #{e.class.name}"
       render json: { 
         status: 500, 
         error: t('phone_verifications.errors.send_error')
@@ -184,9 +184,9 @@ class PhoneVerificationsController < ApplicationController
       body: message_body
     )
     
-    Rails.logger.info "SMS enviado a #{phone_number}"
+    Rails.logger.info "SMS de verificación enviado"
   rescue Twilio::REST::RestError => e
-    Rails.logger.error "Error de Twilio: #{e.message}"
+    Rails.logger.error "Error de Twilio: #{e.class.name}"
     raise e
   end
 

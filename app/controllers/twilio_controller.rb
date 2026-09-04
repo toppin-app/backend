@@ -16,9 +16,6 @@ class TwilioController < ApplicationController
         .conversations(params[:ChannelSid]).fetch
 
 
-        			logger.info message.inspect
-
-
               unique_name =  message.unique_name.split("@")
               sender = params[:ClientIdentity]
 
@@ -49,11 +46,7 @@ class TwilioController < ApplicationController
          sender = User.find(params[:ClientIdentity].to_i)
 
 
-         logger.info "RECEPTOR: "+receiver.inspect
-
 		 umr = UserMatchRequest.find_by(twilio_conversation_sid: params[:ChannelSid])
-
-		 logger.info "UMR FOUND:: "+umr.inspect
 		 if umr
 			if !umr.is_match
 				umr.update(is_match: true, match_date: DateTime.now) 
@@ -64,7 +57,7 @@ class TwilioController < ApplicationController
 
 
 		SendChatNotificationJob.perform_later(receiver.id, sender.id)
-		logger.info "Notification sent to user: "+receiver.id.to_s
+		logger.info "Chat notification queued"
 
 	      
 
@@ -100,8 +93,6 @@ class TwilioController < ApplicationController
 
 			# Generate the token
 			token = token.to_jwt
-
-			logger.info token.inspect
 
 			render json: token.as_json
 
@@ -166,7 +157,7 @@ class TwilioController < ApplicationController
                          identity: user_id1,
                        )
        rescue
-       	logger.info "Error adding participant 1 "+user_id1.inspect
+	      logger.info "Error adding first conversation participant"
        end
 
 
@@ -178,7 +169,7 @@ class TwilioController < ApplicationController
                          identity: user_id2,
                        )
        rescue
-       	logger.info "Error adding participant 2 "+user_id2.inspect
+	      logger.info "Error adding second conversation participant"
        end
 
 

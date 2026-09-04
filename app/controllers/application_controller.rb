@@ -10,7 +10,6 @@ class ApplicationController < ActionController::Base
      after_action :log_response_body
 
      def set_titles
-    #  logger.info request.authorization.inspect
         @meta_title = APP_CONFIG["default_meta_title"]
      end
 
@@ -51,24 +50,19 @@ class ApplicationController < ActionController::Base
       end
    end
 
-   # Loguear parámetros del request
+   # Log only parameter names. Values can include credentials or personal data.
    def log_request_params
-      filtered_params = params.except(:controller, :action, :format).to_unsafe_h
-      Rails.logger.info "📥 REQUEST PARAMS [#{controller_name}##{action_name}]: #{filtered_params.inspect}"
+      parameter_keys = request.filtered_parameters.except('controller', 'action', 'format').keys
+      Rails.logger.info "📥 REQUEST [#{controller_name}##{action_name}] parameter_keys=#{parameter_keys.join(',')}"
    rescue => e
-      Rails.logger.error "Error logging request params: #{e.message}"
+      Rails.logger.error "Error logging request metadata: #{e.class.name}"
    end
 
-   # Loguear el body de la respuesta
+   # Response bodies can contain access tokens, payment secrets or personal data.
    def log_response_body
-      if response.body.present? && response.content_type&.include?('json')
-         body_preview = response.body.length > 1000 ? "#{response.body[0..1000]}... (truncated)" : response.body
-         Rails.logger.info "📤 RESPONSE [#{controller_name}##{action_name}] Status: #{response.status}: #{body_preview}"
-      else
-         Rails.logger.info "📤 RESPONSE [#{controller_name}##{action_name}] Status: #{response.status} (non-JSON or empty)"
-      end
+      Rails.logger.info "📤 RESPONSE [#{controller_name}##{action_name}] status=#{response.status} media_type=#{response.media_type || 'none'}"
    rescue => e
-      Rails.logger.error "Error logging response: #{e.message}"
+      Rails.logger.error "Error logging response metadata: #{e.class.name}"
    end
 
 

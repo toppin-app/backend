@@ -3,6 +3,10 @@ require 'elasticsearch'
 
 # Custom logger that sends logs to Elasticsearch
 class ElasticsearchLogger < Logger
+  JWT_PATTERN = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/.freeze
+  BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*/i.freeze
+  SENSITIVE_VALUE_PATTERN = /(authorization|bearer|token|secret|password|api[_-]?key|client[_-]?secret)(\s*[=:]\s*|\s+)[^\s,;\]\}]+/i.freeze
+
   def initialize
     super(STDOUT)
     @elasticsearch_client = $elasticsearch_client
@@ -23,7 +27,7 @@ class ElasticsearchLogger < Logger
       log_entry = {
         timestamp: Time.current.iso8601,
         level: severity_label(severity),
-        message: message.to_s,
+        message: sanitized_message(message),
         progname: progname,
         environment: Rails.env,
         application: 'toppin-backend',
@@ -45,9 +49,16 @@ class ElasticsearchLogger < Logger
       )
     rescue => e
       # Fallback to STDOUT if Elasticsearch fails
-      STDOUT.puts "Failed to log to Elasticsearch: #{e.message}"
-      STDOUT.puts "Original log: #{severity_label(severity)} - #{message}"
+      STDOUT.puts "Failed to log to Elasticsearch: #{e.class.name}"
     end
+  end
+
+  def sanitized_message(message)
+    message
+      .to_s
+      .gsub(JWT_PATTERN, '[FILTERED]')
+      .gsub(BEARER_PATTERN, 'Bearer [FILTERED]')
+      .gsub(SENSITIVE_VALUE_PATTERN, '\\1\\2[FILTERED]')
   end
 
   def severity_label(severity)
@@ -71,19 +82,10 @@ Rails.application.configure do
   config.lograge.keep_original_rails_log = false
   
   config.lograge.custom_payload do |controller|
-    payload = {
+    {
       host: controller.request.host,
-      user_agent: controller.request.user_agent,
-      ip: controller.request.remote_ip,
-      referer: controller.request.referer
+      request_id: controller.request.request_id
     }
-    
-    # Add user info if available
-    if controller.respond_to?(:current_user) && controller.current_user
-      payload[:user_id] = controller.current_user.id
-    end
-    
-    payload
   end
 
   config.lograge.custom_options = lambda do |event|

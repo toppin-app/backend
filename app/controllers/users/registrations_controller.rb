@@ -168,10 +168,9 @@ class Users::RegistrationsController < Devise::RegistrationsController
             # Enviar email de bienvenida
             begin
                 WelcomeMailer.welcome_email(resource).deliver_now
-                Rails.logger.info "Email de bienvenida enviado a: #{resource.email}"
+                Rails.logger.info "Email de bienvenida enviado"
             rescue StandardError => e
-                Rails.logger.error "Error enviando email de bienvenida: #{e.message}"
-                Rails.logger.error e.backtrace.join("\n")
+                Rails.logger.error "Error enviando email de bienvenida: #{e.class.name}"
                 # No lanzamos error para no interrumpir el registro
             end
             

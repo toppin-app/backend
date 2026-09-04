@@ -23,7 +23,7 @@ class ElasticsearchRequestLogger
   rescue => e
     end_time = Time.current
     duration = ((end_time - start_time) * 1000).round(2)
-    log_request(request, 500, duration, start_time, e.message)
+    log_request(request, 500, duration, start_time, e.class.name)
     raise e
   end
 
@@ -44,7 +44,7 @@ class ElasticsearchRequestLogger
 
     Rails.logger.info "✅ Elasticsearch middleware initialized successfully"
   rescue => e
-    Rails.logger.error "❌ Failed to initialize Elasticsearch client: #{e.message}"
+    Rails.logger.error "❌ Failed to initialize Elasticsearch client: #{e.class.name}"
     @elasticsearch_client = nil
   end
 
@@ -63,13 +63,8 @@ class ElasticsearchRequestLogger
         '@timestamp' => timestamp.iso8601,
         'method' => request.request_method,
         'path' => request.path,
-        'full_path' => request.fullpath,
-        'query_string' => request.query_string,
         'status_code' => status,
         'duration_ms' => duration,
-        'ip_address' => request.ip,
-        'user_agent' => request.user_agent,
-        'referer' => request.referer,
         'host' => request.host,
         'content_type' => request.content_type,
         'content_length' => request.content_length,
@@ -83,8 +78,6 @@ class ElasticsearchRequestLogger
       # ✅ Añadir geolocalización manual (mismo formato que GeoIP)
       if location_data
         log_entry['geoip'] = {
-          'location' => location_data[:location],
-          'city_name' => location_data[:city],
           'country_name' => location_data[:country],
           'country_iso_code' => location_data[:country_code]
         }
@@ -116,8 +109,8 @@ class ElasticsearchRequestLogger
       )
 
     rescue => e
-      Rails.logger.error "Failed to log to Elasticsearch: #{e.message}"
-      Rails.logger.info "#{request.request_method} #{request.fullpath} - #{status} (#{duration}ms)"
+      Rails.logger.error "Failed to log to Elasticsearch: #{e.class.name}"
+      Rails.logger.info "#{request.request_method} #{request.path} - #{status} (#{duration}ms)"
     end
   end
 
@@ -186,7 +179,7 @@ class ElasticsearchRequestLogger
         # Cachear por 24 horas (las IPs no cambian de ubicación frecuentemente)
         Rails.cache.write(cache_key, location_data, expires_in: 24.hours)
         
-        Rails.logger.info "✅ Geolocalización obtenida para #{ip}: #{data['city']}, #{data['country_name']}"
+        Rails.logger.info "✅ Geolocalización obtenida para #{data['country_name']}"
         return location_data
       else
         Rails.logger.warn "⚠️ Error en API de geolocalización: #{response.code}"
@@ -194,7 +187,7 @@ class ElasticsearchRequestLogger
       end
       
     rescue => e
-      Rails.logger.error "❌ Error obteniendo geolocalización: #{e.message}"
+      Rails.logger.error "❌ Error obteniendo geolocalización: #{e.class.name}"
       return default_location
     end
   end

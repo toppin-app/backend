@@ -13,7 +13,7 @@ class SpotifyController < ApplicationController
       { 'Authorization' => "Basic #{auth}", 'Content-Type' => 'application/x-www-form-urlencoded' }
     )
 
-    Rails.logger.info response.body
+    Rails.logger.info "Spotify token request completed with status #{response.status}"
     render json: JSON.parse(response.body)
   end
 end
