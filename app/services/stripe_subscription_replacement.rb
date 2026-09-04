@@ -5,8 +5,9 @@ class StripeSubscriptionReplacement
 
   def self.active_subscription_ids(customer_id, subscriptions: Stripe::Subscription)
     subscriptions
-      .list(customer: customer_id, status: "active", limit: 100)
+      .list(customer: customer_id, status: "all", limit: 100)
       .data
+      .select { |subscription| REPLACEABLE_STATUSES.include?(value(subscription, :status).to_s) }
       .map { |subscription| value(subscription, :id) }
       .compact
       .uniq

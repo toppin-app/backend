@@ -47,8 +47,35 @@ class StripeSubscriptionReplacementTest < Minitest::Test
     assert_equal ["sub_old"], ids
     assert_equal [], gateway.cancelled_ids
     assert_equal [
-      { customer: "cus_123", status: "active", limit: 100 }
+      { customer: "cus_123", status: "all", limit: 100 }
     ], gateway.list_calls
+  end
+
+  def test_captures_every_replaceable_state_and_ignores_terminal_or_incomplete_ones
+    gateway = FakeSubscriptions.new(
+      listed: [
+        Subscription.new(id: "sub_active", status: "active"),
+        Subscription.new(id: "sub_trialing", status: "trialing"),
+        Subscription.new(id: "sub_past_due", status: "past_due"),
+        Subscription.new(id: "sub_unpaid", status: "unpaid"),
+        Subscription.new(id: "sub_paused", status: "paused"),
+        Subscription.new(id: "sub_incomplete", status: "incomplete"),
+        Subscription.new(id: "sub_cancelled", status: "canceled")
+      ]
+    )
+
+    ids = StripeSubscriptionReplacement.active_subscription_ids(
+      "cus_123",
+      subscriptions: gateway
+    )
+
+    assert_equal %w[
+      sub_active
+      sub_trialing
+      sub_past_due
+      sub_unpaid
+      sub_paused
+    ], ids
   end
 
   def test_metadata_records_only_unique_previous_subscription_ids
@@ -103,6 +130,19 @@ class StripeSubscriptionReplacementTest < Minitest::Test
 
     assert_equal [], gateway.retrieved_ids
     assert_equal [], gateway.cancelled_ids
+  end
+
+  def test_parses_replacement_metadata_from_symbol_keys
+    subscription = {
+      metadata: {
+        replaces_subscription_ids: "sub_first, sub_second,sub_first"
+      }
+    }
+
+    assert_equal(
+      %w[sub_first sub_second],
+      StripeSubscriptionReplacement.replaced_subscription_ids(subscription)
+    )
   end
 
   def test_detects_another_live_subscription_when_an_old_one_is_deleted
