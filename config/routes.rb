@@ -160,6 +160,7 @@ Rails.application.routes.draw do
 
 
   root to: 'users#index'
+  get '/session', to: 'session_status#show'
 
   get '/test' => 'admin#index'
   
