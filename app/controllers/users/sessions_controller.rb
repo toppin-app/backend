@@ -1,5 +1,6 @@
 class Users::SessionsController < Devise::SessionsController
     prepend_before_action :require_no_authentication, only: [:new, :create]
+    prepend_before_action :limit_login_attempts, only: :create
     skip_before_action :save_last_connection
     skip_before_action :check_if_user_blocked
     #skip_before_action :verify_authenticity_token, :only => [:create, :new]
@@ -71,6 +72,25 @@ class Users::SessionsController < Devise::SessionsController
 
 
     private
+
+    def limit_login_attempts
+      envelope = params[:user]
+      email = envelope.respond_to?(:permit) ? envelope[:email] : nil
+      retry_after = LoginAttemptLimiter.check(ip: request.remote_ip, email: email)
+      return if retry_after <= 0
+
+      response.headers['Retry-After'] = retry_after.to_s
+      response.headers['Cache-Control'] = 'no-store'
+      respond_to do |format|
+        format.json do
+          render json: { error: 'Too many login attempts. Please try again later.',
+                         code: 'login_rate_limited', retry_after: retry_after }, status: :too_many_requests
+        end
+        format.html do
+          render plain: 'Too many login attempts. Please try again later.', status: :too_many_requests
+        end
+      end
+    end
 
 
 
