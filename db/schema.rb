@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_07_16_110000) do
+ActiveRecord::Schema.define(version: 2026_09_15_130000) do
 
   create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "android_last_version"
@@ -859,6 +859,19 @@ ActiveRecord::Schema.define(version: 2026_07_16_110000) do
     t.index ["user_id"], name: "index_purchases_on_user_id"
   end
 
+  create_table "purchases_stripes", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "payment_id", null: false
+    t.string "status", default: "pending", null: false
+    t.string "product_key", null: false
+    t.integer "prize"
+    t.datetime "started_at"
+    t.integer "increment_value"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_purchases_stripes_on_user_id"
+  end
+
   create_table "rpush_apps", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "environment"
@@ -1153,6 +1166,8 @@ ActiveRecord::Schema.define(version: 2026_07_16_110000) do
     t.float "ratio_likes", default: 0.0
     t.boolean "deleted_account", default: false, null: false
     t.boolean "fake_user", default: false, null: false
+    t.string "stripe_subscription_id"
+    t.bigint "stripe_subscription_created_at"
     t.index ["created_at"], name: "idx_users_created_at"
     t.index ["current_subscription_name"], name: "idx_users_subscription"
     t.index ["deleted_account", "fake_user", "created_at"], name: "idx_users_analytics_growth"
@@ -1312,6 +1327,7 @@ ActiveRecord::Schema.define(version: 2026_07_16_110000) do
   add_foreign_key "info_item_values", "info_item_categories"
   add_foreign_key "interests", "interest_categories"
   add_foreign_key "purchases", "users"
+  add_foreign_key "purchases_stripes", "users"
   add_foreign_key "spotify_user_data", "users", name: "fk_spotify_user_data_user_id"
   add_foreign_key "user_favorites", "users"
   add_foreign_key "user_favorites", "venues"

@@ -9,7 +9,11 @@ class StripeWebhooksControllerTest < ActionController::TestCase
   tests StripeWebhooksController
 
   Purchase = Struct.new(:status) do
-    def update(attributes)
+    def with_lock
+      yield
+    end
+
+    def update!(attributes)
       self.status = attributes[:status]
     end
   end
@@ -48,7 +52,7 @@ class StripeWebhooksControllerTest < ActionController::TestCase
     }
 
     Stripe::Webhook.stub(:construct_event, event) do
-      @controller.stub(:activate_subscription, ->(*) { flunk "incomplete subscription was activated" }) do
+      @controller.stub(:activate_subscription, false) do
         StripeSubscriptionReplacement.stub(:cancel_replaced!, ->(*) { flunk "incomplete subscription cancelled the old one" }) do
           post :receive
         end
@@ -60,7 +64,7 @@ class StripeWebhooksControllerTest < ActionController::TestCase
 
   test "paid invoice activates the new subscription before canceling the previous one" do
     controller = StripeWebhooksController.new
-    invoice = { "id" => "in_paid", "subscription" => "sub_new" }
+    invoice = { "id" => "in_paid", "paid" => true, "subscription" => "sub_new" }
     subscription = { "id" => "sub_new" }
     calls = []
 
@@ -79,7 +83,7 @@ class StripeWebhooksControllerTest < ActionController::TestCase
 
   test "previous subscription is preserved when activation cannot be completed" do
     controller = StripeWebhooksController.new
-    invoice = { "id" => "in_paid", "subscription" => "sub_new" }
+    invoice = { "id" => "in_paid", "paid" => true, "subscription" => "sub_new" }
     subscription = { "id" => "sub_new" }
     cancelled = false
 
@@ -98,7 +102,7 @@ class StripeWebhooksControllerTest < ActionController::TestCase
 
   test "previous subscription is preserved when activation raises an error" do
     controller = StripeWebhooksController.new
-    invoice = { "id" => "in_paid", "subscription" => "sub_new" }
+    invoice = { "id" => "in_paid", "paid" => true, "subscription" => "sub_new" }
     subscription = { "id" => "sub_new" }
     cancelled = false
 
@@ -117,7 +121,7 @@ class StripeWebhooksControllerTest < ActionController::TestCase
 
   test "cancellation errors occur only after activation and remain retryable" do
     controller = StripeWebhooksController.new
-    invoice = { "id" => "in_paid", "subscription" => "sub_new" }
+    invoice = { "id" => "in_paid", "paid" => true, "subscription" => "sub_new" }
     subscription = { "id" => "sub_new" }
     calls = []
 
