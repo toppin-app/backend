@@ -73,6 +73,72 @@ class LikesFlowTest < ActionDispatch::IntegrationTest
     assert_equal 5, @actor.reload.likes_left
   end
 
+  test 'changing a pending like to dislike preserves one rejected decision' do
+    swipe
+    row = UserMatchRequest.last
+    assert_no_difference('UserMatchRequest.count') { swipe(is_like: false) }
+    assert_response :success
+    assert_equal [false, true, false], [row.reload.is_like, row.is_rejected, row.is_match]
+    assert_equal 4, @actor.reload.likes_left
+  end
+
+  test 'KNOWN BUG disliking a reciprocal match rewrites the other users like' do
+    incoming = request_from(@target, @actor)
+    swipe
+    assert incoming.reload.is_match
+    swipe(is_like: false)
+    assert_response :success
+    assert_not UserMatchRequest.where(user_id: @actor.id, target_user: @target.id).exists?
+    assert_equal [false, true, false], [incoming.reload.is_like, incoming.is_rejected, incoming.is_match]
+  end
+
+  test 'changing an outgoing confirmed match to dislike splits the decisions' do
+    original = UserMatchRequest.create!(user: @actor, target_user: @target.id,
+                                        is_like: true, is_match: true)
+    swipe(is_like: false)
+    assert_response :success
+    mine = UserMatchRequest.find_by!(user_id: @actor.id, target_user: @target.id)
+    theirs = UserMatchRequest.find_by!(user_id: @target.id, target_user: @actor.id)
+    assert_equal original.id, mine.id
+    assert_equal [false, true, false], [mine.is_like, mine.is_rejected, mine.is_match]
+    assert_equal [true, false, false], [theirs.is_like, theirs.is_rejected, theirs.is_match]
+  end
+
+  test 'repeat dislike leaves a single record and never consumes ordinary likes' do
+    2.times { swipe(is_like: false) }
+    assert_response :success
+    assert_equal 1, UserMatchRequest.where(user_id: @actor.id, target_user: @target.id).count
+    assert_equal 5, @actor.reload.likes_left
+  end
+
+  test 'KNOWN BUG disliking an incoming like rewrites the senders decision' do
+    incoming = request_from(@target, @actor)
+    swipe(is_like: false)
+    assert_response :success
+    assert_equal [false, true], [incoming.reload.is_like, incoming.is_rejected]
+    assert_not UserMatchRequest.where(user_id: @actor.id, target_user: @target.id).exists?
+  end
+
+  test 'KNOWN BUG reject endpoint creates a dislike attributed to another user' do
+    assert_difference('UserMatchRequest.count', 1) do
+      post '/reject_match.json', params: { user_id: @target.id }, as: :json
+    end
+    assert_response :success
+    row = UserMatchRequest.last
+    assert_equal [@target.id, @actor.id, false, true],
+                 [row.user_id, row.target_user, row.is_like, row.is_rejected]
+  end
+
+  test 'KNOWN BUG string boolean flags can prevent a reciprocal match' do
+    incoming = request_from(@target, @actor)
+    post '/send_match.json', params: {
+      target_user: @target.id, is_like: 'true',
+      is_superlike: 'false', is_sugar_sweet: 'false'
+    }, as: :json
+    assert_response :success
+    assert_not incoming.reload.is_match
+  end
+
   test 'likes list excludes matched rejected and blocked senders' do
     visible = request_from(@target, @actor)
     third = User.create!(email: 'likes-third@example.com', password: 'Secure123!')
