@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_09_15_130000) do
+ActiveRecord::Schema.define(version: 2026_10_07_120000) do
 
   create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "android_last_version"
@@ -1122,6 +1122,7 @@ ActiveRecord::Schema.define(version: 2026_09_15_130000) do
     t.string "current_subscription_name"
     t.datetime "current_subscription_expires"
     t.datetime "last_superlike_given"
+    t.datetime "last_weekly_super_sweet_given"
     t.integer "likes_left", default: 50
     t.datetime "last_like_given"
     t.integer "sign_in_count", default: 0

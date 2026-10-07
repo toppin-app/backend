@@ -1558,13 +1558,14 @@ end
   end
 
 
-  # Regenera los superlikes de los usuarios (1 cada 24h)
+  # Mantiene el refill gratuito de 7 días y comparte el grant semanal de pago.
   def cron_regenerate_superlike
     unless params[:token] == CRON_TOKEN
       render plain: "Unauthorized", status: :unauthorized and return
     end 
-    User.where(superlike_available: 0, current_subscription_name: nil).where("last_superlike_given <= ?", DateTime.now-7.days).update_all(superlike_available:1)
-    User.where(superlike_available: 0).where.not(current_subscription_name: nil).where("last_superlike_given <= ?", DateTime.now-7.days).update_all(superlike_available:5)
+    now = Time.current
+    User.where(superlike_available: 0, current_subscription_name: nil).where("last_superlike_given <= ?", now-168.hours).update_all(superlike_available:1)
+    SubscriptionConsumableRegeneration.weekly(now: now)
 
     render json: "OK".to_json
   end
@@ -1650,15 +1651,7 @@ def cron_regenerate_monthly_boost
     render plain: "Unauthorized", status: :unauthorized and return
   end
 
-  User.where(current_subscription_name: ['premium', 'supreme']).find_each do |user|
-    last_boost = user.last_monthly_boost_given || DateTime.new(2000)
-    if last_boost < Date.today.beginning_of_month
-      user.update(
-        boost_available: user.boost_available.to_i + 1,
-        last_monthly_boost_given: DateTime.now
-      )
-    end
-  end
+  SubscriptionConsumableRegeneration.monthly
 
   render json: "OK".to_json
 end
@@ -1691,21 +1684,13 @@ end
   end
 
 
-    # Regenera 5 super_sweet a los usuarios premium o supreme una vez por semana
+  # Garantiza un mínimo de 5 super_sweet una vez por semana, sin reducir compras.
   def cron_regenerate_weekly_super_sweet
     unless params[:token] == CRON_TOKEN
       render plain: "Unauthorized", status: :unauthorized and return
     end
 
-    User.where(current_subscription_name: ['premium', 'supreme']).find_each do |user|
-      last_weekly_super_like = user.last_superlike_given || DateTime.new(2000)
-      if last_weekly_super_like < Date.today.beginning_of_week
-        user.update(
-          superlike_available: +5,
-          last_superlike_given: DateTime.now
-        )
-      end
-    end
+    SubscriptionConsumableRegeneration.weekly
 
     render json: "OK".to_json
   end
