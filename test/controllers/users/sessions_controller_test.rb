@@ -4,6 +4,12 @@ require 'minitest/mock'
 class Users::SessionsControllerTest < ActionDispatch::IntegrationTest
   self.fixture_table_names = []
 
+  # Rate limiting has its own controller/service coverage. Keep these session
+  # tests independent of Redis counters left by other examples or repeated runs.
+  def run
+    LoginAttemptLimiter.stub(:check, 0) { super }
+  end
+
   setup do
     @password = 'Secure123!'
     @user = User.create!(
@@ -46,6 +52,36 @@ class Users::SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
     assert_equal 0, @user.reload.sign_in_count
     assert_nil response.headers['Authorization']
+
+    follow_redirect!
+
+    assert_select '[role="alert"]', text: 'Email o contraseña incorrectos.'
+  end
+
+  test 'dashboard login displays the rejection of a blocked account' do
+    @user.update!(blocked: true)
+
+    post '/users/sign_in', params: login_params(@user.email, @password)
+
+    assert_redirected_to new_user_session_path
+    follow_redirect!
+
+    assert_select '[role="alert"]', text: 'Tu cuenta ha sido bloqueada.'
+    assert_equal 0, @user.reload.sign_in_count
+  end
+
+  test 'dashboard login persists an administrator session across requests' do
+    @user.update!(admin: true, twilio_sid: 'existing-dashboard-identity')
+
+    post '/users/sign_in', params: login_params(@user.email, @password)
+
+    assert_redirected_to root_path
+    # Exercise real authentication, authorization and dashboard rendering; only
+    # asset lookup is isolated because unit/integration runs do not build packs.
+    Webpacker.manifest.stub(:lookup!, '/packs-test/application.js') { follow_redirect! }
+
+    assert_response :ok
+    assert_select '#admin-sidebar-toggle', count: 1
   end
 
   test 'email login returns the user and an authorization token' do

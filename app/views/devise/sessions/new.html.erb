@@ -8,6 +8,10 @@
   
   <h3><i class="fas fa-lock"></i>  Acceso restringido</h3>
 
+  <% if alert.present? %>
+    <div class="alert alert-danger" role="alert"><%= alert %></div>
+  <% end %>
+
   <div class="field">
     <b><%= f.label :email %></b><br />
     <%= f.email_field :email, autofocus: true, autocomplete: "email", class: 'form-control' %>
