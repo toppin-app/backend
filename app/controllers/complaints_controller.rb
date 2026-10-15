@@ -1,4 +1,5 @@
 class ComplaintsController < ApplicationController
+  before_action :require_complaint_admin!, except: :create
   before_action :set_complaint, only: %i[ show edit update destroy ]
 
   # GET /complaints or /complaints.json
@@ -35,12 +36,14 @@ class ComplaintsController < ApplicationController
 
   # POST /complaints or /complaints.json
   def create
-    @complaint = Complaint.new(complaint_params)
-    @complaint.user_id = current_user.id
+    @complaint = current_user.complaints.build(submission_params)
 
     respond_to do |format|
       if @complaint.save
-        format.html { redirect_to @complaint, notice: "Complaint was successfully created." }
+        format.html do
+          destination = current_user.admin? ? @complaint : show_user_path(id: current_user.id)
+          redirect_to destination, notice: "Complaint was successfully created."
+        end
         format.json { render :show, status: :created, location: @complaint }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -52,7 +55,7 @@ class ComplaintsController < ApplicationController
   # PATCH/PUT /complaints/1 or /complaints/1.json
   def update
     respond_to do |format|
-      if @complaint.update(complaint_params)
+      if @complaint.update(moderation_params)
         # Si la acción es bloquear usuario, marcar al usuario como bloqueado
         # El block_reason_key se guarda automáticamente via after_save callback en Complaint
         if @complaint.action_taken == 'user_blocked' && @complaint.reported_user.present?
@@ -78,13 +81,26 @@ class ComplaintsController < ApplicationController
   end
 
   private
+    def require_complaint_admin!
+      return if current_user&.admin?
+
+      respond_to do |format|
+        format.json { render json: { error: 'Acceso denegado' }, status: :forbidden }
+        format.any { head :forbidden }
+      end
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_complaint
       @complaint = Complaint.find(params[:id])
     end
 
     # Only allow a list of trusted parameters through.
-    def complaint_params
-      params.require(:complaint).permit(:user_id, :to_user_id, :reason, :text, :action_taken, :reason_key, :block_user)
+    def submission_params
+      params.require(:complaint).permit(:to_user_id, :reason, :text, :reason_key, :block_user)
+    end
+
+    def moderation_params
+      params.require(:complaint).permit(:action_taken)
     end
 end

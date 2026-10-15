@@ -87,6 +87,11 @@ class UsersController < ApplicationController
   # GET /users/1
   # GET /users/1.json
   def show
+    if params.key?(:complaints_received_page) && !current_user.admin?
+      head :forbidden
+      return
+    end
+
     if current_user.admin?
       @user = User.find(params[:id])
     else
@@ -111,7 +116,9 @@ class UsersController < ApplicationController
     @complaints_made = @user.complaints.recent.paginate(page: params[:complaints_made_page], per_page: 10)
     
     # Paginación para denuncias recibidas
-    @complaints_received = @user.received_complaints.recent.paginate(page: params[:complaints_received_page], per_page: 10)
+    if current_user.admin?
+      @complaints_received = @user.received_complaints.recent.paginate(page: params[:complaints_received_page], per_page: 10)
+    end
     
     # Paginación para usuarios bloqueados por este usuario
     @blocked_users = @user.blocks.includes(:blocked_user).order(created_at: :desc).paginate(page: params[:blocked_users_page], per_page: 10)

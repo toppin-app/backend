@@ -11,25 +11,29 @@
     </div>
   <% end %>
 
-  <div class="field">
-    <%= form.label :user_id %>
-    <%= form.text_field :user_id %>
-  </div>
-
-  <div class="field">
-    <%= form.label :to_user_id %>
-    <%= form.number_field :to_user_id %>
-  </div>
-
-  <div class="field">
-    <%= form.label :reason %>
-    <%= form.text_field :reason %>
-  </div>
-
-  <div class="field">
-    <%= form.label :text %>
-    <%= form.text_area :text %>
-  </div>
+  <% if complaint.persisted? %>
+    <p><strong>User:</strong> <%= complaint.user_id %></p>
+    <p><strong>To user:</strong> <%= complaint.to_user_id %></p>
+    <p><strong>Reason:</strong> <%= complaint.reason %></p>
+    <p><strong>Text:</strong> <%= complaint.text %></p>
+    <div class="field">
+      <%= form.label :action_taken %>
+      <%= form.select :action_taken, Complaint::ACTION_OPTIONS %>
+    </div>
+  <% else %>
+    <div class="field">
+      <%= form.label :to_user_id %>
+      <%= form.number_field :to_user_id %>
+    </div>
+    <div class="field">
+      <%= form.label :reason %>
+      <%= form.text_field :reason %>
+    </div>
+    <div class="field">
+      <%= form.label :text %>
+      <%= form.text_area :text %>
+    </div>
+  <% end %>
 
   <div class="actions">
     <%= form.submit %>
