@@ -1,12 +1,17 @@
 FROM ruby:3.0.6-slim-bullseye
 
-RUN apt-get update -o Acquire::Retries=5 -qq \
+# Bullseye security packages moved to Debian's signed archive. Keep Ruby and
+# the still-available main mirror unchanged until the base upgrade is validated.
+RUN sed -i \
+        -e 's|deb.debian.org/debian-security|archive.debian.org/debian-security|g' \
+        -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list \
+    && apt-get update -o Acquire::Retries=5 -o APT::Update::Error-Mode=any -qq \
     && apt-get install -y --fix-missing --no-install-recommends -o Acquire::Retries=5 \
         build-essential libpq-dev curl default-libmysqlclient-dev imagemagick ca-certificates gnupg \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update -o Acquire::Retries=5 -qq \
+    && apt-get update -o Acquire::Retries=5 -o APT::Update::Error-Mode=any -qq \
     && apt-get install -y --fix-missing --no-install-recommends -o Acquire::Retries=5 nodejs \
     && npm install -g yarn \
     && rm -rf /var/lib/apt/lists/*
