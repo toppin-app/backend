@@ -1,4 +1,5 @@
 class PublisController < ApplicationController
+  before_action :check_admin, only: %i[ new edit create update destroy ]
   before_action :set_publi, only: %i[ show edit update destroy ]
 
   # GET /publis or /publis.json

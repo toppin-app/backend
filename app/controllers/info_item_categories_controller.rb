@@ -1,4 +1,5 @@
 class InfoItemCategoriesController < ApplicationController
+  before_action :check_admin, only: %i[ new edit create update destroy ]
   before_action :set_info_item_category, only: %i[ show edit update destroy ]
 
   # GET /info_item_categories or /info_item_categories.json

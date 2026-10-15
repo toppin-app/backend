@@ -1,6 +1,7 @@
 class AppVersionsController < ApplicationController
   skip_before_action :authenticate_user!, only: [:show]
   skip_before_action :verify_authenticity_token, only: [:show]
+  before_action :check_admin, only: %i[ index edit update ]
 
   def show
     result = ActiveRecord::Base.connection.exec_query("SELECT * FROM app_versions LIMIT 1")

@@ -1,4 +1,5 @@
 class InfoItemValuesController < ApplicationController
+  before_action :check_admin, only: %i[ new edit create update destroy ]
   before_action :set_info_item_value, only: %i[ show edit update destroy ]
 
   # GET /info_item_values or /info_item_values.json
