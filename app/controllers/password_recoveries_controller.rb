@@ -1,7 +1,7 @@
 class PasswordRecoveriesController < ApplicationController
   skip_before_action :authenticate_user!, only: [:request_code, :verify_code, :reset_password]
   skip_before_action :verify_authenticity_token, only: [:request_code, :verify_code, :reset_password]
-  before_action :set_locale
+  around_action :with_recovery_locale
 
   # POST /password_recoveries/request_code
   # Params: { email: "user@example.com", language: "ES" }
@@ -9,7 +9,7 @@ class PasswordRecoveriesController < ApplicationController
     email = params[:email]
 
     # Validar que se envió el email
-    unless email.present?
+    unless email.is_a?(String) && email.present?
       render json: { status: 400, error: t('password_recoveries.errors.email_required') }, status: :bad_request
       return
     end
@@ -31,19 +31,21 @@ class PasswordRecoveriesController < ApplicationController
       return
     end
 
-    # Verificar cooldown
-    unless PasswordRecovery.can_request_new_code?(email)
-      remaining_seconds = PasswordRecovery.cooldown_remaining(email)
-      render json: { 
-        status: 429, 
-        error: t('password_recoveries.errors.cooldown', seconds: remaining_seconds)
-      }, status: :too_many_requests
-      return
-    end
-
     begin
-      # Crear nueva recuperación
-      recovery = PasswordRecovery.create_for_email(email)
+      recovery = nil
+      remaining_seconds = nil
+      user.with_lock do
+        if PasswordRecovery.can_request_new_code?(email)
+          recovery = PasswordRecovery.create_for_email(email)
+        else
+          remaining_seconds = PasswordRecovery.cooldown_remaining(email)
+        end
+      end
+      unless recovery
+        render json: { status: 429, error: t('password_recoveries.errors.cooldown', seconds: remaining_seconds) },
+               status: :too_many_requests
+        return
+      end
 
       # Enviar email con el código usando Mailjet
       send_recovery_email(email, recovery.recovery_code, user.name)
@@ -71,18 +73,20 @@ class PasswordRecoveriesController < ApplicationController
     code = params[:code]
 
     # Validaciones
-    unless email.present? && code.present?
+    unless email.is_a?(String) && email.present? && code.present?
       render json: { status: 400, error: t('password_recoveries.errors.email_and_code_required') }, status: :bad_request
       return
     end
 
-    # Buscar la recuperación más reciente y válida para este email
-    recovery = PasswordRecovery.for_email(email)
-                               .where(verified: false)
-                               .order(created_at: :desc)
-                               .first
+    # Never fall back to an older recovery after the latest was verified.
+    user = User.find_by(email: email.downcase)
+    result = nil
+    user&.with_lock do
+      recovery = PasswordRecovery.for_email(email).order(created_at: :desc, id: :desc).lock.first
+      result = recovery.verify_code(code) if recovery
+    end
 
-    unless recovery
+    unless result
       render json: { 
         status: 404, 
         error: t('password_recoveries.errors.no_pending_recovery')
@@ -90,15 +94,13 @@ class PasswordRecoveriesController < ApplicationController
       return
     end
 
-    # Verificar el código
-    result = recovery.verify_code(code)
-
     if result[:success]
       render json: {
         status: 200,
         message: result[:message],
         email: email,
-        verified: true
+        verified: true,
+        recovery_token: result[:recovery_token]
       }, status: :ok
     else
       render json: {
@@ -110,13 +112,13 @@ class PasswordRecoveriesController < ApplicationController
   end
 
   # POST /password_recoveries/reset_password
-  # Params: { email: "user@example.com", new_password: "NewPass123!", language: "ES" }
+  # Accept a private token, or the verified code sent by older Mobile clients.
   def reset_password
     email = params[:email]
     new_password = params[:new_password]
 
     # Validaciones
-    unless email.present? && new_password.present?
+    unless email.is_a?(String) && email.present? && new_password.is_a?(String) && new_password.present?
       render json: { 
         status: 400, 
         error: t('password_recoveries.errors.email_and_password_required') 
@@ -124,53 +126,10 @@ class PasswordRecoveriesController < ApplicationController
       return
     end
 
-    # Buscar la recuperación verificada más reciente
-    recovery = PasswordRecovery.for_email(email)
-                               .where(verified: true)
-                               .where('expires_at > ?', Time.current)
-                               .order(created_at: :desc)
-                               .first
-
-    unless recovery
-      render json: { 
-        status: 403, 
-        error: t('password_recoveries.errors.not_verified'),
-        code: 'NOT_VERIFIED'
-      }, status: :forbidden
-      return
-    end
-
-    # Buscar el usuario
-    user = User.find_by(email: email.downcase, deleted_account: false)
-    unless user
-      render json: { 
-        status: 404, 
-        error: t('password_recoveries.errors.user_not_found')
-      }, status: :not_found
-      return
-    end
-
-    # Actualizar la contraseña
     begin
-      user.password = new_password
-      user.password_confirmation = new_password
-      
-      if user.save
-        # Marcar la recuperación como usada eliminándola
-        recovery.destroy
-
-        render json: {
-          status: 200,
-          message: t('password_recoveries.success.password_reset'),
-          email: email
-        }, status: :ok
-      else
-        render json: {
-          status: 400,
-          error: user.errors.full_messages.join(', ')
-        }, status: :bad_request
-      end
-
+      result = PasswordRecoveryReset.call(email: email, new_password: new_password,
+                                          recovery_token: params[:recovery_token], code: params[:code])
+      render json: result.body, status: result.status
     rescue StandardError => e
       Rails.logger.error "Error al resetear contraseña: #{e.class.name}"
       render json: { 
@@ -183,7 +142,7 @@ class PasswordRecoveriesController < ApplicationController
   private
 
   # Establecer el idioma basado en el parámetro language del request
-  def set_locale
+  def with_recovery_locale(&action)
     language = params[:language]&.upcase
     
     locale = case language
@@ -195,7 +154,7 @@ class PasswordRecoveriesController < ApplicationController
              else :es
              end
     
-    I18n.locale = locale
+    I18n.with_locale(locale, &action)
   end
 
   # Enviar email de recuperación usando Mailjet

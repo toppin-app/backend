@@ -48,6 +48,45 @@ class SensitiveLoggingTest < ActiveSupport::TestCase
     refute_includes sanitized, "eyJheader.eyJpayload.signature"
   end
 
+  test 'password recovery request filtering hides codes tokens and replacement passwords' do
+    filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
+    payload = { 'code' => '123456', 'recovery_code' => '654321', 'recovery_token' => 'private-reset-proof',
+                'new_password' => 'Replacement123!', 'language' => 'ES' }
+    filtered = filter.filter(payload)
+    %w[code recovery_code recovery_token new_password].each do |key|
+      assert_equal '[FILTERED]', filtered[key]
+    end
+    assert_equal 'ES', filtered['language']
+  end
+
+  test 'recovery persistence does not leak its code through ActiveRecord diagnostics' do
+    previous_logger = ActiveRecord::Base.logger
+    output = StringIO.new
+    ActiveRecord::Base.logger = ActiveSupport::Logger.new(output)
+    recovery = PasswordRecovery.create!(email: 'recovery-log@example.com', recovery_code: '918273',
+                                        expires_at: 10.minutes.from_now, verified: false, attempts: 0)
+    result = recovery.verify_code('918273')
+    assert_equal 0, User.where(email: 'public-diagnostic@example.com').count
+    assert result[:success]
+    refute_includes output.string, '918273'
+    refute_includes output.string, result.fetch(:recovery_token)
+    assert_includes output.string, 'public-diagnostic@example.com'
+    assert_includes output.string, '[FILTERED password recovery query]'
+    refute_includes output.string, 'Could not log'
+  ensure
+    ActiveRecord::Base.logger = previous_logger
+  end
+
+  test 'recovery SQL redaction preserves runtime accounting without mutating shared events' do
+    sql = "SELECT * FROM password_recoveries WHERE recovery_code = '918273'"
+    event = ActiveSupport::Notifications::Event.new('sql.active_record', 0, 0.25, 'synthetic',
+                                                   sql: sql, name: 'PasswordRecovery Load', binds: [])
+    before = ActiveRecord::LogSubscriber.runtime
+    ActiveRecord::LogSubscriber.new.sql(event)
+    assert_in_delta 250, ActiveRecord::LogSubscriber.runtime - before, 0.001
+    assert_equal sql, event.payload[:sql]
+  end
+
   test "HTTP logger records metadata without request values response bodies or personal network data" do
     previous_client = $elasticsearch_client
     client = CapturingElasticsearchClient.new

@@ -156,6 +156,14 @@ class PasswordRecoveriesControllerTest < ActionDispatch::IntegrationTest
     assert @owner.reload.valid_password?('Original123!')
   end
 
+  test 'recovery translation stays within its request instead of changing later requests' do
+    I18n.with_locale(:en) do
+      post '/password_recoveries/reset_password', params: { email: @owner.email, language: 'ES' }, as: :json
+      assert_response :bad_request
+      assert_equal :en, I18n.locale
+    end
+  end
+
   test 'unverified and expired recoveries cannot change the password' do
     [{ verified: false }, { verified: true, expires_at: 1.second.ago }].each do |attributes|
       recovery = create_recovery(**attributes)
@@ -192,9 +200,7 @@ class PasswordRecoveriesControllerTest < ActionDispatch::IntegrationTest
     assert PasswordRecovery.exists?(recovery.id)
   end
 
-  # T40: known vulnerability. There is no reset capability tied to the client
-  # that verified the code. These expectations must change when T40 is fixed.
-  test 'T40 characterization an anonymous client can reset using only a verified email' do
+  test 'an anonymous client cannot reset using only another clients verified email' do
     recovery = create_recovery
     verifier = open_session
     verifier.post '/password_recoveries/verify_code', params: {
@@ -202,25 +208,161 @@ class PasswordRecoveriesControllerTest < ActionDispatch::IntegrationTest
     }, as: :json
     assert_equal 200, verifier.response.status
 
+    reset_password(code: nil)
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
+    assert PasswordRecovery.exists?(recovery.id)
+
+    reset_password(password: 'Another123!', code: nil)
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
+  end
+
+  test 'another authenticated account cannot reset the verified owner email without a proof' do
+    recovery = create_recovery(verified: true)
+    other = create_boundary_user
+    reset_password(headers: authorization_for(other), code: nil)
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
+    assert other.reload.valid_password?('Original123!')
+    assert PasswordRecovery.exists?(recovery.id)
+  end
+
+  test 'a verified legacy code can reset once and is then consumed' do
+    recovery = create_recovery(verified: true)
     reset_password
     assert_response :ok
     assert @owner.reload.valid_password?('Replacement123!')
-    assert_not @owner.valid_password?('Original123!')
     assert_not PasswordRecovery.exists?(recovery.id)
-
     reset_password(password: 'Another123!')
     assert_response :forbidden
     assert @owner.reload.valid_password?('Replacement123!')
   end
 
-  test 'T40 characterization another authenticated account can reset the verified owner email' do
+  test 'a wrong legacy code cannot use a verified recovery' do
     recovery = create_recovery(verified: true)
-    other = create_boundary_user
-    reset_password(headers: authorization_for(other))
+    reset_password(code: '000000')
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
+    assert PasswordRecovery.exists?(recovery.id)
+  end
+
+  test 'verification returns a private token whose digest alone is persisted and reset consumes it' do
+    recovery = create_recovery
+    post '/password_recoveries/verify_code', params: { email: @owner.email, code: '123456' }, as: :json
+    assert_response :ok
+    token = response.parsed_body['recovery_token']
+    assert token.present?, 'verification must return a private reset proof'
+    assert_operator token.length, :>=, 43
+    assert_not_equal '123456', token
+    assert_equal Digest::SHA256.hexdigest(token), recovery.reload.reset_token_digest
+    assert_not_includes recovery.attributes.values, token
+    reset_password(code: nil, recovery_token: token)
     assert_response :ok
     assert @owner.reload.valid_password?('Replacement123!')
+    reset_password(password: 'Another123!', code: nil, recovery_token: token)
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Replacement123!')
+  end
+
+  test 'an invalid token never falls back to a supplied correct legacy code' do
+    recovery = create_recovery(verified: true)
+    reset_password(recovery_token: 'invalid-private-proof')
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
+    assert PasswordRecovery.exists?(recovery.id)
+  end
+
+  test 'a private token from another email cannot reset this account' do
+    create_recovery(verified: true, reset_token_digest: Digest::SHA256.hexdigest('owner-private-proof'))
+    other = create_boundary_user
+    create_recovery(email: other.email, verified: true, reset_token_digest: Digest::SHA256.hexdigest('other-private-proof'))
+    reset_password(code: nil, recovery_token: 'other-private-proof')
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
     assert other.reload.valid_password?('Original123!')
-    assert_not PasswordRecovery.exists?(recovery.id)
+  end
+
+  test 'five failed reset proofs prevent a later correct code without reusing verification attempts' do
+    recovery = create_recovery(verified: true, attempts: 5)
+    5.times do
+      reset_password(code: '000000')
+      assert_response :forbidden
+    end
+    reset_password
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
+    assert_equal 5, recovery.reload.reset_attempts
+    assert_equal 5, recovery.attempts
+  end
+
+  test 'the fifth valid verification attempt still allows the legacy reset' do
+    create_recovery(attempts: 4)
+    post '/password_recoveries/verify_code', params: { email: @owner.email, code: '123456' }, as: :json
+    assert_response :ok
+    reset_password
+    assert_response :ok
+    assert @owner.reload.valid_password?('Replacement123!')
+  end
+
+  test 'requesting a newer recovery invalidates an earlier verified code' do
+    create_recovery(verified: true, created_at: 2.minutes.ago)
+    with_mail_boundary do
+      post '/password_recoveries/request_code', params: { email: @owner.email }, as: :json
+    end
+    assert_response :ok
+    reset_password
+    assert_response :forbidden
+    assert @owner.reload.valid_password?('Original123!')
+  end
+
+  test 'a successful reset consumes every outstanding recovery for the account' do
+    create_recovery(verified: true, created_at: 2.minutes.ago, recovery_code: '222222')
+    create_recovery(verified: true)
+    reset_password
+    assert_response :ok
+    assert_equal 0, PasswordRecovery.for_email(@owner.email).count
+  end
+
+  test 'missing proof cannot exhaust a verified recovery reset budget' do
+    recovery = create_recovery(verified: true)
+    6.times do
+      reset_password(code: nil)
+      assert_response :forbidden
+    end
+    assert_equal 0, recovery.reload.reset_attempts
+    reset_password
+    assert_response :ok
+  end
+
+  test 'a failure consuming a recovery rolls back the password change as well' do
+    recovery = create_recovery(verified: true)
+    owner_email = @owner.email
+    recovery_class = PasswordRecovery
+    original_callbacks = recovery_class._destroy_callbacks.dup
+    failure = ->(record) { raise 'synthetic recovery deletion failure' if record.email == owner_email }
+    recovery_class.set_callback(:destroy, :before, failure)
+    reset_password
+    assert_response :internal_server_error
+    assert @owner.reload.valid_password?('Original123!')
+    assert PasswordRecovery.exists?(recovery.id)
+  ensure
+    recovery_class._destroy_callbacks = original_callbacks if original_callbacks
+  end
+
+  test 'malformed email and password values fail without changing credentials' do
+    create_recovery(verified: true)
+    [[], 123, { nested: 'value' }].each do |email|
+      post '/password_recoveries/request_code', params: { email: email }, as: :json
+      assert_response :bad_request
+      post '/password_recoveries/verify_code', params: { email: email, code: '123456' }, as: :json
+      assert_response :bad_request
+      post '/password_recoveries/reset_password', params: { email: email, code: '123456', new_password: 'Replacement123!' }, as: :json
+      assert_response :bad_request
+    end
+    post '/password_recoveries/reset_password', params: { email: @owner.email, code: '123456', new_password: ['Replacement123!'] }, as: :json
+    assert_response :bad_request
+    assert @owner.reload.valid_password?('Original123!')
   end
 
   private
@@ -232,9 +374,9 @@ class PasswordRecoveriesControllerTest < ActionDispatch::IntegrationTest
     }.merge(attributes))
   end
 
-  def reset_password(password: 'Replacement123!', headers: {})
+  def reset_password(password: 'Replacement123!', headers: {}, code: '123456', recovery_token: nil)
     post '/password_recoveries/reset_password', params: {
-      email: @owner.email, new_password: password
+      email: @owner.email, new_password: password, code: code, recovery_token: recovery_token
     }, headers: headers, as: :json
   end
 

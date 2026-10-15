@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'minitest/mock'
 
 class PasswordRecoveryTest < ActiveSupport::TestCase
   self.fixture_table_names = []
@@ -42,11 +43,32 @@ class PasswordRecoveryTest < ActiveSupport::TestCase
     assert_match(/4/, result[:error])
   end
 
+  test 'a verified recovery cannot issue another proof or consume another verification attempt' do
+    recovery = create_recovery(verified: true, attempts: 1)
+    assert_not recovery.verify_code('123456')[:success]
+    assert_equal 1, recovery.reload.attempts
+  end
+
   test 'an expired recovery cannot be verified or consume an attempt' do
     recovery = create_recovery(expires_at: 1.second.ago, attempts: 2)
     assert_not recovery.verify_code('123456')[:success]
     assert_equal 2, recovery.reload.attempts
     assert_not recovery.verified?
+  end
+
+  test 'a code expiring at this instant cannot be verified' do
+    travel_to Time.zone.local(2026, 10, 15, 12) do
+      recovery = create_recovery(expires_at: Time.current)
+      assert_not recovery.verify_code('123456')[:success]
+      assert_equal 0, recovery.reload.attempts
+      assert_not recovery.verified?
+    end
+  end
+
+  test 'code generation derives six digits from the cryptographic random source' do
+    SecureRandom.stub(:random_number, ->(limit) { assert_equal 900_000, limit; 42 }) do
+      assert_equal '100042', PasswordRecovery.generate_code
+    end
   end
 
   test 'five incorrect attempts prevent a later correct code from verifying' do

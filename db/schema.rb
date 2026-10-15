@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_10_07_120000) do
+ActiveRecord::Schema.define(version: 2026_10_15_120000) do
 
   create_table "app_versions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "android_last_version"
@@ -19,6 +19,21 @@ ActiveRecord::Schema.define(version: 2026_10_07_120000) do
     t.string "ios_last_version_required"
     t.string "android_store_link"
     t.string "ios_store_link"
+  end
+
+  create_table "password_recoveries", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "recovery_code", null: false
+    t.boolean "verified", default: false
+    t.datetime "expires_at", null: false
+    t.integer "attempts", default: 0
+    t.datetime "last_attempt_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "reset_token_digest"
+    t.integer "reset_attempts", default: 0, null: false
+    t.index ["email"], name: "index_password_recoveries_on_email"
+    t.index ["email", "verified"], name: "index_password_recoveries_on_email_and_verified"
   end
 
   create_table "apple_tokens", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|

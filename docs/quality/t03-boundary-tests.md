@@ -83,3 +83,7 @@ El [inventario de errores](t03-existing-suite-errors.txt) nombra los 294 tests a
 `schema.rb` no permite reconstruir por sí solo todas las tablas/campos que usa el código (T08). Solo se complementó la base **temporal** con `users.language`, `users.block_reason_key`, `users.phone`, migraciones de blocks/phone_verifications/password_recoveries/TMDB, `tmdb_user_data.release_date`, nombre de tabla `tmdb_user_series_data` y campos de estado/acción/motivo/bloqueo de denuncias. No se modificaron schema ni migraciones y no se operó sobre una base real.
 
 Permanecen avisos previos de autoload de Rails, Elasticsearch y claves `jti` duplicadas en los tests existentes de sesión. No se cubren el worker asíncrono del webhook Twilio, la API real de los proveedores, clientes móviles ni despliegue. T03 aporta cobertura; no certifica que T35/T33/T40/T11 estén corregidas.
+
+## Seguimiento T40
+
+El 15 de octubre de 2026 se sustituyeron las caracterizaciones de reset inseguro por rechazos reales y se incorporó la corrección backend descrita en [T40](t40-password-recovery.md). La evidencia anterior de T03 se conserva como historial, no como estado vigente de T40. Las demás caracterizaciones siguen pendientes.

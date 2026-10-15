@@ -1,3 +1,6 @@
+require 'digest'
+require 'securerandom'
+
 class PasswordRecovery < ApplicationRecord
   # Validaciones
   validates :email, presence: true
@@ -7,6 +10,7 @@ class PasswordRecovery < ApplicationRecord
   # Constantes
   CODE_EXPIRATION_TIME = 10.minutes
   MAX_ATTEMPTS = 5
+  MAX_RESET_ATTEMPTS = 5
   COOLDOWN_PERIOD = 1.minute
 
   # Scopes
@@ -15,7 +19,7 @@ class PasswordRecovery < ApplicationRecord
 
   # Generar código de recuperación de 6 dígitos
   def self.generate_code
-    rand(100000..999999).to_s
+    (100_000 + SecureRandom.random_number(900_000)).to_s
   end
 
   # Crear nueva recuperación para un email
@@ -23,49 +27,53 @@ class PasswordRecovery < ApplicationRecord
     code = generate_code
     expires_at = CODE_EXPIRATION_TIME.from_now
 
-    create!(
-      email: email.downcase,
-      recovery_code: code,
-      expires_at: expires_at,
-      verified: false,
-      attempts: 0
-    )
+    transaction do
+      # The HTTP request holds the account lock before replacing a capability.
+      for_email(email).update_all(expires_at: Time.current, reset_token_digest: nil)
+      create!(email: email.downcase, recovery_code: code, expires_at: expires_at,
+              verified: false, attempts: 0)
+    end
   end
 
   # Verificar si el código es correcto
   def verify_code(input_code)
-    # Verificar si ha expirado
-    if expired?
-      return { success: false, error: I18n.t('password_recoveries.errors.code_expired') }
-    end
+    with_lock do
+      if verified?
+        next({ success: false, error: I18n.t('password_recoveries.errors.no_pending_recovery') })
+      end
+      if expired?
+        next({ success: false, error: I18n.t('password_recoveries.errors.code_expired') })
+      end
+      if max_attempts_reached?
+        next({ success: false, error: I18n.t('password_recoveries.errors.max_attempts') })
+      end
 
-    # Verificar si se excedieron los intentos
-    if max_attempts_reached?
-      return { success: false, error: I18n.t('password_recoveries.errors.max_attempts') }
-    end
+      self.attempts = attempts.to_i + 1
+      self.last_attempt_at = Time.current
+      token = nil
+      if input_code.is_a?(String) && ActiveSupport::SecurityUtils.secure_compare(recovery_code, input_code)
+        token = SecureRandom.urlsafe_base64(32)
+        self.verified = true
+        self.reset_token_digest = Digest::SHA256.hexdigest(token)
+      end
+      save!
 
-    # Incrementar intentos
-    increment!(:attempts)
-    update(last_attempt_at: Time.current)
-
-    # Verificar el código
-    if recovery_code == input_code
-      update(verified: true)
-      { success: true, message: I18n.t('password_recoveries.success.code_verified') }
-    else
-      remaining = MAX_ATTEMPTS - attempts
-      { success: false, error: I18n.t('password_recoveries.errors.incorrect_code', remaining: remaining) }
+      if token
+        { success: true, message: I18n.t('password_recoveries.success.code_verified'), recovery_token: token }
+      else
+        { success: false, error: I18n.t('password_recoveries.errors.incorrect_code', remaining: MAX_ATTEMPTS - attempts) }
+      end
     end
   end
 
   # Verificar si el código ha expirado
   def expired?
-    expires_at < Time.current
+    expires_at <= Time.current
   end
 
   # Verificar si se alcanzó el máximo de intentos
   def max_attempts_reached?
-    attempts >= MAX_ATTEMPTS
+    attempts.to_i >= MAX_ATTEMPTS
   end
 
   # Verificar si puede solicitar un nuevo código (cooldown)
