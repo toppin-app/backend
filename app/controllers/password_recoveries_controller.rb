@@ -79,9 +79,11 @@ class PasswordRecoveriesController < ApplicationController
     end
 
     # Never fall back to an older recovery after the latest was verified.
-    user = User.find_by(email: email.downcase)
+    user = User.find_by(email: email.downcase, deleted_account: false)
     result = nil
     user&.with_lock do
+      next if user.deleted_account?
+
       recovery = PasswordRecovery.for_email(email).order(created_at: :desc, id: :desc).lock.first
       result = recovery.verify_code(code) if recovery
     end

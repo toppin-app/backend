@@ -15,7 +15,10 @@ class PasswordRecoveryReset
   end
 
   def call
-    user = User.find_by(email: @email)
+    # Re-registration may leave an older deleted account with the same email.
+    # Prefer the active account, while preserving the deleted-only rejection.
+    user = User.find_by(email: @email, deleted_account: false) ||
+           User.find_by(email: @email, deleted_account: true)
     return forbidden unless user
 
     user.with_lock do

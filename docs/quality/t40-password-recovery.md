@@ -1,6 +1,6 @@
 # T40 — Recuperación privada y atómica
 
-Validación backend: 15 de octubre de 2026. Mobile/revisión final se registrarán al terminar sus tareas. No hay despliegue.
+Validación backend y Mobile: 15 de octubre de 2026. Revisión final independiente y corrección de su hallazgo importante completadas. No hay despliegue.
 
 ## Corrección
 
@@ -21,9 +21,9 @@ La migración20261015120000 añade reset_token_digest nullable y reset_attempts 
 - Antes de producción: RED44tests/185assertions/11failures/0errors; ampliación47/190/13failures y un error real por email Integer.
 - Contra código original: cuatro carreras, cuatro fallos y cero errores; ambos resets devolvían200, seis pruebas inválidas se aceptaban y verificación llegaba a seis intentos. Rollback: un test/un fallo/cero errores porque la contraseña ya se había confirmado.
 - RED de idioma: petición ES cambiaba EN del llamante. RED de logger SQL: exponía el código918273 pese al filtro HTTP.
-- Focal final: **59tests/315assertions/0failures/errors/skips**, seed54321. HTTP, modelo, cinco carreras MySQL, migración y logging real.
-- Regresión T03/T24/T36/T37+T40: **474tests/1766assertions/0failures/errors/skips**, seed54321.
-- Global final: **764tests/1766assertions/0failures/290errores previos/0skips**, seed12345. Los nombres coinciden con el [inventario T36/T37](t36-t37-existing-suite-errors.txt), sin errores nuevos. No se declara verde la suite global.
+- Focal tras revisión: **62tests/327assertions/0failures/errors/skips**, seed54321. HTTP, modelo, cinco carreras MySQL, migración, logging real y re-registro con correo de cuenta eliminada.
+- Regresión T03/T24/T36/T37+T40: **477tests/1778assertions/0failures/errors/skips**, seed54321.
+- Global tras revisión: **767tests/1778assertions/0failures/290errores previos/0skips**, seed12345. Los 290 nombres coinciden exactamente con el [inventario T36/T37](t36-t37-existing-suite-errors.txt), sin errores nuevos. No se declara verde la suite global.
 
 ```sh
 bundle exec rails test test/controllers/password_recoveries_controller_test.rb test/models/password_recovery_test.rb test/controllers/password_recovery_concurrency_test.rb test/migrations/private_reset_proof_test.rb test/middleware/sensitive_logging_test.rb --seed 54321
@@ -31,6 +31,24 @@ bundle exec rails test test/controllers/password_recoveries_controller_test.rb t
 
 La regresión usa los 29 archivos T03/T24, las tres suites T36/T37 y los dos archivos nuevos de concurrencia/migración. MySQL/Redis desechables, red Docker interna, secretos ficticios y proveedores sustituidos. Las barreras conservan SQL/transacciones reales y verifican CONNECTION_ID distinto. En los helpers se corrigieron forwarding de keywords Ruby y limpieza del callback sintético de fallo; no se sustituyó la persistencia.
 
+## Revisión final
+
+La revisión independiente detectó que buscar un usuario solo por email podía seleccionar una cuenta eliminada en vez de la cuenta activa re-registrada con ese correo. Se aplicó únicamente en la base desechable la migración de índice de email ya existente20251124162600. Tres pruebas nuevas con ambas cuentas y un plan de consulta válido alternativo reprodujeron el problema: **3 tests, 3 fallos, cero errores**. El índice permanece único; se hace invisible al optimizador durante estos casos y se restaura al terminar.
+
+El reset selecciona primero la cuenta activa y conserva el rechazo anterior cuando solo existe una eliminada. Verificación selecciona la activa y vuelve a comprobar que no esté eliminada después de adquirir el lock. Las tres pruebas y toda la regresión pasan tras este cambio. No se modifica globalmente el índice ni el esquema de usuarios de T08.
+
+Única recomendación menor aplazada: las carreras de reset prueban un éxito y un rechazo, pero ambos contendientes usan la misma contraseña; distinguir las contraseñas fortalecería la comprobación de correspondencia con el ganador. No se afirma haber añadido esa cobertura.
+
+## Mobile
+
+El servicio conserva su firma anterior con un cuarto parámetro opcional. La verificación lleva el token a la pantalla de reset mediante parámetros de navegación en memoria; no se añade almacenamiento persistente. Si el servidor anterior no devuelve token, el cliente sigue enviando su código con el contrato anterior. Los logs del flujo ya no imprimen objetos Axios que puedan contener contraseña, código o token.
+
+- Doce pruebas nuevas del servicio y de las pantallas reales, con Axios sustituido únicamente en la frontera HTTP. Cubren token, compatibilidad legacy, navegación, contraseña débil, errores y reenvío con cooldown sin exponer secretos.
+- Suite completa: **60 suites, 644 pruebas y 7 snapshots aprobados**.
+- ESLint de los cinco archivos cambiados y `git diff --check`: correctos.
+- Bundles JS temporales iOS/Android generados correctamente (390/444 assets). No son compilaciones nativas ni una prueba end-to-end con Mailjet.
+- Commit Mobile `a24bf40`, únicamente local; no se ha hecho push de la app.
+
 ## Límites
 
-Sin Mailjet real, cliente nativo ni base real. Un fallo de email conserva la nueva recuperación y cooldown, como antes; ahora el código nuevo invalida al anterior aunque el envío falle. Enumeración de cuentas, revocación de otras sesiones, CSRF general y T08 quedan sin modificar. Mobile y revisión global de T40/T27 siguen pendientes al cerrar la tarea backend.
+Sin Mailjet real, cliente nativo ni base real. Un fallo de email conserva la nueva recuperación y cooldown, como antes; ahora el código nuevo invalida al anterior aunque el envío falle. Enumeración de cuentas, revocación de otras sesiones, CSRF general y T08 quedan sin modificar. T27 fue aplazada por el usuario antes de realizar cambios de implementación; no forma parte de esta entrega.

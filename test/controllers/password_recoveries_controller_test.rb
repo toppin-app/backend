@@ -394,3 +394,62 @@ class PasswordRecoveriesControllerTest < ActionDispatch::IntegrationTest
     Mailjet::Send.stub(:create, ->(*) { flunk 'Rejected request reached mail provider' }) { yield }
   end
 end
+
+# The existing soft-delete migration permits two rows for one email. MySQL's
+# optimizer is not required to return the active row first. Keeping the unique
+# index invisible (still enforced) exercises a valid alternate query plan.
+class ReregisteredPasswordRecoveryTest < ActionDispatch::IntegrationTest
+  self.fixture_table_names = []
+  self.use_transactional_tests = false
+
+  setup do
+    @email = "recovery-reregister-#{SecureRandom.hex(6)}@example.com"
+    @deleted = User.create!(email: @email, password: 'Original123!')
+    @deleted.update!(deleted_account: true)
+    @active = User.create!(email: @email, password: 'ActiveOriginal123!')
+    @connection = ActiveRecord::Base.connection
+    @connection.execute('ALTER TABLE users ALTER INDEX index_users_on_email_and_deleted_account INVISIBLE')
+    @index_hidden = true
+    @token = SecureRandom.urlsafe_base64(32)
+    @recovery = PasswordRecovery.create!(email: @email, recovery_code: '123456', verified: true,
+                                        expires_at: 10.minutes.from_now,
+                                        reset_token_digest: Digest::SHA256.hexdigest(@token))
+  end
+
+  teardown do
+    @connection.execute('ALTER TABLE users ALTER INDEX index_users_on_email_and_deleted_account VISIBLE') if @index_hidden
+    PasswordRecovery.for_email(@email).delete_all if @email
+    ids = [@deleted&.id, @active&.id].compact
+    UserFilterPreference.where(user_id: ids).delete_all
+    User.where(id: ids).delete_all
+  end
+
+  [:token, :legacy].each do |proof|
+    test "#{proof} reset changes only the active re-registered account" do
+      params = { email: @email, new_password: 'Replacement123!' }
+      params.merge!(proof == :token ? { recovery_token: @token } : { code: '123456' })
+      post '/password_recoveries/reset_password', params: params, as: :json
+      assert_response :ok
+      assert @active.reload.valid_password?('Replacement123!')
+      assert @deleted.reload.valid_password?('Original123!')
+      assert_equal 0, PasswordRecovery.for_email(@email).count
+    end
+  end
+
+  test 'verification locks the same active account as code requests and resets' do
+    @recovery.update!(verified: false, reset_token_digest: nil)
+    user_locks = []
+    subscriber = lambda do |*args|
+      sql = args.last[:sql]
+      user_locks << sql if sql.include?('`users`') && sql.include?('FOR UPDATE')
+    end
+    ActiveSupport::Notifications.subscribed(subscriber, 'sql.active_record') do
+      post '/password_recoveries/verify_code', params: { email: @email, code: '123456' }, as: :json
+    end
+    assert_response :ok
+    assert response.parsed_body['recovery_token'].present?
+    assert user_locks.any? { |sql| sql.include?("`users`.`id` = #{@active.id} ") },
+           'Verification must lock the active account, not the older deleted account'
+    assert @deleted.reload.valid_password?('Original123!')
+  end
+end
