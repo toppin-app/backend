@@ -29,8 +29,18 @@ El archivo se conserva fuera de Git en `entregas/ios-54.0-1/toppin.ipa`, junto a
 
 Límite: el asistente gráfico de firma automática de Xcode sigue rechazando el rol devuelto como Agent, aunque Ajustes lo muestra como Admin. La exportación por línea de comandos evita ese bloqueo usando la firma administrada existente. Hubo un aviso no fatal sobre proveedor de App Store Connect durante la exportación. Un IPA firmado no demuestra que App Store Connect haya aceptado su subida; no se afirma carga ni publicación hasta verificar su resultado. No se cambia el rol de la cuenta, Team, bundleID ni credenciales para esquivar el problema.
 
+### Subida autorizada y confirmada
+
+Tras la autorización expresa del usuario, `xcodebuild -exportArchive` con destino `upload` confirmó `Uploaded toppin release` y `EXPORT SUCCEEDED`. El registro de distribución del archive confirma `Uploaded to Apple`, estado `success`, sin errores, aplicación1613498095, equipoKZ84MRK499 y build1, el15/10/2026 a las13:01:56UTC (15:01:56 en Madrid). Se conserva versión54.0(1), sin segunda subida ni incremento de versión.
+
+Los avisos por dSYM ausentes de Agora y Hermes no impidieron la entrega; siguen como limitación de diagnóstico de fallos nativos. No se fabricaron símbolos ni se ocultaron los avisos. No se envió la aplicación a revisión ni se publicó en App Store.
+
+La comprobación posterior de TestFlight en el navegador quedó en el acceso de App Store Connect sin terminar de cargar, incluso tras una recarga. Por tanto, se confirma la aceptación de la subida, pero no la finalización del procesamiento ni la disponibilidad para testers. El problema de cuenta/rol del asistente gráfico no se considera resuelto; la vía CLI con firma administrada sí permitió entregar el build.
+
 ## Despliegue
 
-La inspección de Easypanel se limitó al servicio `backend-ruby-dev`. Despliegue automático deshabilitado, sin scripts registrados ni comando de arranque personalizado visible. Publicar el commit no prueba que esté desplegado. Antes de arrancar T40 se debe comprobar y ejecutar su migración20261015120000. No ejecutar a ciegas todas las migraciones pendientes ni tocar `backend-ruby`.
+El usuario autorizó después desplegar lo último en `backend-ruby` y `backend-ruby-dev`. La inspección de desarrollo muestra despliegue automático deshabilitado, sin scripts registrados ni comando de arranque personalizado visible. La fuente de producción apunta a `toppin-app/backend`, rama `main`; no se modificó.
+
+El preflight de solo lectura en la consola de desarrollo devolvió `Rails.env=development`, `password_recoveries=false` y migración20261015120000 sin aplicar. Falta incluso la tabla de la migración20251127000000, anterior a T40. La migración original solo crea esa tabla e índices, pero falta inventariar las demás pendientes y comprobar producción antes de decidir la aplicación segura. No se ejecutó ninguna migración ni se desplegó/reinició ninguno de los dos servicios. No ejecutar a ciegas todas las migraciones pendientes. Publicar el commit no prueba que esté desplegado.
 
 Los logs aportados contienen credenciales en argumentos de build; no se copian aquí ni se rotan. Las variables existentes se conservan.
