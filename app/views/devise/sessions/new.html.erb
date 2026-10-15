@@ -4,7 +4,7 @@
 <div>
 
 <%= image_tag "logo-devise.png", style: 'height: 120px;' %>
-<%= form_for(resource, as: resource_name, url: session_path(resource_name), class: 'form-signin') do |f| %>
+<%= form_for(resource, as: resource_name, url: user_session_path, class: 'form-signin') do |f| %>
   
   <h3><i class="fas fa-lock"></i>  Acceso restringido</h3>
 

@@ -14,6 +14,40 @@ class Users::SessionsControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  test 'dashboard login form submits credentials to the Devise login route' do
+    get '/users/sign_in'
+
+    assert_response :ok
+    assert_select 'form#new_user[action="/users/sign_in"][method="post"]', count: 1 do
+      assert_select 'input[name="user[email]"]', count: 1
+      assert_select 'input[name="user[password]"]', count: 1
+    end
+  end
+
+  test 'dashboard login succeeds when submitting the rendered form' do
+    @user.update!(twilio_sid: 'existing-dashboard-identity')
+    get '/users/sign_in'
+    form = Nokogiri::HTML(response.body).at_css('form#new_user')
+    assert_not_nil form
+
+    post form['action'], params: login_params(@user.email, @password)
+
+    assert_redirected_to root_path
+    assert_equal 1, @user.reload.sign_in_count
+  end
+
+  test 'dashboard login preserves rejection when submitting a wrong password through the form' do
+    get '/users/sign_in'
+    form = Nokogiri::HTML(response.body).at_css('form#new_user')
+    assert_not_nil form
+
+    post form['action'], params: login_params(@user.email, 'Wrong123!')
+
+    assert_redirected_to new_user_session_path
+    assert_equal 0, @user.reload.sign_in_count
+    assert_nil response.headers['Authorization']
+  end
+
   test 'email login returns the user and an authorization token' do
     twilio_calls = []
 
