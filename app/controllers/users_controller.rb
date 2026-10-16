@@ -725,24 +725,34 @@ end
       
       devices = Device.where(user_id: target_user.id)
       notification = NotificationLocalizer.for(user: target_user, type: :like)
+      notification_failed = false
 
       devices.each do |device|
         if device.token.present?
-          FirebasePushService.new.send_notification(
-            token: device.token,
-            title: notification[:title],
-            body: notification[:body],
-            data: {
-              action: "like",
-              user_id: umr.user_id.to_s
-            },
-            sound: "sms.mp3", 
-            channel_id: "sms-channel"              # <- para que suene (debe estar en la app)
+          begin
+            FirebasePushService.new.send_notification(
+              token: device.token,
+              title: notification[:title],
+              body: notification[:body],
+              data: {
+                action: "like",
+                user_id: umr.user_id.to_s
+              },
+              sound: "sms.mp3",
+              channel_id: "sms-channel"
             )
-          
+          rescue StandardError => error
+            # The like is already saved; an optional push must not fail the request.
+            # Provider messages may contain credentials or device tokens.
+            notification_failed = true
+            Rails.logger.warn "Admin like push failed match_request_id=#{umr.id} error_class=#{error.class.name}"
+          end
         end
       end
 
+      if notification_failed
+        flash[:alert] = 'El like se ha guardado, pero alguna notificación no pudo enviarse.'
+      end
       redirect_to show_user_path(id: umr.user_id), notice: 'Like generado con éxito.'
     end
 
